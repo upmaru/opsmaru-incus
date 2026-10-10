@@ -24,7 +24,9 @@ defmodule Opsmaru.Incus.CopyTest do
     extensions = [
       "storage_api_local_volume_handling",
       "container_copy_project",
-      "storage_api_project"
+      "storage_api_project",
+      "storage_api_remote_volume_handling",
+      "storage_api_remote_volume_snapshot_copy"
     ]
 
     fixture =
@@ -140,6 +142,36 @@ defmodule Opsmaru.Incus.CopyTest do
       # fields, including source configuration, must match those official values.
       assert subset?(right, left), inspect({right, left})
     end
+
+    input = Path.join(root, "snapshot-migration.json")
+    body = %{"name" => "parent/snapshot", "migration" => true}
+
+    File.write!(
+      input,
+      Jason.encode!(%{
+        socket: client.connection.address,
+        project: "fixture",
+        action: "MigrateStoragePoolVolume",
+        args: ["source-pool", body]
+      })
+    )
+
+    {out, status} = System.cmd(@driver, [input], stderr_to_stdout: true)
+    assert status == 0, out
+    refute Jason.decode!(out)["error"], out
+    expected = HTTPFixture.requests(fixture) |> List.last()
+
+    assert {:ok, _} =
+             Incus.call(client, "MigrateStoragePoolVolume", %{"pool" => "source-pool"},
+               body: body
+             )
+
+    actual = HTTPFixture.requests(fixture) |> List.last()
+    assert actual.target == expected.target
+    assert Jason.decode!(actual.body) == Jason.decode!(expected.body)
+
+    assert URI.parse(actual.target).path ==
+             "/1.0/storage-pools/source-pool/volumes/custom/parent/snapshots/snapshot"
 
     assert {:error, %Error{kind: :invalid_copy_options}} =
              Copy.instance(client, client, %{"name" => "fixture"}, mode: :unknown)

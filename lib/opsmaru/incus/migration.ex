@@ -251,6 +251,7 @@ defmodule Opsmaru.Incus.Migration do
       end
     after
       Enum.each(tasks, &Task.shutdown(&1, :brutal_kill))
+      close_pairs([{left, right}])
     end
   end
 
