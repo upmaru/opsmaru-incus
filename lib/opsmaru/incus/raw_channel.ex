@@ -35,6 +35,9 @@ defmodule Opsmaru.Incus.RawChannel do
 
           {:error, %{error | response: response}}
 
+        {:error, :timeout} ->
+          {:error, %Error{kind: :deadline}}
+
         {:error, _} ->
           {:error, %Error{kind: :upgrade_failed}}
       end
@@ -111,17 +114,18 @@ defmodule Opsmaru.Incus.RawChannel do
 
         _ ->
           transport.close(socket)
-          {:stop, :upgrade_failed}
+          {:stop, %Error{kind: if(now() >= deadline, do: :deadline, else: :upgrade_failed)}}
       end
     else
-      _ -> {:stop, :connection_failed}
+      _ -> {:stop, %Error{kind: if(now() >= deadline, do: :deadline, else: :upgrade_failed)}}
     end
   rescue
     _ -> {:stop, :upgrade_failed}
   end
 
   defp handshake(conn, connection, path, protocol, deadline) do
-    with {:ok, conn, request} <-
+    with true <- now() < deadline,
+         {:ok, conn, request} <-
            Mint.HTTP.request(
              conn,
              "GET",
@@ -137,6 +141,10 @@ defmodule Opsmaru.Incus.RawChannel do
            "upgrade" in String.split(String.downcase(values["connection"] || ""), ~r/\s*,\s*/),
          do: {:ok, IO.iodata_to_binary(Enum.reverse(initial))},
          else: Upgrade.rejected(status, headers, initial, :upgrade_failed)
+    else
+      false -> {:error, %Error{kind: :deadline}}
+      {:error, _, %Mint.TransportError{reason: :timeout}} -> {:error, %Error{kind: :deadline}}
+      error -> error
     end
   end
 

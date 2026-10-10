@@ -8,6 +8,14 @@ defmodule Opsmaru.Incus.Upgrade do
     do: receive_response(conn, request, deadline, limit, nil, [], [], 0)
 
   defp receive_response(conn, request, deadline, limit, status, headers, data, bytes) do
+    if deadline <= System.monotonic_time(:millisecond) do
+      {:error, %Error{kind: :deadline, http_status: status}}
+    else
+      receive_until_deadline(conn, request, deadline, limit, status, headers, data, bytes)
+    end
+  end
+
+  defp receive_until_deadline(conn, request, deadline, limit, status, headers, data, bytes) do
     case Mint.HTTP.recv(conn, 0, max(0, deadline - System.monotonic_time(:millisecond))) do
       {:ok, conn, responses} ->
         {status, headers, data, bytes, done} =

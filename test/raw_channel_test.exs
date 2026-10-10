@@ -260,6 +260,13 @@ defmodule Opsmaru.Incus.RawChannelTest do
     assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
   end
 
+  test "an already exhausted upgrade budget fails before attempting another socket read" do
+    deadline = System.monotonic_time(:millisecond) - 1
+
+    assert {:error, %Error{kind: :deadline}} =
+             Opsmaru.Incus.Upgrade.receive_response(nil, make_ref(), deadline, 128)
+  end
+
   defp fixture(root, context, protocol, initial, half_close) do
     path = Path.join(root, "s-#{System.unique_integer([:positive])}")
 
