@@ -27,8 +27,8 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | Go inventory parser regressions | Passed | Verifier-only tooling |
 | `mise run check` via `python3 scripts/check-isolated.py` | Format, warning-free compile, assets, 5 web tests, embedding and strict specs passed | New disposable UTF-8 PostgreSQL cluster, stopped/deleted afterward |
 | Strict OpenSpec validation | All three changes passed | Artifact consistency, not runtime acceptance |
-| macOS/Linux CI | Workflow added; results pending publication | No portability claim until actual jobs pass |
-| Independent immutable consumer | 1 clean consumer test passed at published 4bf6d27a3617160e06e62550f44b447a3208818a | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
+| macOS/Linux CI | 322 core tests and clean immutable consumer passed on both platforms at 55a4c8c1d2282ea256f1805abf01cde93252c943 | Protocol fixtures only; no real Incus/Macus |
+| Independent immutable consumer | 1 clean consumer test passed at published 55a4c8c1d2282ea256f1805abf01cde93252c943 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
 The coverage manifest records 268 differential JSON methods, 740 partial
 reference mappings and 540 missing declarations. Missing entries prevent a
@@ -43,8 +43,12 @@ Phoenix 1.8.15, Mint 1.11.0, plug_cowboy 2.9.0, Cowboy 2.19.0 and TamaMCP 0.1.1.
 `scripts/check-consumer.py` builds the exact requested Git revision in a new
 temporary directory, with no source path dependency or sibling checkout.
 
-Remaining gates: complete canonical copy/migration and missing method/type
-coverage; Linux fixture success; explicit isolated live Incus Unix/HTTPS mutation/operation/stream
+Final platform run: https://github.com/upmaru/opsmaru/actions/runs/38064762849.
+OpenSpec progress is 20/22: task 3.9 remains open for remaining reference parity;
+task 4.3 remains open for explicit isolated real-backend acceptance.
+
+Remaining gates: complete canonical copy/migration option and missing method/type
+coverage; explicit isolated live Incus Unix/HTTPS mutation/operation/stream
 acceptance; consumer-owned installed Macus/VZ/hardware acceptance. Real-backend
 and hardware acceptance remain unchecked without explicit opt-in. No merge,
 release tag, deployment or OpenSpec archive is performed by these checks.
