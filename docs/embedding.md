@@ -57,3 +57,20 @@ configuration and no database credentials. It compiles the same application
 and runs isolated fixtures with no SQL setup. `mise run check` separately
 checks the existing Phoenix scaffold and requires a dedicated test database.
 Fixture evidence does not establish installed Macus or real Incus acceptance.
+
+## Immutable consumer dependency
+
+The independently verified implemented revision is:
+
+```elixir
+{:opsmaru, git: "https://github.com/upmaru/opsmaru.git",
+ ref: "4bf6d27a3617160e06e62550f44b447a3208818a"}
+```
+
+`test/consumer/revision.txt` records this revision; its `mix.lock` records the
+resolved Macus-compatible dependency set. Run `python3 scripts/check-consumer.py`
+to fetch it in a fresh directory. An explicit `OPSMARU_FIXTURE_REVISION` permits
+verifying a newer immutable feature revision; no local path dependency is used.
+The fixture's private Unix server is an independent fake backend, never an
+installed Macus socket. Installation, bundled ERTS and real Macus hardware
+acceptance remain owned by the consumer.

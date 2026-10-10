@@ -33,5 +33,5 @@ First implementation target. Existing scaffold checks are baseline evidence, not
 ## 4. Independent library and consumer acceptance
 
 - [ ] 4.1 Run the database-free core checks and macOS/Linux protocol fixtures; verify no endpoint/Repo/listener/backend activation and separate embedding/client/stream evidence with exact dependency/reference provenance.
-- [ ] 4.2 Add an external Macus-compatible Mix consumer fixture and document an actual immutable implemented dependency revision; verify a clean consumer build/call without sibling checkout or an Opsmaru process while source builds use their pinned toolchain and installed Macus runtime packaging remains consumer-owned.
+- [x] 4.2 Add an external Macus-compatible Mix consumer fixture and document an actual immutable implemented dependency revision; verify a clean consumer build/call without sibling checkout or an Opsmaru process while source builds use their pinned toolchain and installed Macus runtime packaging remains consumer-owned.
 - [ ] 4.3 With explicit isolated real-backend opt-in, prove native Unix/HTTPS inspection, mutation, operation and stream behavior; preserve Incus data and keep Macus VZ/installed-hardware acceptance separately owned and unchecked when unavailable.

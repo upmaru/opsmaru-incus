@@ -13,7 +13,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 
 | Evidence | Result | Limits |
 | --- | --- | --- |
-| Database-free `mise run check:library` | 318 tests passed before final archive variants; final rerun recorded below | macOS local fixtures; full parity incomplete |
+| Database-free `mise run check:library` | 319 tests passed with final archive variants | macOS local fixtures; full parity incomplete |
 | Archive variants/TLS/migration focused checks | 5 tests passed | Native fake-backend archive bytes, HTTPS upgrades and failure preservation |
 | Actual embedded startup/restart with PHX_SERVER and invalid PORT | Empty supervision, no new ports/state/Endpoint/Repo | Installed Macus not exercised |
 | Official typed resource calls | 268 methods compared | Request/result/error/extension slices, not all-field semantic parity |
@@ -28,7 +28,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | `mise run check` via `python3 scripts/check-isolated.py` | Format, warning-free compile, assets, 5 web tests, embedding and strict specs passed | New disposable UTF-8 PostgreSQL cluster, stopped/deleted afterward |
 | Strict OpenSpec validation | All three changes passed | Artifact consistency, not runtime acceptance |
 | macOS/Linux CI | Workflow added; results pending publication | No portability claim until actual jobs pass |
-| Independent immutable consumer | Fixture added; final published pin pending | Temporary working-copy snapshot evidence does not satisfy the published-pin gate |
+| Independent immutable consumer | 1 clean consumer test passed at published 4bf6d27a3617160e06e62550f44b447a3208818a | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
 The coverage manifest records 268 differential JSON methods, 734 partial
 reference mappings and 546 missing declarations. Missing entries prevent a
@@ -44,8 +44,7 @@ Phoenix 1.8.15, Mint 1.11.0, plug_cowboy 2.9.0, Cowboy 2.19.0 and TamaMCP 0.1.1.
 temporary directory, with no source path dependency or sibling checkout.
 
 Remaining gates: complete canonical copy/migration and missing method/type
-coverage; Linux fixture success; published immutable consumer and recorded
-lock; explicit isolated live Incus Unix/HTTPS mutation/operation/stream
+coverage; Linux fixture success; explicit isolated live Incus Unix/HTTPS mutation/operation/stream
 acceptance; consumer-owned installed Macus/VZ/hardware acceptance. Real-backend
 and hardware acceptance remain unchecked without explicit opt-in. No merge,
 release tag, deployment or OpenSpec archive is performed by these checks.
