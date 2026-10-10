@@ -59,7 +59,7 @@ defmodule Opsmaru.Incus.Transfer do
                    socket,
                    method,
                    path,
-                   headers,
+                   Transport.request_headers(connection, headers),
                    if(source, do: :stream, else: nil)
                  ),
                {:ok, socket} <- upload_source(socket, ref, source, connection, deadline) do

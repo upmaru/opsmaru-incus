@@ -10,6 +10,12 @@ defmodule Opsmaru.Incus.Operation do
   @enforce_keys [:client, :url]
   defstruct [:client, :url, :response]
 
+  @doc "Explicit native RawOperation request, retaining ETag and accepted identity without waiting."
+  def raw(client, method, path, opts \\ []) do
+    with {:ok, response} <- Incus.raw_query(client, method, path, opts),
+         do: from_response(client, response)
+  end
+
   def from_response(client, %Response{} = response) do
     if response.type == "async" and response.connection == client.connection and
          response.identity === client.context.identity and valid_url?(response.operation) do

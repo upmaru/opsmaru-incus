@@ -2,6 +2,12 @@ defmodule Opsmaru.Incus.Transport do
   @moduledoc false
   alias Opsmaru.Incus.{Connection, Error}
 
+  @doc false
+  def request_headers(%Connection{require_authenticated: true}, headers),
+    do: [{"x-incus-authenticated", "true"} | headers]
+
+  def request_headers(%Connection{require_authenticated: false}, headers), do: headers
+
   # One passive connection per request. No pool/global remote/reconnect/retry.
   def request(connection, method, path, headers, body) do
     bounded(connection.timeout, method, fn ->
@@ -34,7 +40,7 @@ defmodule Opsmaru.Incus.Transport do
     case open(connection, deadline) do
       {:ok, socket} ->
         try do
-          case Mint.HTTP.request(socket, method, path, headers, body) do
+          case Mint.HTTP.request(socket, method, path, request_headers(connection, headers), body) do
             {:ok, socket, ref} ->
               receive_response(socket, ref, deadline, connection.max_response_bytes, %{
                 status: nil,

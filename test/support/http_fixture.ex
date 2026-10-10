@@ -96,9 +96,19 @@ defmodule Opsmaru.TestSupport.HTTPFixture do
           :gen_tcp.accept(listener)
 
         :ssl ->
-          with {:ok, socket} <- :ssl.transport_accept(listener, 5_000),
-               {:ok, socket} <- :ssl.handshake(socket, 5_000) do
-            {:ok, socket}
+          case :ssl.transport_accept(listener, 5_000) do
+            {:ok, socket} ->
+              case :ssl.handshake(socket, 5_000) do
+                {:ok, socket} ->
+                  {:ok, socket}
+
+                {:error, _} ->
+                  :ssl.close(socket)
+                  {:error, :handshake_failed}
+              end
+
+            error ->
+              error
           end
       end
 

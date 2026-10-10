@@ -261,7 +261,8 @@
       "evidence": [
         "test/library/copy_test.exs",
         "test/library/migration_test.exs",
-        "test/library/copy_guards_test.exs"
+        "test/library/copy_guards_test.exs",
+        "test/library/copy_negotiation_reference_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -271,7 +272,8 @@
       "elixir": "lib/opsmaru/incus/copy.ex",
       "evidence": [
         "test/library/copy_test.exs",
-        "test/library/migration_test.exs"
+        "test/library/migration_test.exs",
+        "test/library/copy_negotiation_reference_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -281,7 +283,8 @@
       "elixir": "lib/opsmaru/incus/copy.ex",
       "evidence": [
         "test/library/copy_test.exs",
-        "test/library/migration_test.exs"
+        "test/library/migration_test.exs",
+        "test/library/copy_negotiation_reference_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -368,10 +371,13 @@
     },
     {
       "id": "client/interface_method/InstanceServer.CreateInstanceBackupStream",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateInstanceBitmap",
@@ -402,10 +408,12 @@
     },
     {
       "id": "client/interface_method/InstanceServer.CreateInstanceFromImage",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/image_instances.ex",
+      "evidence": [
+        "test/library/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateInstanceSnapshot",
@@ -553,17 +561,23 @@
     },
     {
       "id": "client/interface_method/InstanceServer.CreateStoragePoolBucketBackupStream",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateStoragePoolBucketFromBackup",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateStoragePoolBucketKey",
@@ -585,17 +599,23 @@
     },
     {
       "id": "client/interface_method/InstanceServer.CreateStoragePoolVolumeFromBackup",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateStoragePoolVolumeFromISO",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateStoragePoolVolumeFromMigration",
@@ -626,10 +646,13 @@
     },
     {
       "id": "client/interface_method/InstanceServer.CreateStorageVolumeBackupStream",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateStorageVolumeBitmap",
@@ -642,10 +665,13 @@
     },
     {
       "id": "client/interface_method/InstanceServer.CreateStorageVolumeFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteCertificate",
@@ -955,10 +981,13 @@
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteStorageVolumeFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteWarning",
@@ -1165,10 +1194,13 @@
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceBackupFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceBackupNames",
@@ -2003,10 +2035,13 @@
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucketBackupFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucketFull",
@@ -2337,10 +2372,13 @@
     },
     {
       "id": "client/interface_method/InstanceServer.GetStorageVolumeBackupFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStorageVolumeBackupNames",
@@ -2380,10 +2418,13 @@
     },
     {
       "id": "client/interface_method/InstanceServer.GetStorageVolumeFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.GetWarning",
@@ -2423,10 +2464,13 @@
     },
     {
       "id": "client/interface_method/InstanceServer.IsClustered",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/discovery.ex",
+      "evidence": [
+        "test/library/discovery_helpers_test.exs",
+        "test/library/authenticated_header_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.MigrateInstance",
@@ -2460,17 +2504,21 @@
     },
     {
       "id": "client/interface_method/InstanceServer.MoveStoragePoolVolume",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/copy.ex",
+      "evidence": [
+        "test/library/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.RawOperation",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/raw_operation_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.RawQuery",
@@ -2503,10 +2551,12 @@
     },
     {
       "id": "client/interface_method/InstanceServer.RebuildInstanceFromImage",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/image_instances.ex",
+      "evidence": [
+        "test/library/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.RebuildStoragePoolVolume",
@@ -2663,17 +2713,22 @@
     },
     {
       "id": "client/interface_method/InstanceServer.RequireAuthenticated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/discovery.ex",
+      "evidence": [
+        "test/library/discovery_helpers_test.exs",
+        "test/library/authenticated_header_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.SendEvent",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/events.ex",
+      "evidence": [
+        "test/library/event_send_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateCertificate",
@@ -3037,17 +3092,23 @@
     },
     {
       "id": "client/interface_method/RemoteOperation.CancelTarget",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/migration.ex",
+      "evidence": [
+        "test/library/migration_target_test.exs",
+        "test/library/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/RemoteOperation.GetTarget",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/migration.ex",
+      "evidence": [
+        "test/library/migration_target_test.exs",
+        "test/library/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/RemoteOperation.Wait",
@@ -3072,10 +3133,13 @@
     },
     {
       "id": "client/interface_method/Server.GetConnectionInfo",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/discovery.ex",
+      "evidence": [
+        "test/library/discovery_helpers_test.exs",
+        "test/library/authenticated_header_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/Server.GetHTTPClient",
@@ -3168,7 +3232,8 @@
       "evidence": [
         "test/library/copy_test.exs",
         "test/library/migration_test.exs",
-        "test/library/copy_guards_test.exs"
+        "test/library/copy_guards_test.exs",
+        "test/library/copy_negotiation_reference_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3178,7 +3243,8 @@
       "elixir": "lib/opsmaru/incus/copy.ex",
       "evidence": [
         "test/library/copy_test.exs",
-        "test/library/migration_test.exs"
+        "test/library/migration_test.exs",
+        "test/library/copy_negotiation_reference_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3188,7 +3254,8 @@
       "elixir": "lib/opsmaru/incus/copy.ex",
       "evidence": [
         "test/library/copy_test.exs",
-        "test/library/migration_test.exs"
+        "test/library/migration_test.exs",
+        "test/library/copy_negotiation_reference_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3275,10 +3342,13 @@
     },
     {
       "id": "client/method/ProtocolIncus.CreateInstanceBackupStream",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.CreateInstanceBitmap",
@@ -3309,10 +3379,12 @@
     },
     {
       "id": "client/method/ProtocolIncus.CreateInstanceFromImage",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/image_instances.ex",
+      "evidence": [
+        "test/library/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.CreateInstanceSnapshot",
@@ -3460,17 +3532,23 @@
     },
     {
       "id": "client/method/ProtocolIncus.CreateStoragePoolBucketBackupStream",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.CreateStoragePoolBucketFromBackup",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.CreateStoragePoolBucketKey",
@@ -3492,17 +3570,23 @@
     },
     {
       "id": "client/method/ProtocolIncus.CreateStoragePoolVolumeFromBackup",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.CreateStoragePoolVolumeFromISO",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.CreateStoragePoolVolumeFromMigration",
@@ -3533,10 +3617,13 @@
     },
     {
       "id": "client/method/ProtocolIncus.CreateStorageVolumeBackupStream",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.CreateStorageVolumeBitmap",
@@ -3549,10 +3636,13 @@
     },
     {
       "id": "client/method/ProtocolIncus.CreateStorageVolumeFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteCertificate",
@@ -3862,10 +3952,13 @@
     },
     {
       "id": "client/method/ProtocolIncus.DeleteStorageVolumeFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteWarning",
@@ -4035,10 +4128,13 @@
     },
     {
       "id": "client/method/ProtocolIncus.GetConnectionInfo",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/discovery.ex",
+      "evidence": [
+        "test/library/discovery_helpers_test.exs",
+        "test/library/authenticated_header_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.GetEvents",
@@ -4233,10 +4329,13 @@
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceBackupFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceBackupNames",
@@ -5094,10 +5193,13 @@
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucketBackupFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucketFull",
@@ -5428,10 +5530,13 @@
     },
     {
       "id": "client/method/ProtocolIncus.GetStorageVolumeBackupFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.GetStorageVolumeBackupNames",
@@ -5471,10 +5576,13 @@
     },
     {
       "id": "client/method/ProtocolIncus.GetStorageVolumeFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/files.ex",
+      "evidence": [
+        "test/library/file_variants_reference_test.exs",
+        "test/library/backup_variants_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.GetWarning",
@@ -5514,17 +5622,23 @@
     },
     {
       "id": "client/method/ProtocolIncus.IsAgent",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/discovery.ex",
+      "evidence": [
+        "test/library/discovery_helpers_test.exs",
+        "test/library/authenticated_header_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.IsClustered",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/discovery.ex",
+      "evidence": [
+        "test/library/discovery_helpers_test.exs",
+        "test/library/authenticated_header_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.MigrateInstance",
@@ -5558,17 +5672,21 @@
     },
     {
       "id": "client/method/ProtocolIncus.MoveStoragePoolVolume",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/copy.ex",
+      "evidence": [
+        "test/library/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.RawOperation",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/raw_operation_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.RawQuery",
@@ -5601,10 +5719,12 @@
     },
     {
       "id": "client/method/ProtocolIncus.RebuildInstanceFromImage",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/image_instances.ex",
+      "evidence": [
+        "test/library/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.RebuildStoragePoolVolume",
@@ -5761,17 +5881,22 @@
     },
     {
       "id": "client/method/ProtocolIncus.RequireAuthenticated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/discovery.ex",
+      "evidence": [
+        "test/library/discovery_helpers_test.exs",
+        "test/library/authenticated_header_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.SendEvent",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/events.ex",
+      "evidence": [
+        "test/library/event_send_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateCertificate",
@@ -6102,10 +6227,13 @@
     },
     {
       "id": "client/method/ProtocolOCI.GetConnectionInfo",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/discovery.ex",
+      "evidence": [
+        "test/library/discovery_helpers_test.exs",
+        "test/library/authenticated_header_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolOCI.GetHTTPClient",
@@ -6272,10 +6400,13 @@
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetConnectionInfo",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/discovery.ex",
+      "evidence": [
+        "test/library/discovery_helpers_test.exs",
+        "test/library/authenticated_header_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetHTTPClient",
@@ -6495,17 +6626,23 @@
     },
     {
       "id": "client/method/remoteOperation.CancelTarget",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/migration.ex",
+      "evidence": [
+        "test/library/migration_target_test.exs",
+        "test/library/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/remoteOperation.GetTarget",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/migration.ex",
+      "evidence": [
+        "test/library/migration_target_test.exs",
+        "test/library/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/remoteOperation.Wait",
@@ -6761,10 +6898,12 @@
     },
     {
       "id": "shared/api/const/Aborting",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/AsyncResponse",
@@ -6789,17 +6928,21 @@
     },
     {
       "id": "shared/api/const/Cancelled",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/Cancelling",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/CertificateTypeClient",
@@ -6831,10 +6974,12 @@
     },
     {
       "id": "shared/api/const/Error",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/ErrorResponse",
@@ -7839,24 +7984,30 @@
     },
     {
       "id": "shared/api/const/Failure",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/Freezing",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/Frozen",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/InstanceTypeAny",
@@ -7937,17 +8088,21 @@
     },
     {
       "id": "shared/api/const/OperationCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/Pending",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/ProjectDefaultName",
@@ -7958,17 +8113,21 @@
     },
     {
       "id": "shared/api/const/Ready",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/Running",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/SecretNameControl",
@@ -7993,31 +8152,39 @@
     },
     {
       "id": "shared/api/const/Started",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/Starting",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/Stopped",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/Stopping",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/StoragePoolStatusCreated",
@@ -8056,10 +8223,12 @@
     },
     {
       "id": "shared/api/const/Success",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/const/SyncResponse",
@@ -8070,17 +8239,21 @@
     },
     {
       "id": "shared/api/const/Thawed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     },
     {
       "id": "shared/api/function/GetParentAndSnapshotName",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model_url.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/function/NewURL",
@@ -8098,10 +8271,12 @@
     },
     {
       "id": "shared/api/function/StatusCodeFromString",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/function/StatusErrorCheck",
@@ -8126,17 +8301,21 @@
     },
     {
       "id": "shared/api/method/Certificate.URL",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model_url.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Certificate.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/CertificateAddToken.String",
@@ -8147,17 +8326,21 @@
     },
     {
       "id": "shared/api/method/ClusterGroup.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/ClusterMember.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/ClusterMemberJoinToken.String",
@@ -8203,45 +8386,57 @@
     },
     {
       "id": "shared/api/method/Image.URL",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model_url.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Image.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Instance.IsActive",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Instance.URL",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model_url.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Instance.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/InstanceSnapshot.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/MetadataConfiguration.GetKeys",
@@ -8252,24 +8447,30 @@
     },
     {
       "id": "shared/api/method/Network.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkACL.URL",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model_url.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkACL.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkACLRule.Normalise",
@@ -8287,24 +8488,30 @@
     },
     {
       "id": "shared/api/method/NetworkAddressSet.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkForward.Etag",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkForward.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkForwardPort.Normalise",
@@ -8329,24 +8536,30 @@
     },
     {
       "id": "shared/api/method/NetworkIntegration.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkLoadBalancer.Etag",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkLoadBalancer.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkLoadBalancerBackend.Normalise",
@@ -8371,31 +8584,39 @@
     },
     {
       "id": "shared/api/method/NetworkPeer.Etag",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkPeer.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkZone.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkZoneRecord.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Operation.ToCertificateAddToken",
@@ -8413,31 +8634,39 @@
     },
     {
       "id": "shared/api/method/Profile.URL",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model_url.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Profile.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Project.URL",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model_url.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Project.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Response.MetadataAsMap",
@@ -8476,10 +8705,12 @@
     },
     {
       "id": "shared/api/method/Server.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/ServerFiltered.MarshalYAML",
@@ -8490,17 +8721,21 @@
     },
     {
       "id": "shared/api/method/StatusCode.IsFinal",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/StatusCode.String",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/StatusError.Error",
@@ -8518,73 +8753,93 @@
     },
     {
       "id": "shared/api/method/StorageBucket.Etag",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/StorageBucket.URL",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model_url.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/StorageBucket.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/StorageBucketKey.Etag",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/StorageBucketKey.URL",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model_url.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/StorageBucketKey.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/StoragePool.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/StorageVolume.URL",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model_url.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/StorageVolume.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/StorageVolumeSnapshot.Writable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/URL.Fragment",
@@ -8642,7 +8897,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/AccessEntry",
@@ -8663,9 +8918,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/CertificateAddToken",
@@ -8679,9 +8935,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/CertificatesPost",
@@ -8690,7 +8947,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/Cluster",
@@ -8699,7 +8956,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterCertificatePut",
@@ -8708,16 +8965,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterGroup",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterGroupPost",
@@ -8726,16 +8984,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterGroupPut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterGroupsPost",
@@ -8744,16 +9003,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterMember",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterMemberConfigKey",
@@ -8776,16 +9036,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterMemberPut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterMemberState",
@@ -8794,7 +9055,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterMemberStatePost",
@@ -8803,7 +9064,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterMemberSysInfo",
@@ -8819,7 +9080,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterPut",
@@ -8828,7 +9089,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ConfigMap",
@@ -8846,10 +9107,12 @@
     },
     {
       "id": "shared/api/type/Event",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/event_send_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/EventLifecycle",
@@ -8884,9 +9147,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ImageAlias",
@@ -8902,7 +9166,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ImageAliasesEntryPost",
@@ -8911,7 +9175,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ImageAliasesEntryPut",
@@ -8920,7 +9184,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ImageAliasesPost",
@@ -8929,7 +9193,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ImageExportPost",
@@ -8938,7 +9202,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ImageMetadata",
@@ -8947,7 +9211,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ImageMetadataTemplate",
@@ -8961,9 +9225,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ImageSource",
@@ -8979,7 +9244,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ImagesPostSource",
@@ -9035,9 +9300,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceBackup",
@@ -9046,7 +9312,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceBackupPost",
@@ -9055,7 +9321,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceBackupsPost",
@@ -9064,7 +9330,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceConsoleControl",
@@ -9080,7 +9346,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceDebugRepairPost",
@@ -9103,7 +9369,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceFull",
@@ -9112,7 +9378,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstancePost",
@@ -9121,7 +9387,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstancePostTarget",
@@ -9135,9 +9401,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceRebuildPost",
@@ -9146,16 +9413,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceSnapshot",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceSnapshotPost",
@@ -9164,16 +9432,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceSnapshotPut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceSnapshotsPost",
@@ -9182,7 +9451,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceSource",
@@ -9198,7 +9467,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceStateCPU",
@@ -9256,7 +9525,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceType",
@@ -9272,7 +9541,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstancesPut",
@@ -9281,7 +9550,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/MetadataConfig",
@@ -9325,25 +9594,27 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/Network",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkACL",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkACLPost",
@@ -9352,16 +9623,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkACLPut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkACLRule",
@@ -9377,16 +9649,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkAddressSet",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkAddressSetPost",
@@ -9395,16 +9668,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkAddressSetPut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkAddressSetsPost",
@@ -9413,7 +9687,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkAllocations",
@@ -9422,16 +9696,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkForward",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkForwardPort",
@@ -9445,9 +9720,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkForwardsPost",
@@ -9456,16 +9732,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkIntegration",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkIntegrationPost",
@@ -9474,16 +9751,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkIntegrationPut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkIntegrationsPost",
@@ -9492,7 +9770,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkLease",
@@ -9501,16 +9779,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkLoadBalancer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkLoadBalancerBackend",
@@ -9531,9 +9810,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkLoadBalancerState",
@@ -9542,7 +9822,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkLoadBalancerStateBackendHealth",
@@ -9565,25 +9845,27 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkPeer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkPeerPut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkPeersPost",
@@ -9592,7 +9874,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkPost",
@@ -9601,16 +9883,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkPut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkState",
@@ -9619,7 +9902,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkStateAddress",
@@ -9668,27 +9951,30 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkZonePut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkZoneRecord",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkZoneRecordEntry",
@@ -9702,9 +9988,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkZoneRecordsPost",
@@ -9713,7 +10000,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkZonesPost",
@@ -9722,7 +10009,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworksPost",
@@ -9731,7 +10018,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/Operation",
@@ -9740,16 +10027,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/Profile",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ProfilePost",
@@ -9758,16 +10046,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ProfilePut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ProfilesPost",
@@ -9776,16 +10065,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/Project",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ProjectPost",
@@ -9794,16 +10084,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ProjectPut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ProjectState",
@@ -9812,7 +10103,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ProjectStateResource",
@@ -9828,7 +10119,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/Resources",
@@ -9837,7 +10128,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesCPU",
@@ -10049,7 +10340,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesStoragePoolInodes",
@@ -10137,17 +10428,21 @@
     },
     {
       "id": "shared/api/type/Server",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ServerEnvironment",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/discovery_helpers_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ServerFiltered",
@@ -10161,9 +10456,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ServerStorageDriverInfo",
@@ -10181,10 +10477,12 @@
     },
     {
       "id": "shared/api/type/StatusCode",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StatusError",
@@ -10198,9 +10496,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageBucketBackup",
@@ -10223,7 +10522,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageBucketFull",
@@ -10232,25 +10531,27 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageBucketKey",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageBucketKeyPut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageBucketKeysPost",
@@ -10259,16 +10560,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageBucketPut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageBucketsPost",
@@ -10277,25 +10579,27 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StoragePool",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StoragePoolPut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StoragePoolState",
@@ -10311,16 +10615,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolume",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumeBackup",
@@ -10329,7 +10634,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumeBackupPost",
@@ -10338,7 +10643,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumeBackupsPost",
@@ -10347,7 +10652,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumeBitmap",
@@ -10356,7 +10661,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumeBitmapsPost",
@@ -10365,7 +10670,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumeFull",
@@ -10374,7 +10679,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumePost",
@@ -10383,7 +10688,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumePostTarget",
@@ -10397,9 +10702,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumeRebuildPost",
@@ -10408,16 +10714,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumeSnapshot",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumeSnapshotPost",
@@ -10426,16 +10733,17 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumeSnapshotPut",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/model_helpers_reference_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumeSnapshotsPost",
@@ -10444,7 +10752,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumeSource",
@@ -10460,7 +10768,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumeStateUsage",
@@ -10476,7 +10784,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/URL",
@@ -10492,7 +10800,7 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/WarningPut",
@@ -10501,14 +10809,16 @@
       "evidence": [
         "test/library/resource_slice_test.exs"
       ],
-      "note": "Native schema used by differential method bodies/results; all-field and type-helper parity unverified."
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/var/StatusCodeNames",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status.ex",
+      "evidence": [
+        "test/library/model_helpers_reference_test.exs"
+      ],
+      "note": "All pinned status names/values and unknown-code behavior compared with unchanged native helpers."
     }
   ]
 }

@@ -130,7 +130,10 @@ defmodule Opsmaru.Incus.RawChannel do
              conn,
              "GET",
              path,
-             [{"connection", "Upgrade"}, {"upgrade", protocol}],
+             Transport.request_headers(connection, [
+               {"connection", "Upgrade"},
+               {"upgrade", protocol}
+             ]),
              nil
            ),
          {:ok, _conn, status, headers, initial} <-

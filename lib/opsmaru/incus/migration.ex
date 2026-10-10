@@ -14,6 +14,34 @@ defmodule Opsmaru.Incus.Migration do
   alias Opsmaru.Incus.{Error, Model, Operation, WebSocket}
   defstruct [:source, :target, :mode]
 
+  @doc "Read the accepted target handle; this performs no I/O or completion wait."
+  def target(%__MODULE__{target: %Operation{} = operation}), do: {:ok, operation}
+
+  def target(%__MODULE__{} = migration),
+    do: failure(migration, :target_unavailable, nil)
+
+  @doc "Explicit supported target cancellation; source identity/data remain available."
+  def cancel_target(%__MODULE__{} = migration) do
+    with {:ok, operation} <- target(migration),
+         {:ok, current} <- Operation.cancel(operation) do
+      {:ok, %{migration | target: current}}
+    else
+      {:error, error} -> failure(migration, error, nil)
+    end
+  end
+
+  @doc "Wait for authoritative target completion within its budget; source completion is separate."
+  def wait_target(%__MODULE__{} = migration, opts \\ []) do
+    with true <- Keyword.keyword?(opts) and Keyword.keys(opts) -- [:timeout, :poll_interval] == [],
+         {:ok, operation} <- target(migration),
+         {:ok, current} <- Operation.wait(operation, opts) do
+      {:ok, %{migration | target: current}}
+    else
+      {:error, error} -> failure(migration, error, nil)
+      _ -> failure(migration, :invalid_deadline, nil)
+    end
+  end
+
   def negotiate(source, target, source_request, target_request, opts \\ []) do
     mode = opts[:mode] || :pull
 

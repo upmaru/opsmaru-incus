@@ -95,6 +95,18 @@ defmodule Opsmaru.Incus.Files do
         opts
       )
 
+  def volume_delete(client, pool, type, name, path) do
+    if Enum.all?([pool, type, name, path], &(is_binary(&1) and byte_size(&1) <= 1024)) do
+      Incus.raw_query(
+        client,
+        "DELETE",
+        volume_path(pool, type, name) <> "/files?" <> URI.encode_query(path: path)
+      )
+    else
+      {:error, %Error{kind: :invalid_file_options}}
+    end
+  end
+
   defp create_path(client, path, source, opts) do
     type = opts[:type] || "file"
 
@@ -288,5 +300,6 @@ defmodule Opsmaru.Incus.Files do
   defp file_path(instance, path),
     do: "/1.0/instances/" <> escape(instance) <> "/files?" <> URI.encode_query(path: path)
 
-  defp escape(value), do: URI.encode(value, &URI.char_unreserved?/1)
+  defp escape(value),
+    do: URI.encode(value, fn char -> URI.char_unreserved?(char) or char in ~c"$&+:=@" end)
 end

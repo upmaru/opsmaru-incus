@@ -63,7 +63,13 @@ defmodule Opsmaru.Incus.WebSocket do
       scheme = if connection.transport == :unix, do: :ws, else: :wss
 
       result =
-        with {:ok, conn, request} <- Mint.WebSocket.upgrade(scheme, conn, path, []),
+        with {:ok, conn, request} <-
+               Mint.WebSocket.upgrade(
+                 scheme,
+                 conn,
+                 path,
+                 Transport.request_headers(connection, [])
+               ),
              {:ok, conn, status, headers, initial} <-
                Upgrade.receive_response(conn, request, deadline, connection.max_response_bytes),
              :ok <- accepted_upgrade(status, headers, initial),

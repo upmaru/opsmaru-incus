@@ -10,22 +10,25 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `Opsmaru.Context.new!/1` | Host-supplied owner, verified identity, local readiness and private state/capability references; no provisioning or token verification |
 | `Connection.unix!/2`, `https!/2` | Passive immutable connection values; explicit project/member and resource budgets |
 | `Incus.connect/2` | Explicit authorized discovery; native version and extensions, bound connection/context |
+| `Discovery.connection_info/1`, `clustered?/1`, `agent?/1`, `require_authenticated/2` | Authorized passive discovery helpers and immutable native authenticated requirement; advertised addresses remain metadata |
 | `Incus.project/2`, `member/2` | Immutable native project/target selection |
 | `Incus.has_extension?/2`, `require_extension/2` | Explicit discovered extension checks |
 | `Incus.call/4`, `methods/0` | Native method names, native string-key argument map, `body:` and `etag:`; missing names fail explicitly |
 | `Incus.raw_query/3`, `/4`, `/5` | Low-level native JSON envelope; no typed-parity claim |
 | `Model.decode/2`, `encode/1` | Pinned native field schemas, preserving null/unknown fields without atom creation |
+| `Model.writable/1`, `active?/1`, `etag_values/1`, `ModelURL.resource/2`, `parent_snapshot_name/1`, `Status.string/1`, `final?/1`, `from_string/1` | 23 writable projections, nine native resource URL helpers, five ETag input tuples and pinned status semantics; original model remains lossless |
 | `Images.import/4`, `download/4`, `copy/4` | Bounded unified/multipart binary handoff; pull/push and host-staged relay copies retain native operations |
+| `ImageInstances.create/5`, `rebuild/6` | Local images or one approved verified HTTPS source; native alias/fingerprint/private token preparation; accepted target handle without replay |
 | `Files.read/4`, `create/5`, `backup_import/3`, `backup_download/4` | Binary files, separate directory metadata, native UID/GID/octal mode and backup headers |
-| `Files.volume_read/6`, `volume_create/7`, volume/bucket backup helpers, `backup_stream/4` | Native volume/bucket byte handoff; further differential coverage remains required |
+| `Files.volume_read/6`, `volume_create/7`, `volume_delete/5`, volume/bucket backup helpers, `backup_stream/4` | Twelve native file/archive helpers have differential byte/header/query evidence; full option/platform/backend coverage remains separate |
 | `Streams.metrics/2`, `network_acl_log/3`, `instance_logfile/4`, `instance_console_log/3`, `instance_template_file/4`, `create_instance_template_file/4`, `instance_debug_memory/4` | Native binary/text handoff to an acknowledged host sink or bounded source; no collector or implicit file writes |
 | `Incus.sftp/2`, `nbd/3`, `volume_sftp/4`, `volume_nbd/5` | Native raw 101 byte channels; consumers supply their SFTP/NBD implementation |
 | `RawChannel.recv/2`, `send_data/2`, `shutdown_write/1`, `close/1` | Bounded binary duplex and native half-close |
-| `Operation.from_response/2`, `poll/1`, `wait/2`, `cancel/1`, `websocket/2` | Bound native handles; authoritative completion and supported cancellation |
-| `Events.subscribe/2`, `next/2`, `close/1` | Native events through an owner-monitored bounded WebSocket queue |
+| `Operation.raw/4`, `from_response/2`, `poll/1`, `wait/2`, `cancel/1`, `websocket/2` | Bound native handles and raw operation ETags; authoritative completion and supported cancellation |
+| `Events.subscribe/2`, `next/2`, `send/2`, `close/1` | Native events through an owner-monitored bounded WebSocket queue; sending acknowledges the local write, not backend processing |
 | `Session.exec/3`, `console/3`, `input/2`, `output/3`, `control/2`, `resize/3`, `signal/2`, `exit_status/1`, `close/1` | Native operation channels and control messages; local closure does not cancel Incus |
-| `Copy.instance/4`, `snapshot/5`, `volume/6` | Native writable configuration, local/project copies and explicit migration preparation; accepted handles |
-| `Migration.negotiate/5`, `relay/2` | Explicit native request tuples and approved origin, retaining both accepted handles; bounded binary/text relay and native upgrade errors; full helper parity remains incomplete |
+| `Copy.instance/4`, `snapshot/5`, `volume/6`, `move_volume/5` | Native writable configuration and explicit migration preparation; volume moves use one backend with destination `name`/`project`; accepted handles |
+| `Migration.negotiate/5`, `relay/2`, `target/1`, `wait_target/2`, `cancel_target/1` | Explicit requests/origin and both accepted handles; bounded relay; explicit target completion/cancellation with source identity retained |
 
 Copy options follow the pinned native argument types: instances accept `live`,
 `instance_only`, `refresh`, `refresh_exclude_older` and `allow_inconsistent`;
@@ -37,8 +40,9 @@ Example conditional mutation and reconciliation:
 
 ```elixir
 {:ok, profile} = Opsmaru.Incus.call(client, "GetProfile", %{"name" => "default"})
+{:ok, writable} = Opsmaru.Incus.Model.writable(profile.metadata)
 {:ok, updated} = Opsmaru.Incus.call(client, "UpdateProfile", %{"name" => "default"},
-  body: profile.metadata, etag: profile.etag)
+  body: writable, etag: profile.etag)
 
 {:ok, accepted} = Opsmaru.Incus.call(client, "CreateInstance", %{}, body: native_instances_post)
 {:ok, operation} = Opsmaru.Incus.Operation.from_response(client, accepted)
@@ -72,6 +76,17 @@ No mutable global remote, trust generation, backend install or address fallback
 exists. Migration pull/push requires the exact explicit HTTPS origin; advertised
 addresses are not followed. Failures preserve accepted handles and backend data.
 
+Connections optionally accept `require_authenticated: true`, the native
+`X-Incus-authenticated: true` requirement on HTTP, transfers and upgrades.
+This asks Incus to require backend authentication; it does not verify the
+host's caller identity. The default is false and the flag remains local to
+the explicit connection. Host readiness and authorization still precede I/O.
+
+Image-based create/rebuild requires `approved_origin:` for a remote source,
+before generating a private-image token. A subsequent target failure retains
+the token operation response for reconciliation. Only local images and native
+Incus HTTPS sources are covered; OCI/SimpleStreams image sources remain missing.
+
 Mint 1.11.0/hpax 1.1.0 and MintWebSocket 1.0.5 are locked. HTTP requests have
 connection/send/receive deadlines and header/body budgets. Transfers use bounded
 binary chunk enumerables and acknowledged sinks, covered by a total deadline.
@@ -82,25 +97,27 @@ no pending queue or replay. A local success is never hardware acceptance.
 
 ## Coverage limitations
 
-The checked manifest currently has 268 differential JSON methods, 754 partial
-reference mappings and 526 missing declarations out of 1,280. Interface entries
+The checked manifest currently has 268 differential JSON methods, 865 partial
+reference mappings and 415 missing declarations out of 1,280. Interface entries
 and schemas account for some mappings; these counts are not distinct client
 operations. Schema-derived field validation and positive fixture results do
 not establish full Incus semantic behavior. `scripts/update-incus-coverage.py`
 regenerates mappings and checks evidence paths, never relabeling partial as full.
 
-Local instance/snapshot/volume copy requests are compared with official helpers;
-HTTPS pull/push descriptors, bidirectional binary/text relay across control/data
+Local instance/snapshot/volume copy and move requests, and remote HTTPS pull/push
+copy preparation, are compared with official helpers. Bidirectional binary/text relay across control/data
 channels, EOF, silent deadlines and native upgrade rejections are independently
 verified. Copy option preflight includes the pinned target-side check for
 `instance_allow_inconsistent_copy`; its misleading upstream error text says
-source, but the actual `CopyInstance` receiver checks the target.
+source, but the actual `CopyInstance` receiver checks the target. Dependent
+instance migration devices use the native capitalized `Devices` key. Internal
+volume copy source location falls back to the discovered server name; local
+snapshot copies omit the remote-only parent instance type.
 Remaining parity includes complete cross-cluster/copy option matrices, migration
 negotiation and complete relay-channel failure/cleanup evidence,
 full SFTP protocol helpers, dynamic console/recorded-output helpers, all-field
-model/helper behavior, streaming backup variants and every currently missing
-inventory entry. Newly added volume/bucket helpers remain unaccepted where
-independent differential evidence is absent. Do not treat `raw_query` success
+remaining model/helper behavior, complete streaming backup option/platform coverage
+and every currently missing inventory entry. Do not treat `raw_query` success
 as typed support. Linux CI, installed service and real-backend results are
 recorded separately in `foundation-validation.md`.
 
@@ -108,6 +125,16 @@ The pinned `shared/ws/proxy.go` closes both peers when either forwarder finishes
 it does not reconnect automatically. Opsmaru follows this local channel lifetime
 and keeps native operation identities available for host reconciliation. Neither
 stream EOF nor successful forwarding proves backend copy/migration completion.
+
+Direct backup POST comparisons use no selected member: the pinned Go helpers
+append project but omit target. Opsmaru retains the explicit member parameter
+under the approved connection contract, checked independently by a wire fixture.
+Actual backend forwarding remains a real-Incus acceptance item.
+
+`Model.etag_values/1` returns the native inputs, including bucket key secrets;
+these are privileged raw values, not a replacement for the server ETag header.
+Writable projections preserve present nulls/absence; native Go zero-value JSON
+materialization and remaining custom JSON/YAML helpers are still partial.
 
 ## Known pinned oracle limitations
 

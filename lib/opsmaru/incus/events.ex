@@ -42,5 +42,16 @@ defmodule Opsmaru.Incus.Events do
   end
 
   def close(channel), do: WebSocket.close(channel)
+
+  @doc "Write one native event on an explicit subscription; local send is not backend acknowledgement."
+  def send(channel, event) do
+    with {:ok, %Model{data: data}} when is_map(data) <- Model.decode("Event", Model.encode(event)),
+         {:ok, bytes} <- Jason.encode(data) do
+      WebSocket.send_frame(channel, {:text, bytes})
+    else
+      _ -> {:error, %Error{kind: :invalid_event}}
+    end
+  end
+
   defp all_projects(_, _), do: :ok
 end

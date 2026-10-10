@@ -7,6 +7,44 @@ defmodule Opsmaru.Incus.Copy do
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Error, Migration, Model, Operation}
 
+  @doc "Move/rename a volume within one explicit backend; project is the destination project."
+  def move_volume(client, pool, source_pool, volume, opts \\ []) do
+    with :ok <- Context.authorize(client.context, client.connection),
+         true <- Keyword.keyword?(opts) and Keyword.keys(opts) -- [:name, :project] == [],
+         true <- valid_name?(pool) and valid_name?(source_pool) and valid_name?(opts[:name]),
+         true <- is_nil(opts[:project]) or valid_name?(opts[:project]),
+         {:ok, volume} <- model("StorageVolume", volume),
+         true <- valid_name?(volume.data["type"]),
+         :ok <- Incus.require_extension(client, "storage_api_local_volume_handling"),
+         :ok <- required(client, not is_nil(opts[:project]), "storage_volume_project_move"),
+         {:ok, body} <-
+           Model.decode(
+             "StorageVolumePost",
+             %{
+               "name" => opts[:name],
+               "pool" => pool,
+               "migration" => false,
+               "target" => nil,
+               "volume_only" => false
+             }
+             |> then(fn body ->
+               if opts[:project], do: Map.put(body, "project", opts[:project]), else: body
+             end)
+           ),
+         path =
+           "/1.0/storage-pools/" <>
+             escape(source_pool) <>
+             "/volumes/" <>
+             escape(volume.data["type"]) <> "/" <> escape(volume.data["name"]),
+         {:ok, response} <- Incus.raw_query(client, "POST", path, body: body.data),
+         {:ok, operation} <- Operation.from_response(client, response) do
+      {:ok, %Migration{mode: :local, target: operation}}
+    else
+      {:error, error} -> error(error)
+      _ -> error(:invalid_move_options)
+    end
+  end
+
   def instance(target, source, instance, opts \\ []) do
     with :ok <-
            authorize(target, source, opts, [
@@ -57,7 +95,7 @@ defmodule Opsmaru.Incus.Copy do
 
       request =
         if Incus.has_extension?(source, "dependent"),
-          do: Map.put(request, "devices", data["devices"]),
+          do: Map.put(request, "Devices", data["devices"]),
           else: request
 
       dispatch(
@@ -111,7 +149,7 @@ defmodule Opsmaru.Incus.Copy do
         {"CreateInstance", %{}, body},
         parent_response.metadata.data["location"],
         parent <> "/" <> name,
-        :instance,
+        :snapshot,
         opts
       )
     else
@@ -200,7 +238,7 @@ defmodule Opsmaru.Incus.Copy do
       location == target.connection.member or
         (kind == :volume and location == "none" and is_nil(target.connection.member))
 
-    if local and (internal or colocated or (kind == :instance and not clustered)) do
+    if local and (internal or colocated or (kind != :volume and not clustered)) do
       different_project =
         (source.connection.project || "default") != (target.connection.project || "default")
 
@@ -211,7 +249,7 @@ defmodule Opsmaru.Incus.Copy do
                if(kind == :volume, do: "storage_api_project", else: "container_copy_project")
              ) do
         fields =
-          if kind == :instance,
+          if kind != :volume,
             do: %{"type" => "copy", "source" => name},
             else: %{"type" => "copy"}
 
@@ -222,10 +260,17 @@ defmodule Opsmaru.Incus.Copy do
 
         fields =
           if kind == :volume and internal,
-            do: Map.put(fields, "location", source.connection.member || ""),
+            do:
+              Map.put(
+                fields,
+                "location",
+                source.connection.member || (source.server.environment || %{})["server_name"] ||
+                  ""
+              ),
             else: fields
 
         body = Map.put(body, "source", Map.merge(body["source"], fields))
+        body = if kind == :snapshot, do: Map.delete(body, "type"), else: body
 
         with {:ok, response} <- Incus.call(target, method, args, body: body),
              {:ok, operation} <- Operation.from_response(target, response),
@@ -292,7 +337,7 @@ defmodule Opsmaru.Incus.Copy do
          do: :ok
   end
 
-  defp source_fields(:instance, fields) do
+  defp source_fields(kind, fields) when kind in [:instance, :snapshot] do
     fields
     |> Map.put_new("certificate", "")
     |> Map.put_new("allow_inconsistent", false)
@@ -318,4 +363,11 @@ defmodule Opsmaru.Incus.Copy do
   defp required(client, true, extension), do: Incus.require_extension(client, extension)
   defp error(%Error{} = error), do: {:error, error}
   defp error(kind), do: {:error, %Error{kind: kind}}
+
+  defp valid_name?(value),
+    do:
+      is_binary(value) and byte_size(value) in 1..1024 and
+        not String.contains?(value, ["\r", "\n", <<0>>])
+
+  defp escape(value), do: URI.encode(value, &URI.char_unreserved?/1)
 end

@@ -30,6 +30,43 @@ defmodule Opsmaru.Incus.Model do
   def encode(data), do: data
   def types, do: Map.keys(@schemas) |> Enum.sort()
 
+  @writable_types ~w(Certificate ClusterMember ClusterGroup Image Instance InstanceSnapshot Network NetworkACL NetworkAddressSet NetworkForward NetworkIntegration NetworkLoadBalancer NetworkPeer NetworkZone NetworkZoneRecord Profile Project Server StoragePool StorageBucket StorageBucketKey StorageVolume StorageVolumeSnapshot)
+  @doc "Select the pinned native writable DTO fields, retaining present nulls and omitting read-only/unknown fields."
+  def writable(%__MODULE__{type: type, data: data})
+      when type in @writable_types and is_map(data) do
+    target = type <> "Put"
+    fields = @schemas[target]["fields"] |> Enum.map(& &1["name"])
+    decode(target, Map.take(data, fields))
+  end
+
+  def writable(_), do: {:error, :unsupported_model_helper}
+
+  def writable_types, do: @writable_types
+
+  @doc "Native Instance.IsActive semantics, including unknown status codes."
+  def active?(%__MODULE__{type: "Instance", data: data}) when is_map(data),
+    do: {:ok, (data["status_code"] || 0) not in [102, 112]}
+
+  def active?(_), do: {:error, :unsupported_model_helper}
+
+  @etag_fields %{
+    "NetworkForward" => ~w(listen_address description config ports),
+    "NetworkLoadBalancer" => ~w(listen_address description config backends ports),
+    "NetworkPeer" => ~w(name description config),
+    "StorageBucket" => ~w(name description config),
+    "StorageBucketKey" => ~w(name description role access-key secret-key)
+  }
+  @doc "Native Etag input values; these privileged values are not the server's ETag header."
+  def etag_values(%__MODULE__{type: type, data: data})
+      when is_map_key(@etag_fields, type) and is_map(data),
+      do:
+        {:ok,
+         Enum.map(@etag_fields[type], fn field ->
+           if field in ~w(config ports backends), do: data[field], else: data[field] || ""
+         end)}
+
+  def etag_values(_), do: {:error, :unsupported_model_helper}
+
   defp valid_model?(_, nil), do: true
 
   defp valid_model?(%{"kind" => "struct", "fields" => fields}, data) when is_map(data),
