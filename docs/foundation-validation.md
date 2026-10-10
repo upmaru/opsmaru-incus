@@ -13,7 +13,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 
 | Evidence | Result | Limits |
 | --- | --- | --- |
-| Database-free `mise run check:library` | 342 tests passed with copy and migration regression fixtures | macOS local fixtures; full parity incomplete |
+| Database-free `mise run check:library` | 343 tests passed with copy and migration regression fixtures | macOS local fixtures; full parity incomplete |
 | Archive variants/TLS/migration focused checks | 5 tests passed | Native fake-backend archive bytes, HTTPS upgrades and failure preservation |
 | Actual embedded startup/restart with PHX_SERVER and invalid PORT | Empty supervision, no new ports/state/Endpoint/Repo | Installed Macus not exercised |
 | Official typed resource calls | 268 methods compared | Request/result/error/extension slices, not all-field semantic parity |
@@ -29,8 +29,8 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | Go inventory parser regressions | Passed | Verifier-only tooling |
 | `mise run check` via `python3 scripts/check-isolated.py` | Format, warning-free compile, assets, 5 web tests, embedding and strict specs passed | New disposable UTF-8 PostgreSQL cluster, stopped/deleted afterward |
 | Strict OpenSpec validation | All three changes passed | Artifact consistency, not runtime acceptance |
-| macOS/Linux CI | 322 core tests and clean immutable consumer passed on both platforms at 55a4c8c1d2282ea256f1805abf01cde93252c943 | Protocol fixtures only; no real Incus/Macus |
-| Independent immutable consumer | 1 clean consumer test passed at published 55a4c8c1d2282ea256f1805abf01cde93252c943 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
+| macOS/Linux CI | 343 core tests and clean immutable consumer passed on both platforms at 8449648eab8d4c1dd1f5b793ed060185b7575938 | Protocol fixtures only; no real Incus/Macus |
+| Independent immutable consumer | 1 clean consumer test passed at published 8449648eab8d4c1dd1f5b793ed060185b7575938 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
 The coverage manifest records 268 differential JSON methods, 754 partial
 reference mappings and 526 missing declarations. Missing entries prevent a
@@ -45,7 +45,7 @@ Phoenix 1.8.15, Mint 1.11.0, plug_cowboy 2.9.0, Cowboy 2.19.0 and TamaMCP 0.1.1.
 `scripts/check-consumer.py` builds the exact requested Git revision in a new
 temporary directory, with no source path dependency or sibling checkout.
 
-Final platform run: https://github.com/upmaru/opsmaru/actions/runs/38064762849.
+Final platform run: https://github.com/upmaru/opsmaru/actions/runs/38068178025.
 OpenSpec progress is 20/22: task 3.9 remains open for remaining reference parity;
 task 4.3 remains open for explicit isolated real-backend acceptance.
 
@@ -54,3 +54,13 @@ coverage; explicit isolated live Incus Unix/HTTPS mutation/operation/stream
 acceptance; consumer-owned installed Macus/VZ/hardware acceptance. Real-backend
 and hardware acceptance remain unchecked without explicit opt-in. No merge,
 release tag, deployment or OpenSpec archive is performed by these checks.
+
+The clean consumer reports the existing cowlib 2.21.0 advisory
+[EEF-CVE-2026-43966](https://osv.dev/vulnerability/EEF-CVE-2026-43966).
+Hex confirms 2.21.0 is the latest release at this check. The pinned Cowboy
+2.19.0 source retains the default `invalid_response_headers: error_terminate`
+guard in HTTP/1 and HTTP/2, matching the
+[CNA documented mitigation](https://cna.erlef.org/cves/CVE-2026-43966.html).
+The portable client uses Mint and does not invoke Cowlib structured-field
+builders. This records the advisory and mitigation; it is not blanket security
+or standalone-service acceptance, and host applications still own their headers.
