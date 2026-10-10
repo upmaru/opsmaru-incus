@@ -24,12 +24,14 @@ for name in ['GetEvents','GetEventsByType','GetEventsAllProjects','GetEventsAllP
  helpers[name]=('lib/opsmaru/incus/web_socket.ex',['test/library/web_socket_test.exs','test/library/tls_stream_test.exs'])
 for name in ['operation.Wait','operation.Cancel','operation.Get']:
  helpers[name]=('lib/opsmaru/incus/operation.ex',['test/library/operation_test.exs'])
+for name in ['CopyInstance','CopyInstanceSnapshot','CopyStoragePoolVolume']:
+ helpers[name]=('lib/opsmaru/incus/copy.ex',['test/library/copy_test.exs','test/library/migration_test.exs'])
 entries=[]
 for entry in inv['entries']:
  name=entry['name'].split('.')[-1]
  row=dict(id=entry['id'], status='missing', elixir=None, evidence=[], note='No verified implementation/evidence claim.')
  if entry['kind'] in ['method','interface_method'] and name in methods:
-  row.update(status='partial',elixir='lib/opsmaru/incus/api.ex',evidence=['test/library/resource_slice_test.exs'],note='Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate.')
+  row.update(status='partial',elixir='lib/opsmaru/incus/api.ex',evidence=['test/library/resource_slice_test.exs'] + (['test/library/session_test.exs'] if name in ['ExecInstance','ConsoleInstance'] else []) + (['test/library/migration_test.exs'] if name.startswith('Migrate') else []),note='Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate.')
  elif entry['kind'] in ['method','interface_method'] and (entry['name'] in helpers or name in helpers):
   impl,evidence=helpers.get(entry['name'],helpers.get(name));row.update(status='partial',elixir=impl,evidence=evidence,note='Bounded helper slice only; consult public coverage limitations before use.')
  elif entry['package']=='shared/api' and entry['kind']=='type' and name in models:

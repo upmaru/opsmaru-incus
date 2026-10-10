@@ -233,7 +233,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/session_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -255,24 +256,33 @@
     },
     {
       "id": "client/interface_method/InstanceServer.CopyInstance",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/copy.ex",
+      "evidence": [
+        "test/library/copy_test.exs",
+        "test/library/migration_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.CopyInstanceSnapshot",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/copy.ex",
+      "evidence": [
+        "test/library/copy_test.exs",
+        "test/library/migration_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.CopyStoragePoolVolume",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/copy.ex",
+      "evidence": [
+        "test/library/copy_test.exs",
+        "test/library/migration_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateCertificate",
@@ -961,7 +971,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/session_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -2407,7 +2418,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/migration_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -2416,7 +2428,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/migration_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -2425,7 +2438,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/migration_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -3111,7 +3125,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/session_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -3133,24 +3148,33 @@
     },
     {
       "id": "client/method/ProtocolIncus.CopyInstance",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/copy.ex",
+      "evidence": [
+        "test/library/copy_test.exs",
+        "test/library/migration_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.CopyInstanceSnapshot",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/copy.ex",
+      "evidence": [
+        "test/library/copy_test.exs",
+        "test/library/migration_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.CopyStoragePoolVolume",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/copy.ex",
+      "evidence": [
+        "test/library/copy_test.exs",
+        "test/library/migration_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.CreateCertificate",
@@ -3860,7 +3884,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/session_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -5476,7 +5501,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/migration_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -5485,7 +5511,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/migration_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -5494,7 +5521,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/migration_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },

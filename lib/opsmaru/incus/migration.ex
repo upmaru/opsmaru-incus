@@ -116,13 +116,18 @@ defmodule Opsmaru.Incus.Migration do
   defp descriptor(client, operation, secrets, origin) do
     %{
       "operation" => origin <> operation.url,
-      "websockets" => secrets,
-      "certificate" => client.server.environment["certificate"] || ""
+      "secrets" => secrets,
+      "certificate" => (client.server.environment || %{})["certificate"] || ""
     }
   end
 
   defp secrets(operation) do
-    data = Operation.data(operation)["metadata"] || %{}
+    metadata = Operation.data(operation)["metadata"] || %{}
+
+    data =
+      if is_map(metadata),
+        do: Map.filter(metadata, fn {_, value} -> is_binary(value) end),
+        else: %{}
 
     if is_map(data) and map_size(data) in 1..16 and is_binary(data["control"]) and
          Enum.all?(data, fn {name, value} ->
@@ -134,12 +139,7 @@ defmodule Opsmaru.Incus.Migration do
   defp failure(state, error, operation) do
     error = if match?(%Error{}, error), do: error, else: %Error{kind: error}
 
-    {:error,
-     %Error{
-       kind: error.kind,
-       operation: error.operation,
-       response: %{accepted: state, error: error, operation: operation}
-     }}
+    {:error, %{error | response: %{accepted: state, error: error, operation: operation}}}
   end
 
   @doc "Forward accepted relay channels until EOF or a bounded deadline; does not await backend completion."
@@ -152,12 +152,14 @@ defmodule Opsmaru.Incus.Migration do
          {:ok, source_secrets} <- secrets(source),
          {:ok, target_secrets} <- secrets(target),
          true <- Enum.sort(Map.keys(source_secrets)) == Enum.sort(Map.keys(target_secrets)) do
+      deadline = System.monotonic_time(:millisecond) + timeout
+
       opened =
         Enum.reduce_while(Enum.sort(Map.keys(source_secrets)), {:ok, []}, fn name,
                                                                              {:ok, opened} ->
-          case Operation.websocket(source, source_secrets[name]) do
+          case open_channel(source, source_secrets[name], deadline) do
             {:ok, left} ->
-              case Operation.websocket(target, target_secrets[name]) do
+              case open_channel(target, target_secrets[name], deadline) do
                 {:ok, right} ->
                   {:cont, {:ok, [{left, right} | opened]}}
 
@@ -173,7 +175,7 @@ defmodule Opsmaru.Incus.Migration do
 
       case opened do
         {:ok, pairs} ->
-          forward(migration, pairs, timeout)
+          forward(migration, pairs, deadline)
 
         {:error, error, pairs} ->
           close_pairs(pairs)
@@ -185,14 +187,33 @@ defmodule Opsmaru.Incus.Migration do
     end
   end
 
-  defp forward(migration, pairs, timeout) do
-    deadline = System.monotonic_time(:millisecond) + timeout
+  defp open_channel(operation, secret, deadline) do
+    remaining = deadline - System.monotonic_time(:millisecond)
 
+    if remaining <= 0 do
+      {:error, %Error{kind: :deadline}}
+    else
+      connection = operation.client.connection
+
+      connection = %{
+        connection
+        | timeout: min(connection.timeout, remaining),
+          stream_timeout: min(connection.stream_timeout, remaining)
+      }
+
+      Operation.websocket(
+        %{operation | client: %{operation.client | connection: connection}},
+        secret
+      )
+    end
+  end
+
+  defp forward(migration, pairs, deadline) do
     tasks =
       for {left, right} <- pairs, do: Task.async(fn -> forward_pair(left, right, deadline) end)
 
     try do
-      results = Task.yield_many(tasks, timeout)
+      results = Task.yield_many(tasks, max(0, deadline - System.monotonic_time(:millisecond)))
 
       errors =
         Enum.flat_map(results, fn {task, reply} ->

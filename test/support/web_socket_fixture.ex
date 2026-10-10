@@ -120,7 +120,14 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
               bytes
             ])
 
-          echo(socket)
+          if opts[:close_after] do
+            spawn(fn ->
+              Process.sleep(opts[:close_after])
+              :gen_tcp.send(socket, frame(8, <<1000::16>>))
+            end)
+          end
+
+          echo(socket, opts)
         end
       end
     rescue
@@ -149,7 +156,7 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
   def frame(opcode, bytes) when byte_size(bytes) <= 65_535,
     do: <<1::1, 0::3, opcode::4, 0::1, 126::7, byte_size(bytes)::16, bytes::binary>>
 
-  defp echo(socket) do
+  defp echo(socket, opts) do
     case :gen_tcp.recv(socket, 2, 5_000) do
       {:ok, <<_fin::1, _::3, opcode::4, 1::1, length::7>>} when length <= 125 ->
         {:ok, <<mask::binary-size(4), payload::binary-size(length)>>} =
@@ -162,12 +169,13 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
           |> Enum.map(fn {byte, i} -> Bitwise.bxor(byte, :binary.at(mask, rem(i, 4))) end)
           |> :binary.list_to_bin()
 
-        if opcode != 8,
-          do:
-            (
-              :gen_tcp.send(socket, frame(opcode, data))
-              echo(socket)
-            )
+        if opcode != 8 do
+          if opts[:frame_handler],
+            do: opts[:frame_handler].(opcode, data),
+            else: :gen_tcp.send(socket, frame(opcode, data))
+
+          echo(socket, opts)
+        end
 
       _ ->
         :ok

@@ -12,7 +12,7 @@ defmodule Opsmaru.Incus.API do
          :ok <- arguments(method, args, opts),
          {:ok, body} <- body(method, opts),
          :ok <- guards(client, method["guards"], body),
-         {:ok, path} <- path(method, args, body),
+         {:ok, path, body} <- native_request(client, method, args, body),
          {:ok, response} <-
            Opsmaru.Incus.raw_query(client, method["verb"], path, Keyword.merge(opts, body: body)) do
       case decode(method, response, path) do
@@ -152,6 +152,30 @@ defmodule Opsmaru.Incus.API do
   rescue
     _ -> {:error, :invalid_arguments}
   end
+
+  defp native_request(client, %{"name" => "MigrateStoragePoolVolume"} = method, args, body) do
+    case String.split(body["name"] || "", "/") do
+      [parent, snapshot] when parent != "" and snapshot != "" ->
+        with :ok <- extension(client, "storage_api_remote_volume_snapshot_copy") do
+          path =
+            "/1.0/storage-pools/" <>
+              escape(args["pool"]) <>
+              "/volumes/custom/" <> escape(parent) <> "/snapshots/" <> escape(snapshot)
+
+          {:ok, path,
+           %{"name" => snapshot, "migration" => body["migration"], "target" => body["target"]}}
+        end
+
+      [_] ->
+        with {:ok, path} <- path(method, args, body), do: {:ok, path, body}
+
+      _ ->
+        {:error, :invalid_body}
+    end
+  end
+
+  defp native_request(_, method, args, body),
+    do: with({:ok, path} <- path(method, args, body), do: {:ok, path, body})
 
   defp escape(value) when is_binary(value) and byte_size(value) in 0..1024,
     do: URI.encode(value, &URI.char_unreserved?/1)

@@ -208,6 +208,29 @@ type fixtureReader struct{ io.Reader }
 
 func imageTransfer(client incus.InstanceServer, input Input, root string) {
 	result := map[string]any{}
+	if input.Transfer == "copy_instance_local" || input.Transfer == "copy_snapshot_local" || input.Transfer == "copy_volume_local" {
+		body, _ := json.Marshal(input.Body)
+		var operation incus.RemoteOperation
+		var err error
+		switch input.Transfer {
+		case "copy_instance_local":
+			var instance api.Instance
+			if err = json.Unmarshal(body, &instance); err != nil { panic(err) }
+			operation, err = client.CopyInstance(client, instance, &incus.InstanceCopyArgs{Name: "copy"})
+		case "copy_snapshot_local":
+			var snapshot api.InstanceSnapshot
+			if err = json.Unmarshal(body, &snapshot); err != nil { panic(err) }
+			operation, err = client.CopyInstanceSnapshot(client, "fixture", snapshot, &incus.InstanceSnapshotCopyArgs{Name: "copy"})
+		case "copy_volume_local":
+			var volume api.StorageVolume
+			if err = json.Unmarshal(body, &volume); err != nil { panic(err) }
+			operation, err = client.CopyStoragePoolVolume("target-pool", client, "source-pool", volume, &incus.StoragePoolVolumeCopyArgs{Name: "copy"})
+		}
+		if err == nil { err = operation.Wait() }
+		if err != nil { result["error"] = err.Error() }
+		_ = json.NewEncoder(os.Stdout).Encode(result)
+		return
+	}
 	if input.Transfer == "file_read" {
 		reader, response, err := client.GetInstanceFile("fixture", "/native")
 		if err != nil { panic(err) }

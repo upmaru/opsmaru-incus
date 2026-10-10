@@ -4,7 +4,7 @@ This is fixture/library evidence for `add-embedded-incus-foundation`, not full
 client, installed-service or real-backend acceptance. The approved scaffold
 was extended on `feature/phoenix-bootstrap-and-remote-access`; no phx.new,
 Macus source modification, VM startup, backend install or workload mutation
-was used. Native copy/migration convenience parity remains incomplete.
+was used. Full copy/migration option and reset/reconnection parity remains incomplete.
 
 Toolchain: Elixir 1.19.5/OTP 27.3.4.16, Node 26.10.0/OpenSpec 1.14.0,
 Go 1.25.14 (verification only), PostgreSQL 16.9 (disposable web checks only).
@@ -13,7 +13,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 
 | Evidence | Result | Limits |
 | --- | --- | --- |
-| Database-free `mise run check:library` | 319 tests passed with final archive variants | macOS local fixtures; full parity incomplete |
+| Database-free `mise run check:library` | 322 tests passed with copy and migration regression fixtures | macOS local fixtures; full parity incomplete |
 | Archive variants/TLS/migration focused checks | 5 tests passed | Native fake-backend archive bytes, HTTPS upgrades and failure preservation |
 | Actual embedded startup/restart with PHX_SERVER and invalid PORT | Empty supervision, no new ports/state/Endpoint/Repo | Installed Macus not exercised |
 | Official typed resource calls | 268 methods compared | Request/result/error/extension slices, not all-field semantic parity |
@@ -22,7 +22,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | Raw SFTP/NBD | Coalesced bytes, duplex, half-close, lifetime and cleanup passed | Raw byte connection, not a complete SFTP/NBD protocol implementation |
 | WebSocket/events/exec/console | Binary/control/exit/overflow/ownership fixtures passed | Dynamic console, recorded output and complete migration relay parity remain open |
 | Operation polling/cancellation | Deadlines, native bindings, completion race and at-most-once DELETE passed | No live-backend cancellation acceptance |
-| Migration negotiation | Accepted identities and uncertain target failure retained; unapproved origins rejected | Copy convenience and reset/relay acceptance incomplete |
+| Migration negotiation | Native copy requests compared; HTTPS secrets/accepted identities and bounded relay EOF verified | Complete cross-cluster/options/reset acceptance remains incomplete |
 | Inventory and schemas regenerated | 1,280 entries/86 source hashes; byte-for-byte match | Inventory/schema presence is not coverage |
 | Go inventory parser regressions | Passed | Verifier-only tooling |
 | `mise run check` via `python3 scripts/check-isolated.py` | Format, warning-free compile, assets, 5 web tests, embedding and strict specs passed | New disposable UTF-8 PostgreSQL cluster, stopped/deleted afterward |
@@ -30,8 +30,8 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | macOS/Linux CI | Workflow added; results pending publication | No portability claim until actual jobs pass |
 | Independent immutable consumer | 1 clean consumer test passed at published 4bf6d27a3617160e06e62550f44b447a3208818a | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
-The coverage manifest records 268 differential JSON methods, 734 partial
-reference mappings and 546 missing declarations. Missing entries prevent a
+The coverage manifest records 268 differential JSON methods, 740 partial
+reference mappings and 540 missing declarations. Missing entries prevent a
 complete-port claim. See `incus-client.md` for the exact API and limitations.
 The v7.0.1 rawConn prefetch defect is negative oracle evidence; Opsmaru's
 required preservation behavior is independently checked without patching the

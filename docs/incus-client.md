@@ -23,7 +23,8 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `Operation.from_response/2`, `poll/1`, `wait/2`, `cancel/1`, `websocket/2` | Bound native handles; authoritative completion and supported cancellation |
 | `Events.subscribe/2`, `next/2`, `close/1` | Native events through an owner-monitored bounded WebSocket queue |
 | `Session.exec/3`, `console/3`, `input/2`, `output/3`, `control/2`, `resize/3`, `signal/2`, `exit_status/1`, `close/1` | Native operation channels and control messages; local closure does not cancel Incus |
-| `Migration.negotiate/5`, `relay/2` | Explicit native request tuples and approved origin, retaining both accepted handles; relay/reset/copy convenience parity remains incomplete |
+| `Copy.instance/4`, `snapshot/5`, `volume/6` | Native writable configuration, local/project copies and explicit migration preparation; accepted handles |
+| `Migration.negotiate/5`, `relay/2` | Explicit native request tuples and approved origin, retaining both accepted handles; full reset/reconnection and helper parity remains incomplete |
 
 Example conditional mutation and reconciliation:
 
@@ -74,15 +75,17 @@ no pending queue or replay. A local success is never hardware acceptance.
 
 ## Coverage limitations
 
-The checked manifest currently has 268 differential JSON methods, 734 partial
-reference mappings and 546 missing declarations out of 1,280. Interface entries
+The checked manifest currently has 268 differential JSON methods, 740 partial
+reference mappings and 540 missing declarations out of 1,280. Interface entries
 and schemas account for some mappings; these counts are not 734 distinct client
 operations. Schema-derived field validation and positive fixture results do
 not establish full Incus semantic behavior. `scripts/update-incus-coverage.py`
 regenerates mappings and checks evidence paths, never relabeling partial as full.
 
-Remaining parity includes complete instance/snapshot/volume copy convenience
-helpers, migration reset/reconnection semantics and complete relay evidence,
+Local instance/snapshot/volume copy requests are compared with official helpers;
+HTTPS pull/push descriptors and binary relay EOF are independently verified.
+Remaining parity includes complete cross-cluster/copy option matrices, migration
+reset/reconnection semantics and complete relay-channel evidence,
 full SFTP protocol helpers, dynamic console/recorded-output helpers, all-field
 model/helper behavior, streaming backup variants and every currently missing
 inventory entry. Newly added volume/bucket helpers remain unaccepted where
