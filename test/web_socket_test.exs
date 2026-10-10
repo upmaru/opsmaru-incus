@@ -2,7 +2,7 @@ defmodule Opsmaru.Incus.WebSocketTest do
   use ExUnit.Case, async: false
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Error, Events, Server, WebSocket}
-  alias Opsmaru.TestSupport.WebSocketFixture
+  alias Opsmaru.TestSupport.{HTTPFixture, WebSocketFixture}
   @driver Path.expand("../../.integration/incus-ws-driver", __DIR__)
   setup_all do
     {out, status} =
@@ -115,6 +115,42 @@ defmodule Opsmaru.Incus.WebSocketTest do
     monitor = Process.monitor(channel.pid)
     Process.exit(owner, :kill)
     assert_receive {:DOWN, ^monitor, :process, _, _}, 1_000
+  end
+
+  test "rejected upgrade bodies remain bounded and malformed responses retain HTTP status", %{
+    root: root
+  } do
+    for {status, body, budget, kind} <- [
+          {403, %{type: "error", error_code: 777, error: String.duplicate("x", 1024)}, 128,
+           :frame_limit},
+          {403, %{unexpected: "not an Incus envelope"}, 4096, :websocket_upgrade},
+          {200, %{type: "sync", metadata: %{}}, 4096, :websocket_upgrade}
+        ] do
+      fixture =
+        start_supervised!(
+          {HTTPFixture,
+           transport: :gen_tcp,
+           path: Path.join(root, "reject-#{System.unique_integer([:positive])}"),
+           handler: fn _ -> %{status: status, body: body} end},
+          id: make_ref()
+        )
+
+      connection =
+        Connection.unix!(HTTPFixture.endpoint(fixture).socket,
+          owner: :fixture,
+          max_response_bytes: budget
+        )
+
+      configured = %Incus{
+        connection: connection,
+        context: Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end),
+        server: %Server{api_extensions: []}
+      }
+
+      assert {:error, %Error{kind: ^kind} = error} = WebSocket.open(configured, "/1.0/events")
+      if kind == :websocket_upgrade, do: assert(error.http_status == status)
+      assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+    end
   end
 
   defp fixture(root, opts),

@@ -26,6 +26,7 @@ for name in ['operation.Wait','operation.Cancel','operation.Get']:
  helpers[name]=('lib/opsmaru/incus/operation.ex',['test/library/operation_test.exs'])
 for name in ['CopyInstance','CopyInstanceSnapshot','CopyStoragePoolVolume']:
  helpers[name]=('lib/opsmaru/incus/copy.ex',['test/library/copy_test.exs','test/library/migration_test.exs'])
+helpers['CopyInstance'][1].append('test/library/copy_guards_test.exs')
 entries=[]
 for entry in inv['entries']:
  name=entry['name'].split('.')[-1]

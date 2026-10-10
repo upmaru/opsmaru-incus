@@ -24,7 +24,7 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `Events.subscribe/2`, `next/2`, `close/1` | Native events through an owner-monitored bounded WebSocket queue |
 | `Session.exec/3`, `console/3`, `input/2`, `output/3`, `control/2`, `resize/3`, `signal/2`, `exit_status/1`, `close/1` | Native operation channels and control messages; local closure does not cancel Incus |
 | `Copy.instance/4`, `snapshot/5`, `volume/6` | Native writable configuration, local/project copies and explicit migration preparation; accepted handles |
-| `Migration.negotiate/5`, `relay/2` | Explicit native request tuples and approved origin, retaining both accepted handles; full reset/reconnection and helper parity remains incomplete |
+| `Migration.negotiate/5`, `relay/2` | Explicit native request tuples and approved origin, retaining both accepted handles; bounded binary/text relay and native upgrade errors; full helper parity remains incomplete |
 
 Example conditional mutation and reconciliation:
 
@@ -77,21 +77,30 @@ no pending queue or replay. A local success is never hardware acceptance.
 
 The checked manifest currently has 268 differential JSON methods, 740 partial
 reference mappings and 540 missing declarations out of 1,280. Interface entries
-and schemas account for some mappings; these counts are not 734 distinct client
+and schemas account for some mappings; these counts are not distinct client
 operations. Schema-derived field validation and positive fixture results do
 not establish full Incus semantic behavior. `scripts/update-incus-coverage.py`
 regenerates mappings and checks evidence paths, never relabeling partial as full.
 
 Local instance/snapshot/volume copy requests are compared with official helpers;
-HTTPS pull/push descriptors and binary relay EOF are independently verified.
+HTTPS pull/push descriptors, bidirectional binary/text relay across control/data
+channels, EOF, silent deadlines and native upgrade rejections are independently
+verified. Copy option preflight includes the pinned target-side check for
+`instance_allow_inconsistent_copy`; its misleading upstream error text says
+source, but the actual `CopyInstance` receiver checks the target.
 Remaining parity includes complete cross-cluster/copy option matrices, migration
-reset/reconnection semantics and complete relay-channel evidence,
+negotiation and complete relay-channel failure/cleanup evidence,
 full SFTP protocol helpers, dynamic console/recorded-output helpers, all-field
 model/helper behavior, streaming backup variants and every currently missing
 inventory entry. Newly added volume/bucket helpers remain unaccepted where
 independent differential evidence is absent. Do not treat `raw_query` success
 as typed support. Linux CI, installed service and real-backend results are
 recorded separately in `foundation-validation.md`.
+
+The pinned `shared/ws/proxy.go` closes both peers when either forwarder finishes;
+it does not reconnect automatically. Opsmaru follows this local channel lifetime
+and keeps native operation identities available for host reconciliation. Neither
+stream EOF nor successful forwarding proves backend copy/migration completion.
 
 ## Known pinned oracle limitations
 

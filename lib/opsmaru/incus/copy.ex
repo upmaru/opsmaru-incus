@@ -285,7 +285,7 @@ defmodule Opsmaru.Incus.Copy do
              "custom_volume_refresh_exclude_older_snapshots"
            ),
          :ok <-
-           required(source, opts[:allow_inconsistent] == true, "instance_allow_inconsistent_copy"),
+           required(target, opts[:allow_inconsistent] == true, "instance_allow_inconsistent_copy"),
          do: :ok
   end
 

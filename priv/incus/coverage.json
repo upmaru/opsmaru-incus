@@ -260,7 +260,8 @@
       "elixir": "lib/opsmaru/incus/copy.ex",
       "evidence": [
         "test/library/copy_test.exs",
-        "test/library/migration_test.exs"
+        "test/library/migration_test.exs",
+        "test/library/copy_guards_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3152,7 +3153,8 @@
       "elixir": "lib/opsmaru/incus/copy.ex",
       "evidence": [
         "test/library/copy_test.exs",
-        "test/library/migration_test.exs"
+        "test/library/migration_test.exs",
+        "test/library/copy_guards_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },

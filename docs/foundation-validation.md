@@ -4,7 +4,7 @@ This is fixture/library evidence for `add-embedded-incus-foundation`, not full
 client, installed-service or real-backend acceptance. The approved scaffold
 was extended on `feature/phoenix-bootstrap-and-remote-access`; no phx.new,
 Macus source modification, VM startup, backend install or workload mutation
-was used. Full copy/migration option and reset/reconnection parity remains incomplete.
+was used. Full copy/migration option and remaining reference parity remain incomplete.
 
 Toolchain: Elixir 1.19.5/OTP 27.3.4.16, Node 26.10.0/OpenSpec 1.14.0,
 Go 1.25.14 (verification only), PostgreSQL 16.9 (disposable web checks only).
@@ -13,7 +13,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 
 | Evidence | Result | Limits |
 | --- | --- | --- |
-| Database-free `mise run check:library` | 322 tests passed with copy and migration regression fixtures | macOS local fixtures; full parity incomplete |
+| Database-free `mise run check:library` | 329 tests passed with copy and migration regression fixtures | macOS local fixtures; full parity incomplete |
 | Archive variants/TLS/migration focused checks | 5 tests passed | Native fake-backend archive bytes, HTTPS upgrades and failure preservation |
 | Actual embedded startup/restart with PHX_SERVER and invalid PORT | Empty supervision, no new ports/state/Endpoint/Repo | Installed Macus not exercised |
 | Official typed resource calls | 268 methods compared | Request/result/error/extension slices, not all-field semantic parity |
@@ -22,7 +22,8 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | Raw SFTP/NBD | Coalesced bytes, duplex, half-close, lifetime and cleanup passed | Raw byte connection, not a complete SFTP/NBD protocol implementation |
 | WebSocket/events/exec/console | Binary/control/exit/overflow/ownership fixtures passed | Dynamic console, recorded output and complete migration relay parity remain open |
 | Operation polling/cancellation | Deadlines, native bindings, completion race and at-most-once DELETE passed | No live-backend cancellation acceptance |
-| Migration negotiation | Native copy requests compared; HTTPS secrets/accepted identities and bounded relay EOF verified | Complete cross-cluster/options/reset acceptance remains incomplete |
+| Migration negotiation | Native copy requests compared; HTTPS secrets/accepted identities, bidirectional control/data binary/text relay, EOF/deadline/mismatch and native upgrade rejection verified | Complete cross-cluster/options/helper acceptance remains incomplete |
+| Copy capability preflight | Eight rejected option/extension cases and supported target-side inconsistent copy compared with unchanged official helper | Selected option matrix; no real workload copy |
 | Inventory and schemas regenerated | 1,280 entries/86 source hashes; byte-for-byte match | Inventory/schema presence is not coverage |
 | Go inventory parser regressions | Passed | Verifier-only tooling |
 | `mise run check` via `python3 scripts/check-isolated.py` | Format, warning-free compile, assets, 5 web tests, embedding and strict specs passed | New disposable UTF-8 PostgreSQL cluster, stopped/deleted afterward |

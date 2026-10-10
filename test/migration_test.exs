@@ -191,6 +191,163 @@ defmodule Opsmaru.Incus.MigrationTest do
     assert migration.source.url == "/1.0/operations/source"
   end
 
+  test "relay keeps multiple binary and text channels separate in both directions", %{root: root} do
+    parent = self()
+    bytes = <<0, 255, 128, 42>>
+
+    source =
+      relay_fixture(root, "source-many",
+        wire: WebSocketFixture.frame(2, bytes) <> WebSocketFixture.frame(1, "barrier"),
+        close_after: 250,
+        frame_handler: fn opcode, data -> send(parent, {:source_frame, opcode, data}) end
+      )
+
+    target =
+      relay_fixture(root, "target-many",
+        wire: WebSocketFixture.frame(2, "reverse"),
+        frame_handler: fn opcode, data -> send(parent, {:target_frame, opcode, data}) end
+      )
+
+    secrets = %{"control" => "control-secret", "fs" => "data-secret"}
+    migration = relay_handles(source, target, secrets, secrets)
+    assert {:ok, ^migration} = Migration.relay(migration, timeout: 1000)
+
+    for _ <- 1..2 do
+      assert_receive {:target_frame, 2, ^bytes}
+      assert_receive {:target_frame, 1, "barrier"}
+      assert_receive {:source_frame, 2, "reverse"}
+    end
+
+    for fixture <- [source, target] do
+      requests = WebSocketFixture.requests(fixture)
+      assert length(requests) == 2
+
+      assert Enum.sort(
+               Enum.map(requests, &URI.decode_query(URI.parse(&1.target).query)["secret"])
+             ) == Enum.sort(Map.values(secrets))
+
+      assert Enum.all?(requests, &(&1.method == "GET"))
+    end
+  end
+
+  test "relay deadline releases silent channels and preserves accepted identities", %{root: root} do
+    source = relay_fixture(root, "source-silent", wire: "", frame_handler: fn _, _ -> :ok end)
+    target = relay_fixture(root, "target-silent", wire: "", frame_handler: fn _, _ -> :ok end)
+    secrets = %{"control" => "control-secret", "fs" => "data-secret"}
+    migration = relay_handles(source, target, secrets, secrets)
+    before = System.monotonic_time(:millisecond)
+
+    assert {:error, %Error{kind: :deadline, response: %{accepted: ^migration}}} =
+             Migration.relay(migration, timeout: 100)
+
+    assert System.monotonic_time(:millisecond) - before < 700
+    assert length(WebSocketFixture.requests(source)) == 2
+    assert length(WebSocketFixture.requests(target)) == 2
+    refute inspect(migration) =~ "control-secret"
+    refute inspect(migration) =~ "data-secret"
+  end
+
+  test "mismatched channel names fail before sockets open and retain both operations", %{
+    root: root
+  } do
+    source = relay_fixture(root, "source-mismatch", wire: "")
+    target = relay_fixture(root, "target-mismatch", wire: "")
+
+    migration =
+      relay_handles(source, target, %{"control" => "control-secret"}, %{
+        "control" => "control-secret",
+        "fs" => "data-secret"
+      })
+
+    assert {:error, %Error{kind: :invalid_relay, response: %{accepted: ^migration}}} =
+             Migration.relay(migration)
+
+    assert WebSocketFixture.requests(source) == []
+    assert WebSocketFixture.requests(target) == []
+  end
+
+  test "rejected relay upgrade retains native errors and accepted handles without replay", %{
+    root: root
+  } do
+    source = relay_fixture(root, "source-rejected", wire: "", frame_handler: fn _, _ -> :ok end)
+
+    target =
+      start_supervised!(
+        {HTTPFixture,
+         transport: :gen_tcp,
+         path: Path.join(root, "target-rejected"),
+         handler: fn _ ->
+           %{
+             status: 403,
+             headers: [{"etag", "native-rejection"}],
+             body: %{
+               type: "error",
+               error_code: 777,
+               error: "native channel refusal",
+               operation: "/1.0/operations/target"
+             }
+           }
+         end},
+        id: make_ref()
+      )
+
+    secrets = %{"control" => "control-secret"}
+    migration = relay_handles(source, source, secrets, secrets)
+    connection = Connection.unix!(HTTPFixture.endpoint(target).socket, owner: "target")
+    target_client = %{migration.target.client | connection: connection}
+    migration = %{migration | target: %{migration.target | client: target_client}}
+
+    assert {:error,
+            %Error{
+              kind: :native,
+              http_status: 403,
+              error_code: 777,
+              message: "native channel refusal",
+              operation: "/1.0/operations/target",
+              response: %{accepted: ^migration, error: error}
+            }} = Migration.relay(migration, timeout: 1000)
+
+    assert error.response.etag == "native-rejection"
+    # Channel opening clamps only its budgets to the remaining relay deadline.
+    assert %{
+             error.response.connection
+             | timeout: connection.timeout,
+               stream_timeout: connection.stream_timeout
+           } == connection
+
+    assert error.response.identity == migration.target.client.context.identity
+    assert length(WebSocketFixture.requests(source)) == 1
+    assert [%{method: "GET"}] = HTTPFixture.requests(target)
+    refute inspect(error) =~ "native channel refusal"
+    refute inspect(error) =~ "control-secret"
+  end
+
+  defp relay_fixture(root, name, opts),
+    do:
+      start_supervised!({WebSocketFixture, [path: Path.join(root, name)] ++ opts}, id: make_ref())
+
+  defp relay_handles(source, target, source_secrets, target_secrets) do
+    operation = fn fixture, name, secrets ->
+      client = %Incus{
+        connection: Connection.unix!(WebSocketFixture.path(fixture), owner: name),
+        context: Context.new!(owner: name, identity: name, ready?: fn -> true end),
+        server: %Server{api_extensions: []}
+      }
+
+      %Opsmaru.Incus.Operation{
+        client: client,
+        url: "/1.0/operations/" <> name,
+        response: %Opsmaru.Incus.Response{metadata: %{"metadata" => secrets}}
+      }
+    end
+
+    %Migration{
+      mode: :relay,
+      source: operation.(source, "source", source_secrets),
+      target: operation.(target, "target", target_secrets)
+    }
+  end
+
   defp source_request, do: {"MigrateInstance", %{"name" => "fixture"}, %{"migration" => true}}
   defp target_request, do: {"CreateInstance", %{}, %{"name" => "copy", "type" => "container"}}
 
