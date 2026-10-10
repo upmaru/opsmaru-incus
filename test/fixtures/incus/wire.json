@@ -1,0 +1,26 @@
+{
+  "reference_revision": "13f3992766142d5087fff2e362cd2e1a75294fe8",
+  "cases": [
+    {
+      "name": "project and target query",
+      "input": {"method": "GET", "path": "/1.0/profiles?project=fixture+space&target=node%2Fa"},
+      "request": {"method": "GET", "path": "/1.0/profiles", "query": {"project": "fixture space", "target": "node/a"}, "body": null, "if_match": null, "content_type": null},
+      "reply": {"status": 200, "headers": {"ETag": "\"profiles\""}, "body": {"type": "sync", "status": "Success", "status_code": 200, "metadata": ["/1.0/profiles/default"]}},
+      "result": {"etag": "\"profiles\"", "response": {"type": "sync", "status": "Success", "status_code": 200, "operation": "", "error_code": 0, "error": "", "metadata": ["/1.0/profiles/default"]}}
+    },
+    {
+      "name": "conditional JSON mutation",
+      "input": {"method": "PUT", "path": "/1.0/profiles/fixture?project=isolated", "etag": "\"before\"", "body": {"description": "fixture", "config": {"user.note": "value"}, "devices": {}}},
+      "request": {"method": "PUT", "path": "/1.0/profiles/fixture", "query": {"project": "isolated"}, "body": {"description": "fixture", "config": {"user.note": "value"}, "devices": {}}, "if_match": "\"before\"", "content_type": "application/json"},
+      "reply": {"status": 200, "headers": {"ETag": "\"after\""}, "body": {"type": "sync", "status": "Success", "status_code": 200, "metadata": null}},
+      "result": {"etag": "\"after\"", "response": {"type": "sync", "status": "Success", "status_code": 200, "operation": "", "error_code": 0, "error": "", "metadata": null}}
+    },
+    {
+      "name": "native precondition failure",
+      "input": {"method": "PUT", "path": "/1.0/profiles/fixture", "etag": "\"stale\"", "body": {"description": "fixture"}},
+      "request": {"method": "PUT", "path": "/1.0/profiles/fixture", "query": {}, "body": {"description": "fixture"}, "if_match": "\"stale\"", "content_type": "application/json"},
+      "reply": {"status": 412, "headers": {"ETag": "\"ignored-on-error\""}, "body": {"type": "error", "error_code": 412, "error": "ETag mismatch", "metadata": null}},
+      "result": {"etag": "", "error": "ETag mismatch", "error_status": 412, "response": {"type": "error", "status": "", "status_code": 0, "operation": "", "error_code": 412, "error": "ETag mismatch", "metadata": null}}
+    }
+  ]
+}

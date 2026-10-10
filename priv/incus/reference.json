@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/lxc/incus",
+  "tag": "v7.0.1",
+  "revision": "13f3992766142d5087fff2e362cd2e1a75294fe8",
+  "module": "github.com/lxc/incus/v7",
+  "packages": ["client", "shared/api"],
+  "license": "Apache-2.0",
+  "license_file": "COPYING",
+  "go": "1.25.14"
+}
