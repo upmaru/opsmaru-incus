@@ -163,10 +163,7 @@ defmodule Opsmaru.Incus.API do
               "/volumes/custom/" <> escape(parent) <> "/snapshots/" <> escape(snapshot)
 
           {:ok, path,
-           Map.merge(
-             %{"name" => snapshot, "migration" => body["migration"]},
-             if(is_nil(body["target"]), do: %{}, else: %{"target" => body["target"]})
-           )}
+           %{"name" => snapshot, "migration" => body["migration"], "target" => body["target"]}}
         end
 
       [_] ->
