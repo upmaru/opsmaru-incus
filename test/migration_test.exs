@@ -297,6 +297,9 @@ defmodule Opsmaru.Incus.MigrationTest do
     target_client = %{migration.target.client | connection: connection}
     migration = %{migration | target: %{migration.target | client: target_client}}
 
+    {result, log} =
+      ExUnit.CaptureLog.with_log(fn -> Migration.relay(migration, timeout: 1000) end)
+
     assert {:error,
             %Error{
               kind: :native,
@@ -305,7 +308,7 @@ defmodule Opsmaru.Incus.MigrationTest do
               message: "native channel refusal",
               operation: "/1.0/operations/target",
               response: %{accepted: ^migration, error: error}
-            }} = Migration.relay(migration, timeout: 1000)
+            }} = result
 
     assert error.response.etag == "native-rejection"
     # Channel opening clamps only its budgets to the remaining relay deadline.
@@ -320,6 +323,8 @@ defmodule Opsmaru.Incus.MigrationTest do
     assert [%{method: "GET"}] = HTTPFixture.requests(target)
     refute inspect(error) =~ "native channel refusal"
     refute inspect(error) =~ "control-secret"
+    refute log =~ "control-secret"
+    refute log =~ "native channel refusal"
   end
 
   defp relay_fixture(root, name, opts),

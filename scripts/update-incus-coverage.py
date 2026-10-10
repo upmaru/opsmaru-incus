@@ -27,6 +27,8 @@ for name in ['operation.Wait','operation.Cancel','operation.Get']:
 for name in ['CopyInstance','CopyInstanceSnapshot','CopyStoragePoolVolume']:
  helpers[name]=('lib/opsmaru/incus/copy.ex',['test/library/copy_test.exs','test/library/migration_test.exs'])
 helpers['CopyInstance'][1].append('test/library/copy_guards_test.exs')
+for name in ['GetMetrics','GetNetworkACLLogfile','GetInstanceLogfile','GetInstanceConsoleLog','GetInstanceTemplateFile','CreateInstanceTemplateFile','GetInstanceDebugMemory']:
+ helpers[name]=('lib/opsmaru/incus/streams.ex',['test/library/streams_test.exs'])
 entries=[]
 for entry in inv['entries']:
  name=entry['name'].split('.')[-1]

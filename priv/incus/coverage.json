@@ -418,10 +418,12 @@
     },
     {
       "id": "client/interface_method/InstanceServer.CreateInstanceTemplateFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/streams.ex",
+      "evidence": [
+        "test/library/streams_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateNetwork",
@@ -1188,17 +1190,21 @@
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceConsoleLog",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/streams.ex",
+      "evidence": [
+        "test/library/streams_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceDebugMemory",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/streams.ex",
+      "evidence": [
+        "test/library/streams_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceFile",
@@ -1238,10 +1244,12 @@
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceLogfile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/streams.ex",
+      "evidence": [
+        "test/library/streams_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceLogfiles",
@@ -1328,10 +1336,12 @@
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceTemplateFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/streams.ex",
+      "evidence": [
+        "test/library/streams_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceTemplateFiles",
@@ -1425,10 +1435,12 @@
     },
     {
       "id": "client/interface_method/InstanceServer.GetMetrics",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/streams.ex",
+      "evidence": [
+        "test/library/streams_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetwork",
@@ -1450,10 +1462,12 @@
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkACLLogfile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/streams.ex",
+      "evidence": [
+        "test/library/streams_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkACLNames",
@@ -3311,10 +3325,12 @@
     },
     {
       "id": "client/method/ProtocolIncus.CreateInstanceTemplateFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/streams.ex",
+      "evidence": [
+        "test/library/streams_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.CreateNetwork",
@@ -4242,17 +4258,21 @@
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceConsoleLog",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/streams.ex",
+      "evidence": [
+        "test/library/streams_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceDebugMemory",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/streams.ex",
+      "evidence": [
+        "test/library/streams_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceFile",
@@ -4292,10 +4312,12 @@
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceLogfile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/streams.ex",
+      "evidence": [
+        "test/library/streams_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceLogfiles",
@@ -4382,10 +4404,12 @@
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceTemplateFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/streams.ex",
+      "evidence": [
+        "test/library/streams_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceTemplateFiles",
@@ -4479,10 +4503,12 @@
     },
     {
       "id": "client/method/ProtocolIncus.GetMetrics",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/streams.ex",
+      "evidence": [
+        "test/library/streams_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetwork",
@@ -4504,10 +4530,12 @@
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkACLLogfile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/streams.ex",
+      "evidence": [
+        "test/library/streams_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkACLNames",

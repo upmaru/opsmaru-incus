@@ -6,7 +6,7 @@ defmodule Opsmaru.Incus.WebSocket do
   """
   use GenServer
   alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, Response, Transport}
+  alias Opsmaru.Incus.{Error, Response, Transport, Upgrade}
   defstruct [:pid, :ref]
 
   def open(client, path) do
@@ -65,7 +65,7 @@ defmodule Opsmaru.Incus.WebSocket do
       result =
         with {:ok, conn, request} <- Mint.WebSocket.upgrade(scheme, conn, path, []),
              {:ok, conn, status, headers, initial} <-
-               handshake(conn, request, deadline, nil, [], [], connection.max_response_bytes),
+               Upgrade.receive_response(conn, request, deadline, connection.max_response_bytes),
              :ok <- accepted_upgrade(status, headers, initial),
              {:ok, conn, websocket} <-
                Mint.WebSocket.new(conn, request, status, headers, mode: :passive) do
@@ -111,59 +111,10 @@ defmodule Opsmaru.Incus.WebSocket do
     _ -> {:stop, :upgrade_failed}
   end
 
-  defp handshake(conn, request, deadline, status, headers, data, limit) do
-    case Mint.HTTP.recv(conn, 0, remaining(deadline)) do
-      {:ok, conn, responses} ->
-        {status, headers, data, done} =
-          Enum.reduce(responses, {status, headers, data, false}, fn
-            {:status, ^request, value}, {_, headers, data, done} ->
-              {value, headers, data, done}
-
-            {:headers, ^request, value}, {status, _, data, done} ->
-              {status, value, data, done}
-
-            {:data, ^request, value}, {status, headers, data, done} ->
-              {status, headers, [value | data], done}
-
-            {:done, ^request}, {status, headers, data, _} ->
-              {status, headers, data, true}
-
-            _, acc ->
-              acc
-          end)
-
-        cond do
-          IO.iodata_length(data) > limit -> {:error, :frame_limit}
-          status == 101 and headers != [] -> {:ok, conn, status, headers, data}
-          done -> {:ok, conn, status, headers, data}
-          true -> handshake(conn, request, deadline, status, headers, data, limit)
-        end
-
-      _ ->
-        {:error, :handshake}
-    end
-  end
-
   defp accepted_upgrade(101, _, _), do: :ok
 
-  defp accepted_upgrade(status, headers, data) do
-    case Response.decode(IO.iodata_to_binary(Enum.reverse(data)), status, Map.new(headers)) do
-      {:ok, response} ->
-        {:error,
-         %Error{
-           kind:
-             if(response.type == "error" or status >= 400, do: :native, else: :websocket_upgrade),
-           http_status: status,
-           error_code: response.error_code,
-           message: response.error,
-           response: response,
-           operation: response.operation
-         }}
-
-      _ ->
-        {:error, %Error{kind: :websocket_upgrade, http_status: status}}
-    end
-  end
+  defp accepted_upgrade(status, headers, data),
+    do: Upgrade.rejected(status, headers, data, :websocket_upgrade)
 
   @impl true
   def handle_call({:recv, _}, _, %{closed: true, queued: 0} = state), do: {:reply, :eof, state}
@@ -368,5 +319,4 @@ defmodule Opsmaru.Incus.WebSocket do
   @impl true
   def format_status(status), do: %{status | state: :private_native_websocket}
   defp now, do: System.monotonic_time(:millisecond)
-  defp remaining(deadline), do: max(0, deadline - now())
 end

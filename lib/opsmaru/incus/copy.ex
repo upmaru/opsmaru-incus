@@ -8,7 +8,14 @@ defmodule Opsmaru.Incus.Copy do
   alias Opsmaru.Incus.{Error, Migration, Model, Operation}
 
   def instance(target, source, instance, opts \\ []) do
-    with :ok <- authorize(target, source, opts),
+    with :ok <-
+           authorize(target, source, opts, [
+             :live,
+             :instance_only,
+             :refresh,
+             :refresh_exclude_older,
+             :allow_inconsistent
+           ]),
          {:ok, instance} <- model("Instance", instance),
          :ok <- instance_extensions(target, source, opts) do
       data = instance.data
@@ -69,7 +76,7 @@ defmodule Opsmaru.Incus.Copy do
   end
 
   def snapshot(target, source, parent, snapshot, opts \\ []) do
-    with :ok <- authorize(target, source, opts),
+    with :ok <- authorize(target, source, opts, [:live]),
          {:ok, snapshot} <- model("InstanceSnapshot", snapshot),
          :ok <- mode_extensions(target, source, opts),
          :ok <-
@@ -113,7 +120,7 @@ defmodule Opsmaru.Incus.Copy do
   end
 
   def volume(target, source, pool, source_pool, volume, opts \\ []) do
-    with :ok <- authorize(target, source, opts),
+    with :ok <- authorize(target, source, opts, [:volume_only, :refresh, :refresh_exclude_older]),
          {:ok, volume} <- model("StorageVolume", volume),
          :ok <- Incus.require_extension(target, "storage_api_local_volume_handling"),
          :ok <- required(target, opts[:volume_only] == true, "storage_api_volume_snapshots"),
@@ -234,9 +241,11 @@ defmodule Opsmaru.Incus.Copy do
     end
   end
 
-  defp authorize(target, source, opts) do
+  defp authorize(target, source, opts, allowed) do
     with :ok <- Context.authorize(target.context, target.connection),
          :ok <- Context.authorize(source.context, source.connection),
+         true <- Keyword.keyword?(opts),
+         true <- Keyword.keys(opts) -- ([:name, :mode, :approved_origin] ++ allowed) == [],
          true <- opts[:mode] in [nil, :pull, :push, :relay],
          true <-
            Enum.all?(
@@ -252,19 +261,6 @@ defmodule Opsmaru.Incus.Copy do
            ),
          true <-
            is_nil(opts[:name]) or (is_binary(opts[:name]) and byte_size(opts[:name]) in 1..1024),
-         true <-
-           Keyword.keys(opts) --
-             [
-               :name,
-               :mode,
-               :approved_origin,
-               :live,
-               :instance_only,
-               :refresh,
-               :refresh_exclude_older,
-               :allow_inconsistent,
-               :volume_only
-             ] == [],
          do: :ok,
          else: (
            {:error, error} -> {:error, error}

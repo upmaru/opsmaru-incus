@@ -2,6 +2,7 @@ defmodule Opsmaru.Incus.RawChannelTest do
   use ExUnit.Case, async: false
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Error, RawChannel, Server}
+  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
 
   setup do
     root = Path.join(System.tmp_dir!(), "op-raw-#{System.unique_integer([:positive])}")
@@ -31,7 +32,7 @@ defmodule Opsmaru.Incus.RawChannelTest do
       bytes = <<255, 0, 128, 42>>
       assert :ok = RawChannel.send_data(channel, bytes)
       assert_receive {:request, request}, 5_000
-      assert request =~ "Upgrade: #{protocol}"
+      assert String.downcase(request) =~ "upgrade: #{protocol}"
       if protocol == "nbd", do: assert(request =~ "reuse=1")
       assert_receive {:payload, ^bytes}, 5_000
       assert :ok = RawChannel.close(channel)
@@ -74,6 +75,189 @@ defmodule Opsmaru.Incus.RawChannelTest do
 
     assert {:error, %Error{kind: :unsupported_extension}} =
              Incus.nbd(%{client | server: %Server{api_extensions: []}}, "fixture")
+  end
+
+  test "native Unix/TLS rejected upgrades preserve chunked envelopes and never replay", %{
+    root: root,
+    context: context
+  } do
+    identity = TLSIdentity.generate(root, "raw-rejected", "localhost")
+
+    body =
+      Jason.encode!(%{
+        type: "error",
+        error_code: 777,
+        error: "private-native-rejection",
+        operation: "/1.0/operations/native"
+      })
+
+    for transport <- [:gen_tcp, :ssl], protocol <- ["sftp", "nbd"] do
+      opts =
+        if transport == :gen_tcp,
+          do: [path: Path.join(root, "rejected-#{protocol}")],
+          else: [certfile: identity.certfile, keyfile: identity.keyfile]
+
+      fixture =
+        start_supervised!(
+          {HTTPFixture,
+           [
+             transport: transport,
+             handler: fn _ ->
+               head =
+                 "HTTP/1.1 403 Forbidden\r\nTransfer-Encoding: chunked\r\nETag: native-rejection\r\n\r\n"
+
+               chunk = Integer.to_string(byte_size(body), 16) <> "\r\n" <> body <> "\r\n0\r\n\r\n"
+               %{wire_chunks: [{0, head}, {5, chunk}]}
+             end
+           ] ++ opts},
+          id: make_ref()
+        )
+
+      endpoint = HTTPFixture.endpoint(fixture)
+
+      connection =
+        if transport == :gen_tcp,
+          do: Connection.unix!(endpoint.socket, owner: :fixture),
+          else:
+            Connection.https!(endpoint.url,
+              owner: :fixture,
+              tls: [
+                cacertfile: identity.cafile,
+                certfile: identity.certfile,
+                keyfile: identity.keyfile
+              ]
+            )
+
+      client = %Incus{
+        connection: connection,
+        context: context,
+        server: %Server{api_extensions: ["instance_nbd"]}
+      }
+
+      {result, log} =
+        ExUnit.CaptureLog.with_log(fn ->
+          if protocol == "sftp",
+            do: Incus.sftp(client, "fixture"),
+            else: Incus.nbd(client, "fixture")
+        end)
+
+      assert {:error,
+              %Error{
+                kind: :native,
+                http_status: 403,
+                error_code: 777,
+                message: "private-native-rejection",
+                operation: "/1.0/operations/native",
+                response: response
+              } = error} = result
+
+      assert response.etag == "native-rejection"
+      assert response.connection == connection
+      assert response.identity == context.identity
+      assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+      refute inspect(error) =~ "private-native-rejection"
+      refute log =~ "private-native-rejection"
+    end
+  end
+
+  test "raw rejected upgrades bound their response bytes and handshake deadline", %{
+    root: root,
+    context: context
+  } do
+    body = Jason.encode!(%{type: "error", error_code: 777, error: String.duplicate("x", 1024)})
+
+    for {name, delay, budgets, kind} <- [
+          {"oversized", 0, [max_response_bytes: 128], :frame_limit},
+          {"silent", 100, [timeout: 30], :deadline}
+        ] do
+      fixture =
+        start_supervised!(
+          {HTTPFixture,
+           transport: :gen_tcp,
+           path: Path.join(root, name),
+           handler: fn _ ->
+             %{
+               wire_chunks: [
+                 {delay,
+                  "HTTP/1.1 403 Forbidden\r\nContent-Length: #{byte_size(body)}\r\n\r\n" <> body}
+               ]
+             }
+           end},
+          id: make_ref()
+        )
+
+      connection =
+        Connection.unix!(HTTPFixture.endpoint(fixture).socket, [owner: :fixture] ++ budgets)
+
+      client = %Incus{
+        connection: connection,
+        context: context,
+        server: %Server{api_extensions: []}
+      }
+
+      assert {:error, %Error{kind: ^kind}} = Incus.sftp(client, "fixture")
+      assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+    end
+  end
+
+  test "blocked native writes respect the stream lifetime and release their socket", %{
+    root: root,
+    context: context
+  } do
+    fixture =
+      start_supervised!(
+        {HTTPFixture,
+         transport: :gen_tcp,
+         path: Path.join(root, "blocked-write"),
+         handler: fn _ ->
+           %{
+             wire_chunks: [
+               {0,
+                "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: sftp\r\n\r\n"},
+               {1000, ""}
+             ]
+           }
+         end}
+      )
+
+    connection =
+      Connection.unix!(HTTPFixture.endpoint(fixture).socket,
+        owner: :fixture,
+        timeout: 1000,
+        stream_timeout: 80,
+        max_chunk_bytes: 1_048_576
+      )
+
+    client = %Incus{connection: connection, context: context, server: %Server{api_extensions: []}}
+    assert {:ok, channel} = Incus.sftp(client, "fixture")
+    # Constrain the disposable client socket so the fixture's unread peer
+    # eventually reaches write pressure; no private state is logged.
+    socket = :sys.get_state(channel.pid).socket
+    assert :ok = :inet.setopts(socket, sndbuf: 1024)
+    monitor = Process.monitor(channel.pid)
+    before = System.monotonic_time(:millisecond)
+
+    bytes = :binary.copy(<<7>>, 1_048_576)
+
+    result =
+      Enum.reduce_while(1..64, :still_buffering, fn _, _ ->
+        case RawChannel.send_data(channel, bytes) do
+          :ok -> {:cont, :still_buffering}
+          error -> {:halt, error}
+        end
+      end)
+
+    assert {:error, %Error{kind: kind}} = result
+    assert kind in [:deadline, :channel_closed]
+
+    if kind == :channel_closed do
+      ref = channel.ref
+      assert_receive {^ref, :error, %Error{kind: :deadline}}, 1000
+    end
+
+    assert System.monotonic_time(:millisecond) - before < 500
+    assert_receive {:DOWN, ^monitor, :process, _, :normal}, 1000
+    assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
   end
 
   defp fixture(root, context, protocol, initial, half_close) do

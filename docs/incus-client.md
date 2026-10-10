@@ -18,6 +18,7 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `Images.import/4`, `download/4`, `copy/4` | Bounded unified/multipart binary handoff; pull/push and host-staged relay copies retain native operations |
 | `Files.read/4`, `create/5`, `backup_import/3`, `backup_download/4` | Binary files, separate directory metadata, native UID/GID/octal mode and backup headers |
 | `Files.volume_read/6`, `volume_create/7`, volume/bucket backup helpers, `backup_stream/4` | Native volume/bucket byte handoff; further differential coverage remains required |
+| `Streams.metrics/2`, `network_acl_log/3`, `instance_logfile/4`, `instance_console_log/3`, `instance_template_file/4`, `create_instance_template_file/4`, `instance_debug_memory/4` | Native binary/text handoff to an acknowledged host sink or bounded source; no collector or implicit file writes |
 | `Incus.sftp/2`, `nbd/3`, `volume_sftp/4`, `volume_nbd/5` | Native raw 101 byte channels; consumers supply their SFTP/NBD implementation |
 | `RawChannel.recv/2`, `send_data/2`, `shutdown_write/1`, `close/1` | Bounded binary duplex and native half-close |
 | `Operation.from_response/2`, `poll/1`, `wait/2`, `cancel/1`, `websocket/2` | Bound native handles; authoritative completion and supported cancellation |
@@ -25,6 +26,12 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `Session.exec/3`, `console/3`, `input/2`, `output/3`, `control/2`, `resize/3`, `signal/2`, `exit_status/1`, `close/1` | Native operation channels and control messages; local closure does not cancel Incus |
 | `Copy.instance/4`, `snapshot/5`, `volume/6` | Native writable configuration, local/project copies and explicit migration preparation; accepted handles |
 | `Migration.negotiate/5`, `relay/2` | Explicit native request tuples and approved origin, retaining both accepted handles; bounded binary/text relay and native upgrade errors; full helper parity remains incomplete |
+
+Copy options follow the pinned native argument types: instances accept `live`,
+`instance_only`, `refresh`, `refresh_exclude_older` and `allow_inconsistent`;
+snapshots accept `live`; volumes accept `volume_only`, `refresh` and
+`refresh_exclude_older`. All three accept `name`, `mode` and the host-approved
+origin. Unsupported option keys and malformed option lists fail before I/O.
 
 Example conditional mutation and reconciliation:
 
@@ -75,8 +82,8 @@ no pending queue or replay. A local success is never hardware acceptance.
 
 ## Coverage limitations
 
-The checked manifest currently has 268 differential JSON methods, 740 partial
-reference mappings and 540 missing declarations out of 1,280. Interface entries
+The checked manifest currently has 268 differential JSON methods, 754 partial
+reference mappings and 526 missing declarations out of 1,280. Interface entries
 and schemas account for some mappings; these counts are not distinct client
 operations. Schema-derived field validation and positive fixture results do
 not establish full Incus semantic behavior. `scripts/update-incus-coverage.py`

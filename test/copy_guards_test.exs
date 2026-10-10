@@ -98,6 +98,41 @@ defmodule Opsmaru.Incus.CopyGuardsTest do
     assert Jason.decode!(request.body)["source"]["allow_inconsistent"] == true
   end
 
+  test "each copy helper rejects options absent from its native argument type before I/O" do
+    socket = Path.join(System.tmp_dir!(), "op-copy-never-#{System.unique_integer([:positive])}")
+    refute File.exists?(socket)
+    connection = Connection.unix!(socket, owner: :fixture)
+
+    client = %Incus{
+      connection: connection,
+      context: Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end),
+      server: %Server{api_extensions: [], environment: %{}}
+    }
+
+    for opts <- [[volume_only: true], %{live: true}, [unknown: false]] do
+      assert {:error, %Error{kind: :invalid_copy_options}} =
+               Copy.instance(client, client, %{"name" => "fixture"}, opts)
+    end
+
+    for option <- [
+          :instance_only,
+          :refresh,
+          :refresh_exclude_older,
+          :allow_inconsistent,
+          :volume_only
+        ] do
+      assert {:error, %Error{kind: :invalid_copy_options}} =
+               Copy.snapshot(client, client, "parent", %{"name" => "snapshot"}, [{option, true}])
+    end
+
+    for option <- [:live, :instance_only, :allow_inconsistent] do
+      assert {:error, %Error{kind: :invalid_copy_options}} =
+               Copy.volume(client, client, "pool", "source-pool", %{"name" => "volume"}, [
+                 {option, true}
+               ])
+    end
+  end
+
   defp official(input) do
     # Feed the unchanged helper through a shell-free fixture process.
     port = Port.open({:spawn_executable, @driver}, [:binary, :exit_status, :use_stdio])

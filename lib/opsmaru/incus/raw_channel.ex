@@ -9,7 +9,7 @@ defmodule Opsmaru.Incus.RawChannel do
   """
   use GenServer
   alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error}
+  alias Opsmaru.Incus.{Error, Response, Transport, Upgrade}
   defstruct [:pid, :ref]
 
   def open(client, path, protocol) when protocol in ["sftp", "nbd"] do
@@ -20,8 +20,23 @@ defmodule Opsmaru.Incus.RawChannel do
       case GenServer.start(__MODULE__, {client.connection, path, protocol, self(), ref},
              timeout: client.connection.timeout + 100
            ) do
-        {:ok, pid} -> {:ok, %__MODULE__{pid: pid, ref: ref}}
-        {:error, _} -> {:error, %Error{kind: :upgrade_failed}}
+        {:ok, pid} ->
+          {:ok, %__MODULE__{pid: pid, ref: ref}}
+
+        {:error, %Error{} = error} ->
+          response =
+            if match?(%Response{}, error.response),
+              do: %{
+                error.response
+                | connection: client.connection,
+                  identity: client.context.identity
+              },
+              else: error.response
+
+          {:error, %{error | response: response}}
+
+        {:error, _} ->
+          {:error, %Error{kind: :upgrade_failed}}
       end
     else
       {:error, kind} -> {:error, %Error{kind: kind}}
@@ -45,8 +60,17 @@ defmodule Opsmaru.Incus.RawChannel do
   def init({connection, path, protocol, owner, ref}) do
     deadline = now() + connection.timeout
 
-    with {:ok, transport, socket} <- connect(connection, deadline) do
-      result = handshake(transport, socket, connection, path, protocol, deadline)
+    with {:ok, conn} <- Transport.open(connection, deadline) do
+      socket = Mint.HTTP.get_socket(conn)
+      transport = if connection.transport == :unix, do: :gen_tcp, else: :ssl
+
+      :ok =
+        set_socket_options(transport, socket,
+          exit_on_close: false,
+          buffer: connection.max_chunk_bytes
+        )
+
+      result = handshake(conn, connection, path, protocol, deadline)
 
       case result do
         {:ok, initial} ->
@@ -61,6 +85,7 @@ defmodule Opsmaru.Incus.RawChannel do
             ref: ref,
             monitor: monitor,
             timer: timer,
+            deadline: now() + connection.stream_timeout,
             queue: :queue.new(),
             queued: 0,
             received: 0,
@@ -80,6 +105,10 @@ defmodule Opsmaru.Incus.RawChannel do
               {:stop, :stream_limit}
           end
 
+        {:error, %Error{} = error} ->
+          transport.close(socket)
+          {:stop, error}
+
         _ ->
           transport.close(socket)
           {:stop, :upgrade_failed}
@@ -91,93 +120,28 @@ defmodule Opsmaru.Incus.RawChannel do
     _ -> {:stop, :upgrade_failed}
   end
 
-  defp connect(%Connection{transport: :unix} = connection, deadline) do
-    opts = [
-      :binary,
-      active: false,
-      packet: :raw,
-      exit_on_close: false,
-      send_timeout: remaining(deadline),
-      send_timeout_close: true,
-      buffer: connection.max_chunk_bytes
-    ]
-
-    with {:ok, socket} <-
-           :gen_tcp.connect(
-             {:local, String.to_charlist(connection.address)},
-             0,
-             opts,
-             remaining(deadline)
-           ),
-         do: {:ok, :gen_tcp, socket}
-  end
-
-  defp connect(%Connection{transport: :https} = connection, deadline) do
-    uri = connection.address
-
-    opts =
-      [
-        :binary,
-        active: false,
-        packet: :raw,
-        exit_on_close: false,
-        send_timeout: remaining(deadline),
-        send_timeout_close: true,
-        buffer: connection.max_chunk_bytes,
-        server_name_indication: String.to_charlist(uri.host),
-        customize_hostname_check: [match_fun: :public_key.pkix_verify_hostname_match_fun(:https)]
-      ] ++ Connection.tls_options(connection)
-
-    with {:ok, socket} <-
-           :ssl.connect(String.to_charlist(uri.host), uri.port, opts, remaining(deadline)),
-         do: {:ok, :ssl, socket}
-  end
-
-  defp handshake(transport, socket, connection, path, protocol, deadline) do
-    host =
-      if connection.transport == :unix,
-        do: "unix.socket",
-        else: connection.address.host <> ":" <> Integer.to_string(connection.address.port)
-
-    with :ok <-
-           transport.send(socket, [
-             "GET ",
+  defp handshake(conn, connection, path, protocol, deadline) do
+    with {:ok, conn, request} <-
+           Mint.HTTP.request(
+             conn,
+             "GET",
              path,
-             " HTTP/1.1\r\nHost: ",
-             host,
-             "\r\nConnection: Upgrade\r\nUpgrade: ",
-             protocol,
-             "\r\n\r\n"
-           ]),
-         {:ok, head, initial} <- head(transport, socket, "", deadline) do
-      [status | lines] = String.split(head, "\r\n")
+             [{"connection", "Upgrade"}, {"upgrade", protocol}],
+             nil
+           ),
+         {:ok, _conn, status, headers, initial} <-
+           Upgrade.receive_response(conn, request, deadline, connection.max_response_bytes) do
+      values = Map.new(headers)
 
-      headers =
-        Map.new(lines, fn line ->
-          [key, value] = String.split(line, ":", parts: 2)
-          {String.downcase(key), String.trim(value)}
-        end)
-
-      if String.starts_with?(status, "HTTP/1.1 101 ") and headers["upgrade"] == protocol and
-           "upgrade" in String.split(String.downcase(headers["connection"] || ""), ~r/\s*,\s*/),
-         do: {:ok, initial},
-         else: {:error, :invalid_upgrade}
+      if status == 101 and values["upgrade"] == protocol and
+           "upgrade" in String.split(String.downcase(values["connection"] || ""), ~r/\s*,\s*/),
+         do: {:ok, IO.iodata_to_binary(Enum.reverse(initial))},
+         else: Upgrade.rejected(status, headers, initial, :upgrade_failed)
     end
   end
 
-  defp head(transport, socket, bytes, deadline) do
-    case :binary.split(bytes, "\r\n\r\n") do
-      [header, initial] when byte_size(header) <= 65_536 ->
-        {:ok, header, initial}
-
-      [_] when byte_size(bytes) <= 65_536 ->
-        with {:ok, next} <- transport.recv(socket, 0, remaining(deadline)),
-             do: head(transport, socket, bytes <> next, deadline)
-
-      _ ->
-        {:error, :header_limit}
-    end
-  end
+  defp set_socket_options(:gen_tcp, socket, opts), do: :inet.setopts(socket, opts)
+  defp set_socket_options(:ssl, socket, opts), do: :ssl.setopts(socket, opts)
 
   @impl true
   def handle_call({:recv, _}, _from, %{read_eof: true, queued: 0} = state),
@@ -212,9 +176,18 @@ defmodule Opsmaru.Incus.RawChannel do
           state.written + byte_size(bytes) > state.connection.max_stream_bytes ->
         fail(state, :stream_limit)
 
+      now() >= state.deadline ->
+        fail(state, :deadline)
+
       true ->
-        case state.transport.send(state.socket, bytes) do
-          :ok -> {:reply, :ok, %{state | written: state.written + byte_size(bytes)}}
+        with :ok <-
+               setopts(state,
+                 send_timeout: min(state.connection.timeout, max(0, state.deadline - now()))
+               ),
+             :ok <- state.transport.send(state.socket, bytes) do
+          {:reply, :ok, %{state | written: state.written + byte_size(bytes)}}
+        else
+          {:error, :timeout} -> fail(state, :deadline)
           _ -> fail(state, :channel_io)
         end
     end
@@ -330,5 +303,4 @@ defmodule Opsmaru.Incus.RawChannel do
   @impl true
   def format_status(status), do: %{status | state: :private_native_channel}
   defp now, do: System.monotonic_time(:millisecond)
-  defp remaining(deadline), do: max(0, deadline - now())
 end

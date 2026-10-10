@@ -13,13 +13,14 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 
 | Evidence | Result | Limits |
 | --- | --- | --- |
-| Database-free `mise run check:library` | 329 tests passed with copy and migration regression fixtures | macOS local fixtures; full parity incomplete |
+| Database-free `mise run check:library` | 342 tests passed with copy and migration regression fixtures | macOS local fixtures; full parity incomplete |
 | Archive variants/TLS/migration focused checks | 5 tests passed | Native fake-backend archive bytes, HTTPS upgrades and failure preservation |
 | Actual embedded startup/restart with PHX_SERVER and invalid PORT | Empty supervision, no new ports/state/Endpoint/Repo | Installed Macus not exercised |
 | Official typed resource calls | 268 methods compared | Request/result/error/extension slices, not all-field semantic parity |
 | Unix/HTTPS, mTLS, wrong trust/hostname/keys and exact server pin | Passed | Isolated private sockets/loopback TLS |
+| Stream helper differential slice | Seven metrics/log/console/template/debug helpers compared with unchanged official methods; 9 independent fixtures passed | Selected helper/Unix/TLS/byte/error/owner/deadline evidence only |
 | Native image/file/backup transfers | Binary and multipart comparisons passed | Host-owned staging; backend behavior unverified |
-| Raw SFTP/NBD | Coalesced bytes, duplex, half-close, lifetime and cleanup passed | Raw byte connection, not a complete SFTP/NBD protocol implementation |
+| Raw SFTP/NBD | Coalesced bytes, duplex, half-close, native chunked rejections, bounded blocked writes and cleanup passed | Raw byte connection, not a complete SFTP/NBD protocol implementation |
 | WebSocket/events/exec/console | Binary/control/exit/overflow/ownership fixtures passed | Dynamic console, recorded output and complete migration relay parity remain open |
 | Operation polling/cancellation | Deadlines, native bindings, completion race and at-most-once DELETE passed | No live-backend cancellation acceptance |
 | Migration negotiation | Native copy requests compared; HTTPS secrets/accepted identities, bidirectional control/data binary/text relay, EOF/deadline/mismatch and native upgrade rejection verified | Complete cross-cluster/options/helper acceptance remains incomplete |
@@ -31,8 +32,8 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | macOS/Linux CI | 322 core tests and clean immutable consumer passed on both platforms at 55a4c8c1d2282ea256f1805abf01cde93252c943 | Protocol fixtures only; no real Incus/Macus |
 | Independent immutable consumer | 1 clean consumer test passed at published 55a4c8c1d2282ea256f1805abf01cde93252c943 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
-The coverage manifest records 268 differential JSON methods, 740 partial
-reference mappings and 540 missing declarations. Missing entries prevent a
+The coverage manifest records 268 differential JSON methods, 754 partial
+reference mappings and 526 missing declarations. Missing entries prevent a
 complete-port claim. See `incus-client.md` for the exact API and limitations.
 The v7.0.1 rawConn prefetch defect is negative oracle evidence; Opsmaru's
 required preservation behavior is independently checked without patching the
