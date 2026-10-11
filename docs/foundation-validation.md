@@ -35,8 +35,8 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | Go inventory parser regressions | Passed | Verifier-only tooling |
 | `mise run check` via `python3 scripts/check-isolated.py` | Format, warning-free compile, assets, 5 web tests, embedding and strict specs passed | New disposable UTF-8 PostgreSQL cluster, stopped/deleted afterward |
 | Strict OpenSpec validation | All three changes passed | Artifact consistency, not runtime acceptance |
-| macOS/Linux CI | 445 core tests and clean immutable consumer passed on both platforms at fdd530557bd1a87b36e68f994daef37e4490c9d4 | Protocol fixtures only; latest EOF correction awaits platform checks |
-| Independent immutable consumer | 1 clean consumer test passed at published fdd530557bd1a87b36e68f994daef37e4490c9d4 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
+| macOS/Linux CI | 448 core tests and clean immutable consumer passed on both platforms at 107eec41d625f512da70b57f58525d56980cf8e4 | Protocol fixtures only; no real Incus/Macus |
+| Independent immutable consumer | 1 clean consumer test passed at published 107eec41d625f512da70b57f58525d56980cf8e4 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
 The coverage manifest records 268 differential JSON methods, 877 partial
 reference mappings and 403 missing declarations. Missing entries prevent a
@@ -111,10 +111,23 @@ before the fix. A once-only owner EOF notice now triggers console cleanup,
 retains the accepted operation, and performs no DELETE or POST replay. Ordinary
 WebSocket readers can still drain queued tail frames after EOF. All 448 library
 tests, strict Credo (842 modules/functions), canonical checks and actual isolated
-`mix precommit` passed. The third Greptile review and latest platform run remain
-pending; no final review acceptance is claimed yet. The clean external consumer passed
+`mix precommit` passed. The third Greptile review
+(`8478a4b5-650d-4730-8303-406f1087d1c5`) returned 5/5 confidence and zero
+comments, confirming both prior fixes. Its CLI wait returned a server error;
+`greptile review show` recovered the completed result. Run status records base
+03a1452b4488ff9629724c4e26e5ffdd98baf9aa and head
+107eec41d625f512da70b57f58525d56980cf8e4. The review report says comparison
+ancestry could not be verified and describes the 49-file patch as `HEAD^..HEAD`;
+the actual 49-file scope is the recorded base-to-head diff. This is static code
+review evidence, not executed-test or complete-client acceptance.
+The clean external consumer passed
 at fdd530557bd1a87b36e68f994daef37e4490c9d4 with the correction;
 https://github.com/upmaru/opsmaru/actions/runs/38107507422 passed both platforms.
+The latest 448-test run and clean immutable consumers passed on macOS and Linux
+at 107eec41d625f512da70b57f58525d56980cf8e4:
+https://github.com/upmaru/opsmaru/actions/runs/38108133770.
+The documented consumer revision and lock now record that independently
+verified published code revision.
 
 The preceding continuation added 111 declaration mappings and 63 library tests.
 The previously unchecked documentation revision 7d44efe failed macOS CI because
