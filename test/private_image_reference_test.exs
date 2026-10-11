@@ -149,16 +149,20 @@ defmodule Opsmaru.Incus.PrivateImageReferenceTest do
 
     assert result["error_status"] == 403
     before = length(HTTPFixture.requests(fixture))
+    client = client(fixture, context, nil)
 
     assert {:error, %Error{kind: :native, error_code: 403} = error} =
              Images.download(
-               client(fixture, context, nil),
+               client,
                "fingerprint",
                %{metadata: fn _ -> :ok end},
                secret: @secret
              )
 
     assert error.message == result["error"]
+    assert error.response.etag == "private-etag"
+    assert error.response.connection == client.connection
+    assert error.response.identity == context.identity
     refute inspect(error) =~ @secret
     # discovery and exactly one export
     assert length(HTTPFixture.requests(fixture)) == before + 2

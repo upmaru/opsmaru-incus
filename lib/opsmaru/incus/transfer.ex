@@ -39,6 +39,17 @@ defmodule Opsmaru.Incus.Transfer do
         {:ok, %Response{} = response} ->
           {:ok, %{response | connection: client.connection, identity: client.context.identity}}
 
+        {:error, %Error{response: %Response{} = response} = error} ->
+          {:error,
+           %{
+             error
+             | response: %{
+                 response
+                 | connection: client.connection,
+                   identity: client.context.identity
+               }
+           }}
+
         other ->
           other
       end
