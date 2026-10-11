@@ -69,6 +69,23 @@ defmodule FoundationConsumer.EmbeddingTest do
     assert client.server.api_version == "1.0"
     assert_receive {:request, request}
     assert request =~ "GET /1.0?project=host-project HTTP/1.1"
+    assert {:ok, info} = Opsmaru.Incus.Discovery.connection_info(client)
+    assert info.project == "host-project"
+    assert {:ok, strict} = Opsmaru.Incus.Discovery.require_authenticated(client)
+    assert strict.connection.require_authenticated
+    refute client.connection.require_authenticated
+    assert Opsmaru.Incus.Status.string(103) == "Running"
+
+    assert {:ok, profile} =
+             Opsmaru.Incus.Model.decode("Profile", %{
+               "name" => "host",
+               "config" => %{"user.fixture" => "native"}
+             })
+
+    assert {:ok, writable} = Opsmaru.Incus.Model.writable(profile)
+    assert writable.data == %{"config" => %{"user.fixture" => "native"}}
+    assert profile.data["name"] == "host"
+    refute_receive {:request, _}, 30
     refute File.exists?(context.private_state)
     assert Process.whereis(FoundationConsumer.Endpoint)
     refute Process.whereis(Opsmaru.Supervisor)
