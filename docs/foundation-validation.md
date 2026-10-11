@@ -365,3 +365,9 @@ The expanded independent consumer also passed against corrected runtime revision
 directory with its exact dependency lock recorded. It exercises the new pure
 metadata/token helpers and listener host-readiness rejection with Opsmaru stopped;
 its own endpoint remains alive and no host private state is created.
+
+The corrected fresh GitHub consumer passed at
+`d16285adc3b88415f1bf723fa8fdf40c3414507a`; its actual resolved lock and the
+embedding example now pin that immutable runtime. The initial OCI revision
+`4e9e113` passed macOS/Linux CI (run `38143345500`, 540 tests plus consumer),
+which precedes the review corrections and is not claimed as their acceptance.
