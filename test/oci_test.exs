@@ -301,6 +301,52 @@ defmodule Opsmaru.Incus.OCITest do
     refute_receive {:cleanup, _, _}
   end
 
+  test "sink exceptions caught by the adapter stay sticky and prevent later output" do
+    owner = self()
+
+    for failure <- [
+          fn -> raise "private sink" end,
+          fn -> throw(:private_sink) end,
+          fn -> exit(:private_sink) end
+        ] do
+      client =
+        resolved(
+          client(
+            export: fn _, emit ->
+              try do
+                emit.(:metadata, <<1>>)
+              rescue
+                _ -> :ignored
+              catch
+                _, _ -> :ignored
+              end
+
+              emit.(:rootfs, <<2>>)
+              :ok
+            end
+          )
+        )
+
+      sinks = %{
+        metadata: fn _ ->
+          send(owner, :sink_attempt)
+          failure.()
+        end,
+        rootfs: fn _ ->
+          send(owner, :later_output)
+          :ok
+        end
+      }
+
+      assert {:error, %Error{kind: :adapter_stream}} =
+               OCI.image_file(client, fingerprint(client), sinks)
+
+      assert_receive :sink_attempt
+      refute_receive :later_output
+      assert_receive {:cleanup, _, :failed}
+    end
+  end
+
   test "caller loss kills export callback and runs cleanup without stopping other host work" do
     owner = self()
 

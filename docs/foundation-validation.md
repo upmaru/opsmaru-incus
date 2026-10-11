@@ -13,7 +13,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 
 | Evidence | Result | Limits |
 | --- | --- | --- |
-| Database-free `mise run check:library` | 540 tests passed after the OCI host-adapter continuation | macOS local fixtures; full parity incomplete |
+| Database-free `mise run check:library` | 541 tests passed after the OCI host-adapter continuation and review corrections | macOS local fixtures; full parity incomplete |
 | Archive variants/TLS/migration focused checks | 5 tests passed | Native fake-backend archive bytes, HTTPS upgrades and failure preservation |
 | Actual embedded startup/restart with PHX_SERVER and invalid PORT | Empty supervision, no new ports/state/Endpoint/Repo | Installed Macus not exercised |
 | Official typed resource calls | 268 methods compared | Request/result/error/extension slices, not all-field semantic parity |
@@ -332,6 +332,15 @@ error-preservation gap; conversion now retains a host-supplied native Error just
 as inspection does. Its regression and all 540 library tests, strict Credo,
 canonical checks and precommit passed after correction. No installed converter,
 real registry or backend/hardware acceptance is claimed.
+
+Greptile reviewed `4e9e113810e79c5e6b250cd286b87eeb0aa8b937` against `ae7d22f`
+(run `50dbecc2-e0d6-48ce-94d7-175943ef8612`), returning 4/5 with two findings:
+P1 caught sink exceptions could conceal failed output and P2 conversion errors
+lost structured native details. Both were reproduced before correction. The
+emitter now catches raise/throw/exit failures and rejects later chunks; native
+conversion errors retain error code, operation and response. All 541 library
+tests (15 OCI cases), strict Credo (1,161 modules/functions), canonical checks
+and precommit passed with a disposable test database, stopped/removed afterward.
 
 Greptile reviewed e76ca9742fab7f850d8c1931b23714374b19ea5e against eba0875
 (run 10a217ac-5cd4-4ca7-9125-a11893bedd69), returning 4/5 with two findings.

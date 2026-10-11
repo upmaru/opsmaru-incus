@@ -249,13 +249,22 @@ defmodule Opsmaru.Incus.OCI do
     if part in [:metadata, :rootfs] and is_binary(bytes) and not counts.failed and
          byte_size(bytes) <= client.connection.max_chunk_bytes and
          counts.metadata + counts.rootfs + byte_size(bytes) <= client.connection.max_stream_bytes and
-         System.monotonic_time(:millisecond) < request.deadline and sinks[part].(bytes) == :ok do
+         System.monotonic_time(:millisecond) < request.deadline and
+         acknowledge(sinks[part], bytes) do
       Process.put(key, Map.update!(counts, part, &(&1 + byte_size(bytes))))
       :ok
     else
       Process.put(key, %{counts | failed: true})
       {:error, :stream_limit}
     end
+  end
+
+  defp acknowledge(sink, bytes) do
+    sink.(bytes) == :ok
+  rescue
+    _ -> false
+  catch
+    _, _ -> false
   end
 
   defp request(client, alias_name),
