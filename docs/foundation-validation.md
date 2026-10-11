@@ -314,3 +314,9 @@ local clean consumer passed at that same published revision, including metadata/
 token helpers and listener readiness rejection with Opsmaru stopped. This records
 that earlier runtime's fixture evidence; its two review findings are corrected
 in the following commit and require their own review/CI evidence.
+
+The expanded independent consumer also passed against corrected runtime revision
+2f2d6877a0a2fc60fe7e8d97ea36e1b8eb9f7f3f, fetched from GitHub into a fresh temporary
+directory with its exact dependency lock recorded. It exercises the new pure
+metadata/token helpers and listener host-readiness rejection with Opsmaru stopped;
+its own endpoint remains alive and no host private state is created.
