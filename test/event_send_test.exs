@@ -33,7 +33,7 @@ defmodule Opsmaru.Incus.EventSendTest do
     assert Jason.decode!(expected) == @event
     assert {:ok, channel} = Events.subscribe(client)
     assert :ok = Events.send(channel, @event)
-    assert_receive {:sent_event, 1, actual}
+    assert_receive {:sent_event, 1, actual}, 1000
     assert Jason.decode!(actual) == Jason.decode!(expected)
     assert :ok = Events.close(channel)
     # Both native and Opsmaru send one frame; no implicit global listener/replay.
@@ -60,12 +60,12 @@ defmodule Opsmaru.Incus.EventSendTest do
     refute_receive {:sent_event, _, _}, 30
     assert {:error, %Error{kind: :frame_limit}} = Events.send(channel, @event)
     assert :ok = Events.send(independent, @event)
-    assert_receive {:sent_event, 1, _}
+    assert_receive {:sent_event, 1, _}, 1000
     assert :ok = Events.close(independent)
   end
 
   test "owner death releases the listener and subsequent sends report closure", %{root: root} do
-    {client, _} = fixture(root, "owner")
+    {client, _} = fixture(root, "owner", [], upgrade_delay: 150)
     parent = self()
 
     owner =
@@ -78,7 +78,8 @@ defmodule Opsmaru.Incus.EventSendTest do
         end
       end)
 
-    assert_receive {:channel, channel}
+    on_exit(fn -> if Process.alive?(owner), do: Process.exit(owner, :kill) end)
+    assert_receive {:channel, channel}, 5_000
     monitor = Process.monitor(channel.pid)
     Process.exit(owner, :kill)
     assert_receive {:DOWN, ^monitor, :process, _, :normal}, 1000
@@ -86,15 +87,17 @@ defmodule Opsmaru.Incus.EventSendTest do
     refute_receive {:sent_event, _, _}, 30
   end
 
-  defp fixture(root, name, budgets \\ []) do
+  defp fixture(root, name, budgets \\ [], fixture_opts \\ []) do
     parent = self()
 
     fixture =
       start_supervised!(
         {WebSocketFixture,
-         path: Path.join(root, name <> ".sock"),
-         wire: <<>>,
-         frame_handler: fn opcode, bytes -> send(parent, {:sent_event, opcode, bytes}) end},
+         [
+           path: Path.join(root, name <> ".sock"),
+           wire: <<>>,
+           frame_handler: fn opcode, bytes -> send(parent, {:sent_event, opcode, bytes}) end
+         ] ++ fixture_opts},
         id: make_ref()
       )
 

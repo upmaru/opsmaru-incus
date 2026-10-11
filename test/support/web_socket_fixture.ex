@@ -115,6 +115,8 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
 
         bytes = Keyword.get(opts, :wire, frame(2, <<0, 255, 128>>))
 
+        Process.sleep(Keyword.get(opts, :upgrade_delay, 0))
+
         :ok =
           :gen_tcp.send(socket, [
             "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: ",

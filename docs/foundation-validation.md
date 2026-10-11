@@ -36,7 +36,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | `mise run check` via `python3 scripts/check-isolated.py` | Format, warning-free compile, assets, 5 web tests, embedding and strict specs passed | New disposable UTF-8 PostgreSQL cluster, stopped/deleted afterward |
 | Strict OpenSpec validation | All three changes passed | Artifact consistency, not runtime acceptance |
 | macOS/Linux CI | 441 core tests and clean immutable consumer passed on both platforms at 2827c6ea1e8ef3f9ff3205a70148bba197e4cb59 | Protocol fixtures only; no real Incus/Macus |
-| Independent immutable consumer | 1 clean consumer test passed at published 2827c6ea1e8ef3f9ff3205a70148bba197e4cb59 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
+| Independent immutable consumer | 1 clean consumer test passed at published 2fa3fdea9085941e2ae866d5c9e473cb14ee4971 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
 The coverage manifest records 268 differential JSON methods, 877 partial
 reference mappings and 403 missing declarations. Missing entries prevent a
@@ -81,7 +81,14 @@ ordering and smaller validators/protocol/fixture handlers, without suppressing
 checks. Strict Credo reported no issues across 834 modules/functions; all 441
 library tests passed after the refactors. `python3 scripts/check-isolated.py
 --precommit` ran the actual precommit alias and canonical checks successfully
-against one fresh disposable test database; both 5-test scaffold runs passed.
+against one fresh disposable test database; both 5-test scaffold runs passed. The clean immutable consumer also passed at
+2fa3fdea9085941e2ae866d5c9e473cb14ee4971 after these refactors.
+The initial Credo-enabled CI run passed Linux but failed macOS on an existing
+100 ms event-owner fixture handshake wait: https://github.com/upmaru/opsmaru/actions/runs/38106226746.
+A 150 ms scripted handshake now reproduces that failure deterministically;
+the owner test uses the connection's bounded 5-second handshake allowance and
+cleans up its spawned owner even on failure. The subsequent monitor/closure
+assertions remain bounded and no backend cancellation/replay is introduced.
 Greptile CLI review is requested but currently blocked: the authenticated account
 reports `upmaru/opsmaru` as not connected. Automatic approval review rejected
 `greptile init` because it changes persistent repository/organization access;
