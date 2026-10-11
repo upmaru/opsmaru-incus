@@ -147,8 +147,27 @@ with direct backups. Actual cluster forwarding remains a real-backend gate.
 
 ## Coverage limitations
 
-The checked manifest currently has 268 differential JSON methods, 877 partial
-reference mappings and 403 missing declarations out of 1,280. Interface entries
+`Opsmaru.Incus.Preseed.apply(client, native_config, timeout: 30_000)` explicitly
+applies native server, pools, default-project networks, projects, other networks,
+volumes, profiles, certificates, cluster configuration and cluster groups in
+the pinned helper's order. It preserves ETags, config/device merges, project
+defaults and group nil-versus-empty membership semantics. Calls are bounded to
+128 records and one total deadline. JSON input uses native typed defaults and
+config coercion; ambiguous field-case aliases are rejected before I/O.
+
+The success result's `changes` contains native successful mutation responses.
+On failure, `error.response.completed` retains that bounded result and
+`error.response.failure` retains the latest native failure or accepted response;
+the native error code, HTTP status and operation URL remain available. A result
+budget failure can occur after acceptance and retains that response for host
+reconciliation. No rollback, mutation replay, trust generation or startup hook
+is provided. Like the pinned helper, a network/profile/volume/group read error
+leads to one create attempt; a create failure stops the call. Cluster completion
+uses bounded native polling, separately from the compared configuration wire
+sequence. YAML and actual server/cluster acceptance remain separate.
+
+The checked manifest currently has 268 differential JSON methods, 885 partial
+reference mappings and 395 missing declarations out of 1,280. Interface entries
 and schemas account for some mappings; these counts are not distinct client
 operations. Schema-derived field validation and positive fixture results do
 not establish full Incus semantic behavior. `scripts/update-incus-coverage.py`

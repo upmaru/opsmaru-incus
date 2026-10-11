@@ -225,10 +225,12 @@
     },
     {
       "id": "client/interface_method/InstanceServer.ApplyServerPreseed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/preseed.ex",
+      "evidence": [
+        "test/library/preseed_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/InstanceServer.ConsoleInstance",
@@ -3193,10 +3195,12 @@
     },
     {
       "id": "client/method/ProtocolIncus.ApplyServerPreseed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/preseed.ex",
+      "evidence": [
+        "test/library/preseed_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.CheckExtension",
@@ -9279,45 +9283,57 @@
     },
     {
       "id": "shared/api/type/InitClusterPreseed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/preseed_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InitLocalPreseed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/preseed_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InitNetworksProjectPost",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/preseed_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InitPreseed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/preseed_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InitProfileProjectPost",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/preseed_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InitStorageVolumesProjectPost",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/preseed_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/Instance",
