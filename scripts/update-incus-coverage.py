@@ -70,12 +70,14 @@ network_normalisers = 'NetworkACLRule NetworkAddressSet NetworkForwardPort Netwo
 for name in network_normalisers:
  helpers[name+'.Normalise']=('lib/opsmaru/incus/network_models.ex',['test/library/network_models_reference_test.exs'])
 models.update(network_normalisers)
+for name in ['GetHTTPClient','DoHTTP']:
+ helpers[name]=('lib/opsmaru/incus/http.ex',['test/library/http_reference_test.exs'])
 entries=[]
 for entry in inv['entries']:
  name=entry['name'].split('.')[-1]
  row=dict(id=entry['id'], status='missing', elixir=None, evidence=[], note='No verified implementation/evidence claim.')
- if entry['source'] in ['client/oci_images.go','client/simplestreams_images.go'] and name == 'GetPrivateImageFile':
-  pass # Native Incus private exports do not establish other protocol parity.
+ if entry['kind'] == 'method' and entry['name'].startswith(('ProtocolOCI.', 'ProtocolSimpleStreams.')):
+  pass # Native Incus methods do not establish OCI or SimpleStreams implementation parity.
  elif entry['package']=='shared/api' and entry['kind']=='type' and name in ['ConfigMap','DevicesMap']:
   row.update(status='partial',elixir='lib/opsmaru/incus/native_config.ex',evidence=['test/library/native_config_reference_test.exs'],note='Explicit bounded native JSON coercion/merge slice; YAML and full type parity remain unverified.')
  elif entry['kind'] in ['method','interface_method'] and name in methods:

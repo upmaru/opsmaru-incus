@@ -184,7 +184,7 @@ defmodule Opsmaru.Incus.PreseedReferenceTest do
   } do
     {fixture, client, _, _} =
       fixture(root, :gen_tcp, fn request ->
-        Process.sleep(60)
+        Process.sleep(700)
         handler(request)
       end)
 
@@ -199,11 +199,11 @@ defmodule Opsmaru.Incus.PreseedReferenceTest do
                    %{"name" => "two", "driver" => "dir"}
                  ]
                },
-               timeout: 100
+               timeout: 1000
              )
 
     assert error.kind in [:deadline, :uncertain]
-    assert System.monotonic_time(:millisecond) - started < 1000
+    assert System.monotonic_time(:millisecond) - started < 2000
     assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
   end
 
@@ -479,6 +479,7 @@ defmodule Opsmaru.Incus.PreseedReferenceTest do
         do:
           Map.merge(input, %{
             tls_ca: File.read!(identity.cafile),
+            server_cert: File.read!(identity.certfile),
             client_cert: File.read!(identity.certfile),
             client_key: File.read!(identity.keyfile)
           }),

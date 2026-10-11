@@ -70,6 +70,18 @@ defmodule Opsmaru.Incus.InventoryTest do
     assert Enum.map(coverage["entries"], & &1["id"]) == Enum.map(inventory["entries"], & &1["id"])
     assert Enum.any?(coverage["entries"], &(&1["status"] == "missing"))
 
+    external_protocols =
+      Enum.filter(
+        coverage["entries"],
+        &String.starts_with?(&1["id"], [
+          "client/method/ProtocolOCI.",
+          "client/method/ProtocolSimpleStreams."
+        ])
+      )
+
+    assert length(external_protocols) == 40
+    assert Enum.all?(external_protocols, &(&1["status"] == "missing"))
+
     for entry <- coverage["entries"] do
       assert entry["status"] in ["partial", "missing"]
 

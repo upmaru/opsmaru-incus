@@ -3136,10 +3136,12 @@
     },
     {
       "id": "client/interface_method/Server.DoHTTP",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/http.ex",
+      "evidence": [
+        "test/library/http_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/Server.GetConnectionInfo",
@@ -3153,10 +3155,12 @@
     },
     {
       "id": "client/interface_method/Server.GetHTTPClient",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/http.ex",
+      "evidence": [
+        "test/library/http_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/EventListener.AddHandler",
@@ -3992,10 +3996,12 @@
     },
     {
       "id": "client/method/ProtocolIncus.DoHTTP",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/http.ex",
+      "evidence": [
+        "test/library/http_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.DoWebsocket",
@@ -4192,10 +4198,12 @@
     },
     {
       "id": "client/method/ProtocolIncus.GetHTTPClient",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/http.ex",
+      "evidence": [
+        "test/library/http_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.GetImage",
@@ -6238,22 +6246,17 @@
     },
     {
       "id": "client/method/ProtocolOCI.ExportImage",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetConnectionInfo",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/discovery.ex",
-      "evidence": [
-        "test/library/discovery_helpers_test.exs",
-        "test/library/authenticated_header_test.exs"
-      ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetHTTPClient",
@@ -6264,129 +6267,101 @@
     },
     {
       "id": "client/method/ProtocolOCI.GetImage",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAlias",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAliasArchitectures",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/images.ex",
-      "evidence": [
-        "test/library/image_transfer_test.exs"
-      ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAliasNames",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAliasType",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/images.ex",
-      "evidence": [
-        "test/library/image_transfer_test.exs"
-      ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAliases",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageFile",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/images.ex",
-      "evidence": [
-        "test/library/image_transfer_test.exs"
-      ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageFingerprints",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageSecret",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/images.ex",
-      "evidence": [
-        "test/library/image_transfer_test.exs"
-      ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetImages",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetImagesAllProjects",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetImagesAllProjectsWithFilter",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetImagesWithFilter",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetPrivateImage",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolOCI.GetPrivateImageFile",
@@ -6411,22 +6386,17 @@
     },
     {
       "id": "client/method/ProtocolSimpleStreams.ExportImage",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetConnectionInfo",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/discovery.ex",
-      "evidence": [
-        "test/library/discovery_helpers_test.exs",
-        "test/library/authenticated_header_test.exs"
-      ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetHTTPClient",
@@ -6437,129 +6407,101 @@
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImage",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAlias",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasArchitectures",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/images.ex",
-      "evidence": [
-        "test/library/image_transfer_test.exs"
-      ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasNames",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasType",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/images.ex",
-      "evidence": [
-        "test/library/image_transfer_test.exs"
-      ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliases",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageFile",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/images.ex",
-      "evidence": [
-        "test/library/image_transfer_test.exs"
-      ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageFingerprints",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageSecret",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/images.ex",
-      "evidence": [
-        "test/library/image_transfer_test.exs"
-      ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImages",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesAllProjects",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesAllProjectsWithFilter",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesWithFilter",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetPrivateImage",
-      "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
-      "evidence": [
-        "test/library/resource_slice_test.exs"
-      ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "status": "missing",
+      "elixir": null,
+      "evidence": [],
+      "note": "No verified implementation/evidence claim."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetPrivateImageFile",

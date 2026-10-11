@@ -174,8 +174,23 @@ IP addresses only where the upstream helper does. Input/output are bounded to
 1 MiB. This explicit typed projection discards unknown fields; ordinary
 `Model.decode/2` remains lossless and mutations do not normalize implicitly.
 
-The checked manifest currently has 268 differential JSON methods, 897 partial
-reference mappings and 383 missing declarations out of 1,280. Interface entries
+`HTTP.client/1` provides a portable immutable handle for the native HTTP helper
+slice without starting a pool or process. `HTTP.request/4` takes a supported
+HTTP verb, relative native API path, and binary `body`/validated `headers` options.
+It returns a raw `HTTP.Response` containing status, ordered duplicate headers,
+separate trailers, binary body and originating connection/identity. `header/2`
+uses the first value like Go Header.Get. Request/response capture uses the
+connection's finite byte limits and request deadline; larger native transfers
+use the streaming APIs above. HTTP response receipt does not establish native
+operation completion. 3xx/305 responses are returned without redirect or replay.
+The official differential uses an explicitly non-replayable request, matching
+the foundation's mandatory no-mutation-replay contract. Arbitrary URL clients,
+mutable shared pools and OIDC adapters are not provided by this native slice.
+
+The checked manifest currently has 268 differential JSON methods, 869 partial
+reference mappings and 411 missing declarations out of 1,280. Native Incus
+method evidence is scoped to that implementation; same-named OCI/SimpleStreams
+methods remain missing. Interface entries
 and schemas account for some mappings; these counts are not distinct client
 operations. Schema-derived field validation and positive fixture results do
 not establish full Incus semantic behavior. `scripts/update-incus-coverage.py`

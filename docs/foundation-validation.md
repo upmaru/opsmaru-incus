@@ -13,7 +13,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 
 | Evidence | Result | Limits |
 | --- | --- | --- |
-| Database-free `mise run check:library` | 448 tests passed after both Greptile regression fixes | macOS local fixtures; full parity incomplete |
+| Database-free `mise run check:library` | 505 tests passed after preseed/network/copy/raw HTTP additions | macOS local fixtures; full parity incomplete |
 | Archive variants/TLS/migration focused checks | 5 tests passed | Native fake-backend archive bytes, HTTPS upgrades and failure preservation |
 | Actual embedded startup/restart with PHX_SERVER and invalid PORT | Empty supervision, no new ports/state/Endpoint/Repo | Installed Macus not exercised |
 | Official typed resource calls | 268 methods compared | Request/result/error/extension slices, not all-field semantic parity |
@@ -38,8 +38,8 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | macOS/Linux CI | 448 core tests and clean immutable consumer passed on both platforms at 107eec41d625f512da70b57f58525d56980cf8e4 | Protocol fixtures only; no real Incus/Macus |
 | Independent immutable consumer | 1 clean consumer test passed at published 107eec41d625f512da70b57f58525d56980cf8e4 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
-The coverage manifest records 268 differential JSON methods, 897 partial
-reference mappings and 383 missing declarations. Missing entries prevent a
+The coverage manifest records 268 differential JSON methods, 869 partial
+reference mappings and 411 missing declarations. Missing entries prevent a
 complete-port claim. See `incus-client.md` for the exact API and limitations.
 The v7.0.1 rawConn prefetch defect is negative oracle evidence; Opsmaru's
 required preservation behavior is independently checked without patching the
@@ -181,6 +181,41 @@ fail visibly rather than raising. All 491 library tests, strict Credo
 strict OpenSpec passed locally. The shared typed-input projection is internal;
 normal `Model.decode` remains lossless. New CI, consumer and Greptile results
 will be recorded for the published continuation.
+
+Greptile reviewed the committed native preseed/network/copy continuation at
+3bcb32bb4d4868a447f0d255489358ba8c8967e4 against f3ca740:
+run `14138e80-1d27-43a2-b6c9-6ac68057f019`, 5/5 confidence, zero comments.
+The expanded independent consumer passed at that same immutable revision,
+including no-op preseed and network normalization with Opsmaru stopped.
+Linux CI passed. macOS CI exposed five Go-oracle CA-only trust failures and a
+100 ms whole-deadline fixture expiring before its first POST:
+https://github.com/upmaru/opsmaru/actions/runs/38110149454.
+The preseed oracle now supplies the same explicit server certificate used by
+other HTTPS oracle fixtures; TLS verification remains enabled and production
+transport is unchanged. The deadline case now uses a 1-second total budget and
+700 ms per response, preserving the requirement that it stops before a second
+POST. All 28 focused preseed/inventory fixtures passed after these corrections;
+the subsequent platform run remains pending.
+
+Coverage scope was also corrected: name-only matching had attributed 32 native
+Incus helper/method fixtures to different OCI/SimpleStreams implementations.
+All 40 methods in those two concrete classes now remain missing, with a
+permanent manifest regression check. The correction adds no new protocol
+support and does not change the immutable 1,280-declaration inventory or pin.
+
+The raw HTTP continuation adds 14 fixtures and four partial method/interface
+mappings. Unchanged GetHTTPClient/DoHTTP calls agree over Unix and HTTPS on
+binary bodies, native status/ETag and authenticated headers, including an
+explicitly non-replayable 305 request. Independent fixtures cover all supported
+verbs, redirects without forwarding, request/response bounds, uncertainty,
+host/connection isolation, ordered duplicate headers and separate trailers.
+Native JSON calls now retain the first ETag header without a trailer replacing
+it, matching net/http Header.Get. The helper captures finite raw bodies; it
+does not claim streaming io.ReadCloser or mutable pool parity. All 505 library
+tests, strict Credo (996 modules/functions), canonical full checks and actual
+isolated precommit passed, with all three changes strictly validated and the
+Go verifier checks passing. Runtime code review/consumer/platform results for
+this new slice remain pending until publication.
 
 Visible client gaps include full dynamic console callback/IO and
 SFTP protocol helpers, direct HTTP/WebSocket/context convenience helpers,

@@ -45,6 +45,9 @@ defmodule Opsmaru.Incus.Transport do
               receive_response(socket, ref, deadline, connection.max_response_bytes, %{
                 status: nil,
                 headers: %{},
+                raw_headers: nil,
+                trailers: [],
+                header_bytes: 0,
                 body: [],
                 bytes: 0
               })
@@ -122,8 +125,27 @@ defmodule Opsmaru.Incus.Transport do
   defp collect([{:status, ref, status} | rest], ref, maximum, acc),
     do: collect(rest, ref, maximum, %{acc | status: status})
 
-  defp collect([{:headers, ref, headers} | rest], ref, maximum, acc),
-    do: collect(rest, ref, maximum, %{acc | headers: Map.merge(acc.headers, Map.new(headers))})
+  defp collect([{:headers, ref, headers} | rest], ref, maximum, acc) do
+    bytes =
+      acc.header_bytes +
+        Enum.sum(
+          Enum.map(headers, fn {name, value} -> byte_size(name) + byte_size(value) + 4 end)
+        )
+
+    if bytes <= 65_536 do
+      acc =
+        if is_nil(acc.raw_headers),
+          do: %{acc | raw_headers: headers, headers: Map.new(Enum.reverse(headers))},
+          else: %{acc | trailers: acc.trailers ++ headers}
+
+      collect(rest, ref, maximum, %{
+        acc
+        | header_bytes: bytes
+      })
+    else
+      {:error, :response_limit}
+    end
+  end
 
   defp collect([{:data, ref, data} | rest], ref, maximum, acc) do
     if acc.bytes + byte_size(data) <= maximum do
