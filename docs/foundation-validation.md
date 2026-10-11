@@ -379,3 +379,9 @@ emitter rejection. The consumer pin was already updated in `d382213`; the
 second finding was independently reproduced with an observable sink and fixed
 by checking shared rejection before every local emission. All 541 library
 tests, strict Credo, canonical checks and actual precommit passed afterward.
+
+The fresh consumer passed again at
+`debcea5c5dd0c988191175b3aa17310e0c45b695`, after the foreign-emitter continuation
+fix. Its captured lock, default revision and embedding example now pin that
+source. Greptile's earlier pin-only review at `d382213` returned 5/5 with zero
+findings; that review did not substitute for complete corrected-runtime review.
