@@ -211,11 +211,16 @@ defmodule Opsmaru.Incus.OCI do
     worker = self()
 
     emit = fn part, bytes ->
-      if self() == worker do
-        emit(key, part, bytes, %{metadata: metadata, rootfs: rootfs}, client, request)
-      else
-        :atomics.put(rejected, 1, 1)
-        {:error, :foreign_emitter}
+      cond do
+        self() != worker ->
+          :atomics.put(rejected, 1, 1)
+          {:error, :foreign_emitter}
+
+        :atomics.get(rejected, 1) != 0 ->
+          {:error, :stream_limit}
+
+        true ->
+          emit(key, part, bytes, %{metadata: metadata, rootfs: rootfs}, client, request)
       end
     end
 

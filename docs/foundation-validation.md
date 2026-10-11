@@ -371,3 +371,11 @@ The corrected fresh GitHub consumer passed at
 embedding example now pin that immutable runtime. The initial OCI revision
 `4e9e113` passed macOS/Linux CI (run `38143345500`, 540 tests plus consumer),
 which precedes the review corrections and is not claimed as their acceptance.
+
+The complete runtime review at `d16285a` (run
+`e61d33cb-98dd-413c-bc70-035f43f5592c`) returned 3/5: it flagged the old
+default consumer pin at that snapshot and output continuing after a foreign
+emitter rejection. The consumer pin was already updated in `d382213`; the
+second finding was independently reproduced with an observable sink and fixed
+by checking shared rejection before every local emission. All 541 library
+tests, strict Credo, canonical checks and actual precommit passed afterward.

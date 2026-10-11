@@ -164,12 +164,15 @@ defmodule Opsmaru.Incus.OCITest do
   end
 
   test "foreign emitters cannot deliver bytes or conceal a rejection" do
+    owner = self()
+
     client =
       resolved(
         client(
           export: fn _, emit ->
             task = Task.async(fn -> emit.(:metadata, <<1>>) end)
             assert {:error, :foreign_emitter} = Task.await(task)
+            emit.(:metadata, <<2>>)
             :ok
           end
         )
@@ -177,11 +180,15 @@ defmodule Opsmaru.Incus.OCITest do
 
     assert {:error, %Error{kind: :adapter_stream}} =
              OCI.image_file(client, fingerprint(client), %{
-               metadata: fn _ -> flunk("foreign bytes") end,
+               metadata: fn _ ->
+                 send(owner, :rejected_output)
+                 :ok
+               end,
                rootfs: fn _ -> :ok end
              })
 
     assert_receive {:cleanup, _, :failed}
+    refute_receive :rejected_output
   end
 
   test "cleanup has an independent bounded deadline and kills trapping cleanup workers" do
