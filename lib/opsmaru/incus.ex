@@ -48,50 +48,76 @@ defmodule Opsmaru.Incus do
   end
 
   @doc "Open the native SFTP byte connection; the caller supplies its SFTP implementation."
-  def sftp(client, instance),
-    do:
+  def sftp(client, instance) do
+    with :ok <- upgrade_segments([instance]) do
       Opsmaru.Incus.RawChannel.open(
         client,
-        "/1.0/instances/" <> URI.encode(instance, &URI.char_unreserved?/1) <> "/sftp",
+        "/1.0/instances/" <> path_escape(instance) <> "/sftp",
         "sftp"
       )
+    end
+  end
 
   @doc "Open the native NBD byte connection after checking the native extension."
   def nbd(client, instance, opts \\ []) do
-    with :ok <- require_extension(client, "instance_nbd") do
+    with :ok <- upgrade_segments([instance]),
+         :ok <- upgrade_options(opts, :reuse),
+         :ok <- require_extension(client, "instance_nbd") do
       path =
         "/1.0/instances/" <>
-          URI.encode(instance, &URI.char_unreserved?/1) <>
-          "/nbd" <> if(opts[:reuse], do: "?reuse=1", else: "")
+          path_escape(instance) <>
+          "/nbd" <>
+          if(opts[:reuse] == true, do: "?reuse=1", else: "")
 
       Opsmaru.Incus.RawChannel.open(client, path, "nbd")
     end
   end
 
+  @doc "Open a native volume SFTP byte channel; protocol handling remains caller-owned."
   def volume_sftp(client, pool, type, name) do
-    with :ok <- require_extension(client, "custom_volume_sftp"),
-         do:
-           Opsmaru.Incus.RawChannel.open(client, volume_path(pool, type, name) <> "/sftp", "sftp")
+    with :ok <- upgrade_segments([pool, type, name]),
+         :ok <- require_extension(client, "custom_volume_sftp") do
+      Opsmaru.Incus.RawChannel.open(client, volume_path(pool, type, name) <> "/sftp", "sftp")
+    end
   end
 
+  @doc "Open a native volume NBD byte channel, optionally requesting writable access."
   def volume_nbd(client, pool, type, name, opts \\ []) do
-    with :ok <- require_extension(client, "storage_volume_nbd"),
-         do:
-           Opsmaru.Incus.RawChannel.open(
-             client,
-             volume_path(pool, type, name) <>
-               "/nbd" <> if(opts[:writable], do: "?writable=1", else: ""),
-             "nbd"
-           )
+    with :ok <- upgrade_segments([pool, type, name]),
+         :ok <- upgrade_options(opts, :writable),
+         :ok <- require_extension(client, "storage_volume_nbd") do
+      Opsmaru.Incus.RawChannel.open(
+        client,
+        volume_path(pool, type, name) <>
+          "/nbd" <> if(opts[:writable] == true, do: "?writable=1", else: ""),
+        "nbd"
+      )
+    end
   end
 
   defp volume_path(pool, type, name),
     do:
       "/1.0/storage-pools/" <>
-        URI.encode(pool, &URI.char_unreserved?/1) <>
+        path_escape(pool) <>
         "/volumes/" <>
-        URI.encode(type, &URI.char_unreserved?/1) <>
-        "/" <> URI.encode(name, &URI.char_unreserved?/1)
+        path_escape(type) <> "/" <> path_escape(name)
+
+  # The unchanged Go helpers use url.PathEscape, preserving these path characters.
+  defp path_escape(value),
+    do: URI.encode(value, &(URI.char_unreserved?(&1) or &1 in ~c"$&+:=@"))
+
+  defp upgrade_segments(values) do
+    if Enum.all?(values, &(is_binary(&1) and byte_size(&1) in 1..1024 and String.valid?(&1))),
+      do: :ok,
+      else: {:error, %Error{kind: :invalid_arguments}}
+  end
+
+  defp upgrade_options(opts, key) do
+    if Keyword.keyword?(opts) and length(opts) <= 1 and
+         Enum.all?(opts, fn {name, value} -> name == key and is_boolean(value) end),
+       do: :ok,
+       else: {:error, %Error{kind: :invalid_arguments}}
+  end
 
   def connect(%Connection{} = connection, %Context{} = context) do
     with {:ok, response} <- raw_query(connection, context, "GET", "/1.0", []),

@@ -24,6 +24,11 @@ type Input struct {
 	Transfer    string `json:"transfer"`
 	Rootfs      []byte `json:"rootfs"`
 	Fingerprint string `json:"fingerprint"`
+	Secret      string `json:"secret"`
+	Pool        string `json:"pool"`
+	VolumeType  string `json:"volume_type"`
+	Name        string `json:"name"`
+	Writable    bool   `json:"writable"`
 	ImageType   string `json:"image_type"`
 
 	Action      string            `json:"action"`
@@ -122,6 +127,10 @@ func rawConnection(client incus.InstanceServer, input Input) {
 		conn, err = client.GetInstanceFileSFTPConn("fixture")
 	case "nbd":
 		conn, err = client.GetInstanceNBDConn("fixture", incus.InstanceNBDArgs{})
+	case "volume_sftp":
+		conn, err = client.GetStoragePoolVolumeFileSFTPConn(input.Pool, input.VolumeType, input.Name)
+	case "volume_nbd":
+		conn, err = client.GetStoragePoolVolumeBlockNBDConn(input.Pool, input.VolumeType, input.Name, incus.StorageVolumeNBDPost{Writable: input.Writable})
 	default:
 		err = fmt.Errorf("unknown fixture protocol")
 	}
@@ -215,46 +224,74 @@ func imageTransfer(client incus.InstanceServer, input Input, root string) {
 		switch input.Transfer {
 		case "copy_instance_local":
 			var instance api.Instance
-			if err = json.Unmarshal(body, &instance); err != nil { panic(err) }
+			if err = json.Unmarshal(body, &instance); err != nil {
+				panic(err)
+			}
 			operation, err = client.CopyInstance(client, instance, &incus.InstanceCopyArgs{Name: "copy"})
 		case "copy_snapshot_local":
 			var snapshot api.InstanceSnapshot
-			if err = json.Unmarshal(body, &snapshot); err != nil { panic(err) }
+			if err = json.Unmarshal(body, &snapshot); err != nil {
+				panic(err)
+			}
 			operation, err = client.CopyInstanceSnapshot(client, "fixture", snapshot, &incus.InstanceSnapshotCopyArgs{Name: "copy"})
 		case "copy_volume_local":
 			var volume api.StorageVolume
-			if err = json.Unmarshal(body, &volume); err != nil { panic(err) }
+			if err = json.Unmarshal(body, &volume); err != nil {
+				panic(err)
+			}
 			operation, err = client.CopyStoragePoolVolume("target-pool", client, "source-pool", volume, &incus.StoragePoolVolumeCopyArgs{Name: "copy"})
 		}
-		if err == nil { err = operation.Wait() }
-		if err != nil { result["error"] = err.Error() }
+		if err == nil {
+			err = operation.Wait()
+		}
+		if err != nil {
+			result["error"] = err.Error()
+		}
 		_ = json.NewEncoder(os.Stdout).Encode(result)
 		return
 	}
 	if input.Transfer == "file_read" {
 		reader, response, err := client.GetInstanceFile("fixture", "/native")
-		if err != nil { panic(err) }
+		if err != nil {
+			panic(err)
+		}
 		result["response"] = response
-		if reader != nil { defer reader.Close(); result["bytes"], err = io.ReadAll(io.LimitReader(reader, 1048577)); if err != nil { panic(err) } }
+		if reader != nil {
+			defer reader.Close()
+			result["bytes"], err = io.ReadAll(io.LimitReader(reader, 1048577))
+			if err != nil {
+				panic(err)
+			}
+		}
 		_ = json.NewEncoder(os.Stdout).Encode(result)
 		return
 	}
 	if input.Transfer == "file_create" {
 		var args incus.InstanceFileArgs
 		body, _ := json.Marshal(input.Body)
-		if err := json.Unmarshal(body, &args); err != nil { panic(err) }
+		if err := json.Unmarshal(body, &args); err != nil {
+			panic(err)
+		}
 		args.Content = bytes.NewReader(input.Payload)
-		if err := client.CreateInstanceFile("fixture", "/native", args); err != nil { result["error"] = err.Error() }
+		if err := client.CreateInstanceFile("fixture", "/native", args); err != nil {
+			result["error"] = err.Error()
+		}
 		_ = json.NewEncoder(os.Stdout).Encode(result)
 		return
 	}
 	if input.Transfer == "backup_import" {
 		var args incus.InstanceBackupArgs
 		body, _ := json.Marshal(input.Body)
-		if err := json.Unmarshal(body, &args); err != nil { panic(err) }
+		if err := json.Unmarshal(body, &args); err != nil {
+			panic(err)
+		}
 		args.BackupFile = fixtureReader{bytes.NewReader(input.Payload)}
 		op, err := client.CreateInstanceFromBackup(args)
-		if err != nil { result["error"] = err.Error() } else { result["operation"] = op.Get() }
+		if err != nil {
+			result["error"] = err.Error()
+		} else {
+			result["operation"] = op.Get()
+		}
 		_ = json.NewEncoder(os.Stdout).Encode(result)
 		return
 	}
@@ -336,9 +373,17 @@ func imageTransfer(client incus.InstanceServer, input Input, root string) {
 		}
 		defer os.Remove(rootfs.Name())
 		defer rootfs.Close()
-		response, err := client.GetImageFile(input.Fingerprint, incus.ImageFileRequest{MetaFile: meta, RootfsFile: rootfs})
+		var response *incus.ImageFileResponse
+		if input.Transfer == "download_private_image" {
+			response, err = client.GetPrivateImageFile(input.Fingerprint, input.Secret, incus.ImageFileRequest{MetaFile: meta, RootfsFile: rootfs})
+		} else {
+			response, err = client.GetImageFile(input.Fingerprint, incus.ImageFileRequest{MetaFile: meta, RootfsFile: rootfs})
+		}
 		if err != nil {
 			result["error"] = err.Error()
+			if status, ok := api.StatusErrorMatch(err); ok {
+				result["error_status"] = status
+			}
 		} else {
 			result["response"] = response
 			_ = meta.Close()

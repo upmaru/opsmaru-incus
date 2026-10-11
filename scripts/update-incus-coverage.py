@@ -57,11 +57,21 @@ for name in ['GetStorageVolumeFile','CreateStorageVolumeFile','DeleteStorageVolu
  helpers[name]=('lib/opsmaru/incus/files.ex',['test/library/file_variants_reference_test.exs','test/library/backup_variants_test.exs'])
 for name in ['StatusCode.String','StatusCode.IsFinal','StatusCodeFromString']:
  helpers[name]=('lib/opsmaru/incus/status.ex',['test/library/model_helpers_reference_test.exs'])
+for name in ['GetStoragePoolVolumeFileSFTPConn','GetStoragePoolVolumeBlockNBDConn']:
+ helpers[name]=('lib/opsmaru/incus.ex',['test/library/volume_upgrade_reference_test.exs'])
+helpers['GetPrivateImageFile']=('lib/opsmaru/incus/images.ex',['test/library/private_image_reference_test.exs'])
+helpers['ConsoleInstanceDynamic']=('lib/opsmaru/incus/dynamic_console.ex',['test/library/dynamic_console_reference_test.exs'])
+for name in ['ConfigMap.UnmarshalJSON','DevicesMap.UnmarshalJSON']:
+ helpers[name]=('lib/opsmaru/incus/native_config.ex',['test/library/native_config_reference_test.exs'])
 entries=[]
 for entry in inv['entries']:
  name=entry['name'].split('.')[-1]
  row=dict(id=entry['id'], status='missing', elixir=None, evidence=[], note='No verified implementation/evidence claim.')
- if entry['kind'] in ['method','interface_method'] and name in methods:
+ if entry['source'] in ['client/oci_images.go','client/simplestreams_images.go'] and name == 'GetPrivateImageFile':
+  pass # Native Incus private exports do not establish other protocol parity.
+ elif entry['package']=='shared/api' and entry['kind']=='type' and name in ['ConfigMap','DevicesMap']:
+  row.update(status='partial',elixir='lib/opsmaru/incus/native_config.ex',evidence=['test/library/native_config_reference_test.exs'],note='Explicit bounded native JSON coercion/merge slice; YAML and full type parity remain unverified.')
+ elif entry['kind'] in ['method','interface_method'] and name in methods:
   row.update(status='partial',elixir='lib/opsmaru/incus/api.ex',evidence=['test/library/resource_slice_test.exs'] + (['test/library/session_test.exs'] if name in ['ExecInstance','ConsoleInstance'] else []) + (['test/library/migration_test.exs'] if name.startswith('Migrate') else []),note='Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate.')
  elif entry['kind'] in ['method','interface_method','function'] and (entry['name'] in helpers or name in helpers):
   impl,evidence=helpers.get(entry['name'],helpers.get(name));row.update(status='partial',elixir=impl,evidence=evidence,note='Bounded helper slice only; consult public coverage limitations before use.')

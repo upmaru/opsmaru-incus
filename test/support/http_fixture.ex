@@ -143,6 +143,9 @@ defmodule Opsmaru.TestSupport.HTTPFixture do
       response = handler.(request)
 
       case response do
+        %{upgrade: handler} when is_function(handler, 2) ->
+          handler.(transport, socket)
+
         %{wire_chunks: chunks} ->
           Enum.reduce_while(chunks, :ok, fn {delay, bytes}, _ ->
             Process.sleep(delay)

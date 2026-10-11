@@ -13,7 +13,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 
 | Evidence | Result | Limits |
 | --- | --- | --- |
-| Database-free `mise run check:library` | 406 tests passed with the expanded task 3.9 fixtures | macOS local fixtures; full parity incomplete |
+| Database-free `mise run check:library` | 441 tests passed with the expanded task 3.9 fixtures | macOS local fixtures; full parity incomplete |
 | Archive variants/TLS/migration focused checks | 5 tests passed | Native fake-backend archive bytes, HTTPS upgrades and failure preservation |
 | Actual embedded startup/restart with PHX_SERVER and invalid PORT | Empty supervision, no new ports/state/Endpoint/Repo | Installed Macus not exercised |
 | Official typed resource calls | 268 methods compared | Request/result/error/extension slices, not all-field semantic parity |
@@ -38,14 +38,35 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | macOS/Linux CI | 406 core tests and clean immutable consumer passed on both platforms at ceb152656739a2b2d1cd7472302d98ad5a4c4e0b | Protocol fixtures only; no real Incus/Macus |
 | Independent immutable consumer | 1 clean consumer test passed at published ceb152656739a2b2d1cd7472302d98ad5a4c4e0b | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
-The coverage manifest records 268 differential JSON methods, 865 partial
-reference mappings and 415 missing declarations. Missing entries prevent a
+The coverage manifest records 268 differential JSON methods, 877 partial
+reference mappings and 403 missing declarations. Missing entries prevent a
 complete-port claim. See `incus-client.md` for the exact API and limitations.
 The v7.0.1 rawConn prefetch defect is negative oracle evidence; Opsmaru's
 required preservation behavior is independently checked without patching the
 oracle or treating the discrepancy as an approval gate.
 
-Task 3.9 gained 111 declaration mappings and 63 library tests in this continuation.
+This continuation adds 35 library tests and 12 partial declaration mappings:
+volume SFTP/read-only/writable NBD typed comparisons over Unix and HTTPS,
+private unified/split image exports, explicit native ConfigMap/DevicesMap JSON
+coercion, and repeated dynamic-console attachments/control. All 441 database-free
+library tests passed locally, as did the canonical full checks with a fresh
+isolated PostgreSQL cluster, stopped and removed afterward. The reference tag,
+revision and source hashes remain unchanged. No new live-backend evidence is
+claimed; the preceding 406-test CI run below remains historical until the new
+revision passes its own platform checks.
+
+Private-image unusual token characters match the pinned helper's double form
+encoding. Native JSON coercion includes scalar/null/device-property merge and
+float64 precision/formatting edge cases; Go's ARM64/AMD64 conversion difference
+at positive 2^63 is preserved. Dynamic console uses one accepted POST/control
+channel and bounded, owner-bound data attachments. Missing descriptors and
+control/data handshake failure retain the accepted identity. Native operation
+WebSocket comparisons omit project/member, because the pinned helper does;
+Opsmaru's required explicit selection is separately checked on every request.
+Full callback/IO/YAML/other architecture and backend forwarding acceptance stay
+visible as remaining coverage.
+
+The preceding continuation added 111 declaration mappings and 63 library tests.
 The previously unchecked documentation revision 7d44efe failed macOS CI because
 its raw deadline test checked process liveness immediately after the error
 notification. The test now waits for a bounded monitor DOWN, preserving the

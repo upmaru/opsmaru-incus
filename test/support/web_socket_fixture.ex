@@ -79,7 +79,11 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
         body =
           Jason.encode!(%{
             type: "sync",
-            metadata: %{api_version: "1.0", api_extensions: [], environment: %{}}
+            metadata: %{
+              api_version: "1.0",
+              api_extensions: Keyword.get(opts, :api_extensions, []),
+              environment: %{}
+            }
           })
 
         :gen_tcp.send(socket, [

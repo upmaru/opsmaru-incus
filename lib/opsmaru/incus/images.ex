@@ -18,13 +18,42 @@ defmodule Opsmaru.Incus.Images do
     _ -> {:error, %Error{kind: :invalid_image_arguments}}
   end
 
+  @doc "Download a public or token-authorized private image to host-owned binary sinks."
   def download(client, fingerprint, sinks, opts \\ []) do
-    ref = make_ref()
-    secret = opts[:secret]
-    query = if secret in [nil, ""], do: "", else: "?" <> URI.encode_query(secret: secret)
-    path = "/1.0/images/" <> escape(fingerprint) <> "/export" <> query
-    handler = fn event -> image_event(event, ref, fingerprint, sinks) end
-    Transfer.download_events(client, path, handler)
+    with :ok <- download_arguments(fingerprint, sinks, opts) do
+      ref = make_ref()
+      secret = opts[:secret]
+
+      # Match the pinned GetPrivateImageFile -> setQueryParam encoding exactly.
+      query =
+        if secret in [nil, ""],
+          do: "",
+          else:
+            "?" <>
+              URI.encode_query(
+                secret: URI.encode_query(secret: secret) |> String.replace_prefix("secret=", "")
+              )
+
+      path = "/1.0/images/" <> escape(fingerprint) <> "/export" <> query
+      handler = fn event -> image_event(event, ref, fingerprint, sinks) end
+      Transfer.download_events(client, path, handler)
+    end
+  end
+
+  defp download_arguments(fingerprint, sinks, opts) do
+    valid =
+      is_binary(fingerprint) and byte_size(fingerprint) in 1..1024 and
+        String.valid?(fingerprint) and is_map(sinks) and map_size(sinks) in 1..2 and
+        Enum.all?(sinks, fn {key, sink} ->
+          key in [:metadata, :rootfs] and is_function(sink, 1)
+        end) and
+        Keyword.keyword?(opts) and length(opts) <= 1 and
+        Enum.all?(opts, fn {key, value} ->
+          key == :secret and is_binary(value) and byte_size(value) <= 8192 and
+            String.valid?(value)
+        end)
+
+    if valid, do: :ok, else: {:error, %Error{kind: :invalid_image_arguments}}
   end
 
   def alias_type(client, image_type, name) do
@@ -224,7 +253,12 @@ defmodule Opsmaru.Incus.Images do
 
     if is_map(adapter) and is_function(adapter[:metadata_sink], 1) and
          is_function(adapter[:metadata_source], 0) do
-      sinks = %{metadata: adapter[:metadata_sink], rootfs: adapter[:rootfs_sink]}
+      sinks = %{metadata: adapter[:metadata_sink]}
+
+      sinks =
+        if is_function(adapter[:rootfs_sink], 1),
+          do: Map.put(sinks, :rootfs, adapter[:rootfs_sink]),
+          else: sinks
 
       with {:ok, transfer} <- download(source, image["fingerprint"], sinks) do
         upload_opts = [metadata_name: image["filename"] || transfer.result.names.metadata]
@@ -500,7 +534,7 @@ defmodule Opsmaru.Incus.Images do
     end
   end
 
-  defp escape(value), do: URI.encode(value, &URI.char_unreserved?/1)
+  defp escape(value), do: URI.encode(value, &(URI.char_unreserved?(&1) or &1 in ~c"$&+:=@"))
 
   defp filename!(value) do
     if is_binary(value) and byte_size(value) in 1..1024 and
