@@ -1,7 +1,10 @@
 defmodule Opsmaru.Incus.Files do
   @moduledoc "Native file/directory and backup handoff with host-owned bounded binary sources/sinks."
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Error, Response, Transfer}
+  alias Opsmaru.Incus.Error
+  alias Opsmaru.Incus.Model
+  alias Opsmaru.Incus.Response
+  alias Opsmaru.Incus.Transfer
 
   def read(client, instance, path, sink) do
     read_path(client, file_path(instance, path), sink)
@@ -196,7 +199,7 @@ defmodule Opsmaru.Incus.Files do
       end
 
     with :ok <- Incus.require_extension(client, "direct_backup"),
-         {:ok, model} <- Opsmaru.Incus.Model.decode(type, Opsmaru.Incus.Model.encode(body)),
+         {:ok, model} <- Model.decode(type, Model.encode(body)),
          bytes = Jason.encode!(model.data) <> "\n",
          true <-
            byte_size(bytes) <=

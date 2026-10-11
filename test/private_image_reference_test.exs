@@ -224,9 +224,9 @@ defmodule Opsmaru.Incus.PrivateImageReferenceTest do
 
   defp multipart(meta, rootfs),
     do:
-      "--fixture-private\r\nContent-Disposition: form-data; name=\"metadata\"; filename=\"metadata.tar\"\r\nContent-Type: application/octet-stream\r\n\r\n" <>
+      ~s(--fixture-private\r\nContent-Disposition: form-data; name="metadata"; filename="metadata.tar"\r\nContent-Type: application/octet-stream\r\n\r\n) <>
         meta <>
-        "\r\n--fixture-private\r\nContent-Disposition: form-data; name=\"rootfs.img\"; filename=\"rootfs.img\"\r\nContent-Type: application/octet-stream\r\n\r\n" <>
+        ~s(\r\n--fixture-private\r\nContent-Disposition: form-data; name="rootfs.img"; filename="rootfs.img"\r\nContent-Type: application/octet-stream\r\n\r\n) <>
         rootfs <> "\r\n--fixture-private--\r\n"
 
   defp backend(root, identity, reply) do

@@ -6,6 +6,7 @@ defmodule Opsmaru.TestSupport.HTTPFixture do
   """
 
   use GenServer
+  alias Plug.Conn.Status
 
   def start_link(opts), do: GenServer.start_link(__MODULE__, opts)
   def endpoint(pid), do: GenServer.call(pid, :endpoint)
@@ -137,34 +138,32 @@ defmodule Opsmaru.TestSupport.HTTPFixture do
   end
 
   defp serve(transport, socket, owner) do
-    try do
-      request = read_request(transport, socket)
-      handler = GenServer.call(owner, {:request, request})
-      response = handler.(request)
+    request = read_request(transport, socket)
+    handler = GenServer.call(owner, {:request, request})
+    response = handler.(request)
 
-      case response do
-        %{upgrade: handler} when is_function(handler, 2) ->
-          handler.(transport, socket)
+    case response do
+      %{upgrade: handler} when is_function(handler, 2) ->
+        handler.(transport, socket)
 
-        %{wire_chunks: chunks} ->
-          Enum.reduce_while(chunks, :ok, fn {delay, bytes}, _ ->
-            Process.sleep(delay)
+      %{wire_chunks: chunks} ->
+        Enum.reduce_while(chunks, :ok, fn {delay, bytes}, _ ->
+          Process.sleep(delay)
 
-            case transport.send(socket, bytes) do
-              :ok -> {:cont, :ok}
-              {:error, _} -> {:halt, :ok}
-            end
-          end)
+          case transport.send(socket, bytes) do
+            :ok -> {:cont, :ok}
+            {:error, _} -> {:halt, :ok}
+          end
+        end)
 
-        _ ->
-          transport.send(socket, encode_response(response))
-      end
-    rescue
-      # A bounded client may close while the fixture reads a body.
-      MatchError -> :ok
-    after
-      transport.close(socket)
+      _ ->
+        transport.send(socket, encode_response(response))
     end
+  rescue
+    # A bounded client may close while the fixture reads a body.
+    MatchError -> :ok
+  after
+    transport.close(socket)
   end
 
   defp read_request(transport, socket) do
@@ -263,7 +262,7 @@ defmodule Opsmaru.TestSupport.HTTPFixture do
       "HTTP/1.1 ",
       Integer.to_string(status),
       " ",
-      Plug.Conn.Status.reason_phrase(status),
+      Status.reason_phrase(status),
       "\r\n",
       "Content-Type: application/json\r\nContent-Length: ",
       Integer.to_string(byte_size(body)),

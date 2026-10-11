@@ -35,8 +35,8 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | Go inventory parser regressions | Passed | Verifier-only tooling |
 | `mise run check` via `python3 scripts/check-isolated.py` | Format, warning-free compile, assets, 5 web tests, embedding and strict specs passed | New disposable UTF-8 PostgreSQL cluster, stopped/deleted afterward |
 | Strict OpenSpec validation | All three changes passed | Artifact consistency, not runtime acceptance |
-| macOS/Linux CI | 406 core tests and clean immutable consumer passed on both platforms at ceb152656739a2b2d1cd7472302d98ad5a4c4e0b | Protocol fixtures only; no real Incus/Macus |
-| Independent immutable consumer | 1 clean consumer test passed at published ceb152656739a2b2d1cd7472302d98ad5a4c4e0b | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
+| macOS/Linux CI | 441 core tests and clean immutable consumer passed on both platforms at 2827c6ea1e8ef3f9ff3205a70148bba197e4cb59 | Protocol fixtures only; no real Incus/Macus |
+| Independent immutable consumer | 1 clean consumer test passed at published 2827c6ea1e8ef3f9ff3205a70148bba197e4cb59 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
 The coverage manifest records 268 differential JSON methods, 877 partial
 reference mappings and 403 missing declarations. Missing entries prevent a
@@ -52,8 +52,7 @@ coercion, and repeated dynamic-console attachments/control. All 441 database-fre
 library tests passed locally, as did the canonical full checks with a fresh
 isolated PostgreSQL cluster, stopped and removed afterward. The reference tag,
 revision and source hashes remain unchanged. No new live-backend evidence is
-claimed; the preceding 406-test CI run below remains historical until the new
-revision passes its own platform checks.
+claimed; the 441-test native-error follow-up at 2827c6e passed on both Linux and macOS.
 
 Private-image unusual token characters match the pinned helper's double form
 encoding. Native JSON coercion includes scalar/null/device-property merge and
@@ -65,6 +64,28 @@ WebSocket comparisons omit project/member, because the pinned helper does;
 Opsmaru's required explicit selection is separately checked on every request.
 Full callback/IO/YAML/other architecture and backend forwarding acceptance stay
 visible as remaining coverage.
+
+Independent review reproduced native transfer rejection responses missing their
+originating connection/host identity. The shared transfer error path now binds
+native envelopes as well as successful responses. The private-image regression
+failed before this correction and passes afterward; all 441 library tests and
+isolated canonical full checks passed again. Native payload, ETag and caller
+reconciliation data remain retained and redacted from ordinary inspection.
+
+Credo 1.7.19 is pinned as a development/test/library dependency with `runtime:
+false`, and `mix precommit` runs `credo --strict`. Both canonical mise check
+profiles also enforce it. `.credo.exs` retains all default checks with finite
+complexity/nesting limits, covers library/web/consumer/fixture code, and excludes
+consumer dependency/build directories. Existing findings were resolved by alias
+ordering and smaller validators/protocol/fixture handlers, without suppressing
+checks. Strict Credo reported no issues across 834 modules/functions; all 441
+library tests passed after the refactors. `python3 scripts/check-isolated.py
+--precommit` ran the actual precommit alias and canonical checks successfully
+against one fresh disposable test database; both 5-test scaffold runs passed.
+Greptile CLI review is requested but currently blocked: the authenticated account
+reports `upmaru/opsmaru` as not connected. Automatic approval review rejected
+`greptile init` because it changes persistent repository/organization access;
+explicit approval is pending. No Greptile acceptance is claimed.
 
 The preceding continuation added 111 declaration mappings and 63 library tests.
 The previously unchecked documentation revision 7d44efe failed macOS CI because
@@ -82,7 +103,8 @@ Phoenix 1.8.15, Mint 1.11.0, plug_cowboy 2.9.0, Cowboy 2.19.0 and TamaMCP 0.1.1.
 `scripts/check-consumer.py` builds the exact requested Git revision in a new
 temporary directory, with no source path dependency or sibling checkout.
 
-Final platform run: https://github.com/upmaru/opsmaru/actions/runs/38097350543.
+Expanded slice platform run: https://github.com/upmaru/opsmaru/actions/runs/38105449541.
+Native-error follow-up platform run: https://github.com/upmaru/opsmaru/actions/runs/38105719771 (passed).
 OpenSpec progress is 20/22: task 3.9 remains open for remaining reference parity;
 task 4.3 remains open for explicit isolated real-backend acceptance.
 
@@ -92,10 +114,11 @@ acceptance; consumer-owned installed Macus/VZ/hardware acceptance. Real-backend
 and hardware acceptance remain unchecked without explicit opt-in. No merge,
 release tag, deployment or OpenSpec archive is performed by these checks.
 
-Visible client gaps include server preseed, dynamic console, complete SFTP
-protocol helpers and storage upgrade method evidence, private image-file
-convenience helpers, OCI/SimpleStreams sources, event/operation handlers,
-remaining type/JSON/YAML utilities and full cross-cluster/option matrices.
+Visible client gaps include server preseed, full dynamic console callback/IO and
+SFTP protocol helpers, direct HTTP/WebSocket/context convenience helpers,
+OCI/SimpleStreams sources, event/operation handlers, remaining type/JSON/YAML
+utilities and full cross-cluster/option matrices. Native storage upgrade and
+private image-file method evidence are now recorded as partial slices.
 OIDC client helpers remain excluded by the approved foundation scope.
 
 The clean consumer reports the existing cowlib 2.21.0 advisory

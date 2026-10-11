@@ -156,54 +156,66 @@ defmodule Opsmaru.Incus.FileVariantsReferenceTest do
       :ok
     end
 
-    case action do
-      "volume-read" ->
-        Files.volume_read(client, "pool +", "custom", "volume +", "/path +", sink)
+    file_action(action, client, sink)
+  end
 
-      "volume-create" ->
-        Files.volume_create(client, "pool +", "custom", "volume +", "/path +", [@bytes],
-          uid: 7,
-          gid: 8,
-          mode: 0o640,
-          type: "file",
-          write_mode: "overwrite"
-        )
+  defp file_action("volume-read", client, sink) do
+    Files.volume_read(client, "pool +", "custom", "volume +", "/path +", sink)
+  end
 
-      "volume-delete" ->
-        Files.volume_delete(client, "pool +", "custom", "volume +", "/path +")
+  defp file_action("volume-create", client, _sink) do
+    Files.volume_create(client, "pool +", "custom", "volume +", "/path +", [@bytes],
+      uid: 7,
+      gid: 8,
+      mode: 0o640,
+      type: "file",
+      write_mode: "overwrite"
+    )
+  end
 
-      "instance-export" ->
-        Files.backup_download(client, "instance +", "backup +", sink)
+  defp file_action("volume-delete", client, _sink) do
+    Files.volume_delete(client, "pool +", "custom", "volume +", "/path +")
+  end
 
-      "volume-export" ->
-        Files.volume_backup_download(client, "pool +", "custom", "volume +", "backup +", sink)
+  defp file_action("instance-export", client, sink) do
+    Files.backup_download(client, "instance +", "backup +", sink)
+  end
 
-      "bucket-export" ->
-        Files.bucket_backup_download(client, "pool +", "bucket +", "backup +", sink)
+  defp file_action("volume-export", client, sink) do
+    Files.volume_backup_download(client, "pool +", "custom", "volume +", "backup +", sink)
+  end
 
-      "instance-direct" ->
-        Files.backup_stream(client, {:instance, "instance +"}, %{"name" => "native"}, sink)
+  defp file_action("bucket-export", client, sink) do
+    Files.bucket_backup_download(client, "pool +", "bucket +", "backup +", sink)
+  end
 
-      "volume-direct" ->
-        Files.backup_stream(
-          client,
-          {:volume, "pool +", "custom", "volume +"},
-          %{"name" => "native"},
-          sink
-        )
+  defp file_action("instance-direct", client, sink) do
+    Files.backup_stream(client, {:instance, "instance +"}, %{"name" => "native"}, sink)
+  end
 
-      "bucket-direct" ->
-        Files.backup_stream(client, {:bucket, "pool +", "bucket +"}, %{"name" => "native"}, sink)
+  defp file_action("volume-direct", client, sink) do
+    Files.backup_stream(
+      client,
+      {:volume, "pool +", "custom", "volume +"},
+      %{"name" => "native"},
+      sink
+    )
+  end
 
-      "volume-import" ->
-        Files.volume_import(client, "pool +", [@bytes], name: "native")
+  defp file_action("bucket-direct", client, sink) do
+    Files.backup_stream(client, {:bucket, "pool +", "bucket +"}, %{"name" => "native"}, sink)
+  end
 
-      "iso-import" ->
-        Files.volume_import(client, "pool +", [@bytes], name: "native", type: :iso)
+  defp file_action("volume-import", client, _sink) do
+    Files.volume_import(client, "pool +", [@bytes], name: "native")
+  end
 
-      "bucket-import" ->
-        Files.bucket_import(client, "pool +", [@bytes], name: "native")
-    end
+  defp file_action("iso-import", client, _sink) do
+    Files.volume_import(client, "pool +", [@bytes], name: "native", type: :iso)
+  end
+
+  defp file_action("bucket-import", client, _sink) do
+    Files.bucket_import(client, "pool +", [@bytes], name: "native")
   end
 
   defp backend(root, outcome) do

@@ -110,8 +110,7 @@ defmodule Opsmaru.Incus.Transfer do
       end)
 
     with {:ok, socket, _} <- result,
-         {:ok, socket} <- Mint.HTTP.stream_request_body(socket, ref, :eof),
-         do: {:ok, socket}
+         do: Mint.HTTP.stream_request_body(socket, ref, :eof)
   end
 
   defp receive_response(socket, ref, connection, deadline, sink, acc) do
@@ -205,23 +204,24 @@ defmodule Opsmaru.Incus.Transfer do
     do: {:ok, %__MODULE__{http_status: acc.status, headers: acc.headers, bytes: acc.bytes}}
 
   defp finish(acc, _sink) do
-    with {:ok, response} <-
-           Response.decode(IO.iodata_to_binary(Enum.reverse(acc.body)), acc.status, acc.headers) do
-      if response.type == "error" or acc.status >= 400 do
-        {:error,
-         %Error{
-           kind: :native,
-           http_status: acc.status,
-           error_code: response.error_code,
-           message: response.error,
-           response: response,
-           operation: response.operation
-         }}
-      else
-        {:ok, response}
-      end
-    else
-      _ -> failed(acc.method, :invalid_response)
+    case Response.decode(IO.iodata_to_binary(Enum.reverse(acc.body)), acc.status, acc.headers) do
+      {:ok, response} ->
+        if response.type == "error" or acc.status >= 400 do
+          {:error,
+           %Error{
+             kind: :native,
+             http_status: acc.status,
+             error_code: response.error_code,
+             message: response.error,
+             response: response,
+             operation: response.operation
+           }}
+        else
+          {:ok, response}
+        end
+
+      _ ->
+        failed(acc.method, :invalid_response)
     end
   end
 

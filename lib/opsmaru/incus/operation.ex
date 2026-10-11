@@ -66,27 +66,25 @@ defmodule Opsmaru.Incus.Operation do
         {:ok, current} ->
           current = %{current | client: operation.client}
 
-          cond do
-            completed?(current) ->
-              if successful?(current),
-                do: {:ok, current},
-                else:
-                  {:error,
-                   %Error{
-                     kind: :operation_failed,
-                     response: current.response,
-                     operation: operation.url
-                   }}
-
-            true ->
-              Process.sleep(min(interval, max(0, deadline - now())))
-              wait_until(current, deadline, interval)
+          if completed?(current) do
+            completion_result(current)
+          else
+            Process.sleep(min(interval, max(0, deadline - now())))
+            wait_until(current, deadline, interval)
           end
 
         {:error, error} ->
           {:error, %{error | operation: operation.url}}
       end
     end
+  end
+
+  defp completion_result(current) do
+    if successful?(current),
+      do: {:ok, current},
+      else:
+        {:error,
+         %Error{kind: :operation_failed, response: current.response, operation: current.url}}
   end
 
   def cancel(operation) do

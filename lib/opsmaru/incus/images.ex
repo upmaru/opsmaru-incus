@@ -41,20 +41,28 @@ defmodule Opsmaru.Incus.Images do
   end
 
   defp download_arguments(fingerprint, sinks, opts) do
-    valid =
-      is_binary(fingerprint) and byte_size(fingerprint) in 1..1024 and
-        String.valid?(fingerprint) and is_map(sinks) and map_size(sinks) in 1..2 and
+    if valid_fingerprint?(fingerprint) and valid_sinks?(sinks) and valid_download_options?(opts),
+      do: :ok,
+      else: {:error, %Error{kind: :invalid_image_arguments}}
+  end
+
+  defp valid_fingerprint?(value),
+    do: is_binary(value) and byte_size(value) in 1..1024 and String.valid?(value)
+
+  defp valid_sinks?(sinks),
+    do:
+      is_map(sinks) and map_size(sinks) in 1..2 and
         Enum.all?(sinks, fn {key, sink} ->
           key in [:metadata, :rootfs] and is_function(sink, 1)
-        end) and
-        Keyword.keyword?(opts) and length(opts) <= 1 and
+        end)
+
+  defp valid_download_options?(opts),
+    do:
+      Keyword.keyword?(opts) and length(opts) <= 1 and
         Enum.all?(opts, fn {key, value} ->
           key == :secret and is_binary(value) and byte_size(value) <= 8192 and
             String.valid?(value)
         end)
-
-    if valid, do: :ok, else: {:error, %Error{kind: :invalid_image_arguments}}
-  end
 
   def alias_type(client, image_type, name) do
     with {:ok, response} <- Incus.call(client, "GetImageAlias", %{"name" => name}) do
@@ -324,34 +332,34 @@ defmodule Opsmaru.Incus.Images do
     headers = if image["public"] == true, do: [{"x-incus-public", "true"}], else: []
 
     headers =
-      if image["filename"] not in [nil, ""],
-        do: [{"x-incus-filename", image["filename"]} | headers],
-        else: headers
+      if image["filename"] in [nil, ""],
+        do: headers,
+        else: [{"x-incus-filename", image["filename"]} | headers]
 
     headers =
-      if image["properties"] not in [nil, %{}],
-        do: [
+      if image["properties"] in [nil, %{}],
+        do: headers,
+        else: [
           {"x-incus-properties", image["properties"] |> Enum.sort() |> URI.encode_query()}
           | headers
-        ],
-        else: headers
+        ]
 
     headers =
-      if image["profiles"] not in [nil, []],
-        do: [
+      if image["profiles"] in [nil, []],
+        do: headers,
+        else: [
           {"x-incus-profiles", URI.encode_query(Enum.map(image["profiles"], &{"profile", &1}))}
           | headers
-        ],
-        else: headers
+        ]
 
     headers =
-      if image["aliases"] not in [nil, []],
-        do: [
+      if image["aliases"] in [nil, []],
+        do: headers,
+        else: [
           {"x-incus-aliases",
            URI.encode_query(Enum.map(image["aliases"], &{"alias", &1["name"]}))}
           | headers
-        ],
-        else: headers
+        ]
 
     source = image["source"] || %{}
 
@@ -371,16 +379,7 @@ defmodule Opsmaru.Incus.Images do
 
       mode = if {type, subtype} == {"multipart", "form-data"}, do: :multipart, else: :unified
 
-      name =
-        if mode == :unified do
-          {_kind, params} =
-            :cow_multipart.parse_content_disposition(headers["content-disposition"] || "")
-
-          case List.keyfind(params, "filename", 0) do
-            {_, filename} -> filename
-            nil -> raise("missing native image filename")
-          end
-        end
+      name = image_name(mode, headers)
 
       state = %{
         mode: mode,
@@ -439,6 +438,18 @@ defmodule Opsmaru.Incus.Images do
     end
   end
 
+  defp image_name(:multipart, _), do: nil
+
+  defp image_name(:unified, headers) do
+    {_kind, params} =
+      :cow_multipart.parse_content_disposition(headers["content-disposition"] || "")
+
+    case List.keyfind(params, "filename", 0) do
+      {_, filename} -> filename
+      nil -> raise("missing native image filename")
+    end
+  end
+
   defp consume(%{mode: :unified} = state, bytes, sinks), do: write(state, bytes, sinks)
 
   defp consume(%{phase: :done} = state, bytes, _sinks) do
@@ -478,7 +489,9 @@ defmodule Opsmaru.Incus.Images do
             root when root in ["rootfs", "rootfs.img"] -> :rootfs
           end
 
-        if (state.parts ++ [kind]) not in [[:metadata], [:metadata, :rootfs]],
+        parts = state.parts ++ [kind]
+
+        if parts not in [[:metadata], [:metadata, :rootfs]],
           do: raise("invalid part ordering")
 
         consume(

@@ -1,7 +1,10 @@
 defmodule Opsmaru.Incus.SessionTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Session, Server}
+  alias Opsmaru.Context
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.Connection
+  alias Opsmaru.Incus.Server
+  alias Opsmaru.Incus.Session
   alias Opsmaru.TestSupport.WebSocketFixture
 
   test "exec/console negotiate native input/output/control and retain authoritative exit status" do

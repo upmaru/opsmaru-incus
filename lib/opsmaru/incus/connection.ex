@@ -1,4 +1,6 @@
 defmodule Opsmaru.Incus.Connection do
+  alias Opsmaru.Incus.ServerTrust
+
   @moduledoc """
   Explicit immutable host-selected backend. Construction performs no I/O.
 
@@ -38,36 +40,44 @@ defmodule Opsmaru.Incus.Connection do
   def https!(url, opts) do
     uri = URI.parse(url)
 
-    unless uri.scheme == "https" and is_binary(uri.host) and uri.host != "" and
-             uri.port in 1..65_535 and uri.path in [nil, "", "/"] and
-             is_nil(uri.userinfo) and is_nil(uri.query) and is_nil(uri.fragment),
-           do:
-             raise(
-               ArgumentError,
-               "HTTPS backend must be an origin without userinfo, path or query"
-             )
+    unless valid_origin?(uri),
+      do: raise(ArgumentError, "HTTPS backend must be an origin without userinfo, path or query")
 
     tls = Keyword.fetch!(opts, :tls)
 
-    unless (is_list(tls) and
-              Keyword.keys(tls) -- [:cacertfile, :certfile, :keyfile, :fingerprint] == [] and
-              tls[:certfile]) && tls[:keyfile] && (tls[:cacertfile] || tls[:fingerprint]),
-           do:
-             raise(
-               ArgumentError,
-               "TLS requires CA, client certificate and private-key file references"
-             )
+    unless valid_tls_references?(tls),
+      do:
+        raise(
+          ArgumentError,
+          "TLS requires CA, client certificate and private-key file references"
+        )
 
-    for {key, path} <- tls, key != :fingerprint do
-      unless is_binary(path) and Path.type(path) == :absolute and
-               not String.contains?(path, <<0>>),
-             do: raise(ArgumentError, "TLS file references must be absolute paths")
-    end
+    validate_tls_files!(tls)
 
     if tls[:fingerprint] && not Regex.match?(~r/\A[0-9a-fA-F]{64}\z/, tls[:fingerprint]),
       do: raise(ArgumentError, "server fingerprint must be a SHA-256 hexadecimal digest")
 
     new!(Keyword.delete(opts, :tls), :https, %{uri | path: nil}, tls)
+  end
+
+  defp valid_origin?(uri),
+    do:
+      uri.scheme == "https" and is_binary(uri.host) and uri.host != "" and uri.port in 1..65_535 and
+        uri.path in [nil, "", "/"] and is_nil(uri.userinfo) and is_nil(uri.query) and
+        is_nil(uri.fragment)
+
+  defp valid_tls_references?(tls),
+    do:
+      (is_list(tls) and
+         Keyword.keys(tls) -- [:cacertfile, :certfile, :keyfile, :fingerprint] == [] and
+         tls[:certfile]) && tls[:keyfile] && (tls[:cacertfile] || tls[:fingerprint])
+
+  defp validate_tls_files!(tls) do
+    for {key, path} <- tls, key != :fingerprint do
+      unless is_binary(path) and Path.type(path) == :absolute and
+               not String.contains?(path, <<0>>),
+             do: raise(ArgumentError, "TLS file references must be absolute paths")
+    end
   end
 
   @doc "Select a native project without changing any other connection."
@@ -93,7 +103,7 @@ defmodule Opsmaru.Incus.Connection do
       Keyword.put(
         options,
         :verify_fun,
-        {&Opsmaru.Incus.ServerTrust.verify/3,
+        {&ServerTrust.verify/3,
          %{
            digest: Base.decode16!(tls[:fingerprint], case: :mixed),
            hostname: uri.host,

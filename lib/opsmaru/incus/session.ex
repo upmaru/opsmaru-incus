@@ -1,7 +1,10 @@
 defmodule Opsmaru.Incus.Session do
   @moduledoc "Native exec/console channels and controls, retaining accepted operation identity."
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Error, Operation, WebSocket}
+  alias Opsmaru.Incus.Error
+  alias Opsmaru.Incus.Model
+  alias Opsmaru.Incus.Operation
+  alias Opsmaru.Incus.WebSocket
   defstruct [:operation, channels: %{}]
 
   def exec(client, instance, body) do
@@ -13,7 +16,7 @@ defmodule Opsmaru.Incus.Session do
   end
 
   def console(client, instance, body) do
-    body = Opsmaru.Incus.Model.encode(body)
+    body = Model.encode(body)
     body = if body["type"] in [nil, ""], do: Map.put(body, "type", "console"), else: body
 
     with {:ok, response} <-

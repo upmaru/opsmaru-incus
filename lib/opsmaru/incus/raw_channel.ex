@@ -63,61 +63,63 @@ defmodule Opsmaru.Incus.RawChannel do
   def init({connection, path, protocol, owner, ref}) do
     deadline = now() + connection.timeout
 
-    with {:ok, conn} <- Transport.open(connection, deadline) do
-      socket = Mint.HTTP.get_socket(conn)
-      transport = if connection.transport == :unix, do: :gen_tcp, else: :ssl
+    case Transport.open(connection, deadline) do
+      {:ok, conn} ->
+        socket = Mint.HTTP.get_socket(conn)
+        transport = if connection.transport == :unix, do: :gen_tcp, else: :ssl
 
-      :ok =
-        set_socket_options(transport, socket,
-          exit_on_close: false,
-          buffer: connection.max_chunk_bytes
-        )
+        :ok =
+          set_socket_options(transport, socket,
+            exit_on_close: false,
+            buffer: connection.max_chunk_bytes
+          )
 
-      result = handshake(conn, connection, path, protocol, deadline)
+        result = handshake(conn, connection, path, protocol, deadline)
 
-      case result do
-        {:ok, initial} ->
-          monitor = Process.monitor(owner)
-          timer = Process.send_after(self(), :lifetime, connection.stream_timeout)
+        case result do
+          {:ok, initial} ->
+            monitor = Process.monitor(owner)
+            timer = Process.send_after(self(), :lifetime, connection.stream_timeout)
 
-          state = %{
-            connection: connection,
-            transport: transport,
-            socket: socket,
-            owner: owner,
-            ref: ref,
-            monitor: monitor,
-            timer: timer,
-            deadline: now() + connection.stream_timeout,
-            queue: :queue.new(),
-            queued: 0,
-            received: 0,
-            written: 0,
-            pending: nil,
-            read_eof: false,
-            write_eof: false
-          }
+            state = %{
+              connection: connection,
+              transport: transport,
+              socket: socket,
+              owner: owner,
+              ref: ref,
+              monitor: monitor,
+              timer: timer,
+              deadline: now() + connection.stream_timeout,
+              queue: :queue.new(),
+              queued: 0,
+              received: 0,
+              written: 0,
+              pending: nil,
+              read_eof: false,
+              write_eof: false
+            }
 
-          case enqueue(state, initial) do
-            {:ok, state} ->
-              rearm(state)
-              {:ok, state}
+            case enqueue(state, initial) do
+              {:ok, state} ->
+                rearm(state)
+                {:ok, state}
 
-            _ ->
-              transport.close(socket)
-              {:stop, :stream_limit}
-          end
+              _ ->
+                transport.close(socket)
+                {:stop, :stream_limit}
+            end
 
-        {:error, %Error{} = error} ->
-          transport.close(socket)
-          {:stop, error}
+          {:error, %Error{} = error} ->
+            transport.close(socket)
+            {:stop, error}
 
-        _ ->
-          transport.close(socket)
-          {:stop, %Error{kind: if(now() >= deadline, do: :deadline, else: :upgrade_failed)}}
-      end
-    else
-      _ -> {:stop, %Error{kind: if(now() >= deadline, do: :deadline, else: :upgrade_failed)}}
+          _ ->
+            transport.close(socket)
+            {:stop, %Error{kind: if(now() >= deadline, do: :deadline, else: :upgrade_failed)}}
+        end
+
+      _ ->
+        {:stop, %Error{kind: if(now() >= deadline, do: :deadline, else: :upgrade_failed)}}
     end
   rescue
     _ -> {:stop, :upgrade_failed}

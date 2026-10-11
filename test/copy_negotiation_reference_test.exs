@@ -413,7 +413,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
                    %{raw: ""}
 
                  req.method == "POST" ->
-                   if barrier, do: Agent.update(barrier, &MapSet.put(&1, name))
+                   record_post(barrier, name)
 
                    %{
                      status: 202,
@@ -423,11 +423,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
                        metadata: %{
                          id: name,
                          status_code: 103,
-                         metadata:
-                           if(String.contains?(req.target, "/images/"),
-                             do: %{secret: "native-secret"},
-                             else: %{control: "native-secret", fs: "data-secret"}
-                           )
+                         metadata: operation_secrets(req.target)
                        }
                      }
                    }
@@ -486,6 +482,16 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
     {client, fixture,
      Map.merge(endpoint, %{certificate: certificate, project: "fixture", member: "member"})}
   end
+
+  defp record_post(nil, _), do: :ok
+  defp record_post(barrier, name), do: Agent.update(barrier, &MapSet.put(&1, name))
+
+  defp operation_secrets(target),
+    do:
+      if(String.contains?(target, "/images/"),
+        do: %{secret: "native-secret"},
+        else: %{control: "native-secret", fs: "data-secret"}
+      )
 
   defp await_posts(barrier, deadline) do
     if Agent.get(barrier, &MapSet.size/1) < 2 do

@@ -59,59 +59,61 @@ defmodule Opsmaru.Incus.WebSocket do
   def init({connection, path, owner, ref}) do
     deadline = now() + connection.timeout
 
-    with {:ok, conn} <- Transport.open(connection, deadline) do
-      scheme = if connection.transport == :unix, do: :ws, else: :wss
+    case Transport.open(connection, deadline) do
+      {:ok, conn} ->
+        scheme = if connection.transport == :unix, do: :ws, else: :wss
 
-      result =
-        with {:ok, conn, request} <-
-               Mint.WebSocket.upgrade(
-                 scheme,
-                 conn,
-                 path,
-                 Transport.request_headers(connection, [])
-               ),
-             {:ok, conn, status, headers, initial} <-
-               Upgrade.receive_response(conn, request, deadline, connection.max_response_bytes),
-             :ok <- accepted_upgrade(status, headers, initial),
-             {:ok, conn, websocket} <-
-               Mint.WebSocket.new(conn, request, status, headers, mode: :passive) do
-          state = %{
-            connection: connection,
-            conn: conn,
-            websocket: websocket,
-            request: request,
-            owner: owner,
-            ref: ref,
-            monitor: Process.monitor(owner),
-            timer: Process.send_after(self(), :lifetime, connection.stream_timeout),
-            queue: :queue.new(),
-            queued: 0,
-            pending: nil,
-            received: 0,
-            written: 0,
-            closed: false
-          }
+        result =
+          with {:ok, conn, request} <-
+                 Mint.WebSocket.upgrade(
+                   scheme,
+                   conn,
+                   path,
+                   Transport.request_headers(connection, [])
+                 ),
+               {:ok, conn, status, headers, initial} <-
+                 Upgrade.receive_response(conn, request, deadline, connection.max_response_bytes),
+               :ok <- accepted_upgrade(status, headers, initial),
+               {:ok, conn, websocket} <-
+                 Mint.WebSocket.new(conn, request, status, headers, mode: :passive) do
+            state = %{
+              connection: connection,
+              conn: conn,
+              websocket: websocket,
+              request: request,
+              owner: owner,
+              ref: ref,
+              monitor: Process.monitor(owner),
+              timer: Process.send_after(self(), :lifetime, connection.stream_timeout),
+              queue: :queue.new(),
+              queued: 0,
+              pending: nil,
+              received: 0,
+              written: 0,
+              closed: false
+            }
 
-          case decode(state, IO.iodata_to_binary(Enum.reverse(initial))) do
-            {:ok, state} -> rearm(state)
-            error -> error
+            case decode(state, IO.iodata_to_binary(Enum.reverse(initial))) do
+              {:ok, state} -> rearm(state)
+              error -> error
+            end
           end
+
+        case result do
+          {:ok, state} ->
+            {:ok, state}
+
+          {:error, kind} ->
+            Mint.HTTP.close(conn)
+            {:stop, kind}
+
+          _ ->
+            Mint.HTTP.close(conn)
+            {:stop, :upgrade_failed}
         end
 
-      case result do
-        {:ok, state} ->
-          {:ok, state}
-
-        {:error, kind} ->
-          Mint.HTTP.close(conn)
-          {:stop, kind}
-
-        _ ->
-          Mint.HTTP.close(conn)
-          {:stop, :upgrade_failed}
-      end
-    else
-      _ -> {:stop, :connection_failed}
+      _ ->
+        {:stop, :connection_failed}
     end
   rescue
     _ -> {:stop, :upgrade_failed}
@@ -239,36 +241,39 @@ defmodule Opsmaru.Incus.WebSocket do
         Enum.reduce_while(
           frames,
           {:ok, %{state | websocket: websocket, received: state.received + byte_size(bytes)}},
-          fn
-            {:ping, payload}, {:ok, state} ->
-              case encode(state, {:pong, payload}) do
-                {:ok, state} -> {:cont, {:ok, state}}
-                _ -> {:halt, {:error, :channel_io}}
-              end
-
-            {:pong, _}, acc ->
-              {:cont, acc}
-
-            {:close, _, _}, {:ok, state} ->
-              {:cont, {:ok, %{state | closed: true}}}
-
-            {:error, _}, _ ->
-              {:halt, {:error, :invalid_frame}}
-
-            frame, {:ok, state} ->
-              if frame_size(frame) <= state.connection.max_response_bytes and
-                   state.queued < state.connection.queue_limit,
-                 do:
-                   {:cont,
-                    {:ok,
-                     %{state | queue: :queue.in(frame, state.queue), queued: state.queued + 1}}},
-                 else: {:halt, {:error, :overflow}}
-          end
+          &receive_frame/2
         )
       else
         _ -> {:error, :invalid_frame}
       end
     end
+  end
+
+  defp receive_frame({:ping, payload}, {:ok, state}) do
+    case encode(state, {:pong, payload}) do
+      {:ok, state} -> {:cont, {:ok, state}}
+      _ -> {:halt, {:error, :channel_io}}
+    end
+  end
+
+  defp receive_frame({:pong, _}, acc) do
+    {:cont, acc}
+  end
+
+  defp receive_frame({:close, _, _}, {:ok, state}) do
+    {:cont, {:ok, %{state | closed: true}}}
+  end
+
+  defp receive_frame({:error, _}, _) do
+    {:halt, {:error, :invalid_frame}}
+  end
+
+  defp receive_frame(frame, {:ok, state}) do
+    if frame_size(frame) <= state.connection.max_response_bytes and
+         state.queued < state.connection.queue_limit,
+       do:
+         {:cont, {:ok, %{state | queue: :queue.in(frame, state.queue), queued: state.queued + 1}}},
+       else: {:halt, {:error, :overflow}}
   end
 
   defp encode(state, frame) do

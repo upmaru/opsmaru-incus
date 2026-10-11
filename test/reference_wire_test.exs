@@ -1,7 +1,10 @@
 defmodule Opsmaru.Incus.ReferenceWireTest do
   use ExUnit.Case, async: false
 
-  alias Opsmaru.TestSupport.{HTTPFixture, WireComparison}
+  alias Opsmaru.Incus.Connection
+  alias Opsmaru.TestSupport.HTTPFixture
+  alias Opsmaru.TestSupport.TLSIdentity
+  alias Opsmaru.TestSupport.WireComparison
 
   @fixtures Path.expand("../fixtures/incus/wire.json", __DIR__)
   @driver Path.expand("../../.integration/incus-reference-driver", __DIR__)
@@ -49,7 +52,7 @@ defmodule Opsmaru.Incus.ReferenceWireTest do
   end
 
   test "pinned official client agrees with TLS 1.3 wire fixtures", %{root: root} do
-    identity = Opsmaru.TestSupport.TLSIdentity.generate(root, "oracle-server", "localhost")
+    identity = TLSIdentity.generate(root, "oracle-server", "localhost")
 
     exercise(:ssl, root,
       certfile: identity.certfile,
@@ -135,9 +138,9 @@ defmodule Opsmaru.Incus.ReferenceWireTest do
 
       connection =
         if transport == :gen_tcp do
-          Opsmaru.Incus.Connection.unix!(endpoint.socket, owner: :fixture)
+          Connection.unix!(endpoint.socket, owner: :fixture)
         else
-          Opsmaru.Incus.Connection.https!(endpoint.url,
+          Connection.https!(endpoint.url,
             owner: :fixture,
             tls: [
               cacertfile: tls_opts[:cacertfile],

@@ -1,5 +1,12 @@
 defmodule FoundationConsumer.EmbeddingTest do
   use ExUnit.Case
+  alias Opsmaru.Incus.Connection
+  alias Opsmaru.Incus.Discovery
+  alias Opsmaru.Incus.DynamicConsole
+  alias Opsmaru.Incus.Images
+  alias Opsmaru.Incus.Model
+  alias Opsmaru.Incus.NativeConfig
+  alias Opsmaru.Incus.Status
 
   test "independent host endpoint and private Unix backend use direct library calls" do
     assert Process.whereis(FoundationConsumer.Endpoint)
@@ -58,7 +65,7 @@ defmodule FoundationConsumer.EmbeddingTest do
       )
 
     connection =
-      Opsmaru.Incus.Connection.unix!(path, owner: :macus_fixture, project: "host-project")
+      Connection.unix!(path, owner: :macus_fixture, project: "host-project")
 
     assert {:error, %Opsmaru.Incus.Error{kind: :host_not_ready}} =
              Opsmaru.Incus.connect(connection, context)
@@ -69,22 +76,32 @@ defmodule FoundationConsumer.EmbeddingTest do
     assert client.server.api_version == "1.0"
     assert_receive {:request, request}
     assert request =~ "GET /1.0?project=host-project HTTP/1.1"
-    assert {:ok, info} = Opsmaru.Incus.Discovery.connection_info(client)
+    assert {:ok, info} = Discovery.connection_info(client)
     assert info.project == "host-project"
-    assert {:ok, strict} = Opsmaru.Incus.Discovery.require_authenticated(client)
+    assert {:ok, strict} = Discovery.require_authenticated(client)
     assert strict.connection.require_authenticated
     refute client.connection.require_authenticated
-    assert Opsmaru.Incus.Status.string(103) == "Running"
+    assert Status.string(103) == "Running"
 
     assert {:ok, profile} =
-             Opsmaru.Incus.Model.decode("Profile", %{
+             Model.decode("Profile", %{
                "name" => "host",
                "config" => %{"user.fixture" => "native"}
              })
 
-    assert {:ok, writable} = Opsmaru.Incus.Model.writable(profile)
+    assert {:ok, writable} = Model.writable(profile)
     assert writable.data == %{"config" => %{"user.fixture" => "native"}}
     assert profile.data["name"] == "host"
+
+    assert {:ok, %{"user.fixture" => "true"}} =
+             NativeConfig.from_json("ConfigMap", ~s({"user.fixture":true}))
+
+    assert {:error, %Opsmaru.Incus.Error{kind: :invalid_console_arguments}} =
+             DynamicConsole.open(client, "fixture", %{}, max_attachments: 0)
+
+    assert {:error, %Opsmaru.Incus.Error{kind: :invalid_image_arguments}} =
+             Images.download(client, "fingerprint", %{}, secret: "fixture-secret")
+
     refute_receive {:request, _}, 30
     refute File.exists?(context.private_state)
     assert Process.whereis(FoundationConsumer.Endpoint)

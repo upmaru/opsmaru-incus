@@ -1,6 +1,8 @@
 defmodule Opsmaru.Incus.NativeConfigReferenceTest do
   use ExUnit.Case, async: true
-  alias Opsmaru.Incus.{Error, NativeConfig}
+  alias Opsmaru.Incus.Error
+  alias Opsmaru.Incus.Model
+  alias Opsmaru.Incus.NativeConfig
   @driver Path.expand("../../.integration/incus-configmaps-driver", __DIR__)
 
   setup_all do
@@ -35,15 +37,15 @@ defmodule Opsmaru.Incus.NativeConfigReferenceTest do
             -2.75,
             0.00001,
             0.00012,
-            1.2345678e6,
-            -1.2345678e6,
+            1.234_567_8e6,
+            -1.234_567_8e6,
             9_007_199_254_740_993,
             9_223_372_036_854_775_807,
             -9_223_372_036_854_775_808,
             1.0e20,
             1.234e-20,
             -1.234e20,
-            1.7976931348623157e308
+            1.797_693_134_862_315_7e308
           ] do
         data = if type == "ConfigMap", do: %{"key" => value}, else: %{"eth0" => %{"key" => value}}
         assert {:ok, native} = NativeConfig.from_json(type, Jason.encode!(data))
@@ -116,12 +118,12 @@ defmodule Opsmaru.Incus.NativeConfigReferenceTest do
 
   test "normalization is explicit and does not alter a lossless native model" do
     data = %{"config" => %{"user.native" => "true"}, "unknown" => nil}
-    assert {:ok, model} = Opsmaru.Incus.Model.decode("Profile", data)
+    assert {:ok, model} = Model.decode("Profile", data)
 
     assert {:ok, %{"user.native" => "true"}} =
              NativeConfig.from_json("ConfigMap", Jason.encode!(model.data["config"]))
 
-    assert Opsmaru.Incus.Model.encode(model) == data
+    assert Model.encode(model) == data
   end
 
   defp oracle(type, data, existing \\ nil) do

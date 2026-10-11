@@ -51,94 +51,96 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
   end
 
   defp serve(socket, owner, opts) do
-    try do
-      {header, initial} = header(socket, "")
-      [request | lines] = String.split(header, "\r\n", trim: true)
-      [method, target, _] = String.split(request, " ")
+    {header, initial} = header(socket, "")
+    [request | lines] = String.split(header, "\r\n", trim: true)
+    [method, target, _] = String.split(request, " ")
 
-      headers =
-        Map.new(lines, fn line ->
-          [name, value] = String.split(line, ":", parts: 2)
-          {String.downcase(name), String.trim(value)}
-        end)
+    headers =
+      Map.new(lines, fn line ->
+        [name, value] = String.split(line, ":", parts: 2)
+        {String.downcase(name), String.trim(value)}
+      end)
 
-      length = String.to_integer(headers["content-length"] || "0")
+    length = String.to_integer(headers["content-length"] || "0")
 
+    body =
+      if byte_size(initial) < length do
+        {:ok, rest} = :gen_tcp.recv(socket, length - byte_size(initial), 5_000)
+        initial <> rest
+      else
+        initial
+      end
+
+    request = %{method: method, target: target, headers: headers, body: body}
+    :ok = GenServer.call(owner, {:request, request})
+
+    if URI.parse(target).path == "/1.0" do
       body =
-        if byte_size(initial) < length do
-          {:ok, rest} = :gen_tcp.recv(socket, length - byte_size(initial), 5_000)
-          initial <> rest
-        else
-          initial
-        end
+        Jason.encode!(%{
+          type: "sync",
+          metadata: %{
+            api_version: "1.0",
+            api_extensions: Keyword.get(opts, :api_extensions, []),
+            environment: %{}
+          }
+        })
 
-      request = %{method: method, target: target, headers: headers, body: body}
-      :ok = GenServer.call(owner, {:request, request})
-
-      if URI.parse(target).path == "/1.0" do
-        body =
-          Jason.encode!(%{
-            type: "sync",
-            metadata: %{
-              api_version: "1.0",
-              api_extensions: Keyword.get(opts, :api_extensions, []),
-              environment: %{}
-            }
-          })
+      :gen_tcp.send(socket, [
+        "HTTP/1.1 200 OK\r\nContent-Length: ",
+        Integer.to_string(byte_size(body)),
+        "\r\n\r\n",
+        body
+      ])
+    else
+      if not Map.has_key?(headers, "sec-websocket-key") and opts[:http_handler] do
+        response = opts[:http_handler].(request)
+        body = Jason.encode!(response.body)
 
         :gen_tcp.send(socket, [
-          "HTTP/1.1 200 OK\r\nContent-Length: ",
+          "HTTP/1.1 ",
+          Integer.to_string(response.status),
+          " OK\r\nContent-Length: ",
           Integer.to_string(byte_size(body)),
           "\r\n\r\n",
           body
         ])
       else
-        if not Map.has_key?(headers, "sec-websocket-key") and opts[:http_handler] do
-          response = opts[:http_handler].(request)
-          body = Jason.encode!(response.body)
-
-          :gen_tcp.send(socket, [
-            "HTTP/1.1 ",
-            Integer.to_string(response.status),
-            " OK\r\nContent-Length: ",
-            Integer.to_string(byte_size(body)),
-            "\r\n\r\n",
-            body
-          ])
-        else
-          accept =
-            Base.encode64(
-              :crypto.hash(
-                :sha,
-                headers["sec-websocket-key"] <> "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-              )
+        accept =
+          Base.encode64(
+            :crypto.hash(
+              :sha,
+              headers["sec-websocket-key"] <> "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
             )
+          )
 
-          bytes = Keyword.get(opts, :wire, frame(2, <<0, 255, 128>>))
+        bytes = Keyword.get(opts, :wire, frame(2, <<0, 255, 128>>))
 
-          :ok =
-            :gen_tcp.send(socket, [
-              "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: ",
-              accept,
-              "\r\n\r\n",
-              bytes
-            ])
+        :ok =
+          :gen_tcp.send(socket, [
+            "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: ",
+            accept,
+            "\r\n\r\n",
+            bytes
+          ])
 
-          if opts[:close_after] do
-            spawn(fn ->
-              Process.sleep(opts[:close_after])
-              :gen_tcp.send(socket, frame(8, <<1000::16>>))
-            end)
-          end
+        close_later(socket, opts[:close_after])
 
-          echo(socket, opts)
-        end
+        echo(socket, opts)
       end
-    rescue
-      _ -> :ok
-    after
-      :gen_tcp.close(socket)
     end
+  rescue
+    _ -> :ok
+  after
+    :gen_tcp.close(socket)
+  end
+
+  defp close_later(_, nil), do: :ok
+
+  defp close_later(socket, delay) do
+    spawn(fn ->
+      Process.sleep(delay)
+      :gen_tcp.send(socket, frame(8, <<1000::16>>))
+    end)
   end
 
   defp header(socket, bytes) do

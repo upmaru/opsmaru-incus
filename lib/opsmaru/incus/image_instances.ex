@@ -39,40 +39,40 @@ defmodule Opsmaru.Incus.ImageInstances do
          :ok <- instance_only(target, request.data),
          {:ok, fields, remote?} <-
            source_fields(target, source, image.data, request.data["source"] || %{}, opts) do
-      case token(source, image.data, fields, remote?) do
-        {:ok, fields, token_response} ->
-          fields =
-            Map.reject(fields, fn {key, value} ->
-              key in ["alias", "fingerprint"] and value == ""
-            end)
-
-          body = Map.put(request.data, "source", fields)
-
-          with {:ok, response} <- Incus.call(target, method, args, body: body),
-               {:ok, operation} <- Operation.from_response(target, response) do
-            {:ok, operation}
-          else
-            {:error, %Error{} = error} ->
-              if token_response,
-                do: {:error, %{error | response: %{source: token_response, error: error}}},
-                else: {:error, error}
-          end
-
-        error ->
-          error
-      end
+      issue_with_token(target, source, image.data, request.data, fields, remote?, method, args)
     else
       {:error, %Error{} = error} -> {:error, error}
       _ -> {:error, %Error{kind: :invalid_image_arguments}}
     end
   end
 
+  defp issue_with_token(target, source, image, request, fields, remote?, method, args) do
+    case token(source, image, fields, remote?) do
+      {:ok, fields, token_response} ->
+        fields =
+          Map.reject(fields, fn {key, value} ->
+            key in ["alias", "fingerprint"] and value == ""
+          end)
+
+        body = Map.put(request, "source", fields)
+
+        with {:ok, response} <- Incus.call(target, method, args, body: body),
+             {:ok, operation} <- Operation.from_response(target, response) do
+          {:ok, operation}
+        else
+          {:error, %Error{} = error} ->
+            if token_response,
+              do: {:error, %{error | response: %{source: token_response, error: error}}},
+              else: {:error, error}
+        end
+
+      error ->
+        error
+    end
+  end
+
   defp source_fields(target, source, image, fields, opts) when is_map(fields) do
-    local =
-      target.connection.transport == source.connection.transport and
-        target.connection.address == source.connection.address and
-        (target.connection.project || "default") == (source.connection.project || "default") and
-        target.connection.member == source.connection.member
+    local = same_backend?(target, source)
 
     fields = Map.put(fields, "type", "image")
 
@@ -98,6 +98,13 @@ defmodule Opsmaru.Incus.ImageInstances do
       end
     end
   end
+
+  defp same_backend?(target, source),
+    do:
+      target.connection.transport == source.connection.transport and
+        target.connection.address == source.connection.address and
+        (target.connection.project || "default") == (source.connection.project || "default") and
+        target.connection.member == source.connection.member
 
   defp token(source, image, fields, true) do
     if image["public"] == true do

@@ -52,21 +52,7 @@ defmodule Opsmaru.Incus.Migration do
       initial = %__MODULE__{mode: mode}
 
       if mode == :push do
-        case issue(target, put_source(target_request, %{"type" => "migration", "mode" => "push"})) do
-          {:ok, target_op} ->
-            state = %{initial | target: target_op}
-
-            with {:ok, secrets} <- secrets(target_op),
-                 descriptor = descriptor(target, target_op, secrets, opts[:approved_origin]),
-                 {:ok, source_op} <- issue(source, put_body(source_request, "target", descriptor)) do
-              {:ok, %{state | source: source_op}}
-            else
-              {:error, error} -> failure(state, error, nil)
-            end
-
-          {:error, error} ->
-            failure(initial, error, nil)
-        end
+        negotiate_push(initial, source, target, source_request, target_request, opts)
       else
         # Track the accepted source before any target request can fail.
         case issue(source, source_request) do
@@ -84,23 +70,43 @@ defmodule Opsmaru.Incus.Migration do
     end
   end
 
-  defp negotiate_target(state, source, target, request, opts) do
-    with {:ok, secrets} <- secrets(state.source) do
-      fields =
-        if state.mode == :relay,
-          do: %{"type" => "migration", "mode" => "push"},
-          else:
-            Map.merge(descriptor(source, state.source, secrets, opts[:approved_origin]), %{
-              "type" => "migration",
-              "mode" => "pull"
-            })
+  defp negotiate_push(initial, source, target, source_request, target_request, opts) do
+    case issue(target, put_source(target_request, %{"type" => "migration", "mode" => "push"})) do
+      {:ok, target_op} ->
+        state = %{initial | target: target_op}
 
-      case issue(target, put_source(request, fields)) do
-        {:ok, target_op} -> {:ok, %{state | target: target_op}}
-        {:error, error} -> failure(state, error, nil)
-      end
-    else
-      {:error, error} -> failure(state, error, nil)
+        with {:ok, secrets} <- secrets(target_op),
+             descriptor = descriptor(target, target_op, secrets, opts[:approved_origin]),
+             {:ok, source_op} <- issue(source, put_body(source_request, "target", descriptor)) do
+          {:ok, %{state | source: source_op}}
+        else
+          {:error, error} -> failure(state, error, nil)
+        end
+
+      {:error, error} ->
+        failure(initial, error, nil)
+    end
+  end
+
+  defp negotiate_target(state, source, target, request, opts) do
+    case secrets(state.source) do
+      {:ok, secrets} ->
+        fields =
+          if state.mode == :relay,
+            do: %{"type" => "migration", "mode" => "push"},
+            else:
+              Map.merge(descriptor(source, state.source, secrets, opts[:approved_origin]), %{
+                "type" => "migration",
+                "mode" => "pull"
+              })
+
+        case issue(target, put_source(request, fields)) do
+          {:ok, target_op} -> {:ok, %{state | target: target_op}}
+          {:error, error} -> failure(state, error, nil)
+        end
+
+      {:error, error} ->
+        failure(state, error, nil)
     end
   end
 
@@ -185,20 +191,7 @@ defmodule Opsmaru.Incus.Migration do
       opened =
         Enum.reduce_while(Enum.sort(Map.keys(source_secrets)), {:ok, []}, fn name,
                                                                              {:ok, opened} ->
-          case open_channel(source, source_secrets[name], deadline) do
-            {:ok, left} ->
-              case open_channel(target, target_secrets[name], deadline) do
-                {:ok, right} ->
-                  {:cont, {:ok, [{left, right} | opened]}}
-
-                {:error, error} ->
-                  WebSocket.close(left)
-                  {:halt, {:error, error, opened}}
-              end
-
-            {:error, error} ->
-              {:halt, {:error, error, opened}}
-          end
+          open_pair(source, target, source_secrets[name], target_secrets[name], deadline, opened)
         end)
 
       case opened do
@@ -212,6 +205,23 @@ defmodule Opsmaru.Incus.Migration do
     else
       {:error, error} -> failure(migration, error, nil)
       _ -> failure(migration, :invalid_relay, nil)
+    end
+  end
+
+  defp open_pair(source, target, source_secret, target_secret, deadline, opened) do
+    case open_channel(source, source_secret, deadline) do
+      {:ok, left} ->
+        case open_channel(target, target_secret, deadline) do
+          {:ok, right} ->
+            {:cont, {:ok, [{left, right} | opened]}}
+
+          {:error, error} ->
+            WebSocket.close(left)
+            {:halt, {:error, error, opened}}
+        end
+
+      {:error, error} ->
+        {:halt, {:error, error, opened}}
     end
   end
 

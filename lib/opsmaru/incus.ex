@@ -8,7 +8,15 @@ defmodule Opsmaru.Incus do
   not evidence of typed method parity. No mutations are automatically retried.
   """
   alias Opsmaru.Context
-  alias Opsmaru.Incus.{Connection, Error, Response, Server, Transport}
+  alias Opsmaru.Incus.API
+  alias Opsmaru.Incus.Connection
+  alias Opsmaru.Incus.Error
+  alias Opsmaru.Incus.Images
+  alias Opsmaru.Incus.RawChannel
+  alias Opsmaru.Incus.Response
+  alias Opsmaru.Incus.Server
+  alias Opsmaru.Incus.Transfer
+  alias Opsmaru.Incus.Transport
   @enforce_keys [:connection, :context, :server]
   defstruct [:connection, :context, :server]
   @type t :: %__MODULE__{}
@@ -17,22 +25,22 @@ defmodule Opsmaru.Incus do
   def call(client, method, arguments \\ %{}, opts \\ [])
 
   def call(client, "GetImageAliasType", %{"image_type" => type, "name" => name}, []),
-    do: Opsmaru.Incus.Images.alias_type(client, type, name)
+    do: Images.alias_type(client, type, name)
 
   def call(client, "GetImageAliasArchitectures", %{"image_type" => type, "name" => name}, []),
-    do: Opsmaru.Incus.Images.alias_architectures(client, type, name)
+    do: Images.alias_architectures(client, type, name)
 
   def call(client, "GetImageSecret", %{"fingerprint" => fingerprint}, []),
-    do: Opsmaru.Incus.Images.image_secret(client, fingerprint)
+    do: Images.image_secret(client, fingerprint)
 
   def call(client, method, arguments, opts),
-    do: Opsmaru.Incus.API.call(client, method, arguments, opts)
+    do: API.call(client, method, arguments, opts)
 
   @doc "List implemented native method names. This is not a full-parity claim."
   def methods,
     do:
       Enum.sort(
-        Opsmaru.Incus.API.methods() ++
+        API.methods() ++
           ["GetImageAliasType", "GetImageAliasArchitectures", "GetImageSecret"]
       )
 
@@ -40,7 +48,7 @@ defmodule Opsmaru.Incus do
   def network_acl_log(client, name, sink) do
     with :ok <- require_extension(client, "network_acl_log"),
          do:
-           Opsmaru.Incus.Transfer.download(
+           Transfer.download(
              client,
              "/1.0/network-acls/" <> URI.encode(name, &URI.char_unreserved?/1) <> "/log",
              sink
@@ -50,7 +58,7 @@ defmodule Opsmaru.Incus do
   @doc "Open the native SFTP byte connection; the caller supplies its SFTP implementation."
   def sftp(client, instance) do
     with :ok <- upgrade_segments([instance]) do
-      Opsmaru.Incus.RawChannel.open(
+      RawChannel.open(
         client,
         "/1.0/instances/" <> path_escape(instance) <> "/sftp",
         "sftp"
@@ -69,7 +77,7 @@ defmodule Opsmaru.Incus do
           "/nbd" <>
           if(opts[:reuse] == true, do: "?reuse=1", else: "")
 
-      Opsmaru.Incus.RawChannel.open(client, path, "nbd")
+      RawChannel.open(client, path, "nbd")
     end
   end
 
@@ -77,7 +85,7 @@ defmodule Opsmaru.Incus do
   def volume_sftp(client, pool, type, name) do
     with :ok <- upgrade_segments([pool, type, name]),
          :ok <- require_extension(client, "custom_volume_sftp") do
-      Opsmaru.Incus.RawChannel.open(client, volume_path(pool, type, name) <> "/sftp", "sftp")
+      RawChannel.open(client, volume_path(pool, type, name) <> "/sftp", "sftp")
     end
   end
 
@@ -86,7 +94,7 @@ defmodule Opsmaru.Incus do
     with :ok <- upgrade_segments([pool, type, name]),
          :ok <- upgrade_options(opts, :writable),
          :ok <- require_extension(client, "storage_volume_nbd") do
-      Opsmaru.Incus.RawChannel.open(
+      RawChannel.open(
         client,
         volume_path(pool, type, name) <>
           "/nbd" <> if(opts[:writable] == true, do: "?writable=1", else: ""),
@@ -191,11 +199,7 @@ defmodule Opsmaru.Incus do
   def request_path(connection, path) when is_binary(path) do
     uri = URI.parse(path)
 
-    if byte_size(path) <= 16_384 and
-         (uri.path == "/1.0" or String.starts_with?(uri.path || "", "/1.0/")) and
-         not String.starts_with?(path, "//") and
-         is_nil(uri.host) and is_nil(uri.fragment) and
-         not String.contains?(path, ["\r", "\n", <<0>>]) do
+    if valid_request_path?(path, uri) do
       query = URI.query_decoder(uri.query || "") |> Enum.to_list()
 
       project =
@@ -216,6 +220,15 @@ defmodule Opsmaru.Incus do
   end
 
   def request_path(_, _), do: {:error, :invalid_path}
+
+  defp valid_request_path?(path, uri),
+    do:
+      byte_size(path) <= 16_384 and
+        (uri.path == "/1.0" or String.starts_with?(uri.path || "", "/1.0/")) and
+        not String.starts_with?(path, "//") and
+        is_nil(uri.host) and is_nil(uri.fragment) and
+        not String.contains?(path, ["\r", "\n", <<0>>])
+
   defp select(query, _, nil), do: {:ok, query}
 
   defp select(query, key, value) do
@@ -232,17 +245,21 @@ defmodule Opsmaru.Incus do
         etag = Keyword.get(opts, :etag)
         headers = if is_nil(body), do: [], else: [{"content-type", "application/json"}]
 
-        if is_nil(etag) or (is_binary(etag) and not String.contains?(etag, ["\r", "\n", <<0>>])) do
-          {:ok, body, headers ++ if(is_nil(etag), do: [], else: [{"if-match", etag}])}
-        else
-          {:error, :invalid_etag}
-        end
+        with {:ok, etag_headers} <- etag_headers(etag), do: {:ok, body, headers ++ etag_headers}
       else
         _ -> {:error, :invalid_body}
       end
     else
       {:error, :invalid_request}
     end
+  end
+
+  defp etag_headers(nil), do: {:ok, []}
+
+  defp etag_headers(etag) do
+    if is_binary(etag) and not String.contains?(etag, ["\r", "\n", <<0>>]),
+      do: {:ok, [{"if-match", etag}]},
+      else: {:error, :invalid_etag}
   end
 
   defp encode(nil), do: {:ok, nil}

@@ -1,8 +1,14 @@
 defmodule Opsmaru.Incus.RawChannelTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, RawChannel, Server}
-  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
+  alias Opsmaru.Context
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.Connection
+  alias Opsmaru.Incus.Error
+  alias Opsmaru.Incus.RawChannel
+  alias Opsmaru.Incus.Server
+  alias Opsmaru.Incus.Upgrade
+  alias Opsmaru.TestSupport.HTTPFixture
+  alias Opsmaru.TestSupport.TLSIdentity
 
   setup do
     root = Path.join(System.tmp_dir!(), "op-raw-#{System.unique_integer([:positive])}")
@@ -265,7 +271,7 @@ defmodule Opsmaru.Incus.RawChannelTest do
     deadline = System.monotonic_time(:millisecond) - 1
 
     assert {:error, %Error{kind: :deadline}} =
-             Opsmaru.Incus.Upgrade.receive_response(nil, make_ref(), deadline, 128)
+             Upgrade.receive_response(nil, make_ref(), deadline, 128)
   end
 
   defp fixture(root, context, protocol, initial, half_close) do

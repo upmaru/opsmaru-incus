@@ -130,19 +130,8 @@ defmodule Opsmaru.Incus.API do
 
     query =
       Map.new(method["query"], fn {key, value} ->
-        resolved =
-          cond do
-            value == "{filters}" ->
-              filters(args["filters"])
-
-            String.starts_with?(value, "{") ->
-              Map.fetch!(args, value |> String.trim_leading("{") |> String.trim_trailing("}"))
-
-            true ->
-              value
-          end
-
-        {key, if(key == "force", do: if(resolved, do: "1", else: ""), else: resolved)}
+        resolved = resolve_query(value, args)
+        {key, query_value(key, resolved)}
       end)
       |> Map.reject(fn {key, value} ->
         key in ["instance-type", "secret", "force"] and value == ""
@@ -152,6 +141,17 @@ defmodule Opsmaru.Incus.API do
   rescue
     _ -> {:error, :invalid_arguments}
   end
+
+  defp resolve_query("{filters}", args), do: filters(args["filters"])
+
+  defp resolve_query(value, args) do
+    if String.starts_with?(value, "{"),
+      do: Map.fetch!(args, value |> String.trim_leading("{") |> String.trim_trailing("}")),
+      else: value
+  end
+
+  defp query_value("force", value), do: if(value, do: "1", else: "")
+  defp query_value(_, value), do: value
 
   defp native_request(client, %{"name" => "MigrateStoragePoolVolume"} = method, args, body) do
     case String.split(body["name"] || "", "/") do

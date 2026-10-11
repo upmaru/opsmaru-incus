@@ -219,6 +219,19 @@ defmodule Opsmaru.Incus.Copy do
     body = Map.put(body, "source", source_fields(kind, body["source"]))
     target_request = {method, args, body}
 
+    if local_copy?(target, source, location, kind) do
+      dispatch_local(target, source, method, args, body, name, kind)
+    else
+      with :ok <- required(target, kind == :volume, "storage_api_remote_volume_handling") do
+        Migration.negotiate(source, target, source_request, target_request,
+          mode: opts[:mode] || :pull,
+          approved_origin: opts[:approved_origin]
+        )
+      end
+    end
+  end
+
+  defp local_copy?(target, source, location, kind) do
     local =
       target.connection.transport == source.connection.transport and
         target.connection.address == source.connection.address
@@ -234,57 +247,64 @@ defmodule Opsmaru.Incus.Copy do
 
     clustered = (target.server.environment || %{})["server_clustered"] == true
 
-    colocated =
-      location == target.connection.member or
-        (kind == :volume and location == "none" and is_nil(target.connection.member))
+    colocated = colocated?(location, target.connection.member, kind)
 
-    if local and (internal or colocated or (kind != :volume and not clustered)) do
-      different_project =
-        (source.connection.project || "default") != (target.connection.project || "default")
+    local and (internal or colocated or (kind != :volume and not clustered))
+  end
 
-      with :ok <-
-             required(
-               target,
-               different_project,
-               if(kind == :volume, do: "storage_api_project", else: "container_copy_project")
-             ) do
-        fields =
-          if kind != :volume,
-            do: %{"type" => "copy", "source" => name},
-            else: %{"type" => "copy"}
+  defp colocated?(location, member, kind),
+    do: location == member or (kind == :volume and location == "none" and is_nil(member))
 
-        fields =
-          if different_project,
-            do: Map.put(fields, "project", source.connection.project || "default"),
-            else: fields
-
-        fields =
-          if kind == :volume and internal,
-            do:
-              Map.put(
-                fields,
-                "location",
-                source.connection.member || (source.server.environment || %{})["server_name"] ||
-                  ""
-              ),
-            else: fields
-
-        body = Map.put(body, "source", Map.merge(body["source"], fields))
-        body = if kind == :snapshot, do: Map.delete(body, "type"), else: body
-
-        with {:ok, response} <- Incus.call(target, method, args, body: body),
-             {:ok, operation} <- Operation.from_response(target, response),
-             do: {:ok, %Migration{mode: :local, target: operation}}
-      end
-    else
-      with :ok <- required(target, kind == :volume, "storage_api_remote_volume_handling") do
-        Migration.negotiate(source, target, source_request, target_request,
-          mode: opts[:mode] || :pull,
-          approved_origin: opts[:approved_origin]
+  defp dispatch_local(target, source, method, args, body, name, kind) do
+    internal =
+      Incus.has_extension?(
+        target,
+        if(kind == :volume,
+          do: "cluster_internal_custom_volume_copy",
+          else: "cluster_internal_copy"
         )
-      end
+      )
+
+    different_project =
+      (source.connection.project || "default") != (target.connection.project || "default")
+
+    with :ok <-
+           required(
+             target,
+             different_project,
+             if(kind == :volume, do: "storage_api_project", else: "container_copy_project")
+           ) do
+      fields =
+        if kind != :volume,
+          do: %{"type" => "copy", "source" => name},
+          else: %{"type" => "copy"}
+
+      fields =
+        if different_project,
+          do: Map.put(fields, "project", source.connection.project || "default"),
+          else: fields
+
+      fields =
+        if kind == :volume and internal,
+          do:
+            Map.put(
+              fields,
+              "location",
+              source_location(source)
+            ),
+          else: fields
+
+      body = Map.put(body, "source", Map.merge(body["source"], fields))
+      body = if kind == :snapshot, do: Map.delete(body, "type"), else: body
+
+      with {:ok, response} <- Incus.call(target, method, args, body: body),
+           {:ok, operation} <- Operation.from_response(target, response),
+           do: {:ok, %Migration{mode: :local, target: operation}}
     end
   end
+
+  defp source_location(source),
+    do: source.connection.member || (source.server.environment || %{})["server_name"] || ""
 
   defp authorize(target, source, opts, allowed) do
     with :ok <- Context.authorize(target.context, target.connection),
@@ -325,16 +345,14 @@ defmodule Opsmaru.Incus.Copy do
              opts[:refresh_exclude_older] == true,
              "custom_volume_refresh_exclude_older_snapshots"
            ),
-         :ok <-
-           required(target, opts[:allow_inconsistent] == true, "instance_allow_inconsistent_copy"),
-         do: :ok
+         do:
+           required(target, opts[:allow_inconsistent] == true, "instance_allow_inconsistent_copy")
   end
 
   defp mode_extensions(target, source, opts) do
     with :ok <- required(target, opts[:mode] in [:push, :relay], "container_push"),
          :ok <- required(source, opts[:mode] in [:push, :relay], "container_push"),
-         :ok <- required(source, opts[:mode] == :push, "container_push_target"),
-         do: :ok
+         do: required(source, opts[:mode] == :push, "container_push_target")
   end
 
   defp source_fields(kind, fields) when kind in [:instance, :snapshot] do
