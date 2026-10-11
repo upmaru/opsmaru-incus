@@ -124,6 +124,114 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
     assert Enum.count(WebSocketFixture.requests(fixture), &(&1.method == "POST")) == 1
   end
 
+  for role <- ["private-control", "private-data"], kind <- [:overflow, :frame_limit] do
+    test "#{role} #{kind} remains visible to the host after asynchronous channel failure", %{
+      root: root,
+      context: context
+    } do
+      role = unquote(role)
+      kind = unquote(kind)
+      parent = self()
+
+      fixture =
+        start_supervised!(
+          {HTTPFixture,
+           transport: :gen_tcp,
+           path: Path.join(root, "channel-error"),
+           handler: fn request ->
+             if request.method == "POST" do
+               accepted(%{"control" => "private-control", "0" => "private-data"})
+             else
+               %{
+                 upgrade: fn adapter, socket ->
+                   secret = URI.decode_query(URI.parse(request.target).query)["secret"]
+
+                   accept =
+                     Base.encode64(
+                       :crypto.hash(
+                         :sha,
+                         request.headers["sec-websocket-key"] <>
+                           "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+                       )
+                     )
+
+                   :ok =
+                     adapter.send(
+                       socket,
+                       "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: #{accept}\r\n\r\n"
+                     )
+
+                   send(parent, {:peer, secret, self()})
+
+                   receive do
+                     {:emit, wire} ->
+                       adapter.send(socket, wire)
+                       adapter.recv(socket, 0, 1000)
+                   after
+                     3000 -> :ok
+                   end
+                 end
+               }
+             end
+           end}
+        )
+
+      connection =
+        Connection.unix!(
+          HTTPFixture.endpoint(fixture).socket,
+          [owner: :fixture] ++ error_budgets(kind)
+        )
+
+      client = %Incus{
+        connection: connection,
+        context: context,
+        server: %Server{api_extensions: @extensions}
+      }
+
+      assert {:ok, console} = DynamicConsole.open(client, "fixture", %{})
+      assert_receive {:peer, "private-control", control_peer}, 1000
+      assert {:ok, channel} = DynamicConsole.attach(console)
+      assert_receive {:peer, "private-data", data_peer}, 1000
+      control = :sys.get_state(console.pid).control
+      failed_channel = if role == "private-control", do: control, else: channel
+      peer = if role == "private-control", do: control_peer, else: data_peer
+      ref = failed_channel.ref
+      pid = console.pid
+      foreign_ref = make_ref()
+      send(pid, {foreign_ref, :error, %Error{kind: :overflow}})
+      refute_receive {:dynamic_console, ^pid, {^foreign_ref, :error, _}}, 30
+
+      wire = error_wire(kind)
+
+      monitor = Process.monitor(failed_channel.pid)
+      send(peer, {:emit, wire})
+
+      assert_receive {:dynamic_console, ^pid,
+                      {^ref, :error,
+                       %Error{
+                         kind: ^kind,
+                         operation: "/1.0/operations/console-id",
+                         response: response
+                       }}},
+                     1000
+
+      assert response.operation == console.operation.response
+      assert response.error.kind == kind
+      assert_receive {:DOWN, ^monitor, :process, _, :normal}, 1000
+
+      if role == "private-data" do
+        assert Process.alive?(pid)
+        assert :ok = DynamicConsole.close(console)
+      else
+        console_monitor = Process.monitor(pid)
+        assert_receive {:DOWN, ^console_monitor, :process, _, _}, 1000
+      end
+
+      assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
+      refute Enum.any?(HTTPFixture.requests(fixture), &(&1.method == "DELETE"))
+    end
+  end
+
   test "owner exit closes control and attachments without cancelling the backend", %{
     root: root,
     context: context
@@ -354,6 +462,14 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
     DynamicConsole.close(console)
     assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
   end
+
+  defp error_budgets(:overflow), do: [queue_limit: 1, max_response_bytes: 1024]
+
+  defp error_budgets(:frame_limit),
+    do: [queue_limit: 1, max_response_bytes: 1024, max_stream_bytes: 1024]
+
+  defp error_wire(:overflow), do: WebSocketFixture.frame(2, "a") <> WebSocketFixture.frame(2, "b")
+  defp error_wire(:frame_limit), do: WebSocketFixture.frame(2, :binary.copy(<<0>>, 1536))
 
   defp receive_frame(adapter, socket) do
     case adapter.recv(socket, 2, 3000) do

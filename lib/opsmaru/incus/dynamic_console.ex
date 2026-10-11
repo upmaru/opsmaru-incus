@@ -8,7 +8,10 @@ defmodule Opsmaru.Incus.DynamicConsole do
 
   `attach/1` returns a native WebSocket byte channel. Hosts explicitly send/read
   binary frames through `WebSocket`, then `detach/2`; no terminal, IO device or
-  platform callback is opened automatically. Control messages use native JSON.
+  platform callback is opened automatically. Control messages use native JSON. Asynchronous errors from recognized channels
+  are forwarded as `{:dynamic_console, console.pid, {channel.ref, :error,
+  error}}`, retaining the exact cause and accepted operation for reconciliation.
+  Unknown channel references are ignored.
   """
   use GenServer
   alias Opsmaru.{Context, Incus}
@@ -188,6 +191,17 @@ defmodule Opsmaru.Incus.DynamicConsole do
     {:stop, :normal, state}
   end
 
+  def handle_info({ref, :error, %Error{} = error}, state) do
+    if channel_ref?(state, ref) do
+      send(
+        state.owner,
+        {:dynamic_console, self(), {ref, :error, failure(state.operation, error.kind, error)}}
+      )
+    end
+
+    {:noreply, state}
+  end
+
   def handle_info(_, state), do: {:noreply, state}
 
   @impl true
@@ -199,6 +213,11 @@ defmodule Opsmaru.Incus.DynamicConsole do
 
   @impl true
   def format_status(_), do: %{state: "native dynamic console redacted"}
+
+  defp channel_ref?(state, ref),
+    do:
+      ref == state.control.ref or
+        Enum.any?(state.attachments, fn {_, {channel, _}} -> channel.ref == ref end)
 
   defp failure(operation, kind, error \\ nil),
     do: %Error{

@@ -126,6 +126,13 @@ Opsmaru.Incus.DynamicConsole.close(console)
 # console.operation remains available for native completion/reconciliation.
 ```
 
+Recognized child-channel failures are forwarded to the creating host as
+`{:dynamic_console, console.pid, {channel.ref, :error, error}}`. The error keeps
+the exact cause and accepted operation response for reconciliation, even when
+the host was not waiting in `WebSocket.recv/2`. Unknown references are ignored;
+control-channel termination releases remaining local attachments and data
+failure does not automatically cancel the backend operation.
+
 Dynamic-console wire comparisons use no project/member: the pinned operation
 WebSocket helper omits those parameters. Explicit selection is independently
 checked on every Opsmaru request under the approved connection contract, as

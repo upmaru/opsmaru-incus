@@ -13,7 +13,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 
 | Evidence | Result | Limits |
 | --- | --- | --- |
-| Database-free `mise run check:library` | 441 tests passed with the expanded task 3.9 fixtures | macOS local fixtures; full parity incomplete |
+| Database-free `mise run check:library` | 445 tests passed after the Greptile regression fix | macOS local fixtures; full parity incomplete |
 | Archive variants/TLS/migration focused checks | 5 tests passed | Native fake-backend archive bytes, HTTPS upgrades and failure preservation |
 | Actual embedded startup/restart with PHX_SERVER and invalid PORT | Empty supervision, no new ports/state/Endpoint/Repo | Installed Macus not exercised |
 | Official typed resource calls | 268 methods compared | Request/result/error/extension slices, not all-field semantic parity |
@@ -35,7 +35,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | Go inventory parser regressions | Passed | Verifier-only tooling |
 | `mise run check` via `python3 scripts/check-isolated.py` | Format, warning-free compile, assets, 5 web tests, embedding and strict specs passed | New disposable UTF-8 PostgreSQL cluster, stopped/deleted afterward |
 | Strict OpenSpec validation | All three changes passed | Artifact consistency, not runtime acceptance |
-| macOS/Linux CI | 441 core tests and clean immutable consumer passed on both platforms at 2827c6ea1e8ef3f9ff3205a70148bba197e4cb59 | Protocol fixtures only; no real Incus/Macus |
+| macOS/Linux CI | 441 core tests and clean immutable consumer passed on both platforms at e80de4f36d3c24b740ea0be74cb72916ce0101e9 | Protocol fixtures only; no real Incus/Macus |
 | Independent immutable consumer | 1 clean consumer test passed at published 2fa3fdea9085941e2ae866d5c9e473cb14ee4971 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
 The coverage manifest records 268 differential JSON methods, 877 partial
@@ -89,10 +89,22 @@ A 150 ms scripted handshake now reproduces that failure deterministically;
 the owner test uses the connection's bounded 5-second handshake allowance and
 cleans up its spawned owner even on failure. The subsequent monitor/closure
 assertions remain bounded and no backend cancellation/replay is introduced.
-Greptile CLI review is requested but currently blocked: the authenticated account
-reports `upmaru/opsmaru` as not connected. Automatic approval review rejected
-`greptile init` because it changes persistent repository/organization access;
-explicit approval is pending. No Greptile acceptance is claimed.
+The corrected Credo-enabled CI run passed all 441 library tests, strict Credo,
+strict OpenSpec, Go verifier checks and clean immutable consumers on macOS and
+Linux at e80de4f36d3c24b740ea0be74cb72916ce0101e9:
+https://github.com/upmaru/opsmaru/actions/runs/38106635241.
+Greptile repository setup was initially blocked by automatic approval review;
+the user connected it through the dashboard. Read-only status now confirms
+it is enabled, and the requested review is running against the committed
+continuation/Credo diff from 03a1452 through e80de4f. The first review returned
+4/5 confidence and one P2 finding: dynamic-console actors discarded recognized
+child-channel failure messages. Four actual control/data overflow and byte-limit
+fixtures reproduced the missing notification before the correction. The fix
+forwards exact causes, channel references and accepted operation responses to
+the host; unknown references are ignored. All 445 library tests, strict Credo
+(840 modules/functions), canonical checks and actual isolated `mix precommit`
+passed afterward. A follow-up Greptile review and platform run remain pending;
+no final review acceptance is claimed yet.
 
 The preceding continuation added 111 declaration mappings and 63 library tests.
 The previously unchecked documentation revision 7d44efe failed macOS CI because
