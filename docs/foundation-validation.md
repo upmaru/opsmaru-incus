@@ -13,7 +13,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 
 | Evidence | Result | Limits |
 | --- | --- | --- |
-| Database-free `mise run check:library` | 526 tests passed after native metadata/token and event-handler additions and review fixes | macOS local fixtures; full parity incomplete |
+| Database-free `mise run check:library` | 540 tests passed after the OCI host-adapter continuation | macOS local fixtures; full parity incomplete |
 | Archive variants/TLS/migration focused checks | 5 tests passed | Native fake-backend archive bytes, HTTPS upgrades and failure preservation |
 | Actual embedded startup/restart with PHX_SERVER and invalid PORT | Empty supervision, no new ports/state/Endpoint/Repo | Installed Macus not exercised |
 | Official typed resource calls | 268 methods compared | Request/result/error/extension slices, not all-field semantic parity |
@@ -292,10 +292,38 @@ fail the elapsed-time assertion. The focused regression and full suite passed.
 Coverage is 883 partial/397 missing, still `complete_port=false`. No backend,
 installed Macus or hardware acceptance is added. Task 3.9 and task 4.3 remain
 unchecked. `task-3-9-closure.md` records the remaining groups and an unresolved
-OCI design conflict: pinned OCI export requires root/skopeo/temporary conversion
-state, while the foundation excludes host commands and keeps platform behavior
-host-owned. The user has been asked to choose a host-adapter contract or explicit
-scope exclusion; neither has been implemented without that decision.
+OCI design conflict at that revision: pinned OCI export requires
+root/skopeo/temporary conversion state, while the foundation excludes host
+commands and keeps platform behavior host-owned. The user subsequently approved
+an explicit host-adapter contract; see the continuation below.
+
+## OCI host-adapter continuation
+
+The approved design/spec now keep OCI in scope through an explicitly supplied
+host adapter, with no bundled runner, root escalation or temporary conversion
+state. The unchanged pinned client oracle invokes a fake skopeo stdout stub;
+it verifies normalized aliases, every pinned architecture name/alias, layer
+fingerprints, native image JSON, null/default/nanosecond/int64 overflow values
+and eleven native unsupported-method errors. Fake adapter fixtures separately
+verify readiness/ownership, bounded immutable cache, inspection size/type limits,
+binary metadata/rootfs bytes and sticky sink rejection, foreign-worker rejection,
+trapping callback/cleanup deadlines, owner-loss cleanup and redacted structured
+failures without replay. Installed conversion, real registry trust/authentication
+and external process/file cleanup remain unverified host-adapter gates.
+
+The manifest records 899 partial/381 missing declarations with
+`complete_port=false`: fifteen concrete OCI methods plus its constructor gain
+explicit partial evidence. The five remaining concrete OCI helpers and all
+SimpleStreams methods remain missing. Task 3.9 and real-backend task 4.3 stay
+unchecked. The independent consumer fixture exercises the public OCI API while
+Opsmaru is stopped and its own endpoint remains alive.
+
+Local verification passed: 540 library tests (14 new OCI cases), strict Credo
+with zero issues across 1,160 modules/functions, canonical `mise run check` and
+actual `mix precommit` with a disposable PostgreSQL cluster (five web tests each),
+strict OpenSpec for all three changes, and the Go inventory/schema tooling.
+The disposable database was stopped and removed afterward. Published consumer,
+platform CI and Greptile results are recorded against their immutable revisions.
 
 Greptile reviewed e76ca9742fab7f850d8c1931b23714374b19ea5e against eba0875
 (run 10a217ac-5cd4-4ca7-9125-a11893bedd69), returning 4/5 with two findings.

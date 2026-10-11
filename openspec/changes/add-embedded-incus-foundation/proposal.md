@@ -11,6 +11,7 @@ Macus needs a real embeddable Opsmaru dependency and portable Incus client befor
 - Transfer pinned official Incus client inventory, notices and reusable reference fixtures into Opsmaru, preserving Macus-specific transport evidence separately.
 - Implement the canonical client in verified slices: discovery/codecs/errors/extensions, projects/profiles/access, instances/snapshots/state, images, networks/clusters, storage, files/backups/native upgrades, operations/events, exec/console and migration.
 - Preserve native operation identity, streaming/backpressure, deadlines and uncertainty without automatic mutation replay. Missing methods/extensions remain explicit; a subset is not advertised as complete parity.
+- Keep OCI in scope through an explicitly supplied host adapter: hosts own registry credentials, external conversion tools and temporary state; the portable library verifies native image projections and bounds adapter calls and binary handoff.
 - Add a database-free library test profile and an external Macus-compatible consumer fixture that imports a pinned dependency without a sibling checkout or extra Opsmaru process. Source fixtures use the pinned Elixir toolchain; installed Macus runtime packaging remains Macus-owned.
 - Keep central Phoenix/SQL/OIDC/MCP/task/registry/connector behavior in later changes. This stage neither starts nor validates those services and does not implement macus connect.
 

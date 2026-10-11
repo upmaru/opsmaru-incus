@@ -46,10 +46,12 @@
     },
     {
       "id": "client/function/ConnectOCI",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/function/ConnectPublicIncus",
@@ -6260,10 +6262,12 @@
     },
     {
       "id": "client/method/ProtocolOCI.ExportImage",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolOCI.GetConnectionInfo",
@@ -6281,17 +6285,21 @@
     },
     {
       "id": "client/method/ProtocolOCI.GetImage",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAlias",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAliasArchitectures",
@@ -6302,87 +6310,111 @@
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAliasNames",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAliasType",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAliases",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageFingerprints",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageSecret",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolOCI.GetImages",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolOCI.GetImagesAllProjects",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolOCI.GetImagesAllProjectsWithFilter",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolOCI.GetImagesWithFilter",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolOCI.GetPrivateImage",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolOCI.GetPrivateImageFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/oci.ex",
+      "evidence": [
+        "test/library/oci_test.exs"
+      ],
+      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.Disconnect",

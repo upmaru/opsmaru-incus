@@ -1,0 +1,83 @@
+// Fixture-only unchanged OCI helper oracle. The PATH stub emits supplied
+// inspection JSON; it never contacts a registry or runs conversion/root tools.
+package main
+
+import (
+	"encoding/json"
+	incus "github.com/lxc/incus/v7/client"
+	"github.com/lxc/incus/v7/shared/api"
+	"os"
+	"path/filepath"
+)
+
+func main() {
+	var in struct {
+		Action string
+		Name   string
+		Type   string
+		Info   json.RawMessage
+	}
+	if err := json.NewDecoder(os.Stdin).Decode(&in); err != nil {
+		panic(err)
+	}
+	dir, err := os.MkdirTemp("", "opsmaru-oci-oracle-")
+	if err != nil {
+		panic(err)
+	}
+	defer os.RemoveAll(dir)
+	if err := os.WriteFile(filepath.Join(dir, "info.json"), in.Info, 0600); err != nil {
+		panic(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "skopeo"), []byte("#!/bin/sh\nexec /bin/cat \"$OPSMARU_OCI_FIXTURE\"\n"), 0700); err != nil {
+		panic(err)
+	}
+	os.Setenv("PATH", dir)
+	os.Setenv("OPSMARU_OCI_FIXTURE", filepath.Join(dir, "info.json"))
+	client, err := incus.ConnectOCI("https://fixture.invalid", nil)
+	if err != nil {
+		panic(err)
+	}
+	defer client.Disconnect()
+	var value any
+	switch in.Action {
+	case "resolve":
+		alias, _, e := client.GetImageAliasType(in.Type, in.Name)
+		err = e
+		if err == nil {
+			image, _, e := client.GetImage(alias.Target)
+			err = e
+			value = map[string]any{"alias": alias, "image": image}
+		}
+	case "GetImages":
+		value, err = client.GetImages()
+	case "GetImagesAllProjects":
+		value, err = client.GetImagesAllProjects()
+	case "GetImagesAllProjectsWithFilter":
+		value, err = client.GetImagesAllProjectsWithFilter(nil)
+	case "GetImagesWithFilter":
+		value, err = client.GetImagesWithFilter(nil)
+	case "GetImageFingerprints":
+		value, err = client.GetImageFingerprints()
+	case "GetImageAliases":
+		value, err = client.GetImageAliases()
+	case "GetImageAliasNames":
+		value, err = client.GetImageAliasNames()
+	case "GetImageSecret":
+		value, err = client.GetImageSecret(in.Name)
+	case "GetPrivateImage":
+		value, _, err = client.GetPrivateImage(in.Name, "private")
+	case "GetPrivateImageFile":
+		value, err = client.GetPrivateImageFile(in.Name, "private", incus.ImageFileRequest{})
+	case "ExportImage":
+		value, err = client.ExportImage(in.Name, api.ImageExportPost{})
+	default:
+		panic("unknown action")
+	}
+	out := map[string]any{"ok": err == nil, "value": value}
+	if err != nil {
+		out["error"] = err.Error()
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(out); err != nil {
+		panic(err)
+	}
+}

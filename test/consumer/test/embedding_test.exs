@@ -9,11 +9,24 @@ defmodule FoundationConsumer.EmbeddingTest do
   alias Opsmaru.Incus.Model
   alias Opsmaru.Incus.NativeConfig
   alias Opsmaru.Incus.NetworkModels
+  alias Opsmaru.Incus.OCI
   alias Opsmaru.Incus.Preseed
   alias Opsmaru.Incus.Response
   alias Opsmaru.Incus.Status
   alias Opsmaru.Incus.Tokens
   alias Opsmaru.Incus.WebSocket
+
+  defmodule OCIAdapter do
+    @behaviour Opsmaru.Incus.OCI.Adapter
+    def inspect_image(_, _),
+      do: {:ok, ~s({"Name":"fixture","Architecture":"arm64","Layers":["fixture-layer"]})}
+
+    def image_file(_, _, emit) do
+      with :ok <- emit.(:metadata, <<0, 255>>), do: emit.(:rootfs, <<254, 0>>)
+    end
+
+    def cleanup(_, _, _), do: :ok
+  end
 
   test "independent host endpoint and private Unix backend use direct library calls" do
     assert Process.whereis(FoundationConsumer.Endpoint)
@@ -152,7 +165,26 @@ defmodule FoundationConsumer.EmbeddingTest do
 
     Agent.update(FoundationConsumer.Runtime, fn _ -> false end)
     assert {:error, %Opsmaru.Incus.Error{kind: :host_not_ready}} = EventListener.open(client)
+    oci = OCI.new!(connection, context, OCIAdapter, :host_private_reference)
+
+    assert {:error, %Opsmaru.Incus.Error{kind: :host_not_ready}} =
+             OCI.resolve(oci, "fixture")
+
     Agent.update(FoundationConsumer.Runtime, fn _ -> true end)
+    assert {:ok, oci_models, oci} = OCI.resolve(oci, "fixture")
+    assert oci_models.image.data["architecture"] == "aarch64"
+
+    assert {:ok, %{meta_size: 2, rootfs_size: 2}} =
+             OCI.image_file(oci, oci_models.image.data["fingerprint"], %{
+               metadata: fn bytes ->
+                 assert bytes == <<0, 255>>
+                 :ok
+               end,
+               rootfs: fn bytes ->
+                 assert bytes == <<254, 0>>
+                 :ok
+               end
+             })
 
     refute_receive {:request, _}, 30
     refute File.exists?(context.private_state)

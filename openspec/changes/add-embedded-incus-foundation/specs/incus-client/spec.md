@@ -73,3 +73,22 @@ Differential wire fixtures, shared-library platform checks and real-backend acce
 
 - **WHEN** differential fixtures pass without a real Linux or Macus backend
 - **THEN** protocol evidence is recorded while real-backend acceptance remains incomplete
+
+### Requirement: Host-supplied OCI conversion
+
+OCI support SHALL use an explicitly supplied host adapter for privileged conversion, registry credential use and temporary state. Construction MUST NOT probe tools, run commands, create state or contact a registry. The client SHALL preserve pinned native alias/image semantics and unsupported-method errors, bound inspection and binary delivery, and invoke per-call idempotent cleanup on completion, failure, timeout or owner loss. Adapter calls MUST NOT be replayed automatically. Hosts SHALL verify registry identity and keep credentials and conversion resources isolated by call identity.
+
+#### Scenario: Explicit OCI export
+
+- **WHEN** an authorized ready host invokes OCI image conversion through its supplied adapter
+- **THEN** native metadata/rootfs bytes are delivered through bounded acknowledged sinks and per-call resources are released without affecting another connection or workload
+
+#### Scenario: Adapter timeout or host loss
+
+- **WHEN** an adapter exceeds its deadline or its calling owner exits
+- **THEN** local work terminates, per-call cleanup is invoked and no automatic conversion retry or backend cancellation occurs
+
+#### Scenario: Fixture adapter acceptance
+
+- **WHEN** native projection fixtures and a fake conversion adapter pass
+- **THEN** the evidence records the library contract while installed adapter conversion, registry authentication and real Incus/Macus hardware acceptance remain separate unverified gates

@@ -27,7 +27,7 @@ First implementation target. Existing scaffold checks are baseline evidence, not
 - [x] 3.6 Port files/backups/native SFTP/NBD client upgrades; verify official wire comparison, coalesced handshake bytes, duplex binary traffic, half-close and cleanup independently of Macus proxy fixtures.
 - [x] 3.7 Port operation wait/poll/supported cancellation and bounded events; verify local timeout versus backend cancellation, overflow/completion races and uncertainty without retrying possible accepted mutations.
 - [x] 3.8 Port exec/console input/output/control streams; verify native exit status/control, bounds/backpressure and disconnect cleanup.
-- [ ] 3.9 Port migration/copy and remaining reference entries; verify approved address/operation negotiation, transport-secret redaction and cleanup for every affected model/method.
+- [ ] 3.9 Port migration/copy and remaining reference entries, including OCI through an explicit host conversion adapter; verify approved address/operation negotiation, transport-secret redaction, bounded adapter calls/binary handoff and cleanup for every affected model/method. Keep installed OCI adapter, real-backend and Macus hardware acceptance separately recorded.
 - [x] 3.10 Complete and document the method/type evidence manifest; verify every supported entry has implementation/differential evidence before full-client acceptance and partial slices remain visibly incomplete.
 
 ## 4. Independent library and consumer acceptance

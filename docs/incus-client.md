@@ -30,6 +30,7 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `EventListener.open/2`, `add_handler/3`, `remove_handler/2`, `active?/1`, `send_event/2`, `wait/2`, `disconnect/1` | Explicit owner-bound callback listener; bounded capacity, sequential isolated callback workers, failure/lifetime cleanup and repeatable terminal result; local wait timeout does not disconnect or cancel work |
 | `Response.metadata_as_map/1`, `metadata_as_string_slice/1`, `metadata_as_operation/1`, `metadata_as_model/2` | Explicit native typed metadata extraction, including initialized-empty map/slice behavior for null, defaults and float64 metadata semantics; original response remains lossless |
 | `Tokens.certificate/1`, `cluster/1`, `encode/1` | Pure conversion of existing operation metadata and exact ordered JSON/base64 token formatting; tokens/addresses are privileged data, never provisioning or automatic connection targets |
+| `OCI.new!/4`, `resolve/3`, `image/2`, `image_file/3`, `unsupported/2` | Explicit host-owned OCI adapter; passive construction, bounded immutable cache, pinned alias/image/unsupported projections and acknowledged binary output; no bundled host runner or installed conversion acceptance |
 | `Session.exec/3`, `console/3`, `input/2`, `output/3`, `control/2`, `resize/3`, `signal/2`, `exit_status/1`, `close/1` | Native operation channels and control messages; local closure does not cancel Incus |
 | `DynamicConsole.open/4`, `attach/1`, `detach/2`, `control/2`, `resize/3`, `close/1` | One accepted console operation/control connection, repeated owner-bound data attachments; bounded capacity/lifetime and no POST replay |
 | `Copy.instance/4`, `snapshot/5`, `volume/6`, `move_volume/5` | Native writable configuration and explicit migration preparation; volume moves use one backend with destination `name`/`project`; accepted handles |
@@ -70,6 +71,42 @@ lost/malformed response return `:uncertain` without retry. Polling or local
 stream timeout never cancels an operation. Cancellation first polls
 `may_cancel`, issues at most one DELETE and still requires reconciliation.
 Readiness is a fast, local host callback, not a backend startup hook.
+
+OCI construction is also passive. Supply a module implementing
+`Opsmaru.Incus.OCI.Adapter` and an opaque host-owned configuration reference:
+
+```elixir
+oci = Opsmaru.Incus.OCI.new!(connection, context, MyHost.OCIAdapter, private_adapter_ref)
+{:ok, %{alias: alias_model, image: image_model}, oci} =
+  Opsmaru.Incus.OCI.resolve(oci, "library/alpine:latest@sha256:approved_digest", "container")
+{:ok, cached} = Opsmaru.Incus.OCI.image(oci, alias_model.data["target"])
+{:ok, sizes} = Opsmaru.Incus.OCI.image_file(oci, image_model.data["fingerprint"], %{
+  metadata: metadata_sink, rootfs: rootfs_sink
+})
+```
+
+`MyHost.OCIAdapter` is a host implementation, not a provided Opsmaru module.
+The adapter receives the connection/context, normalized alias, unique call
+identity and absolute monotonic deadline. It owns verified registry TLS,
+credentials, subprocesses and conversion files. Inspection JSON is capped at
+the lesser of 1 MiB and `max_response_bytes`; cached images are capped at the
+lesser of 128 and `queue_limit`. `resolve` returns a new immutable client cache.
+The output emitter accepts `:metadata`/`:rootfs` chunks under `max_chunk_bytes`
+and a combined `max_stream_bytes` budget, synchronously acknowledging each sink.
+Both output sinks are currently required. Rejections stay sticky; a foreign
+worker cannot emit output. Inspection uses `timeout`, conversion uses
+`stream_timeout`, including time inside sinks. Cleanup adds at most
+`min(timeout, 1_000)` milliseconds, kills stalled local callbacks and preserves
+the primary result in a cleanup failure's privileged `response` field. Host
+cleanup must independently stop/release all external resources by call identity
+even if the local callback was killed mid-creation. Calls are never replayed.
+
+The OCI oracle uses the unchanged pinned client with a fixture-only skopeo
+stdout stub for alias/image projections and unsupported helper errors; it does
+not run real skopeo, unpack an image, use root or contact a registry. Conversion
+contents, actual registry TLS/authentication and external process/file cleanup
+require separate installed-host-adapter acceptance. OCI connection-info/HTTP/
+disconnect and alias-architecture helpers and SimpleStreams remain uncovered.
 
 HTTPS uses peer trust, hostname and certificate validity checks. Hosts select
 CA and client certificate/private-key files, or an exact SHA-256 server pin.
