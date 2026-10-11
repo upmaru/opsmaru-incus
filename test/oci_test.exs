@@ -153,6 +153,14 @@ defmodule Opsmaru.Incus.OCITest do
              )
 
     refute inspect(error) =~ "private"
+
+    export_client = resolved(client(export: fn _, _ -> {:error, failure} end))
+
+    assert {:error, ^failure} =
+             OCI.image_file(export_client, fingerprint(export_client), %{
+               metadata: fn _ -> :ok end,
+               rootfs: fn _ -> :ok end
+             })
   end
 
   test "foreign emitters cannot deliver bytes or conceal a rejection" do

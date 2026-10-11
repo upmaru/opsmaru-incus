@@ -222,16 +222,24 @@ defmodule Opsmaru.Incus.OCI do
     result = client.adapter.image_file(client.config, request, emit)
     counts = Process.delete(key)
 
-    if result == :ok and not counts.failed and :atomics.get(rejected, 1) == 0 do
-      {:ok,
-       %{
-         meta_name: "metadata.tar.gz",
-         rootfs_name: "rootfs.tar.gz",
-         meta_size: counts.metadata,
-         rootfs_size: counts.rootfs
-       }}
-    else
-      error(:adapter_stream, nil)
+    cond do
+      result == :ok and not counts.failed and :atomics.get(rejected, 1) == 0 ->
+        {:ok,
+         %{
+           meta_name: "metadata.tar.gz",
+           rootfs_name: "rootfs.tar.gz",
+           meta_size: counts.metadata,
+           rootfs_size: counts.rootfs
+         }}
+
+      match?({:error, %Error{}}, result) ->
+        result
+
+      match?({:error, _}, result) ->
+        {:error, %Error{kind: :adapter_stream, response: elem(result, 1)}}
+
+      true ->
+        error(:adapter_stream, nil)
     end
   end
 

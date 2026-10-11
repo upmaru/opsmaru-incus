@@ -325,6 +325,14 @@ strict OpenSpec for all three changes, and the Go inventory/schema tooling.
 The disposable database was stopped and removed afterward. Published consumer,
 platform CI and Greptile results are recorded against their immutable revisions.
 
+The fresh GitHub consumer passed at
+`4e9e113810e79c5e6b250cd286b87eeb0aa8b937`, including the explicit OCI adapter
+while Opsmaru was stopped. Independent review then reproduced a conversion
+error-preservation gap; conversion now retains a host-supplied native Error just
+as inspection does. Its regression and all 540 library tests, strict Credo,
+canonical checks and precommit passed after correction. No installed converter,
+real registry or backend/hardware acceptance is claimed.
+
 Greptile reviewed e76ca9742fab7f850d8c1931b23714374b19ea5e against eba0875
 (run 10a217ac-5cd4-4ca7-9125-a11893bedd69), returning 4/5 with two findings.
 Permanent fixtures reproduced both before correction: the callback listener
