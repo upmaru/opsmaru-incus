@@ -13,7 +13,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 
 | Evidence | Result | Limits |
 | --- | --- | --- |
-| Database-free `mise run check:library` | 505 tests passed after preseed/network/copy/raw HTTP additions | macOS local fixtures; full parity incomplete |
+| Database-free `mise run check:library` | 508 tests passed after preseed/network/copy/raw HTTP/direct WebSocket additions | macOS local fixtures; full parity incomplete |
 | Archive variants/TLS/migration focused checks | 5 tests passed | Native fake-backend archive bytes, HTTPS upgrades and failure preservation |
 | Actual embedded startup/restart with PHX_SERVER and invalid PORT | Empty supervision, no new ports/state/Endpoint/Repo | Installed Macus not exercised |
 | Official typed resource calls | 268 methods compared | Request/result/error/extension slices, not all-field semantic parity |
@@ -38,8 +38,8 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | macOS/Linux CI | 448 core tests and clean immutable consumer passed on both platforms at 107eec41d625f512da70b57f58525d56980cf8e4 | Protocol fixtures only; no real Incus/Macus |
 | Independent immutable consumer | 1 clean consumer test passed at published 107eec41d625f512da70b57f58525d56980cf8e4 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
-The coverage manifest records 268 differential JSON methods, 869 partial
-reference mappings and 411 missing declarations. Missing entries prevent a
+The coverage manifest records 268 differential JSON methods, 870 partial
+reference mappings and 410 missing declarations. Missing entries prevent a
 complete-port claim. See `incus-client.md` for the exact API and limitations.
 The v7.0.1 rawConn prefetch defect is negative oracle evidence; Opsmaru's
 required preservation behavior is independently checked without patching the
@@ -216,6 +216,26 @@ tests, strict Credo (996 modules/functions), canonical full checks and actual
 isolated precommit passed, with all three changes strictly validated and the
 Go verifier checks passing. Runtime code review/consumer/platform results for
 this new slice remain pending until publication.
+
+The raw HTTP runtime revision c8a358d994921e8b9629bd995705723b67c1c950 passed
+all 505 library tests, strict Credo/OpenSpec, Go checks and clean immutable
+consumer builds on both macOS and Linux:
+https://github.com/upmaru/opsmaru/actions/runs/38111311857.
+The expanded clean consumer also passed locally at that immutable revision.
+Greptile run `ffd7c0b3-aad2-407c-9274-f56feb8112cd` reviewed the full
+continuation against f3ca740 and returned 5/5 confidence with zero findings.
+
+Direct DoWebsocket adds three focused fixtures and one concrete native method
+mapping. The unchanged helper agrees over Unix and HTTPS on custom/authenticated
+request headers, 101 status/ETag, native binary frames and explicit selection.
+Transport/protocol/authentication header overrides and invalid options are
+rejected before socket access. Handshake metadata keeps connection/identity and
+redacts cookie values in ordinary inspection. Existing WebSocket, TLS and
+dynamic-console lifecycle regressions passed in the 23-test focused run.
+All 508 library tests, strict Credo (1,003 modules/functions), canonical full
+checks and actual isolated precommit passed. Default and library formatting
+checks both pass; strict OpenSpec remains three changes passed. Runtime review,
+platform and expanded consumer results will be recorded after publication.
 
 Visible client gaps include full dynamic console callback/IO and
 SFTP protocol helpers, direct HTTP/WebSocket/context convenience helpers,

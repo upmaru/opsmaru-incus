@@ -72,6 +72,7 @@ for name in network_normalisers:
 models.update(network_normalisers)
 for name in ['GetHTTPClient','DoHTTP']:
  helpers[name]=('lib/opsmaru/incus/http.ex',['test/library/http_reference_test.exs'])
+helpers['DoWebsocket']=('lib/opsmaru/incus/web_socket.ex',['test/library/direct_websocket_reference_test.exs','test/library/web_socket_test.exs','test/library/tls_stream_test.exs'])
 entries=[]
 for entry in inv['entries']:
  name=entry['name'].split('.')[-1]

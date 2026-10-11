@@ -187,8 +187,18 @@ The official differential uses an explicitly non-replayable request, matching
 the foundation's mandatory no-mutation-replay contract. Arbitrary URL clients,
 mutable shared pools and OIDC adapters are not provided by this native slice.
 
-The checked manifest currently has 268 differential JSON methods, 869 partial
-reference mappings and 411 missing declarations out of 1,280. Native Incus
+`WebSocket.open(client, path, headers: [{"x-custom", "host-value"}])` provides
+the direct native DoWebsocket slice over the same bound Unix/verified HTTPS
+transport. Header names/values/counts are bounded and protocol/authentication
+headers remain transport-owned. `WebSocket.upgrade_response(channel)` returns
+the native 101 status, ordered headers and originating connection/identity
+while the local channel is alive. Its body is nil; coalesced bytes belong to
+the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
+close/error/EOF semantics apply. This does not expose an arbitrary dialer or
+an OIDC adapter.
+
+The checked manifest currently has 268 differential JSON methods, 870 partial
+reference mappings and 410 missing declarations out of 1,280. Native Incus
 method evidence is scoped to that implementation; same-named OCI/SimpleStreams
 methods remain missing. Interface entries
 and schemas account for some mappings; these counts are not distinct client

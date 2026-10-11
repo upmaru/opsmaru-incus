@@ -4005,10 +4005,14 @@
     },
     {
       "id": "client/method/ProtocolIncus.DoWebsocket",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/web_socket.ex",
+      "evidence": [
+        "test/library/direct_websocket_reference_test.exs",
+        "test/library/web_socket_test.exs",
+        "test/library/tls_stream_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.ExecInstance",

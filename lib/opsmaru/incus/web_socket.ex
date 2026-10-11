@@ -6,17 +6,21 @@ defmodule Opsmaru.Incus.WebSocket do
   """
   use GenServer
   alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, Response, Transport, Upgrade}
+  alias Opsmaru.Incus.{Error, HTTP, Response, Transport, Upgrade}
+  alias Opsmaru.Incus.HTTP.Response, as: HTTPResponse
   defstruct [:pid, :ref]
 
-  def open(client, path) do
-    with :ok <- Context.authorize(client.context, client.connection),
+  def open(client, path, opts \\ []) do
+    with :ok <- options(opts),
+         :ok <- Context.authorize(client.context, client.connection),
          {:ok, path} <- Incus.request_path(client.connection, path) do
       ref = make_ref()
 
-      case GenServer.start(__MODULE__, {client.connection, path, self(), ref},
-             timeout: client.connection.timeout + 100
-           ) do
+      channel_args =
+        {client.connection, path, self(), ref, Keyword.get(opts, :headers, []),
+         client.context.identity}
+
+      case GenServer.start(__MODULE__, channel_args, timeout: client.connection.timeout + 100) do
         {:ok, pid} ->
           {:ok, %__MODULE__{pid: pid, ref: ref}}
 
@@ -48,6 +52,16 @@ defmodule Opsmaru.Incus.WebSocket do
 
   def send_frame(channel, frame), do: call(channel, {:send, frame}, 3_600_100)
   def close(channel), do: call(channel, :close, 5_000)
+  @doc "Native DoWebsocket handshake metadata while the local channel is alive."
+  def upgrade_response(channel), do: call(channel, :upgrade_response, 5_000)
+
+  defp options(opts) do
+    if Keyword.keyword?(opts) and length(opts) <= 1 and Keyword.keys(opts) -- [:headers] == [] and
+         HTTP.valid_headers?(Keyword.get(opts, :headers, [])) and
+         Enum.all?(Keyword.get(opts, :headers, []), fn {name, _} ->
+           not String.starts_with?(name, "sec-websocket-")
+         end), do: :ok, else: {:error, :invalid_websocket_options}
+  end
 
   defp call(channel, message, timeout) do
     GenServer.call(channel.pid, message, timeout)
@@ -56,7 +70,7 @@ defmodule Opsmaru.Incus.WebSocket do
   end
 
   @impl true
-  def init({connection, path, owner, ref}) do
+  def init({connection, path, owner, ref, request_headers, identity}) do
     deadline = now() + connection.timeout
 
     case Transport.open(connection, deadline) do
@@ -69,7 +83,7 @@ defmodule Opsmaru.Incus.WebSocket do
                    scheme,
                    conn,
                    path,
-                   Transport.request_headers(connection, [])
+                   Transport.request_headers(connection, request_headers)
                  ),
                {:ok, conn, status, headers, initial} <-
                  Upgrade.receive_response(conn, request, deadline, connection.max_response_bytes),
@@ -90,7 +104,14 @@ defmodule Opsmaru.Incus.WebSocket do
               pending: nil,
               received: 0,
               written: 0,
-              closed: false
+              closed: false,
+              upgrade_response: %HTTPResponse{
+                status: status,
+                headers: headers,
+                body: nil,
+                connection: connection,
+                identity: identity
+              }
             }
 
             case decode(state, IO.iodata_to_binary(Enum.reverse(initial))) do
@@ -125,6 +146,8 @@ defmodule Opsmaru.Incus.WebSocket do
     do: Upgrade.rejected(status, headers, data, :websocket_upgrade)
 
   @impl true
+  def handle_call(:upgrade_response, _, state), do: {:reply, {:ok, state.upgrade_response}, state}
+
   def handle_call({:recv, _}, _, %{closed: true, queued: 0} = state), do: {:reply, :eof, state}
 
   def handle_call({:recv, _}, _, %{pending: pending} = state) when not is_nil(pending),

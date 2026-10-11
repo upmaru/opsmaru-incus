@@ -57,10 +57,13 @@ defmodule Opsmaru.Incus.HTTP do
     if method in ~w(GET HEAD POST PUT PATCH DELETE OPTIONS) and Keyword.keyword?(opts) and
          length(opts) <= 2 and Keyword.keys(opts) -- [:body, :headers] == [] and
          (is_nil(opts[:body]) or (is_binary(opts[:body]) and byte_size(opts[:body]) <= maximum)) and
-         headers?(Keyword.get(opts, :headers, [])), do: :ok, else: {:error, :invalid_http_request}
+         valid_headers?(Keyword.get(opts, :headers, [])),
+       do: :ok,
+       else: {:error, :invalid_http_request}
   end
 
-  defp headers?(headers) when is_list(headers) and length(headers) <= 128,
+  @doc false
+  def valid_headers?(headers) when is_list(headers) and length(headers) <= 128,
     do:
       Enum.all?(headers, fn
         {name, value} when is_binary(name) and is_binary(value) ->
@@ -72,7 +75,7 @@ defmodule Opsmaru.Incus.HTTP do
           false
       end)
 
-  defp headers?(_), do: false
+  def valid_headers?(_), do: false
 end
 
 defimpl Inspect, for: Opsmaru.Incus.HTTP do
