@@ -3,10 +3,14 @@ defmodule FoundationConsumer.EmbeddingTest do
   alias Opsmaru.Incus.Connection
   alias Opsmaru.Incus.Discovery
   alias Opsmaru.Incus.DynamicConsole
+  alias Opsmaru.Incus.HTTP
   alias Opsmaru.Incus.Images
   alias Opsmaru.Incus.Model
   alias Opsmaru.Incus.NativeConfig
+  alias Opsmaru.Incus.NetworkModels
+  alias Opsmaru.Incus.Preseed
   alias Opsmaru.Incus.Status
+  alias Opsmaru.Incus.WebSocket
 
   test "independent host endpoint and private Unix backend use direct library calls" do
     assert Process.whereis(FoundationConsumer.Endpoint)
@@ -101,6 +105,25 @@ defmodule FoundationConsumer.EmbeddingTest do
 
     assert {:error, %Opsmaru.Incus.Error{kind: :invalid_image_arguments}} =
              Images.download(client, "fingerprint", %{}, secret: "fixture-secret")
+
+    assert {:ok, %Preseed{changes: []}} = Preseed.apply(client, %{})
+
+    assert {:ok, ports} =
+             Model.decode(
+               "NetworkForwardPort",
+               %{"target_address" => "::ffff:c000:201", "listen_port" => " 80 , 443 "}
+             )
+
+    assert {:ok, ports} = NetworkModels.normalise(ports)
+    assert ports.data["target_address"] == "192.0.2.1"
+    assert ports.data["listen_port"] == "80,443"
+    assert {:ok, http} = HTTP.client(client)
+
+    assert {:error, %Opsmaru.Incus.Error{kind: :invalid_path}} =
+             HTTP.request(http, "GET", "https://unselected.example/1.0")
+
+    assert {:error, %Opsmaru.Incus.Error{kind: :invalid_websocket_options}} =
+             WebSocket.open(client, "/1.0/events", headers: [{"authorization", "private"}])
 
     refute_receive {:request, _}, 30
     refute File.exists?(context.private_state)

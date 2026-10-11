@@ -35,8 +35,8 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | Go inventory parser regressions | Passed | Verifier-only tooling |
 | `mise run check` via `python3 scripts/check-isolated.py` | Format, warning-free compile, assets, 5 web tests, embedding and strict specs passed | New disposable UTF-8 PostgreSQL cluster, stopped/deleted afterward |
 | Strict OpenSpec validation | All three changes passed | Artifact consistency, not runtime acceptance |
-| macOS/Linux CI | 448 core tests and clean immutable consumer passed on both platforms at 107eec41d625f512da70b57f58525d56980cf8e4 | Protocol fixtures only; no real Incus/Macus |
-| Independent immutable consumer | 1 clean consumer test passed at published 107eec41d625f512da70b57f58525d56980cf8e4 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
+| macOS/Linux CI | 508 core tests and clean immutable consumer passed on both platforms at 21c21932ea659ce7e2d6eb8448dee8c1270628d7 | Protocol fixtures only; no real Incus/Macus |
+| Independent immutable consumer | 1 expanded clean consumer test passed at published 21c21932ea659ce7e2d6eb8448dee8c1270628d7 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
 The coverage manifest records 268 differential JSON methods, 870 partial
 reference mappings and 410 missing declarations. Missing entries prevent a
@@ -235,7 +235,22 @@ dynamic-console lifecycle regressions passed in the 23-test focused run.
 All 508 library tests, strict Credo (1,003 modules/functions), canonical full
 checks and actual isolated precommit passed. Default and library formatting
 checks both pass; strict OpenSpec remains three changes passed. Runtime review,
-platform and expanded consumer results will be recorded after publication.
+platform and expanded consumer results are recorded below.
+
+The final runtime slice at 21c21932ea659ce7e2d6eb8448dee8c1270628d7 passed all
+508 library tests, strict Credo/OpenSpec, Go verifier checks and clean immutable
+consumer builds on both platforms:
+https://github.com/upmaru/opsmaru/actions/runs/38111940448.
+The expanded consumer passed locally at that revision with no-op preseed,
+network normalization, immutable HTTP handle/origin rejection and protected
+WebSocket-header rejection, while Opsmaru was stopped. Its exact dependency
+revision/lock and the embedding example now record that implemented source.
+Greptile run `6a2b8632-8be3-4b4c-a07f-59a404095dca` reviewed the full runtime
+continuation against f3ca740 and returned 5/5 confidence with zero findings.
+This continuation adds 60 library tests and 25 native partial mappings while
+correcting 32 unsupported protocol mappings. Task 3.9 stays open for the
+remaining 410 missing declarations and broader semantic matrices; real Incus
+and installed Macus/hardware acceptance stay separately unchecked.
 
 Visible client gaps include full dynamic console callback/IO and
 SFTP protocol helpers, direct HTTP/WebSocket/context convenience helpers,
