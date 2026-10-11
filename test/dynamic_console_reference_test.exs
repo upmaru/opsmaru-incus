@@ -232,6 +232,83 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
     end
   end
 
+  for closure <- [:close_frame, :disconnect] do
+    test "remote control #{closure} promptly releases console attachments and retains accepted identity",
+         %{root: root, context: context} do
+      closure = unquote(closure)
+      parent = self()
+
+      fixture =
+        start_supervised!(
+          {HTTPFixture,
+           transport: :gen_tcp,
+           path: Path.join(root, "control-eof"),
+           handler: fn request ->
+             if request.method == "POST" do
+               accepted(%{"control" => "private-control", "0" => "private-data"})
+             else
+               %{
+                 upgrade: fn adapter, socket ->
+                   secret = URI.decode_query(URI.parse(request.target).query)["secret"]
+
+                   accept =
+                     Base.encode64(
+                       :crypto.hash(
+                         :sha,
+                         request.headers["sec-websocket-key"] <>
+                           "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+                       )
+                     )
+
+                   :ok =
+                     adapter.send(
+                       socket,
+                       "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: #{accept}\r\n\r\n"
+                     )
+
+                   send(parent, {:peer, secret, self()})
+
+                   receive do
+                     {:emit, :close_frame} ->
+                       adapter.send(socket, WebSocketFixture.frame(8, <<1000::16>>))
+                       adapter.recv(socket, 0, 1000)
+
+                     {:emit, :disconnect} ->
+                       :ok
+                   after
+                     3000 -> :ok
+                   end
+                 end
+               }
+             end
+           end}
+        )
+
+      client = %Incus{
+        connection: Connection.unix!(HTTPFixture.endpoint(fixture).socket, owner: :fixture),
+        context: context,
+        server: %Server{api_extensions: @extensions}
+      }
+
+      assert {:ok, console} = DynamicConsole.open(client, "fixture", %{})
+      assert_receive {:peer, "private-control", control_peer}, 1000
+      assert {:ok, channel} = DynamicConsole.attach(console)
+      assert_receive {:peer, "private-data", _}, 1000
+      control = :sys.get_state(console.pid).control
+      ref = control.ref
+      pid = console.pid
+      operation = console.operation
+      cm = Process.monitor(pid)
+      am = Process.monitor(channel.pid)
+      send(control_peer, {:emit, closure})
+      assert_receive {:dynamic_console, ^pid, {^ref, :eof, ^operation}}, 1000
+      assert_receive {:DOWN, ^cm, :process, _, :normal}, 1000
+      assert_receive {:DOWN, ^am, :process, _, :normal}, 1000
+      assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
+      refute Enum.any?(HTTPFixture.requests(fixture), &(&1.method == "DELETE"))
+    end
+  end
+
   test "owner exit closes control and attachments without cancelling the backend", %{
     root: root,
     context: context

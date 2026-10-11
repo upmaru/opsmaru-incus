@@ -192,7 +192,7 @@ defmodule Opsmaru.Incus.WebSocket do
               end
 
             {:done, _}, {:ok, state} ->
-              {:cont, {:ok, %{state | closed: true}}}
+              {:cont, {:ok, remote_closed(state)}}
 
             _, acc ->
               {:cont, acc}
@@ -216,7 +216,7 @@ defmodule Opsmaru.Incus.WebSocket do
 
       {:error, conn, _, _} ->
         Mint.HTTP.close(conn)
-        state = %{state | conn: conn, closed: true}
+        state = remote_closed(%{state | conn: conn})
 
         if state.pending do
           {from, _, timer} = state.pending
@@ -261,7 +261,7 @@ defmodule Opsmaru.Incus.WebSocket do
   end
 
   defp receive_frame({:close, _, _}, {:ok, state}) do
-    {:cont, {:ok, %{state | closed: true}}}
+    {:cont, {:ok, remote_closed(state)}}
   end
 
   defp receive_frame({:error, _}, _) do
@@ -274,6 +274,11 @@ defmodule Opsmaru.Incus.WebSocket do
        do:
          {:cont, {:ok, %{state | queue: :queue.in(frame, state.queue), queued: state.queued + 1}}},
        else: {:halt, {:error, :overflow}}
+  end
+
+  defp remote_closed(state) do
+    unless state.closed, do: send(state.owner, {state.ref, :eof})
+    %{state | closed: true}
   end
 
   defp encode(state, frame) do

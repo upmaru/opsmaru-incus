@@ -202,6 +202,16 @@ defmodule Opsmaru.Incus.DynamicConsole do
     {:noreply, state}
   end
 
+  def handle_info({ref, :eof}, state) do
+    if channel_ref?(state, ref) do
+      send(state.owner, {:dynamic_console, self(), {ref, :eof, state.operation}})
+    end
+
+    if ref == state.control.ref,
+      do: {:stop, :normal, state},
+      else: {:noreply, state}
+  end
+
   def handle_info(_, state), do: {:noreply, state}
 
   @impl true

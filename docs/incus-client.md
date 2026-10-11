@@ -133,6 +133,13 @@ the host was not waiting in `WebSocket.recv/2`. Unknown references are ignored;
 control-channel termination releases remaining local attachments and data
 failure does not automatically cancel the backend operation.
 
+Remote WebSocket closure emits `{channel.ref, :eof}` once to its owner while
+queued tail frames remain available through `recv/2`. Dynamic consoles forward
+this as `{:dynamic_console, console.pid, {channel.ref, :eof, console.operation}}`.
+Control EOF promptly closes the local console and its data attachments. Data
+EOF remains drainable until detach; neither case cancels the accepted backend
+operation.
+
 Dynamic-console wire comparisons use no project/member: the pinned operation
 WebSocket helper omits those parameters. Explicit selection is independently
 checked on every Opsmaru request under the approved connection contract, as

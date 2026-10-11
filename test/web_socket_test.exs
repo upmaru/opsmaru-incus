@@ -89,6 +89,25 @@ defmodule Opsmaru.Incus.WebSocketTest do
     Events.close(other)
   end
 
+  test "remote EOF is notified once while queued tail frames remain readable", %{root: root} do
+    payload = <<255, 0, 128, 42>>
+
+    fixture =
+      fixture(root,
+        wire: WebSocketFixture.frame(2, payload) <> WebSocketFixture.frame(8, <<1000::16>>)
+      )
+
+    {:ok, channel} = WebSocket.open(client(fixture), "/1.0/events")
+    ref = channel.ref
+    assert_receive {^ref, :eof}, 1_000
+    assert {:ok, {:binary, ^payload}} = WebSocket.recv(channel)
+    assert :eof = WebSocket.recv(channel)
+    assert :eof = WebSocket.recv(channel)
+    refute_receive {^ref, :eof}, 100
+    assert Process.alive?(channel.pid)
+    assert :ok = WebSocket.close(channel)
+  end
+
   test "fragment buffers and lifetime are bounded and owner death releases the connection", %{
     root: root
   } do

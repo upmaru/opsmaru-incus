@@ -13,7 +13,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 
 | Evidence | Result | Limits |
 | --- | --- | --- |
-| Database-free `mise run check:library` | 445 tests passed after the Greptile regression fix | macOS local fixtures; full parity incomplete |
+| Database-free `mise run check:library` | 448 tests passed after both Greptile regression fixes | macOS local fixtures; full parity incomplete |
 | Archive variants/TLS/migration focused checks | 5 tests passed | Native fake-backend archive bytes, HTTPS upgrades and failure preservation |
 | Actual embedded startup/restart with PHX_SERVER and invalid PORT | Empty supervision, no new ports/state/Endpoint/Repo | Installed Macus not exercised |
 | Official typed resource calls | 268 methods compared | Request/result/error/extension slices, not all-field semantic parity |
@@ -35,8 +35,8 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | Go inventory parser regressions | Passed | Verifier-only tooling |
 | `mise run check` via `python3 scripts/check-isolated.py` | Format, warning-free compile, assets, 5 web tests, embedding and strict specs passed | New disposable UTF-8 PostgreSQL cluster, stopped/deleted afterward |
 | Strict OpenSpec validation | All three changes passed | Artifact consistency, not runtime acceptance |
-| macOS/Linux CI | 441 core tests and clean immutable consumer passed on both platforms at e80de4f36d3c24b740ea0be74cb72916ce0101e9 | Protocol fixtures only; no real Incus/Macus |
-| Independent immutable consumer | 1 clean consumer test passed at published 2fa3fdea9085941e2ae866d5c9e473cb14ee4971 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
+| macOS/Linux CI | 445 core tests and clean immutable consumer passed on both platforms at fdd530557bd1a87b36e68f994daef37e4490c9d4 | Protocol fixtures only; latest EOF correction awaits platform checks |
+| Independent immutable consumer | 1 clean consumer test passed at published fdd530557bd1a87b36e68f994daef37e4490c9d4 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
 The coverage manifest records 268 differential JSON methods, 877 partial
 reference mappings and 403 missing declarations. Missing entries prevent a
@@ -95,7 +95,7 @@ Linux at e80de4f36d3c24b740ea0be74cb72916ce0101e9:
 https://github.com/upmaru/opsmaru/actions/runs/38106635241.
 Greptile repository setup was initially blocked by automatic approval review;
 the user connected it through the dashboard. Read-only status now confirms
-it is enabled, and the requested review is running against the committed
+it is enabled, and the requested review ran against the committed
 continuation/Credo diff from 03a1452 through e80de4f. The first review returned
 4/5 confidence and one P2 finding: dynamic-console actors discarded recognized
 child-channel failure messages. Four actual control/data overflow and byte-limit
@@ -103,8 +103,18 @@ fixtures reproduced the missing notification before the correction. The fix
 forwards exact causes, channel references and accepted operation responses to
 the host; unknown references are ignored. All 445 library tests, strict Credo
 (840 modules/functions), canonical checks and actual isolated `mix precommit`
-passed afterward. A follow-up Greptile review and platform run remain pending;
-no final review acceptance is claimed yet.
+passed afterward. The follow-up review confirmed that correction and returned
+4/5 with one P1 finding: remote control WebSocket closure retained the actor,
+preventing the console's monitor from promptly releasing local attachments.
+Actual close-frame and socket-disconnect fixtures reproduced both failures
+before the fix. A once-only owner EOF notice now triggers console cleanup,
+retains the accepted operation, and performs no DELETE or POST replay. Ordinary
+WebSocket readers can still drain queued tail frames after EOF. All 448 library
+tests, strict Credo (842 modules/functions), canonical checks and actual isolated
+`mix precommit` passed. The third Greptile review and latest platform run remain
+pending; no final review acceptance is claimed yet. The clean external consumer passed
+at fdd530557bd1a87b36e68f994daef37e4490c9d4 with the correction;
+https://github.com/upmaru/opsmaru/actions/runs/38107507422 passed both platforms.
 
 The preceding continuation added 111 declaration mappings and 63 library tests.
 The previously unchecked documentation revision 7d44efe failed macOS CI because
