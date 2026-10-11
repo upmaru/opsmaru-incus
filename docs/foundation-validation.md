@@ -13,7 +13,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 
 | Evidence | Result | Limits |
 | --- | --- | --- |
-| Database-free `mise run check:library` | 523 tests passed after native metadata/token and event-handler additions | macOS local fixtures; full parity incomplete |
+| Database-free `mise run check:library` | 526 tests passed after native metadata/token and event-handler additions and review fixes | macOS local fixtures; full parity incomplete |
 | Archive variants/TLS/migration focused checks | 5 tests passed | Native fake-backend archive bytes, HTTPS upgrades and failure preservation |
 | Actual embedded startup/restart with PHX_SERVER and invalid PORT | Empty supervision, no new ports/state/Endpoint/Repo | Installed Macus not exercised |
 | Official typed resource calls | 268 methods compared | Request/result/error/extension slices, not all-field semantic parity |
@@ -296,3 +296,21 @@ OCI design conflict: pinned OCI export requires root/skopeo/temporary conversion
 state, while the foundation excludes host commands and keeps platform behavior
 host-owned. The user has been asked to choose a host-adapter contract or explicit
 scope exclusion; neither has been implemented without that decision.
+
+Greptile reviewed e76ca9742fab7f850d8c1931b23714374b19ea5e against eba0875
+(run 10a217ac-5cd4-4ca7-9125-a11893bedd69), returning 4/5 with two findings.
+Permanent fixtures reproduced both before correction: the callback listener
+discarded queued final events on the WebSocket EOF notice, and string metadata
+bypassed the documented 1 MiB limit. The listener now drains until its reader
+returns EOF; string extraction uses the shared bounded projection path. An
+additional regression verifies accepted token-operation identity/response retention
+on conversion failure. All 526 library tests, strict Credo and isolated canonical
+checks/actual precommit passed after these corrections. No complete-parity or
+real-backend/hardware claim is added.
+
+Runtime CI at e76ca97 passed macOS and Linux (523 library tests plus the immutable
+consumer): https://github.com/upmaru/opsmaru/actions/runs/38114588535. The expanded
+local clean consumer passed at that same published revision, including metadata/
+token helpers and listener readiness rejection with Opsmaru stopped. This records
+that earlier runtime's fixture evidence; its two review findings are corrected
+in the following commit and require their own review/CI evidence.

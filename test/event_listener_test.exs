@@ -226,6 +226,35 @@ defmodule Opsmaru.Incus.EventListenerTest do
     assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 1_000
   end
 
+  test "queued final events are delivered before native EOF completes the listener", %{root: root} do
+    {client, _} =
+      fixture(root, [],
+        response_frames: fn _, _ ->
+          Enum.map(1..3, fn index ->
+            WebSocketFixture.frame(
+              1,
+              Jason.encode!(%{@event | "metadata" => %{"index" => index}})
+            )
+          end) ++ [WebSocketFixture.frame(8, <<1000::16>>)]
+        end
+      )
+
+    {:ok, listener} = EventListener.open(client)
+    parent = self()
+
+    {:ok, _} =
+      EventListener.add_handler(
+        listener,
+        [],
+        &send(parent, {:tail_event, &1.data["metadata"]["index"]})
+      )
+
+    assert :ok = EventListener.send_event(listener, @event)
+    for index <- 1..3, do: assert_receive({:tail_event, ^index}, 1_000)
+    assert :ok = EventListener.wait(listener)
+    refute EventListener.active?(listener)
+  end
+
   defp fixture(root, budgets \\ [], opts \\ []) do
     fixture =
       start_supervised!(

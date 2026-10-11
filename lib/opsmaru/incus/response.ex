@@ -66,9 +66,12 @@ defmodule Opsmaru.Incus.Response do
   def metadata_as_string_slice(%__MODULE__{metadata: nil}), do: {:ok, []}
 
   def metadata_as_string_slice(%__MODULE__{metadata: values}) when is_list(values) do
-    if Enum.all?(values, &(is_binary(&1) or is_nil(&1))),
-      do: {:ok, Enum.map(values, &(&1 || ""))},
-      else: metadata_error()
+    with {:ok, native} <- native_payload(values),
+         true <- Enum.all?(native, &(is_binary(&1) or is_nil(&1))) do
+      {:ok, Enum.map(native, &(&1 || ""))}
+    else
+      _ -> metadata_error()
+    end
   end
 
   def metadata_as_string_slice(_), do: metadata_error()

@@ -158,7 +158,9 @@ defmodule Opsmaru.Incus.EventListener do
   def handle_info({ref, :error, %Error{kind: kind}}, %{channel: %{ref: ref}} = state),
     do: stop(state, kind)
 
-  def handle_info({ref, :eof}, %{channel: %{ref: ref}} = state), do: stop(state, :ok)
+  # EOF is a notice, not proof that the bounded WebSocket queue is empty.
+  # The existing read loop drains tail events and stops on Events.next/2 EOF.
+  def handle_info({ref, :eof}, %{channel: %{ref: ref}} = state), do: {:noreply, state}
   def handle_info(_, state), do: {:noreply, state}
 
   @impl true

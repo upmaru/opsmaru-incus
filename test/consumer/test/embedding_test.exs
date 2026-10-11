@@ -3,13 +3,16 @@ defmodule FoundationConsumer.EmbeddingTest do
   alias Opsmaru.Incus.Connection
   alias Opsmaru.Incus.Discovery
   alias Opsmaru.Incus.DynamicConsole
+  alias Opsmaru.Incus.EventListener
   alias Opsmaru.Incus.HTTP
   alias Opsmaru.Incus.Images
   alias Opsmaru.Incus.Model
   alias Opsmaru.Incus.NativeConfig
   alias Opsmaru.Incus.NetworkModels
   alias Opsmaru.Incus.Preseed
+  alias Opsmaru.Incus.Response
   alias Opsmaru.Incus.Status
+  alias Opsmaru.Incus.Tokens
   alias Opsmaru.Incus.WebSocket
 
   test "independent host endpoint and private Unix backend use direct library calls" do
@@ -124,6 +127,32 @@ defmodule FoundationConsumer.EmbeddingTest do
 
     assert {:error, %Opsmaru.Incus.Error{kind: :invalid_websocket_options}} =
              WebSocket.open(client, "/1.0/events", headers: [{"authorization", "private"}])
+
+    assert {:ok, %{}} = Response.metadata_as_map(%Response{metadata: nil})
+
+    assert {:ok, operation} =
+             Response.metadata_as_operation(%Response{metadata: %{"id" => "host-op"}})
+
+    assert operation.data["id"] == "host-op"
+
+    assert {:ok, token_operation} =
+             Model.decode("Operation", %{
+               "metadata" => %{
+                 "request" => %{"name" => "host"},
+                 "secret" => "fixture-token",
+                 "fingerprint" => "fixture-fingerprint",
+                 "addresses" => ["unapproved.example:8443"]
+               }
+             })
+
+    assert {:ok, token} = Tokens.certificate(token_operation)
+    assert {:ok, encoded_token} = Tokens.encode(token)
+    assert Jason.decode!(Base.decode64!(encoded_token))["client_name"] == "host"
+    refute inspect(token) =~ "fixture-token"
+
+    Agent.update(FoundationConsumer.Runtime, fn _ -> false end)
+    assert {:error, %Opsmaru.Incus.Error{kind: :host_not_ready}} = EventListener.open(client)
+    Agent.update(FoundationConsumer.Runtime, fn _ -> true end)
 
     refute_receive {:request, _}, 30
     refute File.exists?(context.private_state)

@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.MetadataHelpersReferenceTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.Incus.{Error, Model, Response, Tokens}
+  alias Opsmaru.Incus.{Error, Model, Operation, Response, Tokens}
   @driver Path.expand("../../.integration/metadata-helpers-driver", __DIR__)
 
   setup_all do
@@ -135,6 +135,40 @@ defmodule Opsmaru.Incus.MetadataHelpersReferenceTest do
              Response.metadata_as_map(%Response{
                metadata: %{"private" => String.duplicate("x", 1_048_577)}
              })
+  end
+
+  test "token conversion failure retains an already accepted operation and originating response" do
+    response = %Response{
+      type: "async",
+      operation: "/1.0/operations/token",
+      identity: :host,
+      metadata: %{"id" => "token", "metadata" => %{"secret" => "private-missing-fields"}}
+    }
+
+    operation = %Operation{client: nil, url: response.operation, response: response}
+
+    for result <- [Tokens.certificate(operation), Tokens.cluster(operation)] do
+      assert {:error,
+              %Error{
+                kind: :invalid_token,
+                response: ^response,
+                operation: "/1.0/operations/token"
+              } = error} = result
+
+      refute inspect(error) =~ "private-missing-fields"
+    end
+  end
+
+  test "string-slice extraction enforces its documented byte budget before copying" do
+    response = %Response{metadata: [String.duplicate("x", 1_048_577)]}
+
+    result =
+      case Response.metadata_as_string_slice(response) do
+        {:error, %Error{kind: kind}} -> kind
+        _ -> :accepted
+      end
+
+    assert result == :invalid_metadata
   end
 
   defp compare(action, body, actual) do

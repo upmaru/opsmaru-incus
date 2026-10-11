@@ -178,9 +178,11 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
           |> :binary.list_to_bin()
 
         if opcode != 8 do
-          if opts[:frame_handler],
-            do: opts[:frame_handler].(opcode, data),
-            else: :gen_tcp.send(socket, frame(opcode, data))
+          cond do
+            opts[:response_frames] -> :gen_tcp.send(socket, opts[:response_frames].(opcode, data))
+            opts[:frame_handler] -> opts[:frame_handler].(opcode, data)
+            true -> :gen_tcp.send(socket, frame(opcode, data))
+          end
 
           echo(socket, opts)
         end

@@ -53,8 +53,15 @@ defmodule Opsmaru.Incus.Tokens do
 
   defp escape(char), do: <<char::utf8>>
 
-  defp from_operation(%Operation{} = operation, type),
-    do: from_operation(%Model{type: "Operation", data: Operation.data(operation)}, type)
+  defp from_operation(%Operation{} = operation, type) do
+    case from_operation(%Model{type: "Operation", data: Operation.data(operation)}, type) do
+      {:error, error} ->
+        {:error, %{error | response: operation.response, operation: operation.url}}
+
+      result ->
+        result
+    end
+  end
 
   defp from_operation(%Model{type: "Operation", data: data}, type) when is_map(data) do
     with :ok <- bounded(data),
