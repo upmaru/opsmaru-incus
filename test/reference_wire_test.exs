@@ -9,7 +9,9 @@ defmodule Opsmaru.Incus.ReferenceWireTest do
 
   setup_all do
     {module, 0} =
-      System.cmd("mise", ["exec", "--", "go", "list", "-m", "-json", "github.com/lxc/incus/v7"],
+      System.cmd(
+        "mise",
+        ["exec", "--", "go", "mod", "download", "-json", "github.com/lxc/incus/v7"],
         cd: @reference_dir,
         env: [{"GOTOOLCHAIN", "local"}]
       )
