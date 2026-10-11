@@ -3164,38 +3164,48 @@
     },
     {
       "id": "client/method/EventListener.AddHandler",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/event_listener.ex",
+      "evidence": [
+        "test/library/event_listener_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/EventListener.Disconnect",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/event_listener.ex",
+      "evidence": [
+        "test/library/event_listener_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/EventListener.IsActive",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/event_listener.ex",
+      "evidence": [
+        "test/library/event_listener_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/EventListener.RemoveHandler",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/event_listener.ex",
+      "evidence": [
+        "test/library/event_listener_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/EventListener.Wait",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/event_listener.ex",
+      "evidence": [
+        "test/library/event_listener_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.ApplyServerPreseed",
@@ -8285,10 +8295,12 @@
     },
     {
       "id": "shared/api/method/CertificateAddToken.String",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/tokens.ex",
+      "evidence": [
+        "test/library/metadata_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/ClusterGroup.Writable",
@@ -8310,10 +8322,12 @@
     },
     {
       "id": "shared/api/method/ClusterMemberJoinToken.String",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/tokens.ex",
+      "evidence": [
+        "test/library/metadata_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/ConfigMap.UnmarshalJSON",
@@ -8606,17 +8620,21 @@
     },
     {
       "id": "shared/api/method/Operation.ToCertificateAddToken",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/tokens.ex",
+      "evidence": [
+        "test/library/metadata_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Operation.ToClusterJoinToken",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/tokens.ex",
+      "evidence": [
+        "test/library/metadata_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Profile.URL",
@@ -8656,31 +8674,39 @@
     },
     {
       "id": "shared/api/method/Response.MetadataAsMap",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/response.ex",
+      "evidence": [
+        "test/library/metadata_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Response.MetadataAsOperation",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/response.ex",
+      "evidence": [
+        "test/library/metadata_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Response.MetadataAsStringSlice",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/response.ex",
+      "evidence": [
+        "test/library/metadata_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Response.MetadataAsStruct",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/response.ex",
+      "evidence": [
+        "test/library/metadata_helpers_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Server.Filtered",

@@ -25,6 +25,21 @@ defmodule Opsmaru.Incus.NativeInput do
       else: :error
   end
 
+  defp normalize("map[string]" <> type, value) when is_map(value) do
+    Enum.reduce_while(value, {:ok, %{}}, fn {key, item}, {:ok, acc} ->
+      case {is_binary(key), normalize(type, item)} do
+        {true, {:ok, normalized}} -> {:cont, {:ok, Map.put(acc, key, normalized)}}
+        _ -> {:halt, :error}
+      end
+    end)
+  end
+
+  defp normalize(type, nil) when type in ["[]byte", "[]uint8"], do: {:ok, nil}
+
+  defp normalize(type, value) when type in ["[]byte", "[]uint8"] and is_binary(value) do
+    with {:ok, bytes} <- Base.decode64(value), do: {:ok, Base.encode64(bytes)}
+  end
+
   defp normalize("[]" <> _, nil), do: {:ok, nil}
 
   defp normalize("[]" <> type, values) when is_list(values) do
@@ -48,18 +63,75 @@ defmodule Opsmaru.Incus.NativeInput do
       else: :error
   end
 
+  defp normalize(type, value)
+       when type in ~w(int int8 int16 int32 int64 uint uint8 uint16 uint32 uint64) do
+    value = if is_nil(value), do: 0, else: value
+    unsigned = String.starts_with?(type, "uint")
+    digits = type |> String.trim_leading("u") |> String.trim_leading("int")
+    bits = if digits == "", do: 64, else: String.to_integer(digits)
+    lower = if unsigned, do: 0, else: -Integer.pow(2, bits - 1)
+    upper = Integer.pow(2, if(unsigned, do: bits, else: bits - 1)) - 1
+
+    if is_integer(value) and value >= lower and value <= upper, do: {:ok, value}, else: :error
+  end
+
+  defp normalize(type, value) when type in ["float32", "float64"] do
+    value = if is_nil(value), do: 0, else: value
+
+    if is_number(value) do
+      native_float(type, value)
+    else
+      :error
+    end
+  end
+
+  defp normalize("time.Time", nil), do: {:ok, "0001-01-01T00:00:00Z"}
+
+  defp normalize("time.Time", value) when is_binary(value) do
+    with {:ok, _, _} <- DateTime.from_iso8601(value) do
+      normalized =
+        value
+        |> String.replace(",", ".")
+        |> String.replace(~r/(\.\d*?[1-9])0+(Z|[+-]\d\d:\d\d)$/, "\\1\\2")
+        |> String.replace(~r/\.0+(Z|[+-]\d\d:\d\d)$/, "\\1")
+        |> String.replace(~r/\+00:00$/, "Z")
+
+      {:ok, normalized}
+    end
+  end
+
+  defp normalize(type, value) when type in ["any", "interface{}"],
+    do: {:ok, native_any(value)}
+
+  defp normalize("json.RawMessage", value), do: {:ok, value}
+
   defp normalize(type, value) do
     case @schemas[type] do
       %{"kind" => "struct", "fields" => fields} when is_map(value) or is_nil(value) ->
         normalize_fields(type, fields, value || %{})
 
-      %{"underlying" => underlying} when underlying in ["string", "bool"] ->
+      %{"underlying" => underlying, "kind" => kind} when kind != "struct" ->
         normalize(underlying, value)
 
       _ ->
         :error
     end
   end
+
+  defp native_float("float32", value) do
+    <<float::float-32>> = <<value::float-32>>
+    {:ok, float}
+  end
+
+  defp native_float("float64", value), do: {:ok, value / 1}
+
+  defp native_any(value) when is_number(value), do: value / 1
+  defp native_any(value) when is_list(value), do: Enum.map(value, &native_any/1)
+
+  defp native_any(value) when is_map(value),
+    do: Map.new(value, fn {key, item} -> {key, native_any(item)} end)
+
+  defp native_any(value), do: value
 
   defp normalize_fields(type, fields, value) do
     Enum.reduce_while(fields, {:ok, %{}}, fn field, {:ok, acc} ->

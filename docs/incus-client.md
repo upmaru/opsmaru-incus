@@ -27,6 +27,9 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `RawChannel.recv/2`, `send_data/2`, `shutdown_write/1`, `close/1` | Bounded binary duplex and native half-close |
 | `Operation.raw/4`, `from_response/2`, `poll/1`, `wait/2`, `cancel/1`, `websocket/2` | Bound native handles and raw operation ETags; authoritative completion and supported cancellation |
 | `Events.subscribe/2`, `next/2`, `send/2`, `close/1` | Native events through an owner-monitored bounded WebSocket queue; sending acknowledges the local write, not backend processing |
+| `EventListener.open/2`, `add_handler/3`, `remove_handler/2`, `active?/1`, `send_event/2`, `wait/2`, `disconnect/1` | Explicit owner-bound callback listener; bounded capacity, sequential isolated callback workers, failure/lifetime cleanup and repeatable terminal result; local wait timeout does not disconnect or cancel work |
+| `Response.metadata_as_map/1`, `metadata_as_string_slice/1`, `metadata_as_operation/1`, `metadata_as_model/2` | Explicit native typed metadata extraction, including initialized-empty map/slice behavior for null, defaults and float64 metadata semantics; original response remains lossless |
+| `Tokens.certificate/1`, `cluster/1`, `encode/1` | Pure conversion of existing operation metadata and exact ordered JSON/base64 token formatting; tokens/addresses are privileged data, never provisioning or automatic connection targets |
 | `Session.exec/3`, `console/3`, `input/2`, `output/3`, `control/2`, `resize/3`, `signal/2`, `exit_status/1`, `close/1` | Native operation channels and control messages; local closure does not cancel Incus |
 | `DynamicConsole.open/4`, `attach/1`, `detach/2`, `control/2`, `resize/3`, `close/1` | One accepted console operation/control connection, repeated owner-bound data attachments; bounded capacity/lifetime and no POST replay |
 | `Copy.instance/4`, `snapshot/5`, `volume/6`, `move_volume/5` | Native writable configuration and explicit migration preparation; volume moves use one backend with destination `name`/`project`; accepted handles |
@@ -230,6 +233,20 @@ and every currently missing inventory entry. Do not treat `raw_query` success
 as typed support. Linux CI, installed service and real-backend results are
 recorded separately in `foundation-validation.md`.
 
+The callback listener has at most `min(queue_limit, 128)` handlers and one callback
+worker at a time. Each worker is limited by the connection timeout and remaining
+stream lifetime; workers die with their listener. A callback exception or timeout
+terminates that local subscription with a redacted error. Native event data is
+passed explicitly as a `Model`, not logged. These fixtures cover Unix listener
+lifecycle; the underlying WebSocket HTTPS transport has separate fixtures.
+Operation/remote-operation handler orchestration remains unimplemented.
+
+Typed metadata extraction uses a 1 MiB projection budget. Generic native Go
+`any` values have float64 numeric semantics; use the original response/model
+when exact received JSON integers or unknown fields matter. Token helpers retain
+native address strings as data; they do not approve or follow those addresses.
+Remaining model/YAML/helper parity is still incomplete.
+
 The pinned `shared/ws/proxy.go` closes both peers when either forwarder finishes;
 it does not reconnect automatically. Opsmaru follows this local channel lifetime
 and keeps native operation identities available for host reconciliation. Neither
@@ -246,6 +263,13 @@ Writable projections preserve present nulls/absence; native Go zero-value JSON
 materialization and remaining custom JSON/YAML helpers are still partial.
 
 ## Known pinned oracle limitations
+
+The pinned event-based `operation.WaitContext` calls `Cancel()` when its local
+context expires (`client/operations.go`). The approved operation contract requires
+local timeout/disconnection to retain remote work. Opsmaru's bounded polling wait
+does not issue a DELETE; its operation fixtures independently verify this required
+behavior. Future context/event wait helpers must retain that boundary rather than
+copying the oracle's cancellation side effect.
 
 At Incus v7.0.1 SHA `13f3992766142d5087fff2e362cd2e1a75294fe8`,
 `rawConn` uses `http.ReadResponse(bufio.NewReader(conn), req)` and returns the

@@ -184,7 +184,10 @@ defmodule Opsmaru.Incus.PreseedReferenceTest do
   } do
     {fixture, client, _, _} =
       fixture(root, :gen_tcp, fn request ->
-        Process.sleep(700)
+        # Leave a wide scheduling margin to reach the mutation, then keep its
+        # response past the total deadline. Resetting the budget for the POST
+        # would take at least four seconds instead of the allotted three.
+        Process.sleep(if request.method == "GET", do: 1000, else: 5000)
         handler(request)
       end)
 
@@ -199,11 +202,11 @@ defmodule Opsmaru.Incus.PreseedReferenceTest do
                    %{"name" => "two", "driver" => "dir"}
                  ]
                },
-               timeout: 1000
+               timeout: 3000
              )
 
     assert error.kind in [:deadline, :uncertain]
-    assert System.monotonic_time(:millisecond) - started < 2000
+    assert System.monotonic_time(:millisecond) - started < 3500
     assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
   end
 

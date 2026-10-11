@@ -73,6 +73,12 @@ models.update(network_normalisers)
 for name in ['GetHTTPClient','DoHTTP']:
  helpers[name]=('lib/opsmaru/incus/http.ex',['test/library/http_reference_test.exs'])
 helpers['DoWebsocket']=('lib/opsmaru/incus/web_socket.ex',['test/library/direct_websocket_reference_test.exs','test/library/web_socket_test.exs','test/library/tls_stream_test.exs'])
+for name in ['CertificateAddToken.String','ClusterMemberJoinToken.String','Operation.ToCertificateAddToken','Operation.ToClusterJoinToken']:
+ helpers[name]=('lib/opsmaru/incus/tokens.ex',['test/library/metadata_helpers_reference_test.exs'])
+for name in ['Response.MetadataAsMap','Response.MetadataAsOperation','Response.MetadataAsStringSlice','Response.MetadataAsStruct']:
+ helpers[name]=('lib/opsmaru/incus/response.ex',['test/library/metadata_helpers_reference_test.exs'])
+for name in ['EventListener.AddHandler','EventListener.RemoveHandler','EventListener.Wait','EventListener.IsActive','EventListener.Disconnect']:
+ helpers[name]=('lib/opsmaru/incus/event_listener.ex',['test/library/event_listener_test.exs'])
 entries=[]
 for entry in inv['entries']:
  name=entry['name'].split('.')[-1]

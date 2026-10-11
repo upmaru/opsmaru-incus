@@ -13,7 +13,7 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 
 | Evidence | Result | Limits |
 | --- | --- | --- |
-| Database-free `mise run check:library` | 508 tests passed after preseed/network/copy/raw HTTP/direct WebSocket additions | macOS local fixtures; full parity incomplete |
+| Database-free `mise run check:library` | 523 tests passed after native metadata/token and event-handler additions | macOS local fixtures; full parity incomplete |
 | Archive variants/TLS/migration focused checks | 5 tests passed | Native fake-backend archive bytes, HTTPS upgrades and failure preservation |
 | Actual embedded startup/restart with PHX_SERVER and invalid PORT | Empty supervision, no new ports/state/Endpoint/Repo | Installed Macus not exercised |
 | Official typed resource calls | 268 methods compared | Request/result/error/extension slices, not all-field semantic parity |
@@ -38,8 +38,8 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | macOS/Linux CI | 508 core tests and clean immutable consumer passed on both platforms at 21c21932ea659ce7e2d6eb8448dee8c1270628d7 | Protocol fixtures only; no real Incus/Macus |
 | Independent immutable consumer | 1 expanded clean consumer test passed at published 21c21932ea659ce7e2d6eb8448dee8c1270628d7 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
-The coverage manifest records 268 differential JSON methods, 870 partial
-reference mappings and 410 missing declarations. Missing entries prevent a
+The coverage manifest records 268 differential JSON methods, 883 partial
+reference mappings and 397 missing declarations. Missing entries prevent a
 complete-port claim. See `incus-client.md` for the exact API and limitations.
 The v7.0.1 rawConn prefetch defect is negative oracle evidence; Opsmaru's
 required preservation behavior is independently checked without patching the
@@ -254,7 +254,7 @@ and installed Macus/hardware acceptance stay separately unchecked.
 
 Visible client gaps include full dynamic console callback/IO and
 SFTP protocol helpers, direct HTTP/WebSocket/context convenience helpers,
-OCI/SimpleStreams sources, event/operation handlers, remaining type/JSON/YAML
+OCI/SimpleStreams sources, operation/remote-operation handlers, remaining type/JSON/YAML
 utilities and full cross-cluster/option matrices. Native storage upgrade and
 private image-file method evidence are now recorded as partial slices.
 OIDC client helpers remain excluded by the approved foundation scope.
@@ -269,3 +269,30 @@ guard in HTTP/1 and HTTP/2, matching the
 The portable client uses Mint and does not invoke Cowlib structured-field
 builders. This records the advisory and mitigation; it is not blanket security
 or standalone-service acceptance, and host applications still own their headers.
+
+The next 3.9 continuation adds 15 permanent library tests and 13 partial helper
+mappings: four native response metadata helpers, operation-to-certificate/cluster
+token conversion, both exact JSON/base64 token formats, and all five EventListener
+lifecycle helpers. The unchanged Go drivers compare native data, type errors,
+null initialization, defaults, nanosecond timestamps, float64 precision, escaping,
+filtering/removal, activity and repeatable wait. Independent fixtures verify
+handler capacity, owner isolation, callback exception/timeout redaction, worker
+cleanup (including brutal listener loss and callbacks trapping exits), EOF,
+malformed events, lifetime and no DELETE on local wait timeout.
+
+All 523 library tests passed locally. Strict Credo reports zero issues across
+1,102 modules/functions. Canonical checks and actual `mix precommit` both passed
+with a disposable PostgreSQL cluster, stopped and removed afterward; both web
+runs passed five tests. Strict OpenSpec passed all three changes and the Go
+inventory verifier passed. A scheduling-sensitive existing preseed fixture was
+strengthened: its delayed GET now leaves a wide margin to reach one POST, whose
+response remains beyond the total deadline; resetting the POST deadline would
+fail the elapsed-time assertion. The focused regression and full suite passed.
+
+Coverage is 883 partial/397 missing, still `complete_port=false`. No backend,
+installed Macus or hardware acceptance is added. Task 3.9 and task 4.3 remain
+unchecked. `task-3-9-closure.md` records the remaining groups and an unresolved
+OCI design conflict: pinned OCI export requires root/skopeo/temporary conversion
+state, while the foundation excludes host commands and keeps platform behavior
+host-owned. The user has been asked to choose a host-adapter contract or explicit
+scope exclusion; neither has been implemented without that decision.
