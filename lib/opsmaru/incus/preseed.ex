@@ -206,7 +206,10 @@ defmodule Opsmaru.Incus.Preseed do
     item =
       if kind == :volume, do: Map.put(item, "type", PreseedConfig.volume_type(item)), else: item
 
-    mutate(state, item, kind, post, args, PreseedConfig.project_body(type, item), nil)
+    case PreseedConfig.project_body(type, item) do
+      {:ok, body} -> mutate(state, item, kind, post, args, body, nil)
+      {:error, error} -> {:error, error, state}
+    end
   end
 
   defp mutate(state, item, kind, method, args, body, etag) do
@@ -248,13 +251,22 @@ defmodule Opsmaru.Incus.Preseed do
     end
   end
 
-  defp writable(%{metadata: %Model{} = model}), do: Model.writable(model) |> writable_data()
+  defp writable(response) do
+    result =
+      case response.metadata do
+        %Model{} = model -> Model.writable(model) |> writable_data()
+        data when is_map(data) -> Model.decode("Server", data) |> writable_model()
+        _ -> {:error, %Error{kind: :invalid_model}}
+      end
 
-  defp writable(%{metadata: data}) when is_map(data),
-    do: Model.decode("Server", data) |> writable_model()
+    case result do
+      {:error, error} -> {:error, %{error | response: response}}
+      result -> result
+    end
+  end
 
   defp writable_data({:ok, model}),
-    do: {:ok, PreseedConfig.project_body(model.type, model.data)}
+    do: PreseedConfig.project_body(model.type, model.data)
 
   defp writable_data(_), do: {:error, %Error{kind: :invalid_model}}
   defp writable_model({:ok, model}), do: Model.writable(model) |> writable_data()
@@ -273,10 +285,12 @@ defmodule Opsmaru.Incus.Preseed do
   defp cluster(state, _), do: {:ok, state}
 
   defp enable_cluster(state, config, etag) do
-    body = PreseedConfig.project_body("ClusterPut", config)
-
-    with {:ok, response, state} <- request(state, "UpdateCluster", %{}, body: body, etag: etag) do
+    with {:ok, body} <- PreseedConfig.project_body("ClusterPut", config),
+         {:ok, response, state} <- request(state, "UpdateCluster", %{}, body: body, etag: etag) do
       wait_cluster(state, response)
+    else
+      {:error, error, state} -> {:error, error, state}
+      {:error, error} -> {:error, error, state}
     end
   end
 
@@ -308,17 +322,21 @@ defmodule Opsmaru.Incus.Preseed do
             do: Map.put(item, "members", response.metadata.data["members"]),
             else: item
 
-        body = PreseedConfig.project_body("ClusterGroupPut", item)
+        case PreseedConfig.project_body("ClusterGroupPut", item) do
+          {:ok, body} ->
+            mutate(
+              state,
+              item,
+              :group,
+              "UpdateClusterGroup",
+              %{"name" => item["name"]},
+              body,
+              response.etag
+            )
 
-        mutate(
-          state,
-          item,
-          :group,
-          "UpdateClusterGroup",
-          %{"name" => item["name"]},
-          body,
-          response.etag
-        )
+          {:error, error} ->
+            {:error, error, state}
+        end
 
       {:error, _, state} ->
         create(state, item, :group)

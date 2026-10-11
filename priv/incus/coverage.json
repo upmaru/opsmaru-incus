@@ -8498,17 +8498,21 @@
     },
     {
       "id": "shared/api/method/NetworkACLRule.Normalise",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/network_models.ex",
+      "evidence": [
+        "test/library/network_models_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkAddressSet.Normalise",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/network_models.ex",
+      "evidence": [
+        "test/library/network_models_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkAddressSet.Writable",
@@ -8539,24 +8543,30 @@
     },
     {
       "id": "shared/api/method/NetworkForwardPort.Normalise",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/network_models.ex",
+      "evidence": [
+        "test/library/network_models_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkForwardPut.Normalise",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/network_models.ex",
+      "evidence": [
+        "test/library/network_models_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkForwardsPost.Normalise",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/network_models.ex",
+      "evidence": [
+        "test/library/network_models_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkIntegration.Writable",
@@ -8587,24 +8597,30 @@
     },
     {
       "id": "shared/api/method/NetworkLoadBalancerBackend.Normalise",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/network_models.ex",
+      "evidence": [
+        "test/library/network_models_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkLoadBalancerPort.Normalise",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/network_models.ex",
+      "evidence": [
+        "test/library/network_models_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkLoadBalancerPut.Normalise",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/network_models.ex",
+      "evidence": [
+        "test/library/network_models_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/NetworkPeer.Etag",
@@ -9677,10 +9693,12 @@
     },
     {
       "id": "shared/api/type/NetworkACLRule",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/network_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkACLsPost",
@@ -9697,7 +9715,8 @@
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
         "test/library/resource_slice_test.exs",
-        "test/library/model_helpers_reference_test.exs"
+        "test/library/model_helpers_reference_test.exs",
+        "test/library/network_models_reference_test.exs"
       ],
       "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
@@ -9750,10 +9769,12 @@
     },
     {
       "id": "shared/api/type/NetworkForwardPort",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/network_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkForwardPut",
@@ -9761,7 +9782,8 @@
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
         "test/library/resource_slice_test.exs",
-        "test/library/model_helpers_reference_test.exs"
+        "test/library/model_helpers_reference_test.exs",
+        "test/library/network_models_reference_test.exs"
       ],
       "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
@@ -9770,7 +9792,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/network_models_reference_test.exs"
       ],
       "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
@@ -9833,17 +9856,21 @@
     },
     {
       "id": "shared/api/type/NetworkLoadBalancerBackend",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/network_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkLoadBalancerPort",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/network_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkLoadBalancerPut",
@@ -9851,7 +9878,8 @@
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
         "test/library/resource_slice_test.exs",
-        "test/library/model_helpers_reference_test.exs"
+        "test/library/model_helpers_reference_test.exs",
+        "test/library/network_models_reference_test.exs"
       ],
       "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },

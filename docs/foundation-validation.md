@@ -38,8 +38,8 @@ Phoenix 1.8.15/plug_cowboy 2.9.0/Cowboy 2.19.0 locks remain compatible.
 | macOS/Linux CI | 448 core tests and clean immutable consumer passed on both platforms at 107eec41d625f512da70b57f58525d56980cf8e4 | Protocol fixtures only; no real Incus/Macus |
 | Independent immutable consumer | 1 clean consumer test passed at published 107eec41d625f512da70b57f58525d56980cf8e4 | Fetched from GitHub into a disposable directory; resolved consumer lock recorded |
 
-The coverage manifest records 268 differential JSON methods, 885 partial
-reference mappings and 395 missing declarations. Missing entries prevent a
+The coverage manifest records 268 differential JSON methods, 897 partial
+reference mappings and 383 missing declarations. Missing entries prevent a
 complete-port claim. See `incus-client.md` for the exact API and limitations.
 The v7.0.1 rawConn prefetch defect is negative oracle evidence; Opsmaru's
 required preservation behavior is independently checked without patching the
@@ -167,6 +167,20 @@ library tests, strict Credo (926 modules/functions), canonical full checks and
 actual isolated `mix precommit` passed locally. New platform/review evidence
 will be recorded after the next published continuation. No real server was
 configured by these checks; YAML remains unimplemented.
+
+The network/copy continuation adds 21 further library fixtures and 12 partial
+normalizer/type mappings. Eight unchanged native network helpers agree on
+populated/empty/null objects, Unicode whitespace, IPv4/IPv6 formatting, nested
+ports/backends and deliberately unchanged fields. Copy comparisons now require
+complete native POST bodies; local/remote default, empty-name, enabled and
+inactive option cases are covered. Permanent regressions reproduced omitted
+instance restore/disk-only fields and incorrect volume destination-name defaults
+before correction. Typed-input failures preserve native reconciliation data and
+fail visibly rather than raising. All 491 library tests, strict Credo
+(975 modules/functions), canonical full checks, actual isolated precommit and
+strict OpenSpec passed locally. The shared typed-input projection is internal;
+normal `Model.decode` remains lossless. New CI, consumer and Greptile results
+will be recorded for the published continuation.
 
 Visible client gaps include full dynamic console callback/IO and
 SFTP protocol helpers, direct HTTP/WebSocket/context convenience helpers,

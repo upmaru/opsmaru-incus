@@ -5,7 +5,7 @@ defmodule Opsmaru.Incus.Copy do
   No address fallback, automatic relay activation, cancellation or data deletion.
   """
   alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, Migration, Model, Operation}
+  alias Opsmaru.Incus.{Error, Migration, Model, NativeInput, Operation}
 
   @doc "Move/rename a volume within one explicit backend; project is the destination project."
   def move_volume(client, pool, source_pool, volume, opts \\ []) do
@@ -55,6 +55,7 @@ defmodule Opsmaru.Incus.Copy do
              :allow_inconsistent
            ]),
          {:ok, instance} <- model("Instance", instance),
+         {:ok, writable} <- Model.writable(instance),
          :ok <- instance_extensions(target, source, opts) do
       data = instance.data
       live = opts[:live] == true and data["status_code"] == 103
@@ -69,20 +70,9 @@ defmodule Opsmaru.Incus.Copy do
       }
 
       body =
-        Map.take(data, [
-          "architecture",
-          "config",
-          "devices",
-          "ephemeral",
-          "profiles",
-          "stateful",
-          "description",
-          "type"
-        ])
-
-      body =
-        Map.merge(body, %{
-          "name" => opts[:name] || data["name"],
+        Map.merge(writable.data, %{
+          "type" => data["type"],
+          "name" => name_or(opts, data["name"]),
           "source" => source_fields(:instance, fields)
         })
 
@@ -131,7 +121,7 @@ defmodule Opsmaru.Incus.Copy do
 
       body =
         Map.merge(body, %{
-          "name" => opts[:name] || parent,
+          "name" => name_or(opts, parent),
           "stateful" => live,
           "source" => %{"base-image" => get_in(data, ["config", "volatile.base_image"]) || ""}
         })
@@ -174,7 +164,7 @@ defmodule Opsmaru.Incus.Copy do
 
       body =
         Map.merge(body, %{
-          "name" => opts[:name] || data["name"],
+          "name" => opts[:name] || "",
           "source" => %{
             "name" => data["name"],
             "type" => "copy",
@@ -217,18 +207,35 @@ defmodule Opsmaru.Incus.Copy do
          opts
        ) do
     body = Map.put(body, "source", source_fields(kind, body["source"]))
-    target_request = {method, args, body}
+    type = if kind == :volume, do: "StorageVolumesPost", else: "InstancesPost"
 
-    if local_copy?(target, source, location, kind) do
-      dispatch_local(target, source, method, args, body, name, kind)
-    else
-      with :ok <- required(target, kind == :volume, "storage_api_remote_volume_handling") do
-        Migration.negotiate(source, target, source_request, target_request,
-          mode: opts[:mode] || :pull,
-          approved_origin: opts[:approved_origin]
-        )
+    with {:ok, body} <- NativeInput.cast(type, body),
+         {:ok, source_request} <- typed_source(source_request, kind) do
+      target_request = {method, args, body}
+
+      if local_copy?(target, source, location, kind) do
+        dispatch_local(target, source, method, args, body, name, kind)
+      else
+        with :ok <- required(target, kind == :volume, "storage_api_remote_volume_handling") do
+          Migration.negotiate(source, target, source_request, target_request,
+            mode: opts[:mode] || :pull,
+            approved_origin: opts[:approved_origin]
+          )
+        end
       end
+    else
+      {:error, cause} -> error(cause)
+      _ -> error(:invalid_copy_model)
     end
+  end
+
+  defp typed_source({method, args, body}, kind) do
+    type =
+      %{instance: "InstancePost", snapshot: "InstanceSnapshotPost", volume: "StorageVolumePost"}[
+        kind
+      ]
+
+    with {:ok, body} <- NativeInput.cast(type, body), do: {:ok, {method, args, body}}
   end
 
   defp local_copy?(target, source, location, kind) do
@@ -295,7 +302,7 @@ defmodule Opsmaru.Incus.Copy do
           else: fields
 
       body = Map.put(body, "source", Map.merge(body["source"], fields))
-      body = if kind == :snapshot, do: Map.delete(body, "type"), else: body
+      body = if kind == :snapshot, do: Map.put(body, "type", ""), else: body
 
       with {:ok, response} <- Incus.call(target, method, args, body: body),
            {:ok, operation} <- Operation.from_response(target, response),
@@ -325,13 +332,16 @@ defmodule Opsmaru.Incus.Copy do
              &(opts[&1] in [nil, true, false])
            ),
          true <-
-           is_nil(opts[:name]) or (is_binary(opts[:name]) and byte_size(opts[:name]) in 1..1024),
+           is_nil(opts[:name]) or (is_binary(opts[:name]) and byte_size(opts[:name]) in 0..1024),
          do: :ok,
          else: (
            {:error, error} -> {:error, error}
            _ -> {:error, :invalid_copy_options}
          )
   end
+
+  defp name_or(opts, fallback),
+    do: if(opts[:name] in [nil, ""], do: fallback, else: opts[:name])
 
   defp instance_extensions(target, source, opts) do
     with :ok <- mode_extensions(target, source, opts),

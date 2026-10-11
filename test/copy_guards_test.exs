@@ -133,6 +133,25 @@ defmodule Opsmaru.Incus.CopyGuardsTest do
     end
   end
 
+  test "invalid typed device input fails visibly before any copy mutation" do
+    root = Path.join(System.tmp_dir!(), "op-copy-device-#{System.unique_integer([:positive])}")
+    File.mkdir!(root)
+    on_exit(fn -> File.rm_rf!(root) end)
+    fixture = fixture(root, [])
+    client = bound(fixture, [])
+
+    assert {:error, %Error{kind: :invalid_native_config}} =
+             Copy.instance(client, client, %{"name" => "native", "devices" => %{"root" => nil}})
+
+    assert {:error, %Error{kind: :invalid_native_input}} =
+             Copy.instance(client, client, %{
+               "name" => "native",
+               "devices" => %{"root" => %{"type" => <<255>>}}
+             })
+
+    assert HTTPFixture.requests(fixture) == []
+  end
+
   defp official(input) do
     # Feed the unchanged helper through a shell-free fixture process.
     port = Port.open({:spawn_executable, @driver}, [:binary, :exit_status, :use_stdio])

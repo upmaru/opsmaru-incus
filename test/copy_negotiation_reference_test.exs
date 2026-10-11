@@ -98,6 +98,120 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
     end
   end
 
+  for kind <- [:instance, :snapshot, :volume], locality <- [:local, :remote] do
+    test "#{kind} #{locality} default and enabled options match complete native requests", %{
+      root: root
+    } do
+      compare_options(root, unquote(kind), unquote(locality))
+    end
+  end
+
+  defp compare_options(root, kind, locality) do
+    barrier =
+      if locality == :remote, do: start_supervised!({Agent, fn -> MapSet.new() end}), else: nil
+
+    {source, source_fixture, source_endpoint} =
+      fixture(root, "option-source", :https, :accept, barrier)
+
+    {target, target_fixture, target_endpoint} =
+      if locality == :local,
+        do: {source, source_fixture, source_endpoint},
+        else: fixture(root, "option-target", :https, :accept, barrier)
+
+    enabled = enabled_options(kind)
+
+    for {flags, inactive?} <- [
+          {[], false},
+          {[name: ""], false},
+          {enabled, false},
+          {enabled, true}
+        ] do
+      if barrier, do: Agent.update(barrier, fn _ -> MapSet.new() end)
+      data = option_model(kind, inactive?)
+
+      native_keys = %{
+        name: :Name,
+        live: :Live,
+        instance_only: :InstanceOnly,
+        refresh: :Refresh,
+        refresh_exclude_older: :RefreshExcludeOlder,
+        allow_inconsistent: :AllowInconsistent,
+        volume_only: :VolumeOnly
+      }
+
+      options = Map.new(flags, fn {key, value} -> {native_keys[key], value} end)
+
+      result =
+        reference(%{
+          action: kind,
+          source: source_endpoint,
+          target: target_endpoint,
+          body: data,
+          options: options,
+          pool: "new-pool",
+          source_pool: "old-pool",
+          parent: "parent"
+        })
+
+      refute result["error"], inspect(result)
+      expected_target = List.last(posts(target_fixture))
+      expected_source = if locality == :remote, do: List.last(posts(source_fixture))
+      target_count = length(posts(target_fixture))
+      source_count = length(posts(source_fixture))
+
+      opts =
+        if locality == :remote,
+          do: Keyword.put(flags, :approved_origin, source_endpoint.url),
+          else: flags
+
+      outcome = option_copy(kind, target, source, data, opts)
+
+      assert {:ok, migration} = outcome
+
+      assert Jason.decode!(List.last(posts(target_fixture)).body) ==
+               Jason.decode!(expected_target.body)
+
+      assert length(posts(target_fixture)) == target_count + 1
+
+      if locality == :remote do
+        assert Jason.decode!(List.last(posts(source_fixture)).body) ==
+                 Jason.decode!(expected_source.body)
+
+        assert length(posts(source_fixture)) == source_count + 1
+      end
+
+      refute Operation.completed?(migration.target)
+      refute Enum.any?(HTTPFixture.requests(target_fixture), &(&1.method == "DELETE"))
+    end
+  end
+
+  defp enabled_options(:instance),
+    do: [
+      live: true,
+      instance_only: true,
+      refresh: true,
+      refresh_exclude_older: true,
+      allow_inconsistent: true
+    ]
+
+  defp enabled_options(:snapshot), do: [live: true]
+
+  defp enabled_options(:volume),
+    do: [volume_only: true, refresh: true, refresh_exclude_older: true]
+
+  defp option_model(:instance, true), do: Map.put(model(:instance), "status_code", 102)
+  defp option_model(:snapshot, true), do: Map.put(model(:snapshot), "stateful", false)
+  defp option_model(kind, _), do: model(kind)
+
+  defp option_copy(:instance, target, source, data, opts),
+    do: Copy.instance(target, source, data, opts)
+
+  defp option_copy(:snapshot, target, source, data, opts),
+    do: Copy.snapshot(target, source, "parent", data, opts)
+
+  defp option_copy(:volume, target, source, data, opts),
+    do: Copy.volume(target, source, "new-pool", "old-pool", data, opts)
+
   defp compare_copy(root, kind, mode) do
     barrier = start_supervised!({Agent, fn -> MapSet.new() end})
     {source, source_fixture, source_endpoint} = fixture(root, "source", :https, :accept, barrier)
@@ -153,7 +267,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
       assert actual.method == expected.method
       assert actual.target == expected.target
 
-      assert subset?(Jason.decode!(actual.body), Jason.decode!(expected.body)),
+      assert Jason.decode!(actual.body) == Jason.decode!(expected.body),
              inspect({Jason.decode!(actual.body), Jason.decode!(expected.body)})
 
       # Only the official call and one Opsmaru mutation. No cancellation/replay.
@@ -334,10 +448,42 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
 
     assert copy.mode == :local
     actual = posts(fixture) |> List.last()
-    assert subset?(Jason.decode!(actual.body), Jason.decode!(expected.body))
-    refute Map.has_key?(Jason.decode!(actual.body), "type")
+    assert Jason.decode!(actual.body) == Jason.decode!(expected.body)
+    assert Jason.decode!(actual.body)["type"] == ""
     assert Jason.decode!(actual.body)["stateful"] == true
     assert Jason.decode!(actual.body)["source"]["source"] == "parent/snapshot"
+  end
+
+  test "copy retains non-default writable restore and disk-only fields", %{root: root} do
+    {client, fixture, endpoint} = fixture(root, "writable", :unix)
+
+    data =
+      model(:instance)
+      |> Map.merge(%{
+        "restore" => "snapshot",
+        "disk_only" => true,
+        "description" => "native description",
+        "stateful" => true
+      })
+
+    result =
+      reference(%{
+        action: "instance",
+        source: endpoint,
+        target: endpoint,
+        body: data,
+        options: %{Name: "copied"}
+      })
+
+    refute result["error"], inspect(result)
+    native = List.last(posts(fixture))
+    assert {:ok, migration} = Copy.instance(client, client, data, name: "copied")
+    refute Operation.completed?(migration.target)
+    actual = List.last(posts(fixture))
+    assert Jason.decode!(actual.body) == Jason.decode!(native.body)
+    assert Jason.decode!(actual.body)["restore"] == "snapshot"
+    assert Jason.decode!(actual.body)["disk_only"]
+    assert length(posts(fixture)) == 2
   end
 
   defp model(:instance),

@@ -296,7 +296,8 @@ defmodule Opsmaru.Incus.PreseedReferenceTest do
           %{"profiles" => "bad"},
           %{"profiles" => [%{"config" => %{"bad" => []}}]},
           %{"networks" => [%{"Project" => "one", "project" => "two"}]},
-          %{"profiles" => List.duplicate(%{"name" => "x"}, 129)}
+          %{"profiles" => List.duplicate(%{"name" => "x"}, 129)},
+          %{"profiles" => [%{"Project" => String.duplicate("x", 1025)}]}
         ] do
       assert {:error, %Error{kind: :invalid_preseed}} = Preseed.apply(client, config)
     end
@@ -311,6 +312,27 @@ defmodule Opsmaru.Incus.PreseedReferenceTest do
              Preseed.apply(client, %{"config" => %{"x" => "y"}})
 
     assert HTTPFixture.requests(fixture) == []
+  end
+
+  test "over-budget existing configuration returns its native response without a mutation", %{
+    root: root
+  } do
+    padding = String.duplicate("x", 1_048_577)
+
+    {fixture, client, _, _} =
+      fixture(root, :gen_tcp, fn request ->
+        if URI.parse(request.target).path == "/1.0",
+          do: sync(%{config: %{"padding" => padding}}),
+          else: handler(request)
+      end)
+
+    assert {:error, %Error{kind: :invalid_native_config} = error} =
+             Preseed.apply(client, %{"config" => %{"changed" => "value"}})
+
+    assert error.response.completed.changes == []
+    assert error.response.failure.identity == :verified
+    assert error.response.failure.metadata["config"]["padding"] == padding
+    assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
   end
 
   test "bounded result exhaustion retains the most recent accepted response without replay", %{

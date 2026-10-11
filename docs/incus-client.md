@@ -166,22 +166,37 @@ leads to one create attempt; a create failure stops the call. Cluster completion
 uses bounded native polling, separately from the compared configuration wire
 sequence. YAML and actual server/cluster acceptance remain separate.
 
-The checked manifest currently has 268 differential JSON methods, 885 partial
-reference mappings and 395 missing declarations out of 1,280. Interface entries
+`NetworkModels.normalise/1` explicitly applies the eight pinned network
+normalizers to a supported `Model`: ACL rules, address sets, forward ports/puts/
+posts, and load-balancer backends/ports/puts. It uses typed JSON defaults and
+native omission rules, trims exactly Go's Unicode whitespace, and canonicalizes
+IP addresses only where the upstream helper does. Input/output are bounded to
+1 MiB. This explicit typed projection discards unknown fields; ordinary
+`Model.decode/2` remains lossless and mutations do not normalize implicitly.
+
+The checked manifest currently has 268 differential JSON methods, 897 partial
+reference mappings and 383 missing declarations out of 1,280. Interface entries
 and schemas account for some mappings; these counts are not distinct client
 operations. Schema-derived field validation and positive fixture results do
 not establish full Incus semantic behavior. `scripts/update-incus-coverage.py`
 regenerates mappings and checks evidence paths, never relabeling partial as full.
 
 Local instance/snapshot/volume copy and move requests, and remote HTTPS pull/push
-copy preparation, are compared with official helpers. Bidirectional binary/text relay across control/data
+copy preparation, are compared with official helpers. Copy request bodies now
+compare complete objects, including native zero/omitted fields, rather than
+checking only supplied fields. The default/empty-name and enabled/inactive
+option matrix covers live, instance-only, volume-only, refresh, exclude-older
+and allow-inconsistent combinations. Instance copy retains every writable DTO
+field, including restore/disk-only. An omitted/empty volume destination name
+remains empty as in the pinned helper; instance/snapshot defaults retain their
+native source/parent name. Bidirectional binary/text relay across control/data
 channels, EOF, silent deadlines and native upgrade rejections are independently
 verified. Copy option preflight includes the pinned target-side check for
 `instance_allow_inconsistent_copy`; its misleading upstream error text says
 source, but the actual `CopyInstance` receiver checks the target. Dependent
 instance migration devices use the native capitalized `Devices` key. Internal
 volume copy source location falls back to the discovered server name; local
-snapshot copies omit the remote-only parent instance type.
+snapshot copies send the native empty type rather than the remote parent type.
 Remaining parity includes complete cross-cluster/copy option matrices, migration
 negotiation and complete relay-channel failure/cleanup evidence,
 full SFTP protocol helpers, complete dynamic console callback/IO and recorded-output helpers, all-field

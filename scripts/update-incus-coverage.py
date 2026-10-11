@@ -66,6 +66,10 @@ for name in ['ConfigMap.UnmarshalJSON','DevicesMap.UnmarshalJSON']:
 helpers['ApplyServerPreseed']=('lib/opsmaru/incus/preseed.ex',['test/library/preseed_reference_test.exs'])
 preseed_types = 'InitPreseed InitLocalPreseed InitClusterPreseed InitNetworksProjectPost InitStorageVolumesProjectPost InitProfileProjectPost'.split()
 models.update(preseed_types)
+network_normalisers = 'NetworkACLRule NetworkAddressSet NetworkForwardPort NetworkForwardPut NetworkForwardsPost NetworkLoadBalancerBackend NetworkLoadBalancerPort NetworkLoadBalancerPut'.split()
+for name in network_normalisers:
+ helpers[name+'.Normalise']=('lib/opsmaru/incus/network_models.ex',['test/library/network_models_reference_test.exs'])
+models.update(network_normalisers)
 entries=[]
 for entry in inv['entries']:
  name=entry['name'].split('.')[-1]
@@ -84,6 +88,7 @@ for entry in inv['entries']:
   if name == 'ServerEnvironment': evidence.append('test/library/discovery_helpers_test.exs')
   if name == 'Event': evidence.append('test/library/event_send_test.exs')
   if name in preseed_types: evidence.append('test/library/preseed_reference_test.exs')
+  if name in network_normalisers: evidence.append('test/library/network_models_reference_test.exs')
   row.update(status='partial',elixir='lib/opsmaru/incus/model.ex',evidence=evidence,note='Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified.')
  elif entry['package']=='shared/api' and entry['kind'] in ['const','var'] and entry['source']=='shared/api/status_code.go':
   row.update(status='partial',elixir='lib/opsmaru/incus/status.ex',evidence=['test/library/model_helpers_reference_test.exs'],note='All pinned status names/values and unknown-code behavior compared with unchanged native helpers.')
