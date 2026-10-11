@@ -57,9 +57,10 @@ defmodule Opsmaru.Incus.RawChannelTest do
     {client, fixture} = fixture(root, context, "sftp", "", false)
     client = %{client | connection: %{client.connection | stream_timeout: 50}}
     {:ok, channel} = Incus.sftp(client, "fixture")
+    monitor = Process.monitor(channel.pid)
     ref = channel.ref
     assert_receive {^ref, :error, %Error{kind: :deadline}}, 1_000
-    refute Process.alive?(channel.pid)
+    assert_receive {:DOWN, ^monitor, :process, _, :normal}, 1_000
     Process.exit(fixture, :kill)
   end
 
