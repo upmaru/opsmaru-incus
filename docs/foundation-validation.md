@@ -454,3 +454,6 @@ changes. Opsmaru's Application, Endpoint and Repo remained stopped. This is
 real inspection/TLS preflight only: task 4.3 remains open for mutation, operation
 and stream acceptance; full Macus integration/installed hardware acceptance and
 gateway acceptance remain separate. No real workload was booted by preflight.
+
+The fresh independent consumer passed at corrected WebSocket runtime
+`0bd8e4c032d33e531c5d88106e0c1e8fdb55e6e6`; its default pin, resolved lock and embedding example now record that source.
