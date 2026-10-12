@@ -17,20 +17,58 @@ defmodule Opsmaru.Incus.Transport do
 
   @doc false
   def bounded(timeout, method, fun) do
-    task =
-      Task.async(fn ->
-        try do
-          fun.()
-        rescue
-          _ -> failed(method, :request)
-        catch
-          _, _ -> failed(method, :request)
-        end
+    owner = self()
+    ref = make_ref()
+    deadline = now() + timeout
+
+    {worker, monitor} =
+      spawn_monitor(fn ->
+        worker = self()
+        spawn(fn -> guard(owner, worker, deadline) end)
+
+        result =
+          try do
+            fun.()
+          rescue
+            _ -> failed(method, :request)
+          catch
+            _, _ -> failed(method, :request)
+          end
+
+        send(owner, {ref, result})
       end)
 
-    case Task.yield(task, timeout) || Task.shutdown(task, :brutal_kill) do
-      {:ok, result} -> result
-      _ -> failed(method, :deadline)
+    receive do
+      {^ref, result} ->
+        Process.demonitor(monitor, [:flush])
+        result
+
+      {:DOWN, ^monitor, :process, ^worker, _} ->
+        failed(method, if(now() >= deadline, do: :deadline, else: :request))
+    after
+      remaining(deadline) ->
+        Process.exit(worker, :kill)
+
+        receive do
+          {:DOWN, ^monitor, :process, ^worker, _} -> :ok
+        after
+          100 -> Process.demonitor(monitor, [:flush])
+        end
+
+        failed(method, :deadline)
+    end
+  end
+
+  # Independent of both the caller's timeout and callback exit trapping.
+  defp guard(owner, worker, deadline) do
+    owner_monitor = Process.monitor(owner)
+    worker_monitor = Process.monitor(worker)
+
+    receive do
+      {:DOWN, ^owner_monitor, :process, _, _} -> Process.exit(worker, :kill)
+      {:DOWN, ^worker_monitor, :process, _, _} -> :ok
+    after
+      remaining(deadline) -> Process.exit(worker, :kill)
     end
   end
 

@@ -324,6 +324,145 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
                    1000
   end
 
+  for cause <- [:owner_loss, :control_close] do
+    test "#{cause} releases multiple blocked attachments under one cleanup budget", %{
+      root: root,
+      context: context
+    } do
+      parent = self()
+      fixture = blocked_console_fixture(root, parent)
+
+      connection =
+        Connection.unix!(HTTPFixture.endpoint(fixture).socket,
+          owner: :fixture,
+          timeout: 5_000,
+          stream_timeout: 30_000,
+          max_response_bytes: 1_048_576,
+          max_stream_bytes: 67_108_864
+        )
+
+      client = %Incus{
+        connection: connection,
+        context: context,
+        server: %Server{api_extensions: @extensions}
+      }
+
+      owner =
+        spawn(fn ->
+          {:ok, console} = DynamicConsole.open(client, "fixture", %{})
+
+          channels =
+            for _ <- 1..2 do
+              {:ok, channel} = DynamicConsole.attach(console)
+              channel
+            end
+
+          send(parent, {:blocked_console, console, channels})
+
+          receive do
+            :never -> :ok
+          end
+        end)
+
+      on_exit(fn -> if Process.alive?(owner), do: Process.exit(owner, :kill) end)
+      assert_receive {:blocked_console, console, channels}, 1_000
+      assert_receive {:blocked_peer, "private-control", control_peer}, 1_000
+      for _ <- channels, do: assert_receive({:blocked_peer, "private-data", _}, 1_000)
+
+      on_exit(fn ->
+        for pid <- [console.pid | Enum.map(channels, & &1.pid)] do
+          if Process.alive?(pid), do: Process.exit(pid, :kill)
+        end
+      end)
+
+      writers =
+        Enum.map(channels, fn channel ->
+          socket = :sys.get_state(channel.pid).conn |> Mint.HTTP.get_socket()
+          :ok = :inet.setopts(socket, sndbuf: 1024)
+
+          Task.async(fn ->
+            Enum.reduce_while(1..64, :still_buffering, fn _, _ ->
+              case WebSocket.send_frame(channel, {:binary, :binary.copy(<<7>>, 1_048_576)}) do
+                :ok -> {:cont, :still_buffering}
+                error -> {:halt, error}
+              end
+            end)
+          end)
+        end)
+
+      for channel <- channels do
+        await_blocked_write(channel.pid, System.monotonic_time(:millisecond) + 1_000)
+      end
+
+      monitors = for pid <- [console.pid | Enum.map(channels, & &1.pid)], do: Process.monitor(pid)
+      before = System.monotonic_time(:millisecond)
+      end_blocked_console(unquote(cause), owner, control_peer)
+      for monitor <- monitors, do: assert_receive({:DOWN, ^monitor, :process, _, _}, 500)
+      assert System.monotonic_time(:millisecond) - before < 500
+      for writer <- writers, do: assert({:error, %Error{}} = Task.await(writer))
+      assert console.operation.url == "/1.0/operations/console-id"
+      assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
+      refute Enum.any?(HTTPFixture.requests(fixture), &(&1.method == "DELETE"))
+    end
+  end
+
+  defp end_blocked_console(:owner_loss, owner, _), do: Process.exit(owner, :kill)
+  defp end_blocked_console(:control_close, _, peer), do: send(peer, :close_control)
+
+  defp await_blocked_write(pid, deadline) do
+    {:current_stacktrace, stack} = Process.info(pid, :current_stacktrace)
+
+    unless Enum.any?(stack, fn {module, function, _, _} ->
+             module in [:prim_inet, :gen_tcp] and function == :send
+           end) do
+      assert System.monotonic_time(:millisecond) < deadline, inspect(stack)
+      Process.sleep(1)
+      await_blocked_write(pid, deadline)
+    end
+  end
+
+  defp blocked_console_fixture(root, parent) do
+    start_supervised!(
+      {HTTPFixture,
+       transport: :gen_tcp,
+       path: Path.join(root, "blocked-console"),
+       handler: fn request ->
+         if request.method == "POST" do
+           accepted(%{"control" => "private-control", "0" => "private-data"})
+         else
+           %{
+             upgrade: fn transport, socket ->
+               secret = URI.decode_query(URI.parse(request.target).query)["secret"]
+
+               accept =
+                 Base.encode64(
+                   :crypto.hash(
+                     :sha,
+                     request.headers["sec-websocket-key"] <>
+                       "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+                   )
+                 )
+
+               :ok =
+                 transport.send(
+                   socket,
+                   "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: #{accept}\r\n\r\n"
+                 )
+
+               send(parent, {:blocked_peer, secret, self()})
+
+               receive do
+                 :close_control -> transport.send(socket, WebSocketFixture.frame(8, <<1000::16>>))
+               after
+                 10_000 -> :ok
+               end
+             end
+           }
+         end
+       end}
+    )
+  end
+
   test "owner exit closes control and attachments without cancelling the backend", %{
     root: root,
     context: context

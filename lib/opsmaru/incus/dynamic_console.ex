@@ -147,7 +147,7 @@ defmodule Opsmaru.Incus.DynamicConsole do
   def handle_call({:detach, %WebSocket{pid: pid} = supplied}, _, state) do
     case state.attachments[pid] do
       {^supplied, monitor} ->
-        WebSocket.close(supplied)
+        WebSocket.close_owned([supplied])
         Process.demonitor(monitor, [:flush])
         {:reply, :ok, %{state | attachments: Map.delete(state.attachments, pid)}}
 
@@ -217,8 +217,8 @@ defmodule Opsmaru.Incus.DynamicConsole do
   @impl true
   def terminate(_, state) do
     Process.cancel_timer(state.timer)
-    WebSocket.close(state.control)
-    Enum.each(state.attachments, fn {_, {channel, _}} -> WebSocket.close(channel) end)
+    channels = [state.control | Enum.map(state.attachments, fn {_, {channel, _}} -> channel end)]
+    WebSocket.close_owned(channels)
   end
 
   @impl true

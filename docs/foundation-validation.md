@@ -457,3 +457,36 @@ gateway acceptance remain separate. No real workload was booted by preflight.
 
 The fresh independent consumer passed at corrected WebSocket runtime
 `0bd8e4c032d33e531c5d88106e0c1e8fdb55e6e6`; its default pin, resolved lock and embedding example now record that source.
+
+
+## Owner-loss cleanup correction and SimpleStreams contract — 2026-10-12
+
+Full-branch Greptile run `627e48e6-635b-4e7b-87b6-a9bf0e4e9266` reviewed
+`f97fbbf1999ab63df1e62dcc157e122d3e4dbd50` against develop `2678ed7` and
+returned 3/5 with two P1 findings. Both reproduced independently. A source or
+sink that traps exits survived the loss of its transfer caller; transport work
+now has an independent caller/deadline guard. Two stalled console attachments
+kept the console alive during termination; graceful local closes now run under
+one shared 100 ms budget, followed by force-stopping remaining owned channel
+workers. Detach uses the same bounded local cleanup. Four permanent regressions
+verify cleanup while preserving accepted operation identity and no backend
+DELETE or mutation replay. All 555 database-free library tests, strict Credo,
+canonical checks and actual precommit passed locally using a disposable database.
+The two blocked-console cases also passed ten repeated runs.
+
+At `f97fbbf`, PR CI passed macOS/Linux (run `38205111802`), while push CI's
+macOS preseed mixed-mode wire comparison failed (run `38205108413`). Thirty
+focused repetitions and a full suite at its seed `34849` passed locally; that
+has not explained the failure. Redacted first-mismatch diagnostics now report
+request position, method/path and differing field names without payloads. The
+failure remains visible pending fresh platform CI; no assertion was weakened.
+
+The user approved explicit verified HTTPS and a host delta adapter for
+SimpleStreams. Proposal, design, incus-client spec and task 3.9 now retain this
+protocol in scope while excluding automatic `/dev/incus/sock` discovery, HTTP
+downgrade and library-owned conversion tools/files. The Incus 7.0.1 reference
+is unchanged. Native projections/download checksums and adapter deadlines,
+ownership and cleanup require implementation evidence; installed adapter,
+real-backend and Macus hardware acceptance remain separately recorded. All four
+changes passed strict OpenSpec validation after the artifact revision. Foundation
+3.9 and 4.3 remain unchecked; this correction does not complete either gate.

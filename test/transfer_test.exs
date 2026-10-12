@@ -142,6 +142,48 @@ defmodule Opsmaru.Incus.TransferTest do
              Incus.raw_query(wrong_name, context, "GET", "/1.0", [])
   end
 
+  for mode <- [:source, :sink] do
+    test "trapping #{mode} callback cannot survive its calling owner", %{
+      root: root,
+      context: context
+    } do
+      fixture = backend(root, fn _ -> %{raw: "HTTP/1.1 200 OK\r\nContent-Length: 1\r\n\r\nx"} end)
+      client = client(fixture, context, stream_timeout: 5_000)
+      parent = self()
+
+      block = fn ->
+        Process.flag(:trap_exit, true)
+        send(parent, {:blocked, self()})
+
+        receive do
+          :never -> :ok
+        end
+      end
+
+      owner = spawn(fn -> trapped_transfer(unquote(mode), client, block) end)
+      on_exit(fn -> if Process.alive?(owner), do: Process.exit(owner, :kill) end)
+      assert_receive {:blocked, worker}, 1_000
+      on_exit(fn -> if Process.alive?(worker), do: Process.exit(worker, :kill) end)
+      monitor = Process.monitor(worker)
+      Process.exit(owner, :kill)
+      assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 500
+      assert Process.alive?(self())
+    end
+  end
+
+  defp trapped_transfer(:source, client, block) do
+    source =
+      Stream.map([<<7>>], fn bytes ->
+        block.()
+        bytes
+      end)
+
+    Transfer.upload(client, "/1.0/images", source)
+  end
+
+  defp trapped_transfer(:sink, client, block),
+    do: Transfer.download(client, "/1.0/files", fn _ -> block.() end)
+
   defp client(fixture, context, opts) do
     connection =
       Connection.unix!(

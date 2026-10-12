@@ -92,3 +92,26 @@ OCI support SHALL use an explicitly supplied host adapter for privileged convers
 
 - **WHEN** native projection fixtures and a fake conversion adapter pass
 - **THEN** the evidence records the library contract while installed adapter conversion, registry authentication and real Incus/Macus hardware acceptance remain separate unverified gates
+
+### Requirement: Explicit verified SimpleStreams downloads
+
+SimpleStreams support SHALL use an explicitly supplied verified HTTPS connection and host context, preserve pinned native index/image/alias semantics and validate binary checksums with bounded metadata, deadlines and acknowledged sinks. Construction MUST NOT contact a backend or create state. The library MUST NOT discover `/dev/incus/sock`, downgrade to HTTP, discover tools or create conversion files. These approved differences SHALL be documented against the unchanged pinned reference.
+
+#### Scenario: Verified full image download
+
+- **WHEN** an authorized ready host selects a SimpleStreams image using its explicit HTTPS origin
+- **THEN** the client preserves native image identity and delivers bounded checksum-verified metadata/rootfs bytes without local backend discovery or an HTTP fallback
+
+### Requirement: Host-supplied SimpleStreams delta conversion
+
+Optional delta conversion SHALL require an explicit host adapter and base source. Each call SHALL have a unique identity, absolute deadline, bounded binary delivery and idempotent bounded cleanup on success, failure, timeout or owner loss. Hosts SHALL own conversion tools, credentials and temporary state. The library MUST NOT automatically retry conversion or replay partially delivered bytes. Without an optional adapter/base it SHALL use the verified full-file path. Adapter failures SHALL remain visible with image identity preserved.
+
+#### Scenario: Delta conversion owner loss
+
+- **WHEN** the calling owner exits during an explicit delta conversion
+- **THEN** local adapter work terminates and per-call cleanup runs without retrying conversion or affecting another connection
+
+#### Scenario: Fixture delta acceptance
+
+- **WHEN** pinned SimpleStreams fixtures and a fake delta adapter pass
+- **THEN** the library contract evidence is recorded separately from actual installed conversion, real-backend and Macus hardware acceptance

@@ -52,6 +52,22 @@ defmodule Opsmaru.Incus.WebSocket do
 
   def send_frame(channel, frame), do: call(channel, {:send, frame}, 3_600_100)
   def close(channel), do: call(channel, :close, 5_000)
+
+  @doc false
+  def close_owned(channels) do
+    deadline = now() + 100
+    requests = Enum.map(channels, &{&1.pid, :gen_server.send_request(&1.pid, :close)})
+
+    # Send all graceful closes first. A blocked write must not give each channel
+    # a fresh timeout or keep an owner's local resources alive indefinitely.
+    for {pid, request} <- requests do
+      :gen_server.wait_response(request, max(0, deadline - now()))
+      if Process.alive?(pid), do: Process.exit(pid, :kill)
+    end
+
+    :ok
+  end
+
   @doc "Native DoWebsocket handshake metadata while the local channel is alive."
   def upgrade_response(channel), do: call(channel, :upgrade_response, 5_000)
 

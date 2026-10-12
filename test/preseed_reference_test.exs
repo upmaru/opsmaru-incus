@@ -41,7 +41,7 @@ defmodule Opsmaru.Incus.PreseedReferenceTest do
       assert {:ok, result} = Preseed.apply(client, config)
       actual = Enum.drop(HTTPFixture.requests(fixture), count)
       native = Enum.drop(native, 1)
-      assert comparable(actual) == comparable(native)
+      assert comparable(actual) == comparable(native), wire_difference(actual, native)
       assert length(result.changes) == Enum.count(actual, &(&1.method != "GET"))
       assert Enum.all?(result.changes, &(&1.response.identity == :verified))
       refute inspect(result) =~ "private-certificate"
@@ -353,6 +353,31 @@ defmodule Opsmaru.Incus.PreseedReferenceTest do
     assert error.response.failure.type == "sync"
     assert error.response.failure.identity == :verified
     assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
+  end
+
+  defp wire_difference(actual, native) do
+    left = comparable(actual)
+    right = comparable(native)
+
+    difference =
+      Enum.find_value(0..max(length(left), length(right)), fn index ->
+        pair = {Enum.at(left, index), Enum.at(right, index)}
+
+        case pair do
+          {same, same} ->
+            nil
+
+          {actual, native} ->
+            %{
+              index: index,
+              actual: Map.take(actual || %{}, ["method", "path"]),
+              native: Map.take(native || %{}, ["method", "path"]),
+              fields: WireComparison.compare(native || %{}, actual || %{})
+            }
+        end
+      end)
+
+    "First native wire mismatch (payloads redacted): #{inspect(difference)}"
   end
 
   defp comparable(requests) do
