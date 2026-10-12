@@ -10,7 +10,7 @@ defmodule Opsmaru.Incus.SimpleStreams do
   conversion remains a separate acceptance gate.
   """
   alias Opsmaru.Context
-  alias Opsmaru.Incus.{Connection, Error, Transport}
+  alias Opsmaru.Incus.{Connection, Error, HTTP, Transport}
   alias Opsmaru.Incus.SimpleStreams.{Catalog, Download}
   @enforce_keys [:connection, :context, :architecture]
   defstruct [:connection, :context, :architecture, :catalog, :delta_adapter, :delta_config]
@@ -42,6 +42,17 @@ defmodule Opsmaru.Incus.SimpleStreams do
   end
 
   def new!(_, _, _), do: raise(ArgumentError, "SimpleStreams requires explicit HTTPS")
+
+  @doc "Native no-op disconnect; the immutable catalog owns no pool, files or conversion worker."
+  def disconnect(%__MODULE__{}), do: :ok
+
+  @doc "Immutable HTTP handle confined to this verified origin; construction performs no I/O."
+  def http_client(%__MODULE__{} = client), do: HTTP.client(client)
+
+  @doc "Bounded raw HTTP request on the explicit origin; redirects and mutations are never replayed."
+  def http_request(client, method, path, opts \\ []) do
+    with {:ok, handle} <- http_client(client), do: HTTP.request(handle, method, path, opts)
+  end
 
   defp delta_adapter!(opts) do
     case {opts[:delta_adapter], Keyword.has_key?(opts, :delta_config)} do

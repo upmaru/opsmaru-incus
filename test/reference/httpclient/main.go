@@ -27,6 +27,7 @@ func main() {
 		Body          []byte            `json:"body"`
 		Headers       map[string]string `json:"headers"`
 		Authenticated bool              `json:"authenticated"`
+		Protocol      string            `json:"protocol"`
 	}
 	if err := json.NewDecoder(os.Stdin).Decode(&in); err != nil {
 		panic(err)
@@ -35,9 +36,11 @@ func main() {
 	defer cancel()
 	args := &incus.ConnectionArgs{SkipGetServer: true, SkipGetEvents: true, TLSCA: in.CA,
 		TLSClientCert: in.Cert, TLSClientKey: in.Key, TLSServerCert: in.ServerCert}
-	var client incus.InstanceServer
+	var client incus.Server
 	var err error
-	if in.Socket != "" {
+	if in.Protocol == "simplestreams" {
+		client, err = incus.ConnectSimpleStreams(in.URL, args)
+	} else if in.Socket != "" {
 		client, err = incus.ConnectIncusUnixWithContext(ctx, in.Socket, args)
 	} else {
 		client, err = incus.ConnectIncusWithContext(ctx, in.URL, args)
@@ -46,7 +49,9 @@ func main() {
 		panic(err)
 	}
 	defer client.Disconnect()
-	client.RequireAuthenticated(in.Authenticated)
+	if native, ok := client.(incus.InstanceServer); ok {
+		native.RequireAuthenticated(in.Authenticated)
+	}
 	handle, err := client.GetHTTPClient()
 	if err != nil || handle == nil {
 		panic("native HTTP client unavailable")

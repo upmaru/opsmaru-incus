@@ -79,11 +79,11 @@ for name in ['Response.MetadataAsMap','Response.MetadataAsOperation','Response.M
  helpers[name]=('lib/opsmaru/incus/response.ex',['test/library/metadata_helpers_reference_test.exs'])
 for name in ['EventListener.AddHandler','EventListener.RemoveHandler','EventListener.Wait','EventListener.IsActive','EventListener.Disconnect']:
  helpers[name]=('lib/opsmaru/incus/event_listener.ex',['test/library/event_listener_test.exs'])
-oci_helpers = 'GetImage GetImageAlias GetImageAliasType GetImageFile GetImages GetImagesAllProjects GetImagesAllProjectsWithFilter GetImagesWithFilter GetImageFingerprints GetImageAliases GetImageAliasNames GetImageSecret GetPrivateImage GetPrivateImageFile ExportImage'.split()
+oci_helpers = 'Disconnect GetImageAliasArchitectures GetImage GetImageAlias GetImageAliasType GetImageFile GetImages GetImagesAllProjects GetImagesAllProjectsWithFilter GetImagesWithFilter GetImageFingerprints GetImageAliases GetImageAliasNames GetImageSecret GetPrivateImage GetPrivateImageFile ExportImage'.split()
 for name in oci_helpers:
  helpers['ProtocolOCI.'+name]=('lib/opsmaru/incus/oci.ex',['test/library/oci_test.exs'])
 helpers['ConnectOCI']=('lib/opsmaru/incus/oci.ex',['test/library/oci_test.exs'])
-simple_helpers = 'GetImages GetImagesAllProjects GetImagesAllProjectsWithFilter GetImagesWithFilter GetImageFingerprints GetImage GetImageFile GetImageSecret GetPrivateImage GetPrivateImageFile GetImageAliases GetImageAliasNames GetImageAlias GetImageAliasType GetImageAliasArchitectures ExportImage'.split()
+simple_helpers = 'Disconnect GetHTTPClient DoHTTP GetImages GetImagesAllProjects GetImagesAllProjectsWithFilter GetImagesWithFilter GetImageFingerprints GetImage GetImageFile GetImageSecret GetPrivateImage GetPrivateImageFile GetImageAliases GetImageAliasNames GetImageAlias GetImageAliasType GetImageAliasArchitectures ExportImage'.split()
 for name in simple_helpers:
  helpers['ProtocolSimpleStreams.'+name]=('lib/opsmaru/incus/simple_streams.ex',['test/library/simple_streams_test.exs'])
 helpers['ConnectSimpleStreams']=('lib/opsmaru/incus/simple_streams.ex',['test/library/simple_streams_test.exs'])
@@ -94,7 +94,7 @@ for entry in inv['entries']:
  if entry['name'] in helpers and entry['name'].startswith(('ProtocolOCI.', 'ConnectOCI')):
   impl,evidence=helpers[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified.')
  elif entry['name'] in helpers and entry['name'].startswith(('ProtocolSimpleStreams.', 'ConnectSimpleStreams')):
-  impl,evidence=helpers[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified.')
+  impl,evidence=helpers[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence.')
  elif entry['kind'] == 'method' and entry['name'].startswith(('ProtocolOCI.', 'ProtocolSimpleStreams.')):
   pass # Native Incus methods do not establish OCI or SimpleStreams implementation parity.
  elif entry['package']=='shared/api' and entry['kind']=='type' and name in ['ConfigMap','DevicesMap']:

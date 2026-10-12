@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	incus "github.com/lxc/incus/v7/client"
 	"github.com/lxc/incus/v7/shared/api"
+	"github.com/lxc/incus/v7/shared/osarch"
 	"os"
 	"path/filepath"
 )
@@ -48,6 +49,11 @@ func main() {
 			err = e
 			value = map[string]any{"alias": alias, "image": image}
 		}
+	case "GetImageAliasArchitectures":
+		value, err = client.GetImageAliasArchitectures(in.Type, in.Name)
+	case "Disconnect":
+		client.Disconnect()
+		value = "ok"
 	case "GetImages":
 		value, err = client.GetImages()
 	case "GetImagesAllProjects":
@@ -74,6 +80,11 @@ func main() {
 		panic("unknown action")
 	}
 	out := map[string]any{"ok": err == nil, "value": value}
+	localArch, archErr := osarch.ArchitectureGetLocal()
+	if archErr != nil {
+		panic(archErr)
+	}
+	out["local_architecture"] = localArch
 	if err != nil {
 		out["error"] = err.Error()
 	}

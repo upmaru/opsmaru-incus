@@ -66,6 +66,22 @@ defmodule Opsmaru.Incus.OCI do
          do: {:ok, response(client, entry.image)}
   end
 
+  @doc "Native OCI alias architecture mapping; the host explicitly supplies its local architecture."
+  def alias_architectures(client, name, local_architecture, image_type \\ "") do
+    with :ok <- authorize(client),
+         :ok <- container(image_type),
+         {:ok, architecture} <- architecture(local_architecture),
+         {:ok, %{alias: alias_model}, next} <- resolve(client, name, image_type) do
+      {:ok, %{architecture => alias_model}, next}
+    else
+      :error -> error(:invalid_architecture, nil)
+      result -> result
+    end
+  end
+
+  @doc "Native no-op disconnect; no persistent connection or host conversion is owned by this value."
+  def disconnect(%__MODULE__{}), do: :ok
+
   @doc "Convert through the host adapter; both native output sinks are explicit."
   def image_file(client, fingerprint, %{metadata: metadata, rootfs: rootfs})
       when is_function(metadata, 1) and is_function(rootfs, 1) do

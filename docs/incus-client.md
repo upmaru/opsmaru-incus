@@ -250,10 +250,10 @@ the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
 close/error/EOF semantics apply. This does not expose an arbitrary dialer or
 an OIDC adapter.
 
-The checked manifest currently has 268 differential JSON methods, 916 partial
-reference mappings and 364 missing declarations out of 1,280. Native Incus
-method evidence is scoped to that implementation; OCI has 15 partial and five
-missing concrete method mappings; SimpleStreams has 16 partial and four missing concrete method mappings. Interface entries
+The checked manifest currently has 268 differential JSON methods, 921 partial
+reference mappings and 359 missing declarations out of 1,280. Native Incus
+method evidence is scoped to that implementation; OCI has 17 partial and three
+missing concrete method mappings; SimpleStreams has 19 partial and one missing concrete method mapping. Interface entries
 and schemas account for some mappings; these counts are not distinct client
 operations. Schema-derived field validation and positive fixture results do
 not establish full Incus semantic behavior. `scripts/update-incus-coverage.py`
@@ -414,3 +414,21 @@ the caller's deadline plus cleanup allowance, the caller receives a privileged
 `adapter_cleanup` result with `call_id` and `cleanup_pending: true`; the independent
 controller retains the scope and defers cleanup until work actually stops. Such a
 result is not successful cleanup or installed-adapter acceptance.
+
+
+Remaining origin conveniences now include `SimpleStreams.http_client/1`,
+`http_request/4` and `disconnect/1`, plus `OCI.disconnect/1` and
+`alias_architectures/4`. SimpleStreams HTTP accepts relative origin paths and
+preserves the explicit query without adding project/member parameters; its
+raw response retains binary bytes, status, duplicate headers, ETags and binding.
+Absolute URLs, traversal, malformed/control queries and fragments reject before
+I/O. Requests retain existing deadlines/byte limits, do not follow redirects
+and never replay mutations. Disconnect is the pinned no-op: immutable catalogs
+and host conversion work are unaffected, and no pool is owned by these values.
+
+OCI alias architecture keys use the host-supplied local architecture, which
+can differ from the inspected image architecture. The result returns a new
+immutable cache and native alias models; invalid local configuration and the
+pinned VM-type rejection occur before adapter work. No platform CLI is invoked.
+OCI HTTP/connection-info and SimpleStreams connection-info remain missing;
+these additional differential fixtures do not establish full protocol parity.

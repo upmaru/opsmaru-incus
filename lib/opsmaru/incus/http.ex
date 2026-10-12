@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.HTTP do
   @moduledoc """
-  Portable GetHTTPClient/DoHTTP slice over the explicitly bound native backend.
+  Portable GetHTTPClient/DoHTTP slice over an explicitly bound native backend or SimpleStreams origin.
 
   `client/1` returns an immutable HTTP handle without starting a pool or process.
   `request/4` accepts a native relative API path and optional binary body/headers,
@@ -10,16 +10,17 @@ defmodule Opsmaru.Incus.HTTP do
   native transfers use the separate Transfer/Files/Images interfaces.
   """
   alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, Transport}
+  alias Opsmaru.Incus.{Error, SimpleStreams, Transport}
   @enforce_keys [:client]
   defstruct [:client]
 
   def client(%Incus{} = client), do: {:ok, %__MODULE__{client: client}}
+  def client(%SimpleStreams{} = client), do: {:ok, %__MODULE__{client: client}}
 
   def request(%__MODULE__{client: client}, method, path, opts \\ []) do
     with :ok <- options(method, opts, client.connection.max_request_bytes),
          :ok <- Context.authorize(client.context, client.connection),
-         {:ok, path} <- Incus.request_path(client.connection, path),
+         {:ok, path} <- request_path(client, path),
          {:ok, response} <-
            perform(
              client.connection,
@@ -42,6 +43,28 @@ defmodule Opsmaru.Incus.HTTP do
       {:error, kind} -> {:error, %Error{kind: kind}}
     end
   end
+
+  defp request_path(%Incus{} = client, path), do: Incus.request_path(client.connection, path)
+
+  defp request_path(%SimpleStreams{}, path) when is_binary(path) and byte_size(path) <= 16_384 do
+    uri = URI.parse(path)
+
+    with true <-
+           String.valid?(path) and String.starts_with?(path, "/") and
+             not String.starts_with?(path, "//") and
+             Enum.all?([uri.scheme, uri.host, uri.fragment], &is_nil/1) and
+             not String.contains?(URI.decode(path), ["\r", "\n", <<0>>]),
+         false <- Regex.match?(~r/%(?![0-9a-fA-F]{2})/, path),
+         {:ok, clean_path} <- SimpleStreams.path(uri.path) do
+      {:ok, clean_path <> if(is_nil(uri.query), do: "", else: "?" <> uri.query)}
+    else
+      _ -> {:error, :invalid_path}
+    end
+  rescue
+    _ -> {:error, :invalid_path}
+  end
+
+  defp request_path(%SimpleStreams{}, _), do: {:error, :invalid_path}
 
   defp perform(connection, method, path, headers, body) do
     case Transport.request(connection, method, path, headers, body) do

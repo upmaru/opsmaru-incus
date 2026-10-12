@@ -104,6 +104,8 @@ func main() {
 	_, err = client.ExportImage("", api.ImageExportPost{})
 	errors["ExportImage"] = err.Error()
 	out["unsupported"] = errors
+	client.Disconnect()
+	out["disconnect"] = "ok"
 	if err := json.NewEncoder(os.Stdout).Encode(out); err != nil {
 		panic(err)
 	}

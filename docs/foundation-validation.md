@@ -718,3 +718,25 @@ See [the reproducible opt-in runner and exact evidence](real-incus-acceptance.md
 This closes 4.3 only; 3.9, installed converters, Macus integration/hardware and
 gateway acceptance remain open. The fresh immutable Git consumer also passed
 at the same runtime revision with hostile PHX_SERVER/PORT settings.
+
+
+## Remaining origin conveniences — 2026-10-12
+
+The unchanged native OCI oracle now verifies alias-architecture mapping using
+an explicitly supplied host local architecture, native VM rejection and no-op
+disconnect. SimpleStreams no-op disconnect and bounded origin HTTP handles
+are verified against unchanged native GetHTTPClient/DoHTTP: 200/305/409 status,
+binary bytes, ETags and duplicate query values. Independent fixtures prove
+readiness, pre-I/O path validation, byte budgets and no redirect following.
+All 69 focused OCI/SimpleStreams/native HTTP cases and all 614 library tests
+pass. Strict Credo, canonical checks, actual precommit, strict OpenSpec and
+whitespace checks pass with a disposable database stopped and removed afterward.
+The manifest now retains 921 partial and 359 missing declarations; no complete
+port claim is made. Foundation 3.9 remains open and 4.3 remains independently
+verified. Fresh consumer/platform/review evidence must follow publication.
+
+Exact-head macOS/Linux push and PR CI at `2b308f8` passed (runs `38217470045`
+and `38217476107`). Two Greptile follow-up submissions at that runtime timed
+out at the API before creating a job; full-branch review is being retried on
+the published acceptance revision. The last completed review remains 3/5 at
+`9fa7b62`, with both reproduced findings fixed at `2b308f8`.

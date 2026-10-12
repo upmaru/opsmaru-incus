@@ -5,7 +5,7 @@ closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
-The declaration manifest currently has 916 partial and 364 missing entries.
+The declaration manifest currently has 921 partial and 359 missing entries.
 Declarations include Go methods, interfaces, types, constants and transport
 abstractions; these counts are not endpoint counts or complete parity evidence.
 No partial mapping is promoted to completion by this continuation.
@@ -21,8 +21,8 @@ the passive constructor. Alias normalization, all pinned architecture aliases,
 layer fingerprints, native image JSON and 11 unsupported-method errors use an
 unchanged native oracle with a fixture-only skopeo stdout stub. Binary delivery,
 deadlines, cleanup failure, caller loss and credential/config isolation use fake
-adapters. OCI connection-info/HTTP/disconnect and alias-architecture helpers still
-have no OCI-specific evidence. No installed host converter is provided or accepted.
+adapters. OCI connection-info/HTTP helpers still have no OCI-specific evidence;
+alias-architecture and no-op disconnect now have pinned differential evidence. No installed host converter is provided or accepted.
 
 Remaining groups:
 
@@ -41,7 +41,7 @@ host boundary. The pinned `client/oci_images.go` has `exec.LookPath("skopeo")`,
 external process execution, a root requirement for `GetImageFile`, and private
 temporary image conversion directories. A literal runtime port conflicts with
 those constraints. The explicit adapter now supplies partial evidence for 15 of
-its 20 concrete OCI methods; five remain missing and none is fully accepted.
+its 20 concrete OCI methods; three now remain missing and none is fully accepted.
 SimpleStreams is a separate protocol and is not excluded by this finding.
 
 The user approved keeping OCI in scope through an explicitly supplied host
@@ -82,8 +82,8 @@ requires the same value, including its x86_64 Darwin fallback. Metadata has an
 immutable in-memory cache, not a shared/on-disk cache. Catalog entry and alias
 expansion limits are explicit and failure is visible.
 
-The optional host delta adapter is now fixture-verified: explicit base/source and converter, verified delta input, size/SHA-256-verified output, unique call identity, absolute deadlines, sticky emitter rejection and bounded cleanup. No converter or temporary files are bundled. The four
-SimpleStreams HTTP/connection/disconnect helpers remain missing. Actual installed delta conversion,
+The optional host delta adapter is now fixture-verified: explicit base/source and converter, verified delta input, size/SHA-256-verified output, unique call identity, absolute deadlines, sticky emitter rejection and bounded cleanup. No converter or temporary files are bundled. SimpleStreams connection-info remains missing; origin HTTP and no-op disconnect
+now have pinned differential and independent path/budget/redirect evidence. Actual installed delta conversion,
 cache/fallback variants, exhaustive malformed metadata and any installed converter
 acceptance remain open. Full-file success must not be advertised as complete
 SimpleStreams support or used to close task 3.9. Task 4.3 remains separate.
@@ -104,3 +104,18 @@ That backend result does not promote partial/missing inventory mappings or close
 3.9. Installed host converters, gateway and Macus integration/hardware gates
 remain separate. Earlier references to open 4.3 above describe their recorded
 validation point, before this direct-backend run.
+
+
+## Verified remaining origin helpers
+
+The unchanged OCI oracle now verifies alias-architecture mapping with an explicit
+host local architecture, including different image/local architectures, native
+VM-type errors and no adapter activation on rejected configuration. OCI and
+SimpleStreams disconnect match the native no-op. SimpleStreams HTTP handles
+are passive and origin-confined; native 200/305/409 responses, binary bodies,
+ETags and duplicate queries compare with unchanged native DoHTTP/GetHTTPClient.
+Independent fixtures reject cross-origin URLs, traversal/control/malformed
+queries and redirects, and enforce readiness and request/response budgets.
+All 69 focused OCI/SimpleStreams/native-HTTP cases pass. OCI now has 17 partial
+and three missing concrete methods; SimpleStreams has 19 partial and one missing.
+No mapping is promoted to complete, and 3.9 remains open.

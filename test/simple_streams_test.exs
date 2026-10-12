@@ -1,9 +1,10 @@
 defmodule Opsmaru.Incus.SimpleStreamsTest do
   use ExUnit.Case, async: false
   alias Opsmaru.Context
-  alias Opsmaru.Incus.{Connection, Error, Model, SimpleStreams}
+  alias Opsmaru.Incus.{Connection, Error, HTTP, Model, SimpleStreams}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../../.integration/simplestreams-driver", __DIR__)
+  @http_driver Path.expand("../../.integration/simplestreams-http-driver", __DIR__)
 
   defmodule DeltaAdapter do
     @behaviour Opsmaru.Incus.SimpleStreams.DeltaAdapter
@@ -29,6 +30,15 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
       )
 
     assert status == 0, out
+
+    {out, status} =
+      System.cmd("mise", ["exec", "--", "go", "build", "-o", @http_driver, "./httpclient"],
+        cd: Path.expand("../reference", __DIR__),
+        env: [{"GOTOOLCHAIN", "local"}],
+        stderr_to_stdout: true
+      )
+
+    assert status == 0, out
     :ok
   end
 
@@ -41,6 +51,134 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     %{root: root, identity: identity}
   end
 
+  for status <- [200, 305, 409] do
+    test "SimpleStreams raw HTTP #{status} matches pinned native bytes and relative query", %{
+      root: root,
+      identity: identity
+    } do
+      status = unquote(status)
+      bytes = <<0, 255, 128, 10, 13, 42>>
+      fixture = http_fixture(identity, status, bytes)
+      endpoint = HTTPFixture.endpoint(fixture).url
+      stream = client(endpoint, identity, "aarch64")
+      path = "/opaque%20path?selection=host+%2B&selection=second"
+
+      expected =
+        http_oracle(root, %{
+          protocol: "simplestreams",
+          url: endpoint,
+          ca: File.read!(identity.cafile),
+          cert: File.read!(identity.certfile),
+          key: File.read!(identity.keyfile),
+          server_cert: File.read!(identity.certfile),
+          method: "POST",
+          path: path,
+          body: Base.encode64(bytes),
+          headers: %{"if-match" => "native"}
+        })
+
+      [native] = HTTPFixture.requests(fixture)
+      assert {:ok, handle} = SimpleStreams.http_client(stream)
+      assert HTTPFixture.requests(fixture) == [native]
+
+      assert {:ok, response} =
+               HTTP.request(handle, "POST", path, body: bytes, headers: [{"if-match", "native"}])
+
+      assert response.status == expected["status"]
+      assert response.body == Base.decode64!(expected["body"])
+      assert HTTP.Response.header(response, "etag") == expected["etag"]
+      assert response.connection == stream.connection and response.identity == :verified
+      [^native, actual] = HTTPFixture.requests(fixture)
+      assert actual.target == native.target and actual.body == native.body
+      assert actual.headers["if-match"] == native.headers["if-match"]
+      refute Map.has_key?(actual.headers, "x-incus-authenticated")
+      refute actual.target =~ "project="
+      refute inspect(handle) =~ root
+      refute inspect(response) =~ Base.encode64(bytes)
+    end
+  end
+
+  test "origin HTTP rejects absolute URLs, traversal and malformed queries before I/O", %{
+    identity: identity
+  } do
+    fixture = http_fixture(identity, 200, "ok")
+    stream = client(HTTPFixture.endpoint(fixture).url, identity, "aarch64")
+
+    for path <- [
+          "https://other.invalid/file",
+          "//other.invalid/file",
+          "/../file",
+          "/%2e%2e/file",
+          "/file#fragment",
+          "/file?x=%0d%0a",
+          "/file?bad=%xx",
+          "/file?x=" <> <<0>>,
+          "relative",
+          nil
+        ] do
+      assert {:error, %Error{kind: :invalid_path}} =
+               SimpleStreams.http_request(stream, "GET", path)
+    end
+
+    assert HTTPFixture.requests(fixture) == []
+  end
+
+  test "origin HTTP preserves readiness and byte bounds and never follows redirects", %{
+    identity: identity
+  } do
+    fixture = http_fixture(identity, 302, "redirect")
+    stream = client(HTTPFixture.endpoint(fixture).url, identity, "aarch64")
+    unavailable = %{stream | context: %{stream.context | ready?: fn -> false end}}
+
+    assert {:error, %Error{kind: :host_not_ready}} =
+             SimpleStreams.http_request(unavailable, "GET", "/file")
+
+    bounded = %{stream | connection: %{stream.connection | max_request_bytes: 2}}
+
+    assert {:error, %Error{kind: :invalid_http_request}} =
+             SimpleStreams.http_request(bounded, "POST", "/file", body: "large")
+
+    assert HTTPFixture.requests(fixture) == []
+    assert {:ok, %{status: 302}} = SimpleStreams.http_request(stream, "GET", "/file")
+    assert length(HTTPFixture.requests(fixture)) == 1
+    bounded = %{stream | connection: %{stream.connection | max_response_bytes: 2}}
+
+    assert {:error, %Error{kind: :response_limit}} =
+             SimpleStreams.http_request(bounded, "GET", "/file")
+
+    assert length(HTTPFixture.requests(fixture)) == 2
+  end
+
+  defp http_fixture(identity, status, bytes) do
+    start_supervised!(
+      {HTTPFixture,
+       transport: :ssl,
+       certfile: identity.certfile,
+       keyfile: identity.keyfile,
+       handler: fn _ ->
+         %{
+           raw:
+             "HTTP/1.1 #{status} Fixture\r\nContent-Length: #{byte_size(bytes)}\r\nETag: native-origin\r\nLocation: https://other.invalid/file\r\nConnection: close\r\n\r\n" <>
+               bytes
+         }
+       end},
+      id: make_ref()
+    )
+  end
+
+  defp http_oracle(root, input) do
+    path = Path.join(root, "http-oracle.json")
+    File.write!(path, Jason.encode!(input))
+
+    {out, status} =
+      System.cmd("sh", ["-c", "exec \"$1\" < \"$2\"", "oracle", @http_driver, path],
+        stderr_to_stdout: true
+      )
+
+    assert status == 0, out
+    Jason.decode!(out)
+  end
+
   test "pinned catalog, newest preferred aliases, architectures and errors agree", %{
     root: root,
     identity: identity
@@ -50,12 +188,18 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     endpoint = HTTPFixture.endpoint(fixture).url
     expected = oracle(root, endpoint, identity)
     client = client(endpoint, identity, expected["architecture"])
+    assert expected["disconnect"] == "ok"
+    assert :ok = SimpleStreams.disconnect(client)
     assert length(HTTPFixture.requests(fixture)) == 4
     assert {:error, %Error{kind: :catalog_not_loaded}} = SimpleStreams.images(client)
     refute inspect(client) =~ root
     assert {:ok, next} = SimpleStreams.refresh(client)
     assert client.catalog == nil
     assert_native_catalog(next, expected)
+    before_disconnect = HTTPFixture.requests(fixture)
+    assert :ok = SimpleStreams.disconnect(next)
+    assert_native_catalog(next, expected)
+    assert HTTPFixture.requests(fixture) == before_disconnect
     assert Enum.all?(HTTPFixture.requests(fixture), &(&1.method == "GET"))
     assert length(HTTPFixture.requests(fixture)) == 6
   end

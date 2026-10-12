@@ -84,6 +84,56 @@ defmodule Opsmaru.Incus.OCITest do
     end
   end
 
+  test "native alias architecture keys use the explicit local architecture, not image architecture" do
+    for image_arch <- ["amd64", "arm64"], type <- ["", "container", "other"] do
+      data = info(image_arch)
+      expected = oracle("GetImageAliasArchitectures", "alpine", type, data)
+      assert expected["ok"]
+
+      assert {:ok, aliases, next} =
+               OCI.alias_architectures(
+                 client(info: data),
+                 "alpine",
+                 expected["local_architecture"],
+                 type
+               )
+
+      assert Map.new(aliases, fn {arch, model} -> {arch, Model.encode(model)} end) ==
+               expected["value"]
+
+      [alias_model] = Map.values(aliases)
+      assert {:ok, %{metadata: image}} = OCI.image(next, alias_model.data["target"])
+      assert image.data["architecture"] in ["x86_64", "aarch64"]
+      assert_receive {:inspect, _, _}
+      assert_receive {:cleanup, _, :completed}
+    end
+  end
+
+  test "architecture helper rejects local configuration and native VM type before adapter work" do
+    for architecture <- [nil, 42, "not-an-architecture"] do
+      assert {:error, %Error{kind: :invalid_architecture}} =
+               OCI.alias_architectures(client(), "alpine", architecture)
+    end
+
+    expected = oracle("GetImageAliasArchitectures", "alpine", "virtual-machine", info())
+
+    assert {:error, %Error{kind: :native, message: message}} =
+             OCI.alias_architectures(client(), "alpine", "aarch64", "virtual-machine")
+
+    assert message == expected["error"]
+    refute_receive {:inspect, _, _}
+    refute_receive {:cleanup, _, _}
+  end
+
+  test "OCI disconnect matches native no-op and never activates an adapter" do
+    assert oracle("Disconnect", "", "", %{})["value"] == "ok"
+    client = client(ready: false)
+    assert :ok = OCI.disconnect(client)
+    assert client.cache == %{}
+    refute_receive {:inspect, _, _}
+    refute_receive {:cleanup, _, _}
+  end
+
   test "all native unsupported methods preserve errors without registry/tool calls" do
     client = client()
 
