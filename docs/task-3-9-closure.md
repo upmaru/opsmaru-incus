@@ -196,3 +196,35 @@ adapter-only configurations cannot supply these HTTPS-origin helpers. All 20
 concrete OCI and all 20 SimpleStreams methods now have partial mappings; registry
 authentication, installed conversion and complete option/protocol matrices remain
 unverified. Three declarations gain partial evidence: 1125 partial, 155 missing.
+
+## URL values, copy combinations and relay cleanup
+
+The unchanged URL builder now compares all eight exported construction/setter
+helpers: replacement paths and byte escaping, sorted query keys with stable
+duplicate values, project/member suppression, Unicode authority and fragments.
+The portable immutable value has component/count/rendered-byte bounds and a
+redacted Inspect implementation. It never becomes an authorized connection or
+performs I/O. Nine declarations gain partial evidence (including its type):
+1134 partial, 146 missing; complete_port=false.
+
+Copy comparisons now enumerate all 32 instance, two snapshot and eight volume
+boolean combinations, pull/push modes, active/inactive source states and local
+or separate HTTPS fixtures. Same-origin cluster comparisons add member placement,
+internal-copy extensions, absent targets and different source/destination projects.
+Fixture completion waits for both negotiation requests where needed, preserving
+the unchanged oracle despite its asynchronous completion race. Requests, native
+identities and acceptance/completion remain independently checked.
+
+Independent review found duplicate option keys could silently select the first
+value, and malformed migration mode/deadline values could select defaults.
+Copy/move, negotiation and relay now reject those cases before I/O; relay errors
+retain accepted handles. New peer-observable fixtures prove cleanup of all opened
+sockets after a later channel upgrade fails and after caller loss. No retries,
+backend cancellation or deletion are introduced.
+
+Task 3.9 remains unchecked: operation handler/remote-operation orchestration,
+full SFTP helpers, remaining model/JSON/YAML/status-error helpers, constructors,
+recorded exec/dynamic console behavior, complete protocol/option matrices and
+supported-entry completeness gates still need verification. Existing real-backend
+4.3 evidence is independent; no new backend or Macus hardware acceptance follows
+from these fixtures. Installed OCI/delta conversion and gateway remain separate.

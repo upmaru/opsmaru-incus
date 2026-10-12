@@ -49,3 +49,9 @@ conveniences. The unchanged drivers in test/reference/{origininfo,httpclient}
 now include ConnectOCI; independent tests keep verified origin/credential
 binding and non-replayable mutation behavior explicit. No registry authentication
 or installed conversion acceptance follows from this helper evidence.
+
+`lib/opsmaru/incus/url.ex` adapts the pinned `shared/api/url.go` builder under
+the same Apache-2.0 license. `test/reference/urlbuilder` calls unchanged native
+exports and rendering; it performs no network or filesystem operation. The
+portable value is immutable and bounded, and its inspection is redacted. Explicit
+URL rendering does not verify or authorize the described origin.

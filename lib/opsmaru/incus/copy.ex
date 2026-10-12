@@ -10,7 +10,7 @@ defmodule Opsmaru.Incus.Copy do
   @doc "Move/rename a volume within one explicit backend; project is the destination project."
   def move_volume(client, pool, source_pool, volume, opts \\ []) do
     with :ok <- Context.authorize(client.context, client.connection),
-         true <- Keyword.keyword?(opts) and Keyword.keys(opts) -- [:name, :project] == [],
+         true <- valid_options?(opts, [:name, :project]),
          true <- valid_name?(pool) and valid_name?(source_pool) and valid_name?(opts[:name]),
          true <- is_nil(opts[:project]) or valid_name?(opts[:project]),
          {:ok, volume} <- model("StorageVolume", volume),
@@ -316,8 +316,7 @@ defmodule Opsmaru.Incus.Copy do
   defp authorize(target, source, opts, allowed) do
     with :ok <- Context.authorize(target.context, target.connection),
          :ok <- Context.authorize(source.context, source.connection),
-         true <- Keyword.keyword?(opts),
-         true <- Keyword.keys(opts) -- ([:name, :mode, :approved_origin] ++ allowed) == [],
+         true <- valid_options?(opts, [:name, :mode, :approved_origin] ++ allowed),
          true <- opts[:mode] in [nil, :pull, :push, :relay],
          true <-
            Enum.all?(
@@ -342,6 +341,11 @@ defmodule Opsmaru.Incus.Copy do
 
   defp name_or(opts, fallback),
     do: if(opts[:name] in [nil, ""], do: fallback, else: opts[:name])
+
+  defp valid_options?(opts, allowed),
+    do:
+      Keyword.keyword?(opts) and Keyword.keys(opts) -- allowed == [] and
+        length(opts) == length(Enum.uniq(Keyword.keys(opts)))
 
   defp instance_extensions(target, source, opts) do
     with :ok <- mode_extensions(target, source, opts),

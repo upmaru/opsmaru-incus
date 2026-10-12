@@ -109,10 +109,31 @@ defmodule Opsmaru.Incus.CopyGuardsTest do
       server: %Server{api_extensions: [], environment: %{}}
     }
 
-    for opts <- [[volume_only: true], %{live: true}, [unknown: false]] do
+    for opts <- [
+          [volume_only: true],
+          %{live: true},
+          [unknown: false],
+          [mode: :pull, mode: :push],
+          [name: "a", name: "b"]
+        ] do
       assert {:error, %Error{kind: :invalid_copy_options}} =
                Copy.instance(client, client, %{"name" => "fixture"}, opts)
     end
+
+    assert {:error, %Error{kind: :invalid_copy_options}} =
+             Copy.snapshot(client, client, "parent", %{"name" => "snapshot"},
+               live: true,
+               live: false
+             )
+
+    assert {:error, %Error{kind: :invalid_copy_options}} =
+             Copy.volume(client, client, "p", "s", %{"name" => "volume"},
+               refresh: true,
+               refresh: false
+             )
+
+    assert {:error, %Error{kind: :invalid_move_options}} =
+             Copy.move_volume(client, "p", "s", %{"name" => "volume"}, name: "one", name: "two")
 
     for option <- [
           :instance_only,

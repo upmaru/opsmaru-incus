@@ -43,6 +43,50 @@ defmodule Opsmaru.Incus.MigrationTest do
     refute_received {:posted, _, _}
   end
 
+  test "ambiguous negotiation and relay options reject before I/O, retaining accepted handles", %{
+    root: root
+  } do
+    source = client(root, "source", :accept)
+    target = client(root, "target", :accept)
+
+    for opts <- [
+          %{mode: :relay},
+          [mode: :relay, mode: :push],
+          [mode: :relay, retry: true],
+          [mode: false],
+          [mode: "relay"]
+        ] do
+      assert {:error, %Error{kind: :invalid_migration_options}} =
+               Migration.negotiate(source, target, source_request(), target_request(), opts)
+    end
+
+    refute_received {:posted, _, _}
+
+    assert {:ok, migration} =
+             Migration.negotiate(source, target, source_request(), target_request(), mode: :relay)
+
+    assert_receive {:posted, "source", _}
+    assert_receive {:posted, "target", _}
+
+    for opts <- [
+          %{timeout: 10},
+          [timeout: 1, timeout: 100],
+          [timeout: 10, retry: true],
+          [timeout: false],
+          [timeout: nil]
+        ] do
+      assert {:error, %Error{kind: :invalid_relay, response: %{accepted: ^migration}}} =
+               Migration.relay(migration, opts)
+    end
+
+    incomplete = %{migration | target: nil}
+
+    assert {:error, %Error{kind: :invalid_relay, response: %{accepted: ^incomplete}}} =
+             Migration.relay(incomplete)
+
+    refute_received {:posted, _, _}
+  end
+
   test "unapproved origins and malformed secrets fail before a target mutation", %{root: root} do
     source = client(root, "source", :invalid)
     target = client(root, "target", :accept)
@@ -266,6 +310,107 @@ defmodule Opsmaru.Incus.MigrationTest do
     assert WebSocketFixture.requests(target) == []
   end
 
+  test "a later channel upgrade failure closes every previously opened relay socket", %{
+    root: root
+  } do
+    source = cleanup_fixture(root, "cleanup-source")
+    target = cleanup_fixture(root, "cleanup-target", "fs-secret")
+    secrets = %{"control" => "control-secret", "fs" => "fs-secret"}
+    migration = relay_handles(source, target, secrets, secrets, HTTPFixture)
+
+    assert {:error, %Error{kind: :native, http_status: 403, response: %{accepted: ^migration}}} =
+             Migration.relay(migration, timeout: 1000)
+
+    for {name, secret} <- [
+          {"cleanup-source", "control-secret"},
+          {"cleanup-target", "control-secret"},
+          {"cleanup-source", "fs-secret"}
+        ] do
+      assert_receive {:relay_peer_closed, ^name, ^secret, {:error, :closed}}, 1000
+    end
+
+    for fixture <- [source, target] do
+      assert length(HTTPFixture.requests(fixture)) == 2
+      assert Enum.all?(HTTPFixture.requests(fixture), &(&1.method == "GET"))
+    end
+  end
+
+  test "caller loss during relay releases all channels and preserves the original accepted handles",
+       %{root: root} do
+    source = cleanup_fixture(root, "owner-source")
+    target = cleanup_fixture(root, "owner-target")
+    secrets = %{"control" => "control-secret", "fs" => "fs-secret"}
+    migration = relay_handles(source, target, secrets, secrets, HTTPFixture)
+    caller = spawn(fn -> Migration.relay(migration, timeout: 5000) end)
+    on_exit(fn -> if Process.alive?(caller), do: Process.exit(caller, :kill) end)
+
+    for name <- ["owner-source", "owner-target"], secret <- Map.values(secrets) do
+      assert_receive {:relay_peer_opened, ^name, ^secret}, 1000
+    end
+
+    Process.exit(caller, :kill)
+
+    for name <- ["owner-source", "owner-target"], secret <- Map.values(secrets) do
+      assert_receive {:relay_peer_closed, ^name, ^secret, {:error, :closed}}, 1000
+    end
+
+    assert migration.source.url == "/1.0/operations/source"
+    assert migration.target.url == "/1.0/operations/target"
+
+    for fixture <- [source, target] do
+      assert length(HTTPFixture.requests(fixture)) == 2
+      assert Enum.all?(HTTPFixture.requests(fixture), &(&1.method == "GET"))
+    end
+  end
+
+  defp cleanup_fixture(root, name, rejected_secret \\ nil) do
+    parent = self()
+
+    start_supervised!(
+      {HTTPFixture,
+       transport: :gen_tcp,
+       path: Path.join(root, name),
+       handler: fn request ->
+         secret = URI.decode_query(URI.parse(request.target).query)["secret"]
+
+         if secret == rejected_secret do
+           %{status: 403, body: %{type: "error", error_code: 403, error: "fixture refusal"}}
+         else
+           %{
+             upgrade: fn transport, socket ->
+               accept =
+                 Base.encode64(
+                   :crypto.hash(
+                     :sha,
+                     request.headers["sec-websocket-key"] <>
+                       "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+                   )
+                 )
+
+               :ok =
+                 transport.send(
+                   socket,
+                   "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: #{accept}\r\n\r\n"
+                 )
+
+               send(parent, {:relay_peer_opened, name, secret})
+               result = peer_closed(transport, socket, System.monotonic_time(:millisecond) + 2000)
+               send(parent, {:relay_peer_closed, name, secret, result})
+             end
+           }
+         end
+       end},
+      id: make_ref()
+    )
+  end
+
+  defp peer_closed(transport, socket, deadline) do
+    case transport.recv(socket, 0, max(1, deadline - System.monotonic_time(:millisecond))) do
+      {:ok, _} -> peer_closed(transport, socket, deadline)
+      result -> result
+    end
+  end
+
   test "rejected relay upgrade retains native errors and accepted handles without replay", %{
     root: root
   } do
@@ -331,10 +476,16 @@ defmodule Opsmaru.Incus.MigrationTest do
     do:
       start_supervised!({WebSocketFixture, [path: Path.join(root, name)] ++ opts}, id: make_ref())
 
-  defp relay_handles(source, target, source_secrets, target_secrets) do
+  defp relay_handles(
+         source,
+         target,
+         source_secrets,
+         target_secrets,
+         fixture_module \\ WebSocketFixture
+       ) do
     operation = fn fixture, name, secrets ->
       client = %Incus{
-        connection: Connection.unix!(WebSocketFixture.path(fixture), owner: name),
+        connection: Connection.unix!(relay_socket(fixture, fixture_module), owner: name),
         context: Context.new!(owner: name, identity: name, ready?: fn -> true end),
         server: %Server{api_extensions: []}
       }
@@ -352,6 +503,9 @@ defmodule Opsmaru.Incus.MigrationTest do
       target: operation.(target, "target", target_secrets)
     }
   end
+
+  defp relay_socket(fixture, HTTPFixture), do: HTTPFixture.endpoint(fixture).socket
+  defp relay_socket(fixture, WebSocketFixture), do: WebSocketFixture.path(fixture)
 
   defp source_request, do: {"MigrateInstance", %{"name" => "fixture"}, %{"migration" => true}}
   defp target_request, do: {"CreateInstance", %{}, %{"name" => "copy", "type" => "container"}}

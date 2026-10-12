@@ -43,6 +43,13 @@ defmodule Opsmaru.Incus.Migration do
   end
 
   def negotiate(source, target, source_request, target_request, opts \\ []) do
+    if valid_options?(opts, [:mode, :approved_origin]) and
+         opts[:mode] in [nil, :pull, :push, :relay],
+       do: negotiate_checked(source, target, source_request, target_request, opts),
+       else: {:error, %Error{kind: :invalid_migration_options}}
+  end
+
+  defp negotiate_checked(source, target, source_request, target_request, opts) do
     mode = opts[:mode] || :pull
 
     with :ok <- Context.authorize(source.context, source.connection),
@@ -177,10 +184,26 @@ defmodule Opsmaru.Incus.Migration do
   end
 
   @doc "Forward accepted relay channels until EOF or a bounded deadline; does not await backend completion."
-  def relay(%__MODULE__{mode: :relay, source: source, target: target} = migration, opts \\ []) do
+  def relay(migration, opts \\ [])
+
+  def relay(
+        %__MODULE__{mode: :relay, source: %Operation{}, target: %Operation{}} = migration,
+        opts
+      ) do
+    if valid_options?(opts, [:timeout]),
+      do: relay_checked(migration, opts),
+      else: failure(migration, :invalid_relay, nil)
+  end
+
+  def relay(%__MODULE__{} = migration, _), do: failure(migration, :invalid_relay, nil)
+
+  defp relay_checked(%{source: source, target: target} = migration, opts) do
     timeout =
-      opts[:timeout] ||
+      Keyword.get(
+        opts,
+        :timeout,
         min(source.client.connection.stream_timeout, target.client.connection.stream_timeout)
+      )
 
     with true <- is_integer(timeout) and timeout in 1..3_600_000,
          {:ok, source_secrets} <- secrets(source),
@@ -321,6 +344,11 @@ defmodule Opsmaru.Incus.Migration do
         WebSocket.close(a)
         WebSocket.close(b)
       end)
+
+  defp valid_options?(opts, allowed),
+    do:
+      Keyword.keyword?(opts) and Keyword.keys(opts) -- allowed == [] and
+        length(opts) == length(Enum.uniq(Keyword.keys(opts)))
 end
 
 defimpl Inspect, for: Opsmaru.Incus.Migration do

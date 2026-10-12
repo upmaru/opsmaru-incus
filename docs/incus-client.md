@@ -20,6 +20,7 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `FileHeaders.parse/1` | Pure bounded native header defaults, signed ownership/overflow and base-zero permission-mode semantics; first duplicate wins |
 | `Projections.filtered_server/1`, `logging_event/1` | Pure typed native server filter and logging/network-ACL/lifecycle/operation event records; bounded inputs, no log output; originals remain lossless |
 | `Metadata.keys/3` | Pure bounded native configuration-key lookup with typed defaults, last-map-wins merge and native entity/group diagnostics; aliased string-key maps are validated |
+| `URL.new/0`, `scheme/2`, `host/2`, `path/2`, `project/2`, `target/2`, `with_query/3`, `fragment/2`, `render/1` | Passive immutable bounded native URL values; escaped replacement path, appended duplicate queries and explicit rendering; never a verified connection |
 | `Model.writable/1`, `active?/1`, `etag_values/1`, `ModelURL.resource/2`, `parent_snapshot_name/1`, `Status.string/1`, `final?/1`, `from_string/1` | 23 writable projections, nine native resource URL helpers, five ETag input tuples and pinned status semantics; original model remains lossless |
 | `Images.import/4`, `download/4`, `copy/4` | Bounded unified/multipart binary handoff; `download(..., secret: token)` matches native private exports; pull/push and host-staged relay copies retain native operations |
 | `ImageInstances.create/5`, `rebuild/6` | Local images or one approved verified HTTPS source; native alias/fingerprint/private token preparation; accepted target handle without replay |
@@ -45,7 +46,18 @@ Copy options follow the pinned native argument types: instances accept `live`,
 `instance_only`, `refresh`, `refresh_exclude_older` and `allow_inconsistent`;
 snapshots accept `live`; volumes accept `volume_only`, `refresh` and
 `refresh_exclude_older`. All three accept `name`, `mode` and the host-approved
-origin. Unsupported option keys and malformed option lists fail before I/O.
+origin. Unsupported option keys, duplicate keys and malformed option lists fail before I/O.
+Migration negotiation accepts only unique `mode`/`approved_origin` options;
+relay accepts only one `timeout`, and rejected relay options retain accepted handles.
+
+Pure URL example (rendering exposes the value explicitly; Inspect is redacted):
+
+```elixir
+alias Opsmaru.Incus.URL
+{:ok, url} = URL.path(URL.new(), ["1.0", "instances", "name/part"])
+{:ok, url} = URL.project(url, "host-project")
+{:ok, "/1.0/instances/name%2Fpart?project=host-project"} = URL.render(url)
+```
 
 Example conditional mutation and reconciliation:
 
@@ -254,10 +266,11 @@ the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
 close/error/EOF semantics apply. This does not expose an arbitrary dialer or
 an OIDC adapter.
 
-The checked manifest currently has 268 differential JSON methods, 1108 partial
-reference mappings and 172 missing declarations out of 1,280. Native Incus
-method evidence is scoped to that implementation; OCI has 17 partial and three
-missing concrete method mappings; SimpleStreams has 20 partial concrete method mappings and none missing; full protocol/option coverage is still partial. Interface entries
+The checked manifest currently has 268 differential JSON methods, 1134 partial
+reference mappings and 146 missing declarations out of 1,280. Native Incus
+method evidence is scoped to that implementation; OCI and SimpleStreams each
+have 20 partial concrete method mappings and none missing; full protocol/option
+coverage is still partial. Interface entries
 and schemas account for some mappings; these counts are not distinct client
 operations. Schema-derived field validation and positive fixture results do
 not establish full Incus semantic behavior. `scripts/update-incus-coverage.py`
@@ -266,14 +279,19 @@ regenerates mappings and checks evidence paths, never relabeling partial as full
 Local instance/snapshot/volume copy and move requests, and remote HTTPS pull/push
 copy preparation, are compared with official helpers. Copy request bodies now
 compare complete objects, including native zero/omitted fields, rather than
-checking only supplied fields. The default/empty-name and enabled/inactive
-option matrix covers live, instance-only, volume-only, refresh, exclude-older
-and allow-inconsistent combinations. Instance copy retains every writable DTO
+checking only supplied fields. The default/empty-name and active/inactive option
+matrix compares all 32 instance, two snapshot and eight volume boolean combinations
+in pull/push modes, locally and across separate HTTPS fixtures. Same-origin cluster
+tests cover colocated and different members, internal-copy extensions, absent
+targets, source-server fallback and different projects. These are fixture
+comparisons, not a deployed cluster acceptance claim. Instance copy retains every writable DTO
 field, including restore/disk-only. An omitted/empty volume destination name
 remains empty as in the pinned helper; instance/snapshot defaults retain their
 native source/parent name. Bidirectional binary/text relay across control/data
 channels, EOF, silent deadlines and native upgrade rejections are independently
-verified. Copy option preflight includes the pinned target-side check for
+verified. Peer-observable fixtures also verify every opened socket closes after
+a later channel upgrade fails and after relay caller loss, with accepted handles
+retained and no mutation replay or cancellation. Copy option preflight includes the pinned target-side check for
 `instance_allow_inconsistent_copy`; its misleading upstream error text says
 source, but the actual `CopyInstance` receiver checks the target. Dependent
 instance migration devices use the native capitalized `Devices` key. Internal

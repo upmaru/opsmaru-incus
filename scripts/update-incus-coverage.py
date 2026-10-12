@@ -53,6 +53,8 @@ for name in ['NetworkForward','NetworkLoadBalancer','NetworkPeer','StorageBucket
 for name in ['Certificate','Image','Instance','NetworkACL','Profile','Project','StorageBucket','StorageBucketKey','StorageVolume']:
  helpers[name+'.URL']=('lib/opsmaru/incus/model_url.ex',['test/library/model_helpers_reference_test.exs'])
 helpers['GetParentAndSnapshotName']=('lib/opsmaru/incus/model_url.ex',['test/library/model_helpers_reference_test.exs'])
+for name in ['NewURL','URL.Scheme','URL.Host','URL.Path','URL.Project','URL.Target','URL.WithQuery','URL.Fragment']:
+ helpers[name]=('lib/opsmaru/incus/url.ex',['test/library/url_reference_test.exs'])
 for name in ['GetConnectionInfo','IsClustered','IsAgent','RequireAuthenticated']:
  helpers[name]=('lib/opsmaru/incus/discovery.ex',['test/library/discovery_helpers_test.exs','test/library/authenticated_header_test.exs'])
 for name in ['GetTarget','CancelTarget']:
@@ -114,6 +116,8 @@ for entry in inv['entries']:
   impl,evidence=helpers[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence.')
  elif entry['kind'] == 'method' and entry['name'].startswith(('ProtocolOCI.', 'ProtocolSimpleStreams.')):
   pass # Native Incus methods do not establish OCI or SimpleStreams implementation parity.
+ elif entry['package']=='shared/api' and entry['kind']=='type' and name == 'URL':
+  row.update(status='partial',elixir='lib/opsmaru/incus/url.ex',evidence=['test/library/url_reference_test.exs'],note='Pure immutable bounded native URL builder; all exported builder helpers compared with unchanged reference. Not a connection, origin authorization or full embedded net/url API port.')
  elif entry['package']=='shared/api' and entry['kind']=='type' and name in ['ConfigMap','DevicesMap']:
   row.update(status='partial',elixir='lib/opsmaru/incus/native_config.ex',evidence=['test/library/native_config_reference_test.exs'],note='Explicit bounded native JSON coercion/merge slice; YAML and full type parity remain unverified.')
  elif entry['kind'] in ['method','interface_method'] and name in methods:

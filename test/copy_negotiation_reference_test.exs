@@ -99,9 +99,11 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
   end
 
   for kind <- [:instance, :snapshot, :volume], locality <- [:local, :remote] do
-    test "#{kind} #{locality} default and enabled options match complete native requests", %{
-      root: root
-    } do
+    @tag timeout: 180_000
+    test "#{kind} #{locality} all boolean combinations and pull/push options match native requests",
+         %{
+           root: root
+         } do
       compare_options(root, unquote(kind), unquote(locality))
     end
   end
@@ -118,14 +120,13 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
         do: {source, source_fixture, source_endpoint},
         else: fixture(root, "option-target", :https, :accept, barrier)
 
-    enabled = enabled_options(kind)
+    cases =
+      for flags <- boolean_options(kind),
+          mode <- [:pull, :push],
+          inactive? <- [false, true],
+          do: {Keyword.put(flags, :mode, mode), inactive?}
 
-    for {flags, inactive?} <- [
-          {[], false},
-          {[name: ""], false},
-          {enabled, false},
-          {enabled, true}
-        ] do
+    for {flags, inactive?} <- [{[], false}, {[name: ""], false} | cases] do
       if barrier, do: Agent.update(barrier, fn _ -> MapSet.new() end)
       data = option_model(kind, inactive?)
 
@@ -136,10 +137,14 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
         refresh: :Refresh,
         refresh_exclude_older: :RefreshExcludeOlder,
         allow_inconsistent: :AllowInconsistent,
-        volume_only: :VolumeOnly
+        volume_only: :VolumeOnly,
+        mode: :Mode
       }
 
-      options = Map.new(flags, fn {key, value} -> {native_keys[key], value} end)
+      options =
+        Map.new(flags, fn {key, value} ->
+          {native_keys[key], if(key == :mode, do: Atom.to_string(value), else: value)}
+        end)
 
       result =
         reference(%{
@@ -159,10 +164,8 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
       target_count = length(posts(target_fixture))
       source_count = length(posts(source_fixture))
 
-      opts =
-        if locality == :remote,
-          do: Keyword.put(flags, :approved_origin, source_endpoint.url),
-          else: flags
+      origin = if flags[:mode] == :push, do: target_endpoint.url, else: source_endpoint.url
+      opts = if locality == :remote, do: Keyword.put(flags, :approved_origin, origin), else: flags
 
       outcome = option_copy(kind, target, source, data, opts)
 
@@ -171,11 +174,15 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
       assert Jason.decode!(List.last(posts(target_fixture)).body) ==
                Jason.decode!(expected_target.body)
 
+      assert List.last(posts(target_fixture)).target == expected_target.target
+
       assert length(posts(target_fixture)) == target_count + 1
 
       if locality == :remote do
         assert Jason.decode!(List.last(posts(source_fixture)).body) ==
                  Jason.decode!(expected_source.body)
+
+        assert List.last(posts(source_fixture)).target == expected_source.target
 
         assert length(posts(source_fixture)) == source_count + 1
       end
@@ -184,6 +191,104 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
       refute Enum.any?(HTTPFixture.requests(target_fixture), &(&1.method == "DELETE"))
     end
   end
+
+  defp boolean_options(kind) do
+    Enum.reduce(enabled_options(kind), [[]], fn {key, _}, combinations ->
+      for options <- combinations, value <- [false, true], do: [{key, value} | options]
+    end)
+  end
+
+  for kind <- [:instance, :snapshot, :volume] do
+    test "#{kind} cluster placement, internal copy and project selection match native negotiation",
+         %{root: root} do
+      for {clustered, internal, member, location} <- [
+            {false, false, "destination", "source"},
+            {true, false, "source", "source"},
+            {true, false, "destination", "source"},
+            {true, true, "destination", "source"},
+            {true, false, "", "none"},
+            {true, true, "", "source"}
+          ] do
+        topology = [clustered: clustered, internal: internal, location: location]
+        name = "cluster-#{System.unique_integer([:positive])}"
+
+        local =
+          internal or member == location or
+            (unquote(kind) == :volume and member == "" and location == "none") or
+            (unquote(kind) != :volume and not clustered)
+
+        barrier =
+          if local,
+            do: nil,
+            else: start_supervised!({Agent, fn -> MapSet.new() end}, id: make_ref())
+
+        {base, backend, endpoint} = fixture(root, name, :https, :accept, barrier, topology)
+        source = %{base | connection: %{base.connection | member: nil, project: "source-project"}}
+
+        target = %{
+          base
+          | connection: %{
+              base.connection
+              | member: nil_if_empty(member),
+                project: "target-project"
+            }
+        }
+
+        source_endpoint = %{endpoint | member: "", project: "source-project"}
+        target_endpoint = %{endpoint | member: member, project: "target-project"}
+        data = Map.put(model(unquote(kind)), "location", location)
+
+        for mode <- [:pull, :push] do
+          if barrier, do: Agent.update(barrier, fn _ -> MapSet.new() end)
+          before = length(posts(backend))
+
+          input = %{
+            action: unquote(kind),
+            source: source_endpoint,
+            target: target_endpoint,
+            body: data,
+            pool: "new-pool",
+            source_pool: "old-pool",
+            parent: "parent",
+            options: %{Name: "cluster-copy", Mode: Atom.to_string(mode)}
+          }
+
+          native = reference(input)
+          refute native["error"], inspect(native)
+          expected = posts(backend) |> Enum.drop(before) |> Enum.map(&request_value/1)
+          before_actual = length(posts(backend))
+
+          assert {:ok, migration} =
+                   option_copy(unquote(kind), target, source, data,
+                     name: "cluster-copy",
+                     mode: mode,
+                     approved_origin: endpoint.url
+                   )
+
+          actual = posts(backend) |> Enum.drop(before_actual) |> Enum.map(&request_value/1)
+
+          assert length(actual) == length(expected),
+                 inspect({clustered, internal, member, location, mode, unquote(kind)})
+
+          for {{method, path, body}, {native_method, native_path, native_body}} <-
+                Enum.zip(actual, expected) do
+            assert {method, path} == {native_method, native_path}
+            assert body == native_body
+          end
+
+          assert length(actual) in [1, 2]
+          assert migration.mode == :local == (length(actual) == 1)
+          assert migration.target.url == "/1.0/operations/" <> name
+          refute Operation.completed?(migration.target)
+          refute Enum.any?(HTTPFixture.requests(backend), &(&1.method == "DELETE"))
+        end
+      end
+    end
+  end
+
+  defp nil_if_empty(""), do: nil
+  defp nil_if_empty(value), do: value
+  defp request_value(request), do: {request.method, request.target, Jason.decode!(request.body)}
 
   defp enabled_options(:instance),
     do: [
@@ -571,12 +676,13 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
       "content_type" => "block"
     }
 
-  defp fixture(root, name, transport, outcome \\ :accept, barrier \\ nil) do
+  defp fixture(root, name, transport, outcome \\ :accept, barrier \\ nil, topology \\ []) do
     identity =
       if transport == :https, do: TLSIdentity.generate(root, name, "localhost"), else: nil
 
     certificate = if identity, do: File.read!(identity.certfile), else: ""
-    extensions = ["instances_rebuild", "cluster_internal_custom_volume_copy" | @extensions]
+    extensions = fixture_extensions(topology)
+    clustered = Keyword.get(topology, :clustered, false)
 
     opts =
       if identity,
@@ -601,7 +707,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
                          api_extensions: extensions,
                          environment: %{
                            server_name: "native-member",
-                           server_clustered: false,
+                           server_clustered: clustered,
                            certificate: certificate
                          }
                        }
@@ -612,7 +718,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
                    %{raw: ""}
 
                  req.method == "POST" ->
-                   record_post(barrier, name)
+                   record_post(barrier, {name, req.target})
 
                    %{
                      status: 202,
@@ -638,7 +744,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
                      status: 200,
                      body: %{
                        type: "sync",
-                       metadata: %{name: "parent", type: "virtual-machine", location: ""}
+                       metadata: parent_metadata(topology)
                      }
                    }
                end
@@ -672,7 +778,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
         api_extensions: extensions,
         environment: %{
           "server_name" => "native-member",
-          "server_clustered" => false,
+          "server_clustered" => clustered,
           "certificate" => certificate
         }
       }
@@ -681,6 +787,17 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
     {client, fixture,
      Map.merge(endpoint, %{certificate: certificate, project: "fixture", member: "member"})}
   end
+
+  defp fixture_extensions(topology) do
+    extensions = ["instances_rebuild", "container_copy_project" | @extensions]
+
+    if Keyword.get(topology, :internal, true),
+      do: ["cluster_internal_copy", "cluster_internal_custom_volume_copy" | extensions],
+      else: extensions
+  end
+
+  defp parent_metadata(topology),
+    do: %{name: "parent", type: "virtual-machine", location: topology[:location] || ""}
 
   defp record_post(nil, _), do: :ok
   defp record_post(barrier, name), do: Agent.update(barrier, &MapSet.put(&1, name))
