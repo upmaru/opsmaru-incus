@@ -5,7 +5,7 @@ closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
-The declaration manifest currently has 1125 partial and 155 missing entries.
+The declaration manifest currently has 1140 partial and 140 missing entries.
 Declarations include Go methods, interfaces, types, constants and transport
 abstractions; these counts are not endpoint counts or complete parity evidence.
 No partial mapping is promoted to completion by this continuation.
@@ -238,3 +238,17 @@ path/query list crashes were independently reproduced against the reviewed sourc
 Bounded proper-list validation fixes them, with permanent direct-value/setter
 regressions. The correction is independently verified, without another quota-
 consuming Greptile sweep. Review confidence does not close 3.9 or authorize merge.
+
+
+## Native status-error helpers
+
+StatusErrorf, StatusError.Error/Status and StatusErrorMatch/Check now compare
+with the unchanged native helpers: native status text for every status 0..999
+and int64 extremes, verbatim messages (including literal `%`, Unicode and control
+bytes), the literal zero value, duplicate and non-matching codes, and non-status
+errors. The Elixir value takes a preformatted message without emulating Go `fmt`
+verbs, and only a direct struct matches because Go `errors.As` unwrapping has no
+Elixir counterpart. Inputs are bounded and Inspect is redacted. Six declarations
+gain partial evidence: 1140 partial, 140 missing, complete_port=false. Task 3.9
+remains open; this slice was implemented by a delegated pi-web agent session and
+independently reviewed and re-verified before commit.

@@ -995,3 +995,16 @@ source. Hosted macOS/Linux check results are recorded on the draft PR separately
 No new real backend, installed converter, gateway or Macus hardware acceptance
 was attempted. The independently recorded direct-client 4.3 evidence remains at
 its recorded runtime; Macus source and ordinary workload/data ownership are unchanged.
+
+
+## Task 3.9: native status-error helpers
+
+`test/library/status_error_reference_test.exs` builds the fixture-only
+`test/reference/statuserror` driver with the pinned Go toolchain and compares
+StatusErrorf, the literal StatusError zero value, Error, Status, StatusErrorMatch
+and StatusErrorCheck. The pinned Go 1.25.14 `net/http` status text is embedded
+and compared for every status 0..999 plus int64 extremes. Independent cases
+reject invalid statuses, messages over 64 KiB and malformed/oversized code lists
+without raising, and prove Inspect redaction. Focused 8-test run, library
+compile with warnings as errors and strict Credo pass. Six declarations gain
+partial evidence: 1140 partial and 140 missing. Task 3.9 remains open.

@@ -106,6 +106,8 @@ models.update(projection_types)
 helpers['MetadataConfiguration.GetKeys']=('lib/opsmaru/incus/metadata.ex',['test/library/metadata_keys_reference_test.exs'])
 metadata_types = 'MetadataConfiguration MetadataConfig MetadataConfigEntityName MetadataConfigGroupName MetadataConfigGroup MetadataConfigKey'.split()
 models.update(metadata_types)
+for name in ['StatusErrorf','StatusErrorMatch','StatusErrorCheck','StatusError.Error','StatusError.Status']:
+ helpers[name]=('lib/opsmaru/incus/status_error.ex',['test/library/status_error_reference_test.exs'])
 entries=[]
 for entry in inv['entries']:
  name=entry['name'].split('.')[-1]
@@ -118,6 +120,8 @@ for entry in inv['entries']:
   pass # Native Incus methods do not establish OCI or SimpleStreams implementation parity.
  elif entry['package']=='shared/api' and entry['kind']=='type' and name == 'URL':
   row.update(status='partial',elixir='lib/opsmaru/incus/url.ex',evidence=['test/library/url_reference_test.exs'],note='Pure immutable bounded native URL builder; all exported builder helpers compared with unchanged reference. Not a connection, origin authorization or full embedded net/url API port.')
+ elif entry['package']=='shared/api' and entry['kind']=='type' and name == 'StatusError':
+  row.update(status='partial',elixir='lib/opsmaru/incus/status_error.ex',evidence=['test/library/status_error_reference_test.exs'],note='Pure bounded native status/message value; zero value, status text and match helpers compared with unchanged reference. No Go fmt formatting or errors.As unwrapping.')
  elif entry['package']=='shared/api' and entry['kind']=='type' and name in ['ConfigMap','DevicesMap']:
   row.update(status='partial',elixir='lib/opsmaru/incus/native_config.ex',evidence=['test/library/native_config_reference_test.exs'],note='Explicit bounded native JSON coercion/merge slice; YAML and full type parity remain unverified.')
  elif entry['kind'] in ['method','interface_method'] and name in methods:

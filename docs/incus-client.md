@@ -18,6 +18,7 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `NativeConfig.from_json/3` | Explicit ConfigMap/DevicesMap JSON coercion and existing-key merge, with byte/type bounds; no YAML parser |
 | `Model.decode/2`, `encode/1` | Pinned native field schemas, preserving null/unknown fields without atom creation |
 | `FileHeaders.parse/1` | Pure bounded native header defaults, signed ownership/overflow and base-zero permission-mode semantics; first duplicate wins |
+| `StatusError.new/2`, `error/1`, `status/1`, `match/2`, `check/2` | Pure bounded native status/message value with the pinned Go zero value and `net/http` status text; takes a preformatted message (no Go `fmt` verbs) and matches only a direct `%StatusError{}` (no `errors.As` unwrapping) |
 | `Projections.filtered_server/1`, `logging_event/1` | Pure typed native server filter and logging/network-ACL/lifecycle/operation event records; bounded inputs, no log output; originals remain lossless |
 | `Metadata.keys/3` | Pure bounded native configuration-key lookup with typed defaults, last-map-wins merge and native entity/group diagnostics; aliased string-key maps are validated |
 | `URL.new/0`, `scheme/2`, `host/2`, `path/2`, `project/2`, `target/2`, `with_query/3`, `fragment/2`, `render/1` | Passive immutable bounded native URL values; escaped replacement path, appended duplicate queries and explicit rendering; never a verified connection |

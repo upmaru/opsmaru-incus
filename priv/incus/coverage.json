@@ -8725,24 +8725,30 @@
     },
     {
       "id": "shared/api/function/StatusErrorCheck",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status_error.ex",
+      "evidence": [
+        "test/library/status_error_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/function/StatusErrorMatch",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status_error.ex",
+      "evidence": [
+        "test/library/status_error_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/function/StatusErrorf",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status_error.ex",
+      "evidence": [
+        "test/library/status_error_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Certificate.URL",
@@ -9226,17 +9232,21 @@
     },
     {
       "id": "shared/api/method/StatusError.Error",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status_error.ex",
+      "evidence": [
+        "test/library/status_error_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/StatusError.Status",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status_error.ex",
+      "evidence": [
+        "test/library/status_error_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/StorageBucket.Etag",
@@ -11036,10 +11046,12 @@
     },
     {
       "id": "shared/api/type/StatusError",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/status_error.ex",
+      "evidence": [
+        "test/library/status_error_reference_test.exs"
+      ],
+      "note": "Pure bounded native status/message value; zero value, status text and match helpers compared with unchanged reference. No Go fmt formatting or errors.As unwrapping."
     },
     {
       "id": "shared/api/type/StorageBucket",

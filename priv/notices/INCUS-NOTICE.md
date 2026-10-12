@@ -55,3 +55,9 @@ the same Apache-2.0 license. `test/reference/urlbuilder` calls unchanged native
 exports and rendering; it performs no network or filesystem operation. The
 portable value is immutable and bounded, and its inspection is redacted. Explicit
 URL rendering does not verify or authorize the described origin.
+
+`lib/opsmaru/incus/status_error.ex` adapts pinned `shared/api/error.go` under
+the same Apache-2.0 license. Its status-text table reproduces Go `net/http`
+StatusText values (BSD-3-Clause, Copyright The Go Authors) from the pinned
+toolchain. The fixture-only `test/reference/statuserror` driver calls unchanged
+native helpers and performs no network or filesystem operation.
