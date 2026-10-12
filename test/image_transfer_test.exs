@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.ImageTransferTest do
   use ExUnit.Case, async: false
   alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Images}
+  alias Opsmaru.Incus.{Connection, Error, Images, Model}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../../.integration/incus-image-driver", __DIR__)
 
@@ -187,6 +187,128 @@ defmodule Opsmaru.Incus.ImageTransferTest do
       assert Agent.get(capture, fn chunks ->
                chunks.rootfs |> Enum.reverse() |> IO.iodata_to_binary()
              end) == (rootfs || "")
+    end
+  end
+
+  for mode <- ["pull", "push"], failure <- [:lost, :malformed] do
+    test "#{mode} copy #{failure} mutation preserves uncertainty and both known native handles",
+         %{
+           root: root,
+           context: context
+         } do
+      assert_copy_uncertainty(root, context, unquote(mode), unquote(failure))
+    end
+  end
+
+  defp assert_copy_uncertainty(root, context, mode, failure) do
+    source_identity = TLSIdentity.generate(root, "copy-source", "localhost")
+    target_identity = TLSIdentity.generate(root, "copy-target", "localhost")
+
+    accepted = fn id ->
+      %{
+        status: 202,
+        body: %{
+          type: "async",
+          status_code: 100,
+          operation: "/1.0/operations/" <> id,
+          metadata: %{id: id, status_code: 103, metadata: %{secret: "private-token"}}
+        }
+      }
+    end
+
+    failing =
+      if failure == :lost,
+        do: %{raw: ""},
+        else: %{
+          status: 202,
+          body: %{
+            type: "async",
+            status_code: 100,
+            operation: "/1.0/operations/possibly-accepted",
+            metadata: [42]
+          }
+        }
+
+    source_fixture =
+      tls_backend(source_identity, fn _ ->
+        if mode == "pull", do: accepted.("source-token"), else: failing
+      end)
+
+    target_fixture =
+      tls_backend(target_identity, fn _ ->
+        if mode == "push", do: accepted.("target-token"), else: failing
+      end)
+
+    source = tls_client(source_fixture, source_identity, context)
+    target = tls_client(target_fixture, target_identity, context)
+
+    assert {:error, %Error{kind: :uncertain, response: state, operation: primary}} =
+             Images.copy(target, source, %{"fingerprint" => "native", "public" => false},
+               mode: mode
+             )
+
+    assert %Error{kind: :uncertain} = state.error
+    known = state[if(mode == "pull", do: :source, else: :target)]
+    expected = if mode == "pull", do: source, else: target
+
+    assert known.operation ==
+             "/1.0/operations/" <> if(mode == "pull", do: "source-token", else: "target-token")
+
+    assert known.connection == expected.connection and known.identity == context.identity
+
+    if failure == :malformed do
+      assert primary == "/1.0/operations/possibly-accepted"
+      assert state.error.operation == primary
+      assert state.error.response.operation == primary
+      expected = if mode == "pull", do: target, else: source
+      assert state.error.response.connection == expected.connection
+    else
+      assert primary == known.operation and state.error.operation == nil
+    end
+
+    assert Enum.count(HTTPFixture.requests(source_fixture), &(&1.method == "POST")) == 1
+    assert Enum.count(HTTPFixture.requests(target_fixture), &(&1.method == "POST")) == 1
+    refute inspect(state.error) =~ "private-token"
+  end
+
+  for token_metadata <- [%{"secret" => nil}, %{"secret" => 42}, 42] do
+    test "accepted push token #{inspect(token_metadata)} is uncertain and never exported", %{
+      root: root,
+      context: context
+    } do
+      token_metadata = unquote(Macro.escape(token_metadata))
+      source_identity = TLSIdentity.generate(root, "bad-push-source", "localhost")
+      target_identity = TLSIdentity.generate(root, "bad-push-target", "localhost")
+
+      source_fixture =
+        tls_backend(source_identity, fn _ -> flunk("source export must not occur") end)
+
+      target_fixture =
+        tls_backend(target_identity, fn _ ->
+          %{
+            status: 202,
+            body: %{
+              type: "async",
+              status_code: 100,
+              operation: "/1.0/operations/accepted-push-token",
+              metadata: %{id: "accepted-push-token", status_code: 103, metadata: token_metadata}
+            }
+          }
+        end)
+
+      source = tls_client(source_fixture, source_identity, context)
+      target = tls_client(target_fixture, target_identity, context)
+
+      assert {:error, %Error{kind: :uncertain, response: accepted, operation: operation}} =
+               Images.copy(target, source, %{"fingerprint" => "native", "public" => true},
+                 mode: "push"
+               )
+
+      assert operation == "/1.0/operations/accepted-push-token"
+      assert accepted.operation == operation and accepted.connection == target.connection
+      assert Model.encode(accepted.metadata)["metadata"] == token_metadata
+      assert Enum.count(HTTPFixture.requests(target_fixture), &(&1.method == "POST")) == 1
+      assert Enum.all?(HTTPFixture.requests(source_fixture), &(&1.method == "GET"))
     end
   end
 

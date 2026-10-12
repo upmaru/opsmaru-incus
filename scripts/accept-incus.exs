@@ -49,21 +49,33 @@ defmodule OpsmaruAcceptance do
     true = local.server.api_version == "1.0" and remote.server.api_version == "1.0"
     true = local.server.environment["server_version"] == config["expected_version"]
     true = remote.server.environment["server_version"] == config["expected_version"]
-    {:error, %Error{http_status: 404}} = call(local, "GetProject", %{"name" => project})
+    verify_backend(local, remote, pin, project)
+
     {:ok, pool} = call(local, "GetStoragePool", %{"name" => config["pool"]})
     true = pool.metadata.data["status"] == "Created"
     record(report, %{project: project, phase: "intent", pool: config["pool"], transports: []})
 
     # Never retry mutations or delete resources on failure. The journal identifies
     # the unique project and each accepted operation for host reconciliation.
+    nonce = Base.encode16(:crypto.strong_rand_bytes(16), case: :lower)
+    description = "Opsmaru isolated direct-client acceptance " <> nonce
+
     {:ok, _} =
       call(local, "CreateProject", %{},
         body: %{
           "name" => project,
-          "description" => "Opsmaru isolated direct-client acceptance",
+          "description" => description,
           "config" => %{"features.storage.volumes" => "true", "features.profiles" => "true"}
         }
       )
+
+    # A cloned certificate alone does not prove shared backend state. Require
+    # visibility of this run's unguessable marker before either transport suite.
+    for client <- [local, remote] do
+      {:ok, visible} = call(client, "GetProject", %{"name" => project})
+      unless visible.metadata.data["description"] == description,
+        do: raise("Acceptance project identity mismatch")
+    end
 
     results =
       for {transport, client} <- [{"unix", local}, {"https", remote}] do
@@ -100,6 +112,30 @@ defmodule OpsmaruAcceptance do
 
     IO.puts(Jason.encode!(%{phase: "passed-and-cleaned", project: project, transports: results}))
   end
+
+  defp verify_backend(local, remote, pin, project) do
+    if certificate_pin(local.server.environment["certificate"]) != pin or
+         certificate_pin(remote.server.environment["certificate"]) != pin or
+         local.server.environment["server_name"] in [nil, ""] or
+         local.server.environment["server_name"] != remote.server.environment["server_name"],
+       do: raise("Acceptance backend identity mismatch")
+
+    for client <- [local, remote] do
+      unless match?({:error, %Error{http_status: 404}}, call(client, "GetProject", %{"name" => project})),
+        do: raise("Acceptance project must be absent on both transports")
+    end
+  end
+
+  defp certificate_pin(pem) when is_binary(pem) and byte_size(pem) <= 1_048_576 do
+    case :public_key.pem_decode(pem) do
+      [{:Certificate, der, :not_encrypted}] -> Base.encode16(:crypto.hash(:sha256, der), case: :lower)
+      _ -> nil
+    end
+  rescue
+    _ -> nil
+  end
+
+  defp certificate_pin(_), do: nil
 
   defp exercise(client, transport, pool, _journal) do
     {:ok, events} = Events.subscribe(client, types: ["operation", "lifecycle"])

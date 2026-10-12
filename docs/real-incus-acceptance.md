@@ -64,7 +64,11 @@ Provide a private JSON configuration file containing these required fields:
 ```
 
 Use a fresh unique project and report path; the runner refuses an existing
-project or report. Credential contents are never printed. The report records
+report or a project present through either transport. Before mutation it also
+requires matching server certificate pins and server names. After creating its
+project through Unix, it requires the unique run marker to be visible through
+both transports before either volume suite; copied certificates alone cannot
+substitute for shared backend state. Credential contents are never printed. The report records
 request intent/outcome and known operation URLs for reconciliation, without
 automatic retry or failure cleanup. Request deadlines are 10 seconds, stream
 lifetimes 30 seconds and stream capacity 2 MiB. Event collection is bounded
@@ -90,3 +94,9 @@ credentials and raw journals are ignored and are not committed.
 
 Starting this isolated installed Macus runtime establishes the test environment;
 it does not close Macus's independently owned integration or hardware plans.
+
+
+The strengthened preflight also passed a complete isolated v5 run after Greptile
+review. Three private divergent-backend entrypoint regressions verify rejection
+before foreign mutation. These remain fixture evidence; the v5 binary, operation
+and event assertions ran against actual Incus independently.

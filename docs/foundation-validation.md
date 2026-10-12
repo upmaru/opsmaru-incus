@@ -740,3 +740,32 @@ and `38217476107`). Two Greptile follow-up submissions at that runtime timed
 out at the API before creating a job; full-branch review is being retried on
 the published acceptance revision. The last completed review remains 3/5 at
 `9fa7b62`, with both reproduced findings fixed at `2b308f8`.
+
+
+## Copy uncertainty and acceptance backend binding — 2026-10-12
+
+Full-branch Greptile run `8283176e-90e3-4186-bfd5-7b7c55fbbf06` reviewed
+`16058278db93f52241ebfbef31a14b8d7c990bd5`, returned 3/5, confirmed all earlier
+fixes and reported two P1 findings. Nine permanent regressions fail against the
+published runtime: pull/push wrappers hid uncertain inner mutation results or
+malformed accepted push tokens, and the actual acceptance entrypoint could
+write before proving that its two configured transports shared backend state.
+All 23 focused image/runner cases now pass after correction. Inner errors, raw
+responses and all known operation URLs remain available; no POST is replayed.
+
+The runner now checks matching server certificate pins and names, and absence
+of the proposed project through both transports before any mutation. It then
+requires visibility of its new project's random per-run description marker
+before either volume suite. Private fixtures include different certificates,
+an existing HTTPS project and cloned certificate/name with separate state; no
+other backend receives a mutation. The isolated real v5 run independently
+passed both full transport suites with this strengthened preflight and cleaned
+only its successful resources. Earlier failed-run data is retained.
+
+All 624 database-free library tests, strict Credo, canonical checks, actual
+precommit and strict OpenSpec pass with a disposable test database stopped
+and removed afterward. Fresh immutable consumer, platform CI and Greptile
+must verify the published correction. Foundation remains 21/22: 3.9 open,
+4.3 independently passed; installed converters, gateway and Macus integration/
+hardware acceptance remain separate. Acceptance commit macOS/Linux push and
+PR CI passed (runs `38218237414` and `38218242513`).

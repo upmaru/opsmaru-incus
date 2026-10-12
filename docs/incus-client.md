@@ -432,3 +432,12 @@ immutable cache and native alias models; invalid local configuration and the
 pinned VM-type rejection occur before adapter work. No platform CLI is invoked.
 OCI HTTP/connection-info and SimpleStreams connection-info remain missing;
 these additional differential fixtures do not establish full protocol parity.
+
+
+Image pull/push failures preserve an inner `:uncertain` as the top-level kind;
+malformed accepted push-token metadata is uncertain and never triggers export.
+Privileged error state retains `source` or `target` acceptance and the original
+`error`, including its raw response, binding and any later native operation URL.
+The primary URL prefers the inner operation when known, otherwise the earlier
+accepted handle. Reconcile each handle on its originating client; a lost response
+may leave another accepted operation unknown. No token, copy or export is replayed.

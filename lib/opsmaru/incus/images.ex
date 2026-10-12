@@ -106,14 +106,18 @@ defmodule Opsmaru.Incus.Images do
   defp secret_response(client, fingerprint) do
     with {:ok, response} <-
            Incus.call(client, "CreateImageSecret", %{"fingerprint" => fingerprint}) do
-      metadata = response.metadata.data["metadata"]
-      token = if is_map(metadata), do: metadata["secret"]
+      token = token_secret(response)
 
       if is_binary(token),
         do: {:ok, token, response},
         else:
           {:error, %Error{kind: :uncertain, response: response, operation: response.operation}}
     end
+  end
+
+  defp token_secret(response) do
+    metadata = response.metadata.data["metadata"]
+    if is_map(metadata), do: metadata["secret"]
   end
 
   @doc "Copy using one explicit approved connection per side; no address fallback or replay."
@@ -197,12 +201,7 @@ defmodule Opsmaru.Incus.Images do
           {:ok, %{source: source_operation, target: accepted, state: :accepted}}
 
         {:error, error} ->
-          {:error,
-           %Error{
-             kind: :copy_failed,
-             response: %{source: source_operation, error: error},
-             operation: if(source_operation, do: source_operation.operation)
-           }}
+          copy_error(error, :source, source_operation)
       end
     end
   end
@@ -226,7 +225,7 @@ defmodule Opsmaru.Incus.Images do
                  }
                })
            ) do
-      secret = get_in(token.metadata.data, ["metadata", "secret"])
+      secret = token_secret(token)
 
       if is_binary(secret) do
         case Incus.call(source, "ExportImage", %{"fingerprint" => image["fingerprint"]},
@@ -242,17 +241,21 @@ defmodule Opsmaru.Incus.Images do
             {:ok, %{source: exported, target: token, state: :accepted}}
 
           {:error, error} ->
-            {:error,
-             %Error{
-               kind: :copy_failed,
-               response: %{target: token, error: error},
-               operation: token.operation
-             }}
+            copy_error(error, :target, token)
         end
       else
-        {:error, %Error{kind: :invalid_copy_secret, response: token, operation: token.operation}}
+        {:error, %Error{kind: :uncertain, response: token, operation: token.operation}}
       end
     end
+  end
+
+  defp copy_error(error, side, accepted) do
+    {:error,
+     %Error{
+       kind: if(error.kind == :uncertain, do: :uncertain, else: :copy_failed),
+       response: %{side => accepted, :error => error},
+       operation: error.operation || if(accepted, do: accepted.operation)
+     }}
   end
 
   defp relay(target, source, image, body, opts) do
