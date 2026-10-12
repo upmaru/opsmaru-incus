@@ -253,7 +253,8 @@ defmodule Opsmaru.Incus.NativeConfig do
       in_progress: MapSet.new(),
       nodes: 0,
       bytes: 0,
-      in_merge: false
+      in_merge: false,
+      in_merge_list: false
     }
 
     case skip_directives(ctx) do
@@ -342,19 +343,24 @@ defmodule Opsmaru.Incus.NativeConfig do
   defp native_result(_ctx, _node, _existing), do: :error
 
   defp native_entries(entries) do
-    Enum.reduce_while(entries, {:ok, %{}}, fn {key, value}, {:ok, acc} ->
-      case value do
-        {:scalar, term, _raw} ->
-          case scalar_string(term) do
-            {:ok, native} -> {:cont, {:ok, Map.put(acc, key, native)}}
-            :error -> {:halt, :error}
-          end
-
-        _ ->
-          {:halt, :error}
-      end
+    Enum.reduce_while(entries, {:ok, %{}}, fn entry, {:ok, acc} ->
+      native_entry(entry, acc)
     end)
   end
+
+  # An unresolved key (a failed tag in a compose-only map) fails when it
+  # is actually constructed, for example through a merge without an
+  # override.
+  defp native_entry({:unresolved_key, _value}, _acc), do: {:halt, :error}
+
+  defp native_entry({key, {:scalar, term, _raw}}, acc) do
+    case scalar_string(term) do
+      {:ok, native} -> {:cont, {:ok, Map.put(acc, key, native)}}
+      :error -> {:halt, :error}
+    end
+  end
+
+  defp native_entry({_key, _value}, _acc), do: {:halt, :error}
 
   # ---------------------------------------------------------------------
   # Node parser over the token stream.
@@ -378,9 +384,24 @@ defmodule Opsmaru.Incus.NativeConfig do
         substyle = scalarrec(t, :substyle)
         tag = if tag == :none, do: tag_of(scalarrec(t, :tag)), else: tag
 
-        with {:ok, ctx} <- charge(ctx, 1, byte_size(raw)),
-             {:ok, term} <- scalar_term(tag, substyle, raw) do
-          close_anchor(ctx, anchor, {:scalar, term, raw})
+        with {:ok, ctx} <- charge(ctx, 1, byte_size(raw)) do
+          case scalar_term(tag, substyle, raw) do
+            {:ok, term} ->
+              close_anchor(ctx, anchor, {:scalar, term, raw})
+
+            # A tagged scalar that fails resolution is only an error when
+            # it is actually constructed natively. Dropped values never
+            # are, so keep the scalar unresolved and let a later
+            # construction (an alias into a constructed position, a merge
+            # without an override) fail on it.
+            # Values are lazy while composing a dropped subtree or a merge
+            # source; ctx.in_merge covers the merge-source case.
+            :error when mode == :drop or ctx.in_merge ->
+              close_anchor(ctx, anchor, {:scalar, :unresolved, raw})
+
+            :error ->
+              :error
+          end
         end
 
       [t | _] when elem(t, 0) == :yamerl_collection_start ->
@@ -393,23 +414,31 @@ defmodule Opsmaru.Incus.NativeConfig do
     end
   end
 
-  # yamerl emits the token for an anchor that precedes a flow mapping in
-  # the source after the mapping's start and first key tokens; natively the
-  # anchor belongs to the mapping, so re-attach it. A token at this
-  # position is by construction the mapping's first key, so the captured
+  # yamerl emits the token for an anchor that precedes a flow collection in
+  # the source after the collection's start and first item tokens; natively
+  # the anchor belongs to the collection, so re-attach it. The token after
+  # the entry key is by construction a first key scalar, so the captured
   # anchor cannot be one of a key scalar.
-  defp reattach_flow_anchor(anchor, ctx, {:yamerl_collection_start, _l, _c, _, _, :mapping}) do
+  defp reattach_flow_anchor(anchor, ctx, cstart) do
+    {al, acol} = {elem(cstart, 1), elem(cstart, 2)}
+
     case ctx.tokens do
-      [t, mk, {:yamerl_anchor, al, acol, name}, key_node | rest]
-      when elem(mk, 0) == :yamerl_mapping_key and {al, acol} < {elem(t, 1), elem(t, 2)} ->
+      # Flow mapping: start, first mapping key, anchor, key scalar.
+      [t, mk, {:yamerl_anchor, al2, ac2, name}, key_node | rest]
+      when elem(mk, 0) == :yamerl_mapping_key and {al2, ac2} < {al, acol} ->
         {token_text(name), %{ctx | tokens: [t, mk, key_node | rest]}}
+
+      # Flow sequence: start, first entry, inner mapping start, first
+      # mapping key, anchor, key scalar.
+      [t, se, mc, mk, {:yamerl_anchor, al2, ac2, name}, key_node | rest]
+      when elem(se, 0) == :yamerl_sequence_entry and elem(mc, 0) == :yamerl_collection_start and
+             elem(mk, 0) == :yamerl_mapping_key and {al2, ac2} < {al, acol} ->
+        {token_text(name), %{ctx | tokens: [t, se, mc, mk, key_node | rest]}}
 
       _ ->
         {anchor, ctx}
     end
   end
-
-  defp reattach_flow_anchor(anchor, ctx, _cstart), do: {anchor, ctx}
 
   defp parse_collection(ctx, depth, anchor, kind, :drop),
     do: compose_unchecked(drop(ctx), depth, anchor, kind)
@@ -433,7 +462,7 @@ defmodule Opsmaru.Incus.NativeConfig do
   defp parse_checked_mapping(ctx, depth, anchor) do
     null_policy = if depth == 0 or ctx.in_merge, do: :drop, else: :error
 
-    with {:ok, entries, merges, ctx} <- parse_mapping(ctx, depth, null_policy),
+    with {:ok, entries, merges, ctx} <- parse_mapping(ctx, depth, null_policy, :value),
          {:ok, ctx} <- expect(ctx, :yamerl_collection_end),
          {:ok, ctx} <- charge(ctx, 1, 0),
          {:ok, node} <- finalize_map(entries, merges) do
@@ -445,21 +474,25 @@ defmodule Opsmaru.Incus.NativeConfig do
   defp collection_allowed?(_ctx, 0, :value), do: true
   defp collection_allowed?(_ctx, _depth, _mode), do: false
 
-  # A value whose key is dropped is composed but never constructed natively,
-  # so any shape composes: no duplicate-key, merge or shape checks apply.
+  # A value whose key is dropped is composed fully but the entry is never
+  # constructed: any shape composes and the result entry is dropped. The
+  # composed node is still anchored, so aliases can reference its contents
+  # later and natively construct them into the alias's target.
   defp compose_unchecked(ctx, depth, anchor, :mapping) do
-    with {:ok, _entries, _merges, ctx} <- parse_mapping(ctx, depth, :drop),
+    # No duplicate-key check: native composes the dropped value's mapping
+    # without one, and the contents are only constructed through aliases.
+    with {:ok, entries, merges, ctx} <- parse_mapping(ctx, depth, :drop, :drop),
          {:ok, ctx} <- expect(ctx, :yamerl_collection_end),
          {:ok, ctx} <- charge(ctx, 1, 0) do
-      close_anchor(ctx, anchor, {:map, [], nil})
+      close_anchor(ctx, anchor, {:map, resolve_entries(entries), merges})
     end
   end
 
   defp compose_unchecked(ctx, depth, anchor, :sequence) do
-    with {:ok, ctx} <- parse_sequence(ctx, depth),
+    with {:ok, items, ctx} <- parse_sequence(ctx, depth),
          {:ok, ctx} <- expect(ctx, :yamerl_collection_end),
          {:ok, ctx} <- charge(ctx, 1, 0) do
-      close_anchor(ctx, anchor, {:seq, []})
+      close_anchor(ctx, anchor, {:seq, items})
     end
   end
 
@@ -497,18 +530,18 @@ defmodule Opsmaru.Incus.NativeConfig do
 
   defp parse_sequence(ctx, depth) do
     state =
-      Enum.reduce_while(ctx.tokens, {ctx, 0}, fn _token, {c, count} ->
+      Enum.reduce_while(ctx.tokens, {ctx, []}, fn _token, {c, items} ->
         case c.tokens do
           [t | _] when elem(t, 0) == :yamerl_collection_end ->
             if cend(t, :kind) == :sequence do
-              {:halt, {:done, c, count}}
+              {:halt, {:done, c, Enum.reverse(items)}}
             else
               {:halt, :error}
             end
 
           [{:yamerl_sequence_entry, _l, _c} | _] ->
-            case parse_node(c, depth + 1, :drop) do
-              {:ok, _item, c2} -> {:cont, {c2, count + 1}}
+            case parse_node(drop(c), depth + 1, :drop) do
+              {:ok, item, c2} -> {:cont, {c2, [item | items]}}
               :error -> {:halt, :error}
             end
 
@@ -518,7 +551,7 @@ defmodule Opsmaru.Incus.NativeConfig do
       end)
 
     case state do
-      {:done, c, _count} -> {:ok, c}
+      {:done, c, items} -> {:ok, items, c}
       _ -> :error
     end
   end
@@ -554,11 +587,19 @@ defmodule Opsmaru.Incus.NativeConfig do
 
   # The tokenizer accepts undefined and forward aliases; the native
   # composer rejects both, and cycles are rejected by construction.
-  defp resolve_alias(%{in_progress: in_progress, anchors: anchors} = ctx, name) do
+  defp resolve_alias(
+         %{in_progress: in_progress, anchors: anchors, in_merge_list: in_merge_list} = ctx,
+         name
+       ) do
     if MapSet.member?(in_progress, name) do
       :error
     else
       case Map.fetch(anchors, name) do
+        # A sequence anchor is not a valid merge source natively, even
+        # when its items are all mappings.
+        {:ok, {:seq, _items}} when in_merge_list ->
+          :error
+
         {:ok, node} ->
           with {:ok, ctx} <- expand(node, ctx) do
             {:ok, node, ctx}
@@ -570,7 +611,7 @@ defmodule Opsmaru.Incus.NativeConfig do
     end
   end
 
-  defp parse_mapping(ctx, depth, null_policy) do
+  defp parse_mapping(ctx, depth, null_policy, mode) do
     state =
       Enum.reduce_while(ctx.tokens, {ctx, [], nil}, fn _token, {c, entries, merges} ->
         case c.tokens do
@@ -584,7 +625,7 @@ defmodule Opsmaru.Incus.NativeConfig do
             end
 
           _ ->
-            case parse_entry(c, depth, null_policy, merges) do
+            case parse_entry(c, depth, null_policy, merges, mode) do
               {:ok, c2, entry, merges2} -> {:cont, {c2, [entry | entries], merges2}}
               :error -> {:halt, :error}
             end
@@ -601,23 +642,26 @@ defmodule Opsmaru.Incus.NativeConfig do
          %{tokens: [{:yamerl_mapping_key, _l, _c} | rest]} = ctx,
          depth,
          null_policy,
-         merges
+         merges,
+         mode
        ) do
     ctx = %{ctx | tokens: rest}
 
-    case parse_node(ctx, depth + 1, :key) do
+    key_mode = if mode == :drop, do: :drop, else: :key
+
+    case parse_node(ctx, depth + 1, key_mode) do
       {:ok, {:scalar, :merge, raw}, ctx} ->
         merge_key_entry(ctx, raw, depth, merges)
 
       {:ok, {:scalar, term, raw}, ctx} ->
-        scalar_key_entry(ctx, term, raw, depth, null_policy, merges)
+        scalar_key_entry(ctx, term, raw, depth, null_policy, merges, mode)
 
       _ ->
         :error
     end
   end
 
-  defp parse_entry(_ctx, _depth, _null_policy, _merges), do: :error
+  defp parse_entry(_ctx, _depth, _null_policy, _merges, _mode), do: :error
 
   defp merge_key_entry(ctx, raw, depth, nil) do
     with {:ok, ctx} <- expect(ctx, :yamerl_mapping_value),
@@ -629,11 +673,11 @@ defmodule Opsmaru.Incus.NativeConfig do
   # A second merge key is a duplicate-key error natively.
   defp merge_key_entry(_ctx, _raw, _depth, _merges), do: :error
 
-  defp scalar_key_entry(ctx, term, raw, depth, null_policy, merges) do
+  defp scalar_key_entry(ctx, term, raw, depth, null_policy, merges, mode) do
     case key_term(term, raw, null_policy) do
       :error -> :error
       :drop -> dropped_key_entry(ctx, raw, depth, merges)
-      key -> value_entry(ctx, raw, key, depth, merges)
+      key -> value_entry(ctx, raw, key, depth, merges, mode)
     end
   end
 
@@ -647,9 +691,9 @@ defmodule Opsmaru.Incus.NativeConfig do
     end
   end
 
-  defp value_entry(ctx, raw, key, depth, merges) do
+  defp value_entry(ctx, raw, key, depth, merges, mode) do
     with {:ok, ctx} <- expect(ctx, :yamerl_mapping_value),
-         {:ok, value, ctx} <- parse_node(ctx, depth + 1, :value) do
+         {:ok, value, ctx} <- parse_node(ctx, depth + 1, mode) do
       if merge_value?(value) do
         # constructMerge always fails; the entry is dropped.
         {:ok, ctx, {raw, :drop, nil}, merges}
@@ -667,31 +711,48 @@ defmodule Opsmaru.Incus.NativeConfig do
   # sequence aliases to non-maps, is rejected natively). Sources are parsed
   # with in_merge set so their null keys are dropped like native
   # direct-construction drops them.
+  # Merge sources construct into map[string]any, not the target type, so
+  # their null keys drop; the flag must not leak into the entries that
+  # follow the merge, so it is restored from the caller's value.
   defp parse_merge_source(ctx, depth) do
+    in_merge = ctx.in_merge
     ctx = Map.put(ctx, :in_merge, true)
 
-    case ctx.tokens do
-      [t | _] when elem(t, 0) == :yamerl_collection_start ->
-        if cstart(t, :kind) == :sequence do
-          parse_merge_sequence(drop(ctx), depth, [])
-        else
-          parse_merge_mapping(ctx, depth)
-        end
+    result =
+      case ctx.tokens do
+        [t | _] when elem(t, 0) == :yamerl_collection_start ->
+          if cstart(t, :kind) == :sequence do
+            parse_merge_sequence(drop(ctx), depth, [])
+          else
+            parse_merge_mapping(ctx, depth)
+          end
 
-      _ ->
-        parse_merge_mapping(ctx, depth)
+        _ ->
+          parse_merge_mapping(ctx, depth)
+      end
+
+    case result do
+      {:ok, source, ctx} -> {:ok, source, Map.put(ctx, :in_merge, in_merge)}
+      :error -> :error
     end
   end
 
   defp parse_merge_mapping(ctx, depth) do
     case parse_node(ctx, depth, :value) do
       {:ok, {:map, _entries, _merges} = node, ctx} -> {:ok, node, ctx}
+      # A sequence of mappings merges only when written literally; natively
+      # an alias to a sequence is not a valid merge source.
+      {:ok, {:seq, _items}, _ctx} -> :error
       {:ok, _node, _ctx} -> :error
       :error -> :error
     end
   end
 
   defp parse_merge_sequence(%{tokens: [t | _]} = ctx, depth, sources) do
+    # An alias to a sequence is not a merge source natively; the flag lets
+    # resolve_alias/2 reject it without changing normal alias semantics.
+    ctx = Map.put(ctx, :in_merge_list, true)
+
     cond do
       elem(t, 0) == :yamerl_sequence_entry ->
         case parse_node(drop(ctx), depth, :value) do
@@ -703,6 +764,7 @@ defmodule Opsmaru.Incus.NativeConfig do
         end
 
       elem(t, 0) == :yamerl_collection_end and cend(t, :kind) == :sequence ->
+        ctx = Map.put(ctx, :in_merge_list, false)
         {:ok, {:seq, Enum.reverse(sources)}, drop(ctx)}
 
       true ->
@@ -723,23 +785,25 @@ defmodule Opsmaru.Incus.NativeConfig do
         :error
 
       _set ->
-        explicit =
-          Enum.reduce(entries, {MapSet.new(), []}, fn {_raw, key, value}, {keys, acc} ->
-            cond do
-              # :skip is a merge key; :drop is an entry that fails native
-              # construction (null keys, merge-tagged values) and is dropped.
-              key in [:skip, :drop] -> {keys, acc}
-              MapSet.member?(keys, key) -> {keys, update_entry(acc, key, value)}
-              true -> {MapSet.put(keys, key), [{key, value} | acc]}
-            end
-          end)
-          |> elem(1)
-          |> Enum.reverse()
-
         # Merge sources stay in the node (see fold_map/1); construction
         # into a map folds them at the result boundary.
-        {:ok, {:map, explicit, merges}}
+        {:ok, {:map, resolve_entries(entries), merges}}
     end
+  end
+
+  # :skip is a merge key; :drop is an entry that fails native construction
+  # (null keys, merge-tagged values) and is dropped. Later duplicates win.
+  defp resolve_entries(entries) do
+    entries
+    |> Enum.reduce({MapSet.new(), []}, fn {_raw, key, value}, {keys, acc} ->
+      cond do
+        key in [:skip, :drop] -> {keys, acc}
+        MapSet.member?(keys, key) -> {keys, update_entry(acc, key, value)}
+        true -> {MapSet.put(keys, key), [{key, value} | acc]}
+      end
+    end)
+    |> elem(1)
+    |> Enum.reverse()
   end
 
   defp update_entry(list, key, value) do
@@ -759,7 +823,10 @@ defmodule Opsmaru.Incus.NativeConfig do
 
   # Device property keys construct into a string-keyed map natively: a key
   # that is not a string term fails. Outer and merge-source maps construct
-  # into map[string]any, where fromMapStringAny stringifies every scalar key.
+  # into map[string]any, where fromMapStringAny stringifies every scalar
+  # key. An unresolved (tag-failed) key in a compose-only map is a marker
+  # that fails construction if the entry is ever used through a merge.
+  defp key_term(:unresolved, _raw, :drop), do: :unresolved_key
   defp key_term(_term, raw, :drop), do: raw
   defp key_term(term, raw, :error) when is_binary(term), do: raw
   defp key_term(_term, _raw, :error), do: :error
@@ -906,6 +973,10 @@ defmodule Opsmaru.Incus.NativeConfig do
 
     body = if String.starts_with?(body, "."), do: "0" <> body, else: body
 
+    # Go accepts a trailing dot before the exponent or at end of input;
+    # Elixir's parser leaves the dot unparsed, so insert a zero.
+    body = String.replace(body, ~r/\.([eE]|$)/, ".0\\1")
+
     case Float.parse(sign <> body) do
       {float, ""} when is_float(float) -> {:ok, float}
       _ -> :error
@@ -952,20 +1023,25 @@ defmodule Opsmaru.Incus.NativeConfig do
   defp read_exp(cs, i, n) do
     if i < n and :erlang.element(i + 1, cs) in [?e, ?E] do
       j = if(i + 2 < n and :erlang.element(i + 2, cs) in [?+, ?-], do: i + 2, else: i + 1)
-      read_exp_digits(cs, j, n)
+      read_exp_digits(cs, j, n, false)
     else
       {:ok, i}
     end
   end
 
-  defp read_exp_digits(_cs, i, n) when i >= n, do: :error
+  # At least one exponent digit is required; end of input ends the scan
+  # once the digits have been seen (Go's readFloat accepts e2 at EOL).
+  # At least one exponent digit is required; end of input ends the scan
+  # once a digit has been seen (Go's readFloat accepts e2 at EOL).
+  defp read_exp_digits(_cs, i, n, true) when i >= n, do: {:ok, n}
+  defp read_exp_digits(_cs, i, n, false) when i >= n, do: :error
 
-  defp read_exp_digits(cs, i, n) do
+  defp read_exp_digits(cs, i, n, sawdigit) do
     c = :erlang.element(i + 1, cs)
 
     cond do
-      c == ?_ -> read_exp_digits(cs, i + 1, n)
-      c in ?0..?9 -> read_exp_digits(cs, i + 1, n)
+      c == ?_ -> read_exp_digits(cs, i + 1, n, sawdigit)
+      c in ?0..?9 -> read_exp_digits(cs, i + 1, n, true)
       true -> {:ok, i}
     end
   end
@@ -1167,6 +1243,7 @@ defmodule Opsmaru.Incus.NativeConfig do
   defp scalar_string(:neg_inf), do: {:ok, "-Inf"}
   defp scalar_string(:timestamp), do: :error
   defp scalar_string(:merge), do: :error
+  defp scalar_string(:unresolved), do: :error
   defp scalar_string(integer) when is_integer(integer), do: {:ok, Integer.to_string(integer)}
 
   defp scalar_string(float) when is_float(float) do

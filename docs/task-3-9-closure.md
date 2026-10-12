@@ -283,11 +283,21 @@ untagged scalars; quoted and block scalars stay strings. Explicit tags, anchors,
 undefined/forward/self aliases, duplicate keys, merge keys (including anchored
 flow and block templates), null/dropped keys, null versus absent documents and
 first-document selection follow the unchanged native decoder. Alias expansion
-is charged against an explicit node/byte budget before construction. A 185-row
-oracle matrix and 2,400 randomized reviewer-generated config/device documents
-across three seeds match the unchanged native decoder. Three differences remain
+is charged against an explicit node/byte budget before construction. A 235-row
+oracle matrix and 11,400 randomized reviewer-generated config/device documents
+across ten seeds match the unchanged native decoder, including values under
+dropped null keys, anchored merge templates and leading-dot exponents. Three differences remain
 recorded side by side: yamerl accepts tab indentation that the native scanner
 rejects; native replaces invalid UTF-8 in `!!binary` with U+FFFD while ours
 rejects; and go-yaml's aliasing-ratio check rejects some expansions that remain
 within our bounded budget. `ServerFiltered.MarshalYAML` is still missing. Two
 declarations gain partial evidence: 1221 partial, 59 missing, complete_port=false.
+
+Batch Greptile review `bf9291d9-973d-46d3-b589-34ffff9d08e4` (1/5) found four
+YAML parity defects after the slice was committed: anchors under dropped null
+keys lost their contents, sequences under dropped keys were rejected, a merge
+flag leaked into later device maps, and leading-dot exponents ending the input
+stayed strings. All four were confirmed against the unchanged native driver and
+fixed, together with trailing-dot floats, alias-to-sequence merge sources,
+flow-sequence anchors and lazy tag resolution under dropped keys found by a
+broader reviewer differential. Each case is now an oracle matrix row.

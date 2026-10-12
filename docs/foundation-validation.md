@@ -1027,11 +1027,12 @@ Focused runs, library compile with warnings as errors and strict Credo pass.
 
 `test/library/native_yaml_reference_test.exs` builds the fixture-only
 `test/reference/nativeyaml` driver (unchanged go-yaml v4 into api.ConfigMap and
-api.DevicesMap, optionally pre-populated) and compares a 185-row matrix covering
+api.DevicesMap, optionally pre-populated) and compares a 235-row matrix covering
 scalar resolution, tags, anchors/aliases, merge keys, duplicates, documents and
 existing-map merges. Safety cases bound input/result size, prove a shape-valid
 alias fan-out is rejected by the expansion budget in bounded time and memory
 while a smaller one is accepted, create no atoms, never raise and leave yamerl's
-application environment untouched. Reviewer randomized differentials (2,400
-documents, three seeds) found no mismatch. Library compile with warnings as
+application environment untouched. Reviewer randomized differentials (11,400
+documents, ten seeds, including dropped-key, merge-template and exponent cases)
+found no mismatch after the Greptile and differential corrections. Library compile with warnings as
 errors, strict Credo, 944 library tests, embedded startup and strict OpenSpec pass.
