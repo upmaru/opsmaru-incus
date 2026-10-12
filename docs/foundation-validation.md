@@ -574,3 +574,6 @@ locally with a disposable database. The affected 39 tests passed at CI seed
 strict OpenSpec. New exact-head macOS/Linux CI, fresh immutable consumer and
 follow-up Greptile must still verify the published correction. Foundation 3.9 and
 4.3 remain open, as do separate gateway, installed converter and Macus gates.
+
+The fresh external Git consumer passed at corrected trust/project/raw-owner runtime
+`449a4a6c685b76b1e01cce4170561a286d8e2af3`; the captured lock, default pin and embedding example now record that verified source.
