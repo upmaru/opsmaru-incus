@@ -11,11 +11,14 @@ defmodule Opsmaru.TestSupport.TLSIdentity do
 
     run!([
       "req",
+      "-sha256",
       "-x509",
       "-newkey",
       "ec",
       "-pkeyopt",
       "ec_paramgen_curve:P-256",
+      "-pkeyopt",
+      "ec_param_enc:named_curve",
       "-nodes",
       "-days",
       "1",
@@ -23,6 +26,8 @@ defmodule Opsmaru.TestSupport.TLSIdentity do
       "/CN=#{name}-fixture-ca",
       "-addext",
       "basicConstraints=critical,CA:TRUE",
+      "-addext",
+      "keyUsage=critical,keyCertSign,cRLSign",
       "-keyout",
       cakey,
       "-out",
@@ -31,11 +36,14 @@ defmodule Opsmaru.TestSupport.TLSIdentity do
 
     run!([
       "req",
+      "-sha256",
       "-new",
       "-newkey",
       "ec",
       "-pkeyopt",
       "ec_paramgen_curve:P-256",
+      "-pkeyopt",
+      "ec_param_enc:named_curve",
       "-nodes",
       "-subj",
       "/CN=#{hostname}",
@@ -52,6 +60,7 @@ defmodule Opsmaru.TestSupport.TLSIdentity do
 
     run!([
       "x509",
+      "-sha256",
       "-req",
       "-in",
       csr,

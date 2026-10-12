@@ -824,3 +824,21 @@ The fresh isolated Git consumer passed at continuation runtime
 and passive startup. The captured dependency lock, default fixture pin and
 Macus embedding example now record that exact immutable source. This does not
 replace pending per-entry completeness, installed adapter or hardware gates.
+
+
+## Stock macOS TLS fixture correction — 2026-10-12
+
+The continuation CI failed on macOS (runs 38233018623/38233025415 and
+38233451145/38233457928); Linux passed. Running the native context fixtures
+with /usr/bin/openssl reproduced LibreSSL's explicit EC parameters and then
+SHA-1 signatures, rejected by the unchanged Go verifier. Disposable CA/leaf
+generation now explicitly uses named P-256 curves, SHA-256 signatures and
+CA signing usage. No client TLS policy or native reference was relaxed.
+A permanent certificate-signature assertion accompanies the native checks.
+All 19 focused tests pass with stock LibreSSL; all 648 library tests, strict
+Credo, isolated canonical checks, actual precommit and strict OpenSpec pass.
+Platform CI must verify the published correction.
+
+The user approved independent review in place of quota-blocked Greptile on
+2026-10-12. The review gate now requires independent current-source review;
+no Greptile follow-up success is claimed. Task 3.9 remains open.
