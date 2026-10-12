@@ -3,7 +3,7 @@ defmodule Opsmaru.Incus.EventListenerTest do
   import ExUnit.CaptureLog
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Error, EventListener, Model, Server}
-  alias Opsmaru.TestSupport.WebSocketFixture
+  alias Opsmaru.TestSupport.{HTTPFixture, WebSocketFixture}
   @driver Path.expand("../../.integration/event-handlers-driver", __DIR__)
   @event %{"type" => "logging", "timestamp" => "2026-10-11T12:00:00Z", "metadata" => %{}}
 
@@ -24,6 +24,124 @@ defmodule Opsmaru.Incus.EventListenerTest do
     File.mkdir!(root)
     on_exit(fn -> File.rm_rf!(root) end)
     %{root: root}
+  end
+
+  for phase <- [:upgrade, :write] do
+    test "caller loss closes an event listener blocked in #{phase} and its channel", %{root: root} do
+      parent = self()
+
+      fixture =
+        start_supervised!(
+          {HTTPFixture,
+           transport: :gen_tcp,
+           path: Path.join(root, "blocked-listener"),
+           handler: fn request ->
+             %{
+               upgrade: fn transport, socket ->
+                 if unquote(phase) == :upgrade do
+                   send(parent, :listener_negotiating)
+                   send(parent, {:listener_peer_closed, transport.recv(socket, 0, 1_000)})
+                 else
+                   accept =
+                     Base.encode64(
+                       :crypto.hash(
+                         :sha,
+                         request.headers["sec-websocket-key"] <>
+                           "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+                       )
+                     )
+
+                   :ok =
+                     transport.send(
+                       socket,
+                       "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: #{accept}\r\n\r\n"
+                     )
+
+                   receive do
+                     :never -> :ok
+                   after
+                     10_000 -> :ok
+                   end
+                 end
+               end
+             }
+           end}
+        )
+
+      connection =
+        Connection.unix!(HTTPFixture.endpoint(fixture).socket,
+          owner: :fixture,
+          timeout: 5_000,
+          stream_timeout: 30_000,
+          max_stream_bytes: 67_108_864
+        )
+
+      client = %Incus{
+        connection: connection,
+        context: Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end),
+        server: %Server{api_extensions: []}
+      }
+
+      caller =
+        spawn(fn ->
+          {:ok, listener} = EventListener.open(client)
+          send(parent, {:blocked_listener, listener})
+
+          receive do
+            :write -> :ok
+          end
+
+          event = put_in(@event, ["metadata", "message"], String.duplicate("x", 1_000_000))
+
+          Enum.reduce_while(1..64, nil, fn _, _ ->
+            case EventListener.send_event(listener, event) do
+              :ok -> {:cont, nil}
+              error -> {:halt, error}
+            end
+          end)
+        end)
+
+      on_exit(fn -> if Process.alive?(caller), do: Process.exit(caller, :kill) end)
+
+      case unquote(phase) do
+        :upgrade ->
+          assert_receive :listener_negotiating, 1_000
+          Process.exit(caller, :kill)
+          assert_receive {:listener_peer_closed, {:error, :closed}}, 500
+
+        :write ->
+          assert_receive {:blocked_listener, listener}, 1_000
+          channel = :sys.get_state(listener.pid).channel
+
+          on_exit(fn ->
+            for pid <- [listener.pid, channel.pid],
+                Process.alive?(pid),
+                do: Process.exit(pid, :kill)
+          end)
+
+          socket = :sys.get_state(channel.pid).conn |> Mint.HTTP.get_socket()
+          :ok = :inet.setopts(socket, sndbuf: 1024)
+          send(caller, :write)
+          await_listener_write(channel.pid, System.monotonic_time(:millisecond) + 2_000)
+          monitors = for pid <- [listener.pid, channel.pid], do: Process.monitor(pid)
+          Process.exit(caller, :kill)
+          for monitor <- monitors, do: assert_receive({:DOWN, ^monitor, :process, _, _}, 500)
+      end
+
+      assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+    end
+  end
+
+  defp await_listener_write(pid, deadline) do
+    {:current_stacktrace, stack} = Process.info(pid, :current_stacktrace)
+
+    unless Enum.any?(stack, fn {module, function, _, _} ->
+             module == :prim_inet and function == :send
+           end) do
+      assert System.monotonic_time(:millisecond) < deadline
+      Process.sleep(1)
+      await_listener_write(pid, deadline)
+    end
   end
 
   test "handler registration/removal, native callback data and repeatable wait match pinned listener",

@@ -5,6 +5,19 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../../.integration/simplestreams-driver", __DIR__)
 
+  defmodule DeltaAdapter do
+    @behaviour Opsmaru.Incus.SimpleStreams.DeltaAdapter
+    def convert(config, request, emit) do
+      send(config.owner, {:delta_call, self(), request})
+      config.convert.(request, emit)
+    end
+
+    def cleanup(config, id, outcome) do
+      send(config.owner, {:delta_cleanup, id, outcome})
+      config.cleanup.(id, outcome)
+    end
+  end
+
   setup_all do
     File.mkdir_p!(Path.dirname(@driver))
 
@@ -355,6 +368,8 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
       }
     }
 
+    product = add_delta(product, opts[:delta])
+
     fixture =
       start_supervised!(
         {HTTPFixture,
@@ -381,7 +396,13 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
                %{status: 200, body: %{"products" => %{"fixture" => product}}}
 
              path ->
-               bytes = if path == "/images/meta.tar.xz", do: metadata, else: rootfs
+               bytes =
+                 case path do
+                   "/images/meta.tar.xz" -> metadata
+                   "/images/delta.vcdiff" -> opts[:delta]
+                   _ -> rootfs
+                 end
+
                bytes = if opts[:corrupt], do: :binary.copy(<<7>>, byte_size(bytes)), else: bytes
 
                %{
@@ -398,7 +419,343 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     {next, fixture}
   end
 
+  defp add_delta(product, nil), do: product
+
+  defp add_delta(product, bytes) do
+    current = product["versions"]["20261001"]
+    base = put_in(current, ["items", "meta", "combined_squashfs_sha256"], "base-fingerprint")
+    product = put_in(product, ["versions", "20260101"], base)
+
+    put_in(product, ["versions", "20261001", "items", "delta"], %{
+      "ftype" => "squashfs.vcdiff",
+      "path" => "images/delta.vcdiff",
+      "sha256" => hash(bytes),
+      "size" => byte_size(bytes),
+      "delta_base" => "20260101"
+    })
+  end
+
   defp hash(bytes), do: :crypto.hash(:sha256, bytes) |> Base.encode16(case: :lower)
+
+  test "explicit delta adapter receives verified bytes/base and emits checksum-verified rootfs",
+       %{identity: identity} do
+    {client, fixture} =
+      download_client(identity, "metadata", "converted-root", delta: "delta-bytes")
+
+    parent = self()
+
+    config =
+      delta_config(fn request, emit ->
+        assert request.base.source == :private_host_base
+        assert request.connection == client.connection
+        assert request.context == client.context
+
+        assert {:ok, %{size: 11}} =
+                 request.download_delta.(fn bytes ->
+                   send(parent, {:delta_bytes, bytes})
+                   :ok
+                 end)
+
+        :ok = emit.("converted-root")
+        :ok
+      end)
+
+    client = with_delta(client, config)
+
+    sink = fn bytes ->
+      send(parent, {:root_bytes, bytes})
+      :ok
+    end
+
+    assert {:ok, %{rootfs: %{size: 14}}} =
+             SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: sink},
+               delta_base: %{fingerprint: "base-fingerprint", source: :private_host_base}
+             )
+
+    assert_received {:delta_bytes, "delta-bytes"}
+    assert_received {:root_bytes, "converted-root"}
+    assert_receive {:delta_call, _, request}
+    assert_receive {:delta_cleanup, id, :completed}
+    assert id == request.call_id
+    assert is_integer(request.deadline)
+    assert download_paths(fixture) == ["/images/delta.vcdiff"]
+    refute inspect(client) =~ "adapter-private"
+  end
+
+  test "missing optional adapter/base/delta uses full files without conversion", %{
+    identity: identity
+  } do
+    {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+    base = %{fingerprint: "base-fingerprint", source: :host_base}
+    sink = fn _ -> :ok end
+
+    assert {:ok, _} =
+             SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: sink},
+               delta_base: base
+             )
+
+    client = with_delta(client, delta_config(fn _, _ -> flunk("unexpected conversion") end))
+    assert {:ok, _} = SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: sink})
+
+    assert {:ok, _} =
+             SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: sink},
+               delta_base: %{base | fingerprint: "not-cached"}
+             )
+
+    assert download_paths(fixture) == List.duplicate("/images/root.squashfs", 3)
+    refute_received {:delta_call, _, _}
+
+    assert_raise ArgumentError, fn ->
+      SimpleStreams.new!(client.connection, client.context,
+        architecture: "x86_64",
+        delta_adapter: String,
+        delta_config: nil
+      )
+    end
+  end
+
+  for failure <- [:wrong_bytes, :ignored_rejection, :repeat_download, :foreign_emitter] do
+    test "delta #{failure} fails visibly, cleans its call and never falls back/replays", %{
+      identity: identity
+    } do
+      {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+      parent = self()
+
+      client =
+        with_delta(
+          client,
+          delta_config(fn request, emit ->
+            assert {:ok, _} = request.download_delta.(fn _ -> :ok end)
+            delta_failure(unquote(failure), request, emit)
+          end)
+        )
+
+      sink = fn bytes ->
+        send(parent, {:emitted, bytes})
+        :ok
+      end
+
+      assert {:error, %Error{kind: :delta_failed, response: %{fingerprint: "image-fingerprint"}}} =
+               SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: sink},
+                 delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+               )
+
+      assert_receive {:delta_call, _, request}
+      assert_receive {:delta_cleanup, id, :failed}
+      assert id == request.call_id
+      assert download_paths(fixture) == ["/images/delta.vcdiff"]
+      if unquote(failure) != :wrong_bytes, do: refute_received({:emitted, _})
+    end
+  end
+
+  defp delta_failure(:wrong_bytes, _, emit), do: emit.("bad!")
+
+  defp delta_failure(:ignored_rejection, _, emit) do
+    assert {:error, _} = emit.("too-long")
+    assert {:error, _} = emit.("root")
+    :ok
+  end
+
+  defp delta_failure(:repeat_download, request, emit) do
+    assert {:error, _} = request.download_delta.(fn _ -> :ok end)
+    assert {:error, _} = emit.("root")
+    :ok
+  end
+
+  defp delta_failure(:foreign_emitter, _, emit) do
+    assert {:error, _} = Task.async(fn -> emit.("root") end) |> Task.await()
+    assert {:error, _} = emit.("root")
+    :ok
+  end
+
+  for cause <- [:deadline, :owner_loss] do
+    test "delta #{cause} kills exit-trapping conversion and invokes unique bounded cleanup", %{
+      identity: identity
+    } do
+      {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+      parent = self()
+
+      client =
+        with_delta(
+          client,
+          delta_config(fn _, _ ->
+            Process.flag(:trap_exit, true)
+            send(parent, {:converting, self()})
+
+            receive do
+              :never -> :ok
+            end
+          end)
+        )
+
+      client = %{client | connection: %{client.connection | stream_timeout: 100}}
+
+      owner =
+        spawn(fn ->
+          result =
+            SimpleStreams.image_file(
+              client,
+              "image-fingerprint",
+              %{rootfs: fn _ -> flunk("unexpected output") end},
+              delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+            )
+
+          send(parent, {:delta_result, result})
+        end)
+
+      on_exit(fn -> if Process.alive?(owner), do: Process.exit(owner, :kill) end)
+      assert_receive {:converting, worker}, 1_000
+      assert_receive {:delta_call, ^worker, request}
+      monitor = Process.monitor(worker)
+      if unquote(cause) == :owner_loss, do: Process.exit(owner, :kill)
+      assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 500
+      expected = if unquote(cause) == :deadline, do: :deadline, else: :owner_lost
+      assert_receive {:delta_cleanup, id, ^expected}, 500
+      assert id == request.call_id
+
+      if unquote(cause) == :deadline,
+        do: assert_receive({:delta_result, {:error, %Error{kind: :deadline}}}, 500)
+
+      assert download_paths(fixture) == []
+    end
+  end
+
+  test "delta cleanup failure preserves its primary result and image identity", %{
+    identity: identity
+  } do
+    {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+
+    config =
+      delta_config(fn request, emit ->
+        assert {:ok, _} = request.download_delta.(fn _ -> :ok end)
+        :ok = emit.("root")
+        :ok
+      end)
+      |> Map.put(:cleanup, fn _, _ -> {:error, :host_cleanup_failed} end)
+
+    client = with_delta(client, config)
+
+    assert {:error,
+            %Error{
+              kind: :adapter_cleanup,
+              response: %{fingerprint: "image-fingerprint", error: error}
+            }} =
+             SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: fn _ -> :ok end},
+               delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+             )
+
+    assert {:ok, %{size: 4}} = error.response
+    assert download_paths(fixture) == ["/images/delta.vcdiff"]
+  end
+
+  test "configured delta construction is passive and unauthorized calls never convert", %{
+    identity: identity
+  } do
+    {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+    count = length(HTTPFixture.requests(fixture))
+
+    configured =
+      SimpleStreams.new!(client.connection, client.context,
+        architecture: "x86_64",
+        delta_adapter: DeltaAdapter,
+        delta_config: delta_config(fn _, _ -> flunk("unauthorized conversion") end)
+      )
+
+    assert configured.catalog == nil
+    assert length(HTTPFixture.requests(fixture)) == count
+
+    configured = %{
+      configured
+      | catalog: client.catalog,
+        context: %{client.context | ready?: fn -> false end}
+    }
+
+    assert {:error, %Error{kind: :host_not_ready}} =
+             SimpleStreams.image_file(configured, "image-fingerprint", %{rootfs: fn _ -> :ok end},
+               delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+             )
+
+    refute_received {:delta_call, _, _}
+    assert length(HTTPFixture.requests(fixture)) == count
+  end
+
+  test "corrupt delta prevents output, cleans resources and preserves its checksum failure", %{
+    identity: identity
+  } do
+    {client, fixture} =
+      download_client(identity, "metadata", "root", delta: "delta", corrupt: true)
+
+    client =
+      with_delta(
+        client,
+        delta_config(fn request, _ -> request.download_delta.(fn _ -> :ok end) end)
+      )
+
+    assert {:error, %Error{kind: :checksum, response: %{fingerprint: "image-fingerprint"}}} =
+             SimpleStreams.image_file(
+               client,
+               "image-fingerprint",
+               %{rootfs: fn _ -> flunk("corrupt delta emitted output") end},
+               delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+             )
+
+    assert_receive {:delta_cleanup, _, :failed}
+    assert download_paths(fixture) == ["/images/delta.vcdiff"]
+  end
+
+  test "delta output rejection remains sticky and converted bytes never exceed their aggregate budget",
+       %{identity: identity} do
+    {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+
+    config =
+      delta_config(fn request, emit ->
+        assert {:ok, _} = request.download_delta.(fn _ -> :ok end)
+        assert {:error, _} = emit.("root")
+        assert {:error, _} = emit.("root")
+        :ok
+      end)
+
+    client = with_delta(client, config)
+    owner = self()
+
+    sink = fn _ ->
+      send(owner, :sink_called)
+      {:error, :closed}
+    end
+
+    assert {:error, %Error{kind: :delta_failed}} =
+             SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: sink},
+               delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+             )
+
+    assert_received :sink_called
+    refute_received :sink_called
+    limited = %{client | connection: %{client.connection | max_stream_bytes: 8}}
+
+    assert {:error, %Error{kind: :invalid_download_manifest}} =
+             SimpleStreams.image_file(limited, "image-fingerprint", %{rootfs: fn _ -> :ok end},
+               delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+             )
+
+    assert download_paths(fixture) == ["/images/delta.vcdiff"]
+  end
+
+  defp delta_config(convert),
+    do: %{
+      owner: self(),
+      private: "adapter-private",
+      convert: convert,
+      cleanup: fn _, _ -> :ok end
+    }
+
+  defp with_delta(client, config),
+    do: %{client | delta_adapter: DeltaAdapter, delta_config: config}
+
+  defp download_paths(fixture),
+    do:
+      HTTPFixture.requests(fixture)
+      |> Enum.map(& &1.target)
+      |> Enum.filter(&String.starts_with?(&1, "/images/"))
 
   test "construction/readiness stays passive and catalogs are connection-local", %{
     identity: identity

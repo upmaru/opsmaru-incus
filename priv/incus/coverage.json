@@ -74,7 +74,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/interface_method/HTTPTransporter.Transport",
@@ -6439,7 +6439,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetConnectionInfo",
@@ -6462,7 +6462,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAlias",
@@ -6471,7 +6471,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasArchitectures",
@@ -6480,7 +6480,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasNames",
@@ -6489,7 +6489,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasType",
@@ -6498,7 +6498,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliases",
@@ -6507,7 +6507,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageFile",
@@ -6516,7 +6516,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageFingerprints",
@@ -6525,7 +6525,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageSecret",
@@ -6534,7 +6534,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImages",
@@ -6543,7 +6543,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesAllProjects",
@@ -6552,7 +6552,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesAllProjectsWithFilter",
@@ -6561,7 +6561,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesWithFilter",
@@ -6570,7 +6570,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetPrivateImage",
@@ -6579,7 +6579,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetPrivateImageFile",
@@ -6588,7 +6588,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/oidcTransport.RoundTrip",

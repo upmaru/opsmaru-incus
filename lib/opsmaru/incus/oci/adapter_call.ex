@@ -8,6 +8,7 @@ defmodule Opsmaru.Incus.OCI.AdapterCall do
     owner = self()
     id = make_ref()
     deadline = now() + timeout
+    deadline = min(deadline, Map.get(request, :deadline, deadline))
     request = Map.merge(request, %{call_id: id, deadline: deadline})
 
     {pid, monitor} =
@@ -48,9 +49,14 @@ defmodule Opsmaru.Incus.OCI.AdapterCall do
 
   defp await(owner_monitor, worker, monitor, id, deadline) do
     receive do
-      {^id, result} -> result
-      {:DOWN, ^owner_monitor, :process, _, _} -> :owner_lost
-      {:DOWN, ^monitor, :process, ^worker, _} -> error(:adapter_failed)
+      {^id, result} ->
+        result
+
+      {:DOWN, ^owner_monitor, :process, _, _} ->
+        if now() >= deadline, do: error(:adapter_deadline), else: :owner_lost
+
+      {:DOWN, ^monitor, :process, ^worker, _} ->
+        error(:adapter_failed)
     after
       max(0, deadline - now()) -> error(:adapter_deadline)
     end

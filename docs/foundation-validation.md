@@ -577,3 +577,48 @@ follow-up Greptile must still verify the published correction. Foundation 3.9 an
 
 The fresh external Git consumer passed at corrected trust/project/raw-owner runtime
 `449a4a6c685b76b1e01cce4170561a286d8e2af3`; the captured lock, default pin and embedding example now record that verified source.
+
+
+## Explicit host delta adapter and listener owner guard — 2026-10-12
+
+Full-branch Greptile run `58960730-6062-41fd-91a1-4dec15f0e8e3` reviewed
+`ba3569164fe9c4125683dc74e099cfce3a91094e`, returned 4/5 and confirmed earlier
+corrections. Its one P1 event-listener owner-loss finding reproduced under stalled
+subscription and blocked event writes. An independent guard now starts before
+subscription. Both cases passed ten repeated runs; no backend DELETE or replay
+occurs. All four channel/console/listener actors now install independent guards
+before their blocking setup rather than depending only on mailbox processing.
+
+The approved SimpleStreams host delta adapter is implemented and fixture-verified.
+The host explicitly supplies its converter/configuration and opaque base source.
+A unique call identity and inherited absolute deadline bind conversion; verified
+delta input is delivered once through acknowledged sinks, and converted rootfs
+must match native size/SHA-256. Repeated/reentrant or foreign calls and failed
+acknowledgements latch rejection. Delta plus output share the remaining stream
+byte budget. Bounded cleanup runs on completion, failure, timeout and caller loss;
+cleanup failure retains its primary result and image identity. There is no bundled
+xdelta runner, root escalation, temporary state, implicit base discovery or
+fallback/replay after conversion failure. The existing independent OCI adapter
+controller is reused with absolute deadline inheritance and truthful deadline
+classification when its owner disappears at expiry.
+
+Twelve added delta cases verify construction/readiness, byte integrity, full-file
+fallback only when optional inputs are absent, corrupt input, output checksums,
+foreign/repeated emission, sticky sink rejection, total byte limits, caller/deadline
+cleanup and cleanup failure. All 594 library tests and strict Credo pass locally.
+The unchanged native catalog/manifests remain the oracle; fake conversion proves
+the host contract only. Actual installed conversion, registry authentication,
+external process/file cleanup and Macus hardware remain separately unverified.
+
+Both push/PR CI at `449a4a6` and `ba35691` passed macOS/Linux (runs
+`38209542980`, `38209547479`, `38209835871`, `38209840441`). The complete suite
+also passed all 580 tests at earlier CI failure seed `807195` before this delta
+slice. Read-only real Incus Unix/verified HTTPS preflight passed again with wrong
+hostname rejected and Application/Endpoint/Repo stopped. These results are scoped
+to their earlier source; they do not imply acceptance of later delta code or close
+foundation tasks 3.9/4.3. The four SimpleStreams protocol convenience helpers and
+other remaining client/model matrices stay visible in the closure ledger.
+
+Canonical checks and actual mix precommit also passed after the delta slice,
+using a disposable database stopped and removed afterward. All four OpenSpec
+changes passed strict validation, and all 28 SimpleStreams cases passed five repeated runs.

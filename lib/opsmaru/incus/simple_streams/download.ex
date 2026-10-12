@@ -1,14 +1,16 @@
 defmodule Opsmaru.Incus.SimpleStreams.Download do
   @moduledoc false
   alias Opsmaru.Incus.{Error, SimpleStreams, Transfer, Transport}
+  alias Opsmaru.Incus.SimpleStreams.Delta
 
-  def run(client, fingerprint, sinks) do
+  def run(client, fingerprint, sinks, opts) do
     with :ok <- sinks(sinks),
+         :ok <- options(opts),
          {:ok, image} <- SimpleStreams.image(client, fingerprint),
          {:ok, files} <- SimpleStreams.files(client, image.data["fingerprint"]) do
       result =
         Transport.bounded(client.connection.stream_timeout, "GET", fn ->
-          download(client, files, sinks, now() + client.connection.stream_timeout)
+          download(client, files, sinks, opts, now() + client.connection.stream_timeout)
         end)
 
       case result do
@@ -21,6 +23,18 @@ defmodule Opsmaru.Incus.SimpleStreams.Download do
     end
   end
 
+  defp options(opts) do
+    if Keyword.keyword?(opts) and length(opts) <= 1 and Keyword.keys(opts) -- [:delta_base] == [] and
+         valid_base?(opts[:delta_base]), do: :ok, else: error(:invalid_delta_arguments, nil)
+  end
+
+  defp valid_base?(nil), do: true
+
+  defp valid_base?(%{fingerprint: hash, source: _} = base),
+    do: map_size(base) == 2 and is_binary(hash) and byte_size(hash) in 1..1024
+
+  defp valid_base?(_), do: false
+
   defp sinks(sinks) when is_map(sinks) do
     if Map.keys(sinks) -- [:metadata, :rootfs] == [] and
          Enum.any?(Map.values(sinks), &is_function(&1, 1)) and
@@ -31,7 +45,7 @@ defmodule Opsmaru.Incus.SimpleStreams.Download do
 
   defp sinks(_), do: error(:invalid_arguments, "No file requested")
 
-  defp download(client, files, sinks, deadline) do
+  defp download(client, files, sinks, opts, deadline) do
     Enum.reduce_while([{:metadata, "meta"}, {:rootfs, "root"}], {:ok, %{}, 0}, fn
       {part, key}, {:ok, acc, total} ->
         case {files[key], sinks[part]} do
@@ -42,7 +56,9 @@ defmodule Opsmaru.Incus.SimpleStreams.Download do
             {:cont, {:ok, acc, total}}
 
           {file, sink} ->
-            case file(client, file, sink, deadline, client.connection.max_stream_bytes - total) do
+            maximum = client.connection.max_stream_bytes - total
+
+            case part(client, part, files, file, sink, opts[:delta_base], deadline, maximum) do
               {:ok, value} -> {:cont, {:ok, Map.put(acc, part, value), total + value.size}}
               error -> {:halt, error}
             end
@@ -54,7 +70,28 @@ defmodule Opsmaru.Incus.SimpleStreams.Download do
     end
   end
 
-  defp file(client, file, sink, deadline, remaining_bytes) do
+  defp part(
+         client,
+         :rootfs,
+         files,
+         file,
+         sink,
+         %{fingerprint: fingerprint} = base,
+         deadline,
+         maximum
+       )
+       when not is_nil(client.delta_adapter) do
+    case files["root.delta-" <> fingerprint] do
+      nil -> file(client, file, sink, deadline, maximum)
+      delta -> Delta.run(client, base, delta, file, sink, deadline, maximum)
+    end
+  end
+
+  defp part(client, _, _, file, sink, _, deadline, maximum),
+    do: file(client, file, sink, deadline, maximum)
+
+  @doc false
+  def file(client, file, sink, deadline, remaining_bytes) do
     with :ok <- manifest(file, remaining_bytes),
          true <- now() < deadline do
       connection = %{
@@ -110,7 +147,8 @@ defmodule Opsmaru.Incus.SimpleStreams.Download do
     end
   end
 
-  defp manifest(file, maximum) do
+  @doc false
+  def manifest(file, maximum) do
     if is_integer(file.size) and file.size >= 0 and file.size <= maximum and
          is_binary(file.sha256) and Regex.match?(~r/\A[0-9a-fA-F]{64}\z/, file.sha256),
        do: :ok,

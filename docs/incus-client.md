@@ -30,8 +30,8 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `EventListener.open/2`, `add_handler/3`, `remove_handler/2`, `active?/1`, `send_event/2`, `wait/2`, `disconnect/1` | Explicit owner-bound callback listener; bounded capacity, sequential isolated callback workers, failure/lifetime cleanup and repeatable terminal result; local wait timeout does not disconnect or cancel work |
 | `Response.metadata_as_map/1`, `metadata_as_string_slice/1`, `metadata_as_operation/1`, `metadata_as_model/2` | Explicit native typed metadata extraction, including initialized-empty map/slice behavior for null, defaults and float64 metadata semantics; original response remains lossless |
 | `Tokens.certificate/1`, `cluster/1`, `encode/1` | Pure conversion of existing operation metadata and exact ordered JSON/base64 token formatting; tokens/addresses are privileged data, never provisioning or automatic connection targets |
-| `SimpleStreams.new!/3`, `refresh/1`, `images/1`, `image/2`, `aliases/1`, `alias/3`, `alias_architectures/3`, `files/2`, `image_file/3`, `unsupported/2` | Explicit verified HTTPS, host-supplied architecture and immutable catalog; pinned projections and checksummed binary sinks; delta adapter and full protocol parity remain open |
-| `OCI.new!/4`, `resolve/3`, `image/2`, `image_file/3`, `unsupported/2` | Explicit host-owned OCI adapter; passive construction, bounded immutable cache, pinned alias/image/unsupported projections and acknowledged binary output; no bundled host runner or installed conversion acceptance |
+| `SimpleStreams.new!/3`, `refresh/1`, `images/1`, `image/2`, `aliases/1`, `alias/3`, `alias_architectures/3`, `files/2`, `image_file/4`, `unsupported/2` | Explicit verified HTTPS, host-supplied architecture and immutable catalog; pinned projections and checksummed binary sinks; optional bounded host delta adapter; installed conversion and full protocol parity remain open |
+| `OCI.new!/4`, `resolve/3`, `image/2`, `image_file/4`, `unsupported/2` | Explicit host-owned OCI adapter; passive construction, bounded immutable cache, pinned alias/image/unsupported projections and acknowledged binary output; no bundled host runner or installed conversion acceptance |
 | `Session.exec/3`, `console/3`, `input/2`, `output/3`, `control/2`, `resize/3`, `signal/2`, `exit_status/1`, `close/1` | Native operation channels and control messages; local closure does not cancel Incus |
 | `DynamicConsole.open/4`, `attach/1`, `detach/2`, `control/2`, `resize/3`, `close/1` | One accepted console operation/control connection, repeated owner-bound data attachments; bounded capacity/lifetime and no POST replay |
 | `Copy.instance/4`, `snapshot/5`, `volume/6`, `move_volume/5` | Native writable configuration and explicit migration preparation; volume moves use one backend with destination `name`/`project`; accepted handles |
@@ -356,7 +356,7 @@ bounds image/alias expansion. Sinks acknowledge binary chunks with `:ok`. Parts
 are verified against SHA-256 and size at completion; a failure can leave partial
 host output, which the host must discard or reconcile. There is no automatic retry,
 HTTP downgrade, redirect following, `/dev/incus/sock` discovery or file creation.
-The approved optional delta adapter is still missing; downloads use full files.
+Without an optional host delta adapter/base, downloads use full files. Conversion failure never falls back or replays delivered bytes.
 The four HTTP/connection/disconnect conveniences and complete cache/error variants
 remain open. These fixture results do not establish installed converter or
 real-backend acceptance.
@@ -375,3 +375,30 @@ periodic shared-cache refresh; removing a file fails subsequent use locally rath
 than crashing other TLS connections. Construction stays passive, and peer identity,
 validity, configured pin and client certificate/private-key authentication checks
 remain enabled.
+
+
+Optional delta conversion is explicitly supplied by the host:
+
+```elixir
+stream = Opsmaru.Incus.SimpleStreams.new!(https_connection, context,
+  architecture: "aarch64",
+  delta_adapter: MyHost.DeltaConverter,
+  delta_config: private_converter_ref)
+{:ok, catalog} = Opsmaru.Incus.SimpleStreams.refresh(stream)
+{:ok, files} = Opsmaru.Incus.SimpleStreams.image_file(catalog, fingerprint,
+  %{rootfs: rootfs_sink},
+  delta_base: %{fingerprint: old_fingerprint, source: host_owned_base_ref})
+```
+
+`MyHost.DeltaConverter` implements `SimpleStreams.DeltaAdapter`. Its `convert/3`
+receives a unique `call_id`, absolute `deadline`, verified connection/context,
+opaque host base source and native delta/rootfs manifests. Call
+`request.download_delta.(delta_sink)` synchronously once to receive checksum-
+verified delta bytes, then emit converted rootfs chunks through the acknowledged
+emitter. Root output must match the native size and SHA-256. Repeated/reentrant
+or foreign calls and failed acknowledgements reject further output. Delta plus
+converted-output bytes share the remaining aggregate stream budget. Resources
+are host-owned; `cleanup/3` receives the call identity and completion/failure/
+deadline/owner-loss outcome under a bounded cleanup budget. No xdelta command,
+conversion files or base-image lookup is supplied by Opsmaru. Installed actual
+conversion, process/file cleanup and platform acceptance remain unverified.

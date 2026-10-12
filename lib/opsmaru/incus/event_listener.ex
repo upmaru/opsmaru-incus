@@ -7,7 +7,7 @@ defmodule Opsmaru.Incus.EventListener do
   No listener is created by loading the application or constructing a client.
   """
   use GenServer
-  alias Opsmaru.Incus.{Error, Events, Model, WebSocket}
+  alias Opsmaru.Incus.{Error, Events, Model, Transport, WebSocket}
 
   @failures [
     :deadline,
@@ -73,6 +73,8 @@ defmodule Opsmaru.Incus.EventListener do
 
   @impl true
   def init({client, opts, owner, ref, result}) do
+    Transport.watch_owner(owner)
+
     case Events.subscribe(client, opts) do
       {:ok, channel} ->
         send(self(), :read)

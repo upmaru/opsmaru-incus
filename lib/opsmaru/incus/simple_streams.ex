@@ -6,16 +6,19 @@ defmodule Opsmaru.Incus.SimpleStreams do
 
   Catalog responses share one request deadline and aggregate byte/entry bounds.
   There is no disk cache, socket discovery, HTTP downgrade or automatic retry.
-  Image downloads and the optional delta adapter are separate coverage gates.
+  An optional host delta adapter owns conversion and temporary state; installed
+  conversion remains a separate acceptance gate.
   """
   alias Opsmaru.Context
   alias Opsmaru.Incus.{Connection, Error, Transport}
   alias Opsmaru.Incus.SimpleStreams.{Catalog, Download}
   @enforce_keys [:connection, :context, :architecture]
-  defstruct [:connection, :context, :architecture, :catalog]
+  defstruct [:connection, :context, :architecture, :catalog, :delta_adapter, :delta_config]
 
   def new!(%Connection{transport: :https} = connection, %Context{} = context, opts) do
-    unless Keyword.keyword?(opts) and Keyword.keys(opts) == [:architecture] and
+    unless Keyword.keyword?(opts) and
+             Keyword.keys(opts) -- [:architecture, :delta_adapter, :delta_config] == [] and
+             length(opts) == length(Enum.uniq(Keyword.keys(opts))) and
              is_nil(connection.project) and is_nil(connection.member) and
              not connection.require_authenticated,
            do:
@@ -23,7 +26,15 @@ defmodule Opsmaru.Incus.SimpleStreams do
 
     case Catalog.architecture(opts[:architecture]) do
       {:ok, architecture} ->
-        %__MODULE__{connection: connection, context: context, architecture: architecture}
+        adapter = delta_adapter!(opts)
+
+        %__MODULE__{
+          connection: connection,
+          context: context,
+          architecture: architecture,
+          delta_adapter: adapter,
+          delta_config: opts[:delta_config]
+        }
 
       _ ->
         raise ArgumentError, "Unsupported SimpleStreams architecture"
@@ -31,6 +42,23 @@ defmodule Opsmaru.Incus.SimpleStreams do
   end
 
   def new!(_, _, _), do: raise(ArgumentError, "SimpleStreams requires explicit HTTPS")
+
+  defp delta_adapter!(opts) do
+    case {opts[:delta_adapter], Keyword.has_key?(opts, :delta_config)} do
+      {nil, false} ->
+        nil
+
+      {adapter, true} when is_atom(adapter) and not is_nil(adapter) ->
+        unless Code.ensure_loaded?(adapter) and function_exported?(adapter, :convert, 3) and
+                 function_exported?(adapter, :cleanup, 3),
+               do: raise(ArgumentError, "Delta conversion requires a complete host adapter")
+
+        adapter
+
+      _ ->
+        raise ArgumentError, "Delta conversion requires explicit adapter configuration"
+    end
+  end
 
   def refresh(client) do
     with :ok <- authorize(client) do
@@ -101,8 +129,8 @@ defmodule Opsmaru.Incus.SimpleStreams do
   end
 
   @doc "Download selected image parts through acknowledged host sinks; verify SHA-256 and sizes."
-  def image_file(client, fingerprint, sinks),
-    do: Download.run(client, fingerprint, sinks)
+  def image_file(client, fingerprint, sinks, opts \\ []),
+    do: Download.run(client, fingerprint, sinks, opts)
 
   def unsupported(client, method) do
     with :ok <- authorize(client) do

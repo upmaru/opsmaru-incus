@@ -82,8 +82,8 @@ requires the same value, including its x86_64 Darwin fallback. Metadata has an
 immutable in-memory cache, not a shared/on-disk cache. Catalog entry and alias
 expansion limits are explicit and failure is visible.
 
-The optional host delta adapter is approved but not implemented. The four
-SimpleStreams HTTP/connection/disconnect helpers remain missing. Delta conversion,
+The optional host delta adapter is now fixture-verified: explicit base/source and converter, verified delta input, size/SHA-256-verified output, unique call identity, absolute deadlines, sticky emitter rejection and bounded cleanup. No converter or temporary files are bundled. The four
+SimpleStreams HTTP/connection/disconnect helpers remain missing. Actual installed delta conversion,
 cache/fallback variants, exhaustive malformed metadata and any installed converter
 acceptance remain open. Full-file success must not be advertised as complete
 SimpleStreams support or used to close task 3.9. Task 4.3 remains separate.

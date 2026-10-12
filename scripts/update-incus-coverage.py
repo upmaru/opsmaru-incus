@@ -94,7 +94,7 @@ for entry in inv['entries']:
  if entry['name'] in helpers and entry['name'].startswith(('ProtocolOCI.', 'ConnectOCI')):
   impl,evidence=helpers[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified.')
  elif entry['name'] in helpers and entry['name'].startswith(('ProtocolSimpleStreams.', 'ConnectSimpleStreams')):
-  impl,evidence=helpers[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified.')
+  impl,evidence=helpers[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified.')
  elif entry['kind'] == 'method' and entry['name'].startswith(('ProtocolOCI.', 'ProtocolSimpleStreams.')):
   pass # Native Incus methods do not establish OCI or SimpleStreams implementation parity.
  elif entry['package']=='shared/api' and entry['kind']=='type' and name in ['ConfigMap','DevicesMap']:
