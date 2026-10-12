@@ -490,3 +490,6 @@ ownership and cleanup require implementation evidence; installed adapter,
 real-backend and Macus hardware acceptance remain separately recorded. All four
 changes passed strict OpenSpec validation after the artifact revision. Foundation
 3.9 and 4.3 remain unchecked; this correction does not complete either gate.
+
+The fresh independent Git consumer passed at cleanup runtime
+`81460d24703ec8efa4eb4db3fbd80210560d8717`; the captured lock, default pin and embedding example now record this verified revision.
