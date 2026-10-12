@@ -769,3 +769,17 @@ must verify the published correction. Foundation remains 21/22: 3.9 open,
 4.3 independently passed; installed converters, gateway and Macus integration/
 hardware acceptance remain separate. Acceptance commit macOS/Linux push and
 PR CI passed (runs `38218237414` and `38218242513`).
+
+
+The fresh independent Git consumer passed at corrected runtime
+`27c2f87471e1033572734763524d7a4158340652`; its captured lock, default revision
+and embedding example now pin that immutable source. The finalized runner
+also passed the complete isolated real v6 transport matrix at that exact
+published runtime and cleaned only v6 resources.
+
+Greptile follow-up on `27c2f87` was rejected before review:
+"you've used all 50 trial reviews for this account". This is an account-access
+gate, not a successful review or an unfixed finding. The last completed full
+review remains `8283176e-90e3-4186-bfd5-7b7c55fbbf06` (3/5, both P1 findings
+reproduced and fixed); restore review access for current-head confirmation.
+Do not merge while 3.9 and current review remain open.

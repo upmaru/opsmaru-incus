@@ -100,3 +100,15 @@ The strengthened preflight also passed a complete isolated v5 run after Greptile
 review. Three private divergent-backend entrypoint regressions verify rejection
 before foreign mutation. These remain fixture evidence; the v5 binary, operation
 and event assertions ran against actual Incus independently.
+
+
+The finalized runner passed again at immutable published runtime
+`27c2f87471e1033572734763524d7a4158340652`, in project
+`opsmaru-acceptance-20261012-direct-v6`, with matching backend identities, dual
+project absence and the cross-transport run marker verified before volume work.
+Successful snapshot operation IDs were
+`/1.0/operations/ed60799a-52ad-4530-a33b-82b0c331d251` (Unix) and
+`/1.0/operations/955f31b5-19d6-4d11-bac9-ef9d4b22efdb` (HTTPS).
+Both 140,000-byte binary transfers and operation-event/completion assertions
+passed, and v6 resources were explicitly cleaned. The separate Macus and
+installed-converter gates are unchanged.
