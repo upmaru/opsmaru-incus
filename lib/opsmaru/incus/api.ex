@@ -17,10 +17,10 @@ defmodule Opsmaru.Incus.API do
            Opsmaru.Incus.raw_query(client, method["verb"], path, Keyword.merge(opts, body: body)) do
       case decode(method, response, path) do
         {:error, %Error{} = error} ->
-          {:error, error}
+          decode_error(method, response, error.kind)
 
         {:error, kind} ->
-          {:error, %Error{kind: kind, response: response, operation: response.operation}}
+          decode_error(method, response, kind)
 
         result ->
           result
@@ -29,6 +29,11 @@ defmodule Opsmaru.Incus.API do
       {:error, %Error{} = error} -> {:error, error}
       {:error, kind} -> {:error, %Error{kind: kind}}
     end
+  end
+
+  defp decode_error(method, response, kind) do
+    kind = if method["verb"] in ["GET", "HEAD"], do: kind, else: :uncertain
+    {:error, %Error{kind: kind, response: response, operation: response.operation}}
   end
 
   defp fetch(name) do
@@ -246,9 +251,12 @@ defmodule Opsmaru.Incus.API do
   end
 
   defp decode(%{"result" => "operation"}, response, _) do
-    if response.type == "async" and response.operation != "" do
-      with {:ok, model} <- Model.decode("Operation", response.metadata),
-           do: {:ok, %{response | metadata: model}}
+    if response.type == "async" and is_binary(response.operation) and response.operation != "" and
+         is_map(response.metadata) do
+      case Model.decode("Operation", response.metadata) do
+        {:ok, model} -> {:ok, %{response | metadata: model}}
+        _ -> {:error, %Error{kind: :uncertain, response: response, operation: response.operation}}
+      end
     else
       {:error, %Error{kind: :uncertain, response: response, operation: response.operation}}
     end

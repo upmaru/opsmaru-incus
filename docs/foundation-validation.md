@@ -658,3 +658,26 @@ adapter cases passed ten repetitions; strict OpenSpec validation remains green.
 
 The fresh independent consumer passed at settled callback runtime
 `b9cd50fa2fc5f0e9b8026ae00bce722ef5338fb0`; its captured lock, default revision and embedding example now pin that verified source.
+
+
+## Accepted-response decode uncertainty — 2026-10-12
+
+Full-branch Greptile run `e400d23c-2b0c-4038-ac14-3774b37e61d0` reviewed
+`e71335fc2d5188a59619451e60d9c6168ec6fccb`, returned 4/5, and confirmed adapter
+corrections. Its one P1 accepted-mutation finding reproduced: malformed async
+operation metadata returned invalid_model, and null metadata returned success.
+Three permanent cases now return uncertain while preserving raw response,
+connection, identity and exact native operation URL. A synchronous successful
+bucket-key mutation with invalid typed metadata also returns uncertain. Typed
+decode failures after any mutation cannot masquerade as local rejection; native
+backend errors and pre-dispatch validation retain their original contracts.
+Every regression observes exactly one POST and no replay.
+
+All 602 library tests, strict Credo, canonical checks and actual precommit passed
+locally with a disposable database; all 275 native resource-method/model cases
+passed in focused verification before the final synchronous case was added.
+Both runtime and consumer-pin push/PR CI at `b9cd50f`/`e71335f` passed macOS/Linux
+(runs `38213464296`, `38213468987`, `38213764939`, `38213768452`). Those platform
+results precede this four-case uncertainty correction; fresh consumer, CI and
+Greptile must verify the next published revision. Foundation 3.9/4.3 and separate
+installed/Macus/gateway acceptance remain open.

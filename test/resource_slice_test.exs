@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.ResourceSliceTest do
   use ExUnit.Case, async: false
   alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Model}
+  alias Opsmaru.Incus.{Connection, Error, Model, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, WireComparison}
   @definitions Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
   @driver Path.expand("../../.integration/incus-typed-driver", __DIR__)
@@ -28,6 +28,90 @@ defmodule Opsmaru.Incus.ResourceSliceTest do
       root: root,
       context: Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end)
     }
+  end
+
+  for metadata <- [%{"id" => "accepted", "status_code" => "wrong"}, ["wrong"], nil] do
+    test "accepted mutation with malformed metadata #{inspect(metadata)} remains uncertain", %{
+      root: root,
+      context: context
+    } do
+      metadata = unquote(Macro.escape(metadata))
+
+      fixture =
+        start_supervised!(
+          {HTTPFixture,
+           transport: :gen_tcp,
+           path: Path.join(root, "bad-accepted"),
+           handler: fn _ ->
+             %{
+               status: 202,
+               body: %{
+                 "type" => "async",
+                 "status_code" => 100,
+                 "operation" => "/1.0/operations/accepted",
+                 "metadata" => metadata
+               }
+             }
+           end}
+        )
+
+      connection = Connection.unix!(HTTPFixture.endpoint(fixture).socket, owner: :fixture)
+
+      client = %Incus{
+        connection: connection,
+        context: context,
+        server: %Server{api_extensions: []}
+      }
+
+      assert {:error,
+              %Error{kind: :uncertain, operation: "/1.0/operations/accepted", response: response}} =
+               Incus.call(client, "CreateInstance", %{},
+                 body: %{"name" => "fixture", "source" => %{"type" => "none"}}
+               )
+
+      assert response.type == "async"
+      assert response.operation == "/1.0/operations/accepted"
+      assert response.metadata == metadata
+      assert response.connection == connection
+      assert response.identity == context.identity
+      assert [%{method: "POST"}] = HTTPFixture.requests(fixture)
+    end
+  end
+
+  test "successful synchronous mutation with invalid typed metadata is uncertain, not rejected",
+       %{root: root, context: context} do
+    fixture =
+      start_supervised!(
+        {HTTPFixture,
+         transport: :gen_tcp,
+         path: Path.join(root, "bad-sync-mutation"),
+         handler: fn _ ->
+           %{
+             status: 200,
+             body: %{"type" => "sync", "status_code" => 200, "metadata" => %{"name" => 42}}
+           }
+         end}
+      )
+
+    connection = Connection.unix!(HTTPFixture.endpoint(fixture).socket, owner: :fixture)
+
+    client = %Incus{
+      connection: connection,
+      context: context,
+      server: %Server{api_extensions: ["storage_buckets"]}
+    }
+
+    assert {:error, %Error{kind: :uncertain, response: response}} =
+             Incus.call(
+               client,
+               "CreateStoragePoolBucketKey",
+               %{"poolName" => "pool", "bucketName" => "bucket"},
+               body: %{"name" => "fixture", "role" => "admin"}
+             )
+
+    assert response.metadata == %{"name" => 42}
+    assert response.identity == context.identity
+    assert [%{method: "POST"}] = HTTPFixture.requests(fixture)
   end
 
   for method <- @definitions do
