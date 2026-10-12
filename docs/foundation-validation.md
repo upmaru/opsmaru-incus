@@ -622,3 +622,6 @@ other remaining client/model matrices stay visible in the closure ledger.
 Canonical checks and actual mix precommit also passed after the delta slice,
 using a disposable database stopped and removed afterward. All four OpenSpec
 changes passed strict validation, and all 28 SimpleStreams cases passed five repeated runs.
+
+The fresh independent Git consumer passed at delta/listener runtime
+`525c3a788a0f5817fa81a250aa70c6ec86995d5c`; its captured lock, default pin and embedding example now record that verified source.
