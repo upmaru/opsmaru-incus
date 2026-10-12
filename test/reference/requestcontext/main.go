@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	incus "github.com/lxc/incus/v7/client"
+	localtls "github.com/lxc/incus/v7/shared/tls"
 	"os"
 	"time"
 )
@@ -23,6 +24,28 @@ func main() {
 	}
 	if err := json.NewDecoder(os.Stdin).Decode(&in); err != nil {
 		panic(err)
+	}
+	if in.Mode == "verify_fixture" {
+		config, err := localtls.GetTLSConfigMem(in.Cert, in.Key, in.CA, "", false)
+		if err == nil {
+			block, _ := pem.Decode([]byte(in.Cert))
+			if block == nil {
+				panic("missing fixture leaf")
+			}
+			leaf, parseErr := x509.ParseCertificate(block.Bytes)
+			err = parseErr
+			if err == nil {
+				_, err = leaf.Verify(x509.VerifyOptions{Roots: config.RootCAs, DNSName: "localhost"})
+			}
+		}
+		out := map[string]any{"ok": err == nil}
+		if err != nil {
+			out["error"] = err.Error()
+		}
+		if err := json.NewEncoder(os.Stdout).Encode(out); err != nil {
+			panic(err)
+		}
+		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(in.Timeout)*time.Millisecond)
 	defer cancel()
@@ -75,7 +98,18 @@ func main() {
 				diagnostic["fixture_leaf_sha256"] = fmt.Sprintf("%x", sha256.Sum256(block.Bytes))
 				leaf, parseErr := x509.ParseCertificate(block.Bytes)
 				roots := x509.NewCertPool()
-				roots.AppendCertsFromPEM([]byte(in.CA))
+				diagnostic["fixture_ca_loaded"] = roots.AppendCertsFromPEM([]byte(in.CA))
+				caBlock, _ := pem.Decode([]byte(in.CA))
+				if caBlock != nil {
+					ca, caErr := x509.ParseCertificate(caBlock.Bytes)
+					if caErr != nil {
+						diagnostic["fixture_ca_parse_error"] = caErr.Error()
+					} else if parseErr == nil {
+						if signatureErr := leaf.CheckSignatureFrom(ca); signatureErr != nil {
+							diagnostic["fixture_signature_error"] = signatureErr.Error()
+						}
+					}
+				}
 				if parseErr == nil {
 					_, checkErr := leaf.Verify(x509.VerifyOptions{Roots: roots, DNSName: "localhost"})
 					if checkErr != nil {

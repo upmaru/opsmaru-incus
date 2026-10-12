@@ -8,6 +8,15 @@ defmodule Opsmaru.TestSupport.TLSIdentity do
     cakey = Path.join(root, name <> "-ca.key")
     csr = Path.join(root, name <> ".csr")
     extensions = Path.join(root, name <> ".extensions")
+    configuration = Path.join(root, name <> ".configuration")
+
+    # Keep ambient openssl.cnf extensions out of disposable identities. Some
+    # installations enable v3_ca by default; adding those extensions again can
+    # produce certificates rejected by strict native parsers.
+    File.write!(
+      configuration,
+      "[req]\ndistinguished_name=dn\n[dn]\n[ca]\nbasicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign,cRLSign\nsubjectKeyIdentifier=hash\n"
+    )
 
     run!([
       "req",
@@ -24,10 +33,10 @@ defmodule Opsmaru.TestSupport.TLSIdentity do
       "1",
       "-subj",
       "/CN=#{name}-fixture-ca",
-      "-addext",
-      "basicConstraints=critical,CA:TRUE",
-      "-addext",
-      "keyUsage=critical,keyCertSign,cRLSign",
+      "-config",
+      configuration,
+      "-extensions",
+      "ca",
       "-keyout",
       cakey,
       "-out",
@@ -47,6 +56,8 @@ defmodule Opsmaru.TestSupport.TLSIdentity do
       "-nodes",
       "-subj",
       "/CN=#{hostname}",
+      "-config",
+      configuration,
       "-keyout",
       keyfile,
       "-out",
@@ -78,7 +89,9 @@ defmodule Opsmaru.TestSupport.TLSIdentity do
       certfile
     ])
 
-    for path <- [certfile, keyfile, cafile, cakey, csr, extensions], do: File.chmod!(path, 0o600)
+    for path <- [certfile, keyfile, cafile, cakey, csr, extensions, configuration],
+        do: File.chmod!(path, 0o600)
+
     [{:Certificate, der, _}] = :public_key.pem_decode(File.read!(certfile))
     %{certfile: certfile, keyfile: keyfile, cafile: cafile, der: der}
   end

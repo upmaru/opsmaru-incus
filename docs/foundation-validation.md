@@ -872,3 +872,13 @@ However macOS CI still failed its two native context HTTPS positive cases
 now report only public leaf fingerprints and offline verification errors to
 distinguish certificate generation from served-chain mismatch. This remains
 an unresolved platform gate; no passing-CI or complete-client claim is made.
+
+
+The native CA failure is reproduced with disposable ambient OpenSSL v3_ca
+defaults: the prior generator emitted duplicate basicConstraints/keyUsage
+extensions, and unchanged native verification returned unknown authority.
+Explicit request/CA configuration now emits unique extensions and verifies.
+A permanent process-isolated ambient-default regression asserts unique OIDs,
+SHA-256 signatures and native CA/hostname verification. Stock LibreSSL focused
+20-case verification and strict Credo pass; no client verification or SDK patch
+is introduced. Updated full/platform checks remain required.
