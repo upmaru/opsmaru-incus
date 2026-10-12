@@ -98,6 +98,7 @@ defmodule Opsmaru.Incus.WebSocket do
               owner: owner,
               ref: ref,
               monitor: Process.monitor(owner),
+              deadline: now() + connection.stream_timeout,
               timer: Process.send_after(self(), :lifetime, connection.stream_timeout),
               queue: :queue.new(),
               queued: 0,
@@ -178,10 +179,10 @@ defmodule Opsmaru.Incus.WebSocket do
          state.written + size <= state.connection.max_stream_bytes do
       case encode(state, frame) do
         {:ok, state} -> {:reply, :ok, %{state | written: state.written + size}}
-        _ -> {:stop, :normal, {:error, %Error{kind: :channel_io}}, state}
+        {:error, kind} -> stop_error_reply(state, kind)
       end
     else
-      {:stop, :normal, {:error, %Error{kind: :frame_limit}}, state}
+      stop_error_reply(state, :frame_limit)
     end
   end
 
@@ -214,8 +215,11 @@ defmodule Opsmaru.Incus.WebSocket do
                 error -> {:halt, error}
               end
 
-            {:done, _}, {:ok, state} ->
-              {:cont, {:ok, remote_closed(state)}}
+            {:done, _}, {:ok, %{closed: true} = state} ->
+              {:cont, {:ok, state}}
+
+            {:done, _}, _ ->
+              {:halt, {:error, :channel_io}}
 
             _, acc ->
               {:cont, acc}
@@ -239,15 +243,10 @@ defmodule Opsmaru.Incus.WebSocket do
 
       {:error, conn, _, _} ->
         Mint.HTTP.close(conn)
-        state = remote_closed(%{state | conn: conn})
 
-        if state.pending do
-          {from, _, timer} = state.pending
-          Process.cancel_timer(timer)
-          GenServer.reply(from, :eof)
-        end
-
-        {:noreply, %{state | pending: nil}}
+        if state.closed,
+          do: {:noreply, deliver(%{state | conn: conn})},
+          else: stop_error(%{state | conn: conn}, :channel_io)
     end
   end
 
@@ -275,7 +274,7 @@ defmodule Opsmaru.Incus.WebSocket do
   defp receive_frame({:ping, payload}, {:ok, state}) do
     case encode(state, {:pong, payload}) do
       {:ok, state} -> {:cont, {:ok, state}}
-      _ -> {:halt, {:error, :channel_io}}
+      {:error, kind} -> {:halt, {:error, kind}}
     end
   end
 
@@ -305,9 +304,32 @@ defmodule Opsmaru.Incus.WebSocket do
   end
 
   defp encode(state, frame) do
-    with {:ok, websocket, bytes} <- Mint.WebSocket.encode(state.websocket, frame),
-         {:ok, conn} <- Mint.WebSocket.stream_request_body(state.conn, state.request, bytes),
-         do: {:ok, %{state | websocket: websocket, conn: conn}}
+    with true <- now() < state.deadline,
+         {:ok, websocket, bytes} <- Mint.WebSocket.encode(state.websocket, frame),
+         :ok <- write_budget(state),
+         {:ok, conn} <- Mint.WebSocket.stream_request_body(state.conn, state.request, bytes) do
+      {:ok, %{state | websocket: websocket, conn: conn}}
+    else
+      false -> {:error, :deadline}
+      {:error, :deadline} -> {:error, :deadline}
+      {:error, _, %Mint.TransportError{reason: :timeout}} -> {:error, :deadline}
+      _ -> {:error, :channel_io}
+    end
+  end
+
+  defp write_budget(state) do
+    remaining = state.deadline - now()
+
+    if remaining > 0 do
+      options = [send_timeout: min(state.connection.timeout, remaining), send_timeout_close: true]
+      socket = Mint.HTTP.get_socket(state.conn)
+
+      if state.connection.transport == :unix,
+        do: :inet.setopts(socket, options),
+        else: :ssl.setopts(socket, options)
+    else
+      {:error, :deadline}
+    end
   end
 
   defp frame_size({kind, bytes}) when kind in [:text, :binary, :ping, :pong] and is_binary(bytes),
@@ -347,6 +369,11 @@ defmodule Opsmaru.Incus.WebSocket do
     send(state.owner, {state.ref, :error, error})
     if state.pending, do: GenServer.reply(elem(state.pending, 0), {:error, error})
     {:stop, :normal, state}
+  end
+
+  defp stop_error_reply(state, kind) do
+    {:stop, :normal, state} = stop_error(state, kind)
+    {:stop, :normal, {:error, %Error{kind: kind}}, state}
   end
 
   @impl true

@@ -301,12 +301,27 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
       cm = Process.monitor(pid)
       am = Process.monitor(channel.pid)
       send(control_peer, {:emit, closure})
-      assert_receive {:dynamic_console, ^pid, {^ref, :eof, ^operation}}, 1000
+
+      assert_control_closure(closure, pid, ref, operation)
+
       assert_receive {:DOWN, ^cm, :process, _, :normal}, 1000
       assert_receive {:DOWN, ^am, :process, _, :normal}, 1000
       assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
       refute Enum.any?(HTTPFixture.requests(fixture), &(&1.method == "DELETE"))
     end
+  end
+
+  defp assert_control_closure(:close_frame, pid, ref, operation) do
+    assert_receive {:dynamic_console, ^pid, {^ref, :eof, ^operation}}, 1000
+  end
+
+  defp assert_control_closure(:disconnect, pid, ref, operation) do
+    accepted_response = operation.response
+
+    assert_receive {:dynamic_console, ^pid,
+                    {^ref, :error,
+                     %Error{kind: :channel_io, response: %{operation: ^accepted_response}}}},
+                   1000
   end
 
   test "owner exit closes control and attachments without cancelling the backend", %{

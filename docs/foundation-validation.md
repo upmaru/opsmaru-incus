@@ -418,3 +418,39 @@ The fresh consumer passed again at
 fix. Its captured lock, default revision and embedding example now pin that
 source. Greptile's earlier pin-only review at `d382213` returned 5/5 with zero
 findings; that review did not substitute for complete corrected-runtime review.
+
+
+The full-branch follow-up at `0bf88cd2581d6ecd46cd9461b2c9ddbee5c1f4d6`
+(run `00fc9036-2699-42b9-859c-06b1420b6a51`) confirmed the preceding corrections
+and returned 3/5 with two further P1 WebSocket findings. Six permanent regressions
+reproduced both: blocked Unix/TLS writes lasted about 1.5 seconds despite a
+100 ms lifetime; transport loss returned clean EOF to pending readers and
+successful listener/migration completion. Writes now use the remaining stream
+budget, including pong/close frames, and transport failure emits channel_io.
+Native close-frame EOF remains drainable. Console failure retains its accepted
+operation, and migration failure retains both accepted handles without DELETE
+or POST replay. All 551 library tests, strict Credo and isolated canonical
+checks/actual precommit passed locally after correction.
+
+Creating draft PR #1 exposed the first PR-event consumer failure: the workflow
+used the synthetic merge SHA, absent from normal dependency fetches. Commit
+`ce0c4920b09dd7aff25bccc5b9f3feca1242d2e1` selects the published PR head SHA and
+source repository (including fork provenance), while push events retain their
+own SHA. Push and PR CI both passed macOS/Linux afterward:
+https://github.com/upmaru/opsmaru/actions/runs/38203537209 and
+https://github.com/upmaru/opsmaru/actions/runs/38203540111. These runs have 545
+tests and precede the subsequent WebSocket correction's platform acceptance.
+
+The user explicitly opted into starting installed Macus for isolated real Incus
+testing on 2026-10-12 and requires foundation 3.9 and 4.3 before merge. The signed
+installed Macus binary started a fresh private appliance with separate Incus
+configuration and a foreground daemon; no default runtime or Macus source was
+modified. The backend reports Incus 7.0.1. Direct Opsmaru preflight passed Unix
+and native HTTPS discovery plus typed profile inspection using a dedicated
+short-lived client certificate and exact native server pin. TLS still verifies
+the server hostname; a wrong hostname was rejected. A process-local Erlang
+inetrc supplies the isolated guest's certificate hostname without host DNS
+changes. Opsmaru's Application, Endpoint and Repo remained stopped. This is
+real inspection/TLS preflight only: task 4.3 remains open for mutation, operation
+and stream acceptance; full Macus integration/installed hardware acceptance and
+gateway acceptance remain separate. No real workload was booted by preflight.

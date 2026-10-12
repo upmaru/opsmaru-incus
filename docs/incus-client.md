@@ -173,12 +173,18 @@ the host was not waiting in `WebSocket.recv/2`. Unknown references are ignored;
 control-channel termination releases remaining local attachments and data
 failure does not automatically cancel the backend operation.
 
-Remote WebSocket closure emits `{channel.ref, :eof}` once to its owner while
+Remote WebSocket close frames emit `{channel.ref, :eof}` once to their owner while
 queued tail frames remain available through `recv/2`. Dynamic consoles forward
 this as `{:dynamic_console, console.pid, {channel.ref, :eof, console.operation}}`.
 Control EOF promptly closes the local console and its data attachments. Data
 EOF remains drainable until detach; neither case cancels the accepted backend
 operation.
+
+A transport loss without a WebSocket close frame terminates with
+`:channel_io`, rather than implying clean EOF or successful event/migration
+completion. All writes, including pong and close frames, use the lesser of the
+connection timeout and remaining stream lifetime. Local cleanup still neither
+cancels nor replays an accepted backend operation.
 
 Dynamic-console wire comparisons use no project/member: the pinned operation
 WebSocket helper omits those parameters. Explicit selection is independently
