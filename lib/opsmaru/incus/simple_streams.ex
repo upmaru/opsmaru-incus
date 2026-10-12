@@ -10,7 +10,7 @@ defmodule Opsmaru.Incus.SimpleStreams do
   conversion remains a separate acceptance gate.
   """
   alias Opsmaru.Context
-  alias Opsmaru.Incus.{Connection, Error, HTTP, Transport}
+  alias Opsmaru.Incus.{Connection, Discovery, Error, HTTP, Transport}
   alias Opsmaru.Incus.SimpleStreams.{Catalog, Download}
   @enforce_keys [:connection, :context, :architecture]
   defstruct [:connection, :context, :architecture, :catalog, :delta_adapter, :delta_config]
@@ -46,6 +46,24 @@ defmodule Opsmaru.Incus.SimpleStreams do
   @doc "Native no-op disconnect; the immutable catalog owns no pool, files or conversion worker."
   def disconnect(%__MODULE__{}), do: :ok
 
+  @doc "Native origin metadata without network or credential-file access. Public PEM is not inferred from trust references."
+  def connection_info(client) do
+    with :ok <- authorize(client) do
+      url = URI.to_string(client.connection.address)
+
+      {:ok,
+       %Discovery{
+         certificate: "",
+         protocol: "simplestreams",
+         url: url,
+         addresses: [url],
+         project: "",
+         target: "",
+         socket_path: ""
+       }}
+    end
+  end
+
   @doc "Immutable HTTP handle confined to this verified origin; construction performs no I/O."
   def http_client(%__MODULE__{} = client), do: HTTP.client(client)
 
@@ -73,9 +91,14 @@ defmodule Opsmaru.Incus.SimpleStreams do
 
   def refresh(client) do
     with :ok <- authorize(client) do
-      Transport.bounded(client.connection.timeout, "GET", fn ->
-        refresh_catalog(client)
-      end)
+      Transport.bounded(
+        client.connection.timeout,
+        "GET",
+        fn ->
+          refresh_catalog(client)
+        end,
+        client.connection.request_context
+      )
     end
   end
 

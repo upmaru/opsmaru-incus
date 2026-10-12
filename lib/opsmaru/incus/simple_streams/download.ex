@@ -9,9 +9,14 @@ defmodule Opsmaru.Incus.SimpleStreams.Download do
          {:ok, image} <- SimpleStreams.image(client, fingerprint),
          {:ok, files} <- SimpleStreams.files(client, image.data["fingerprint"]) do
       result =
-        Transport.bounded(client.connection.stream_timeout, "GET", fn ->
-          download(client, files, sinks, opts, now() + client.connection.stream_timeout)
-        end)
+        Transport.bounded(
+          client.connection.stream_timeout,
+          "GET",
+          fn ->
+            download(client, files, sinks, opts, now() + client.connection.stream_timeout)
+          end,
+          client.connection.request_context
+        )
 
       case result do
         {:error, %Error{} = error} ->

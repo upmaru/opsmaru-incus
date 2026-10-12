@@ -21,3 +21,11 @@ fixture driver in `test/reference/simplestreams` imports unchanged v7.0.1 code;
 it exercises a private TLS fixture only and does not run image conversion or
 local socket discovery. Opsmaru's explicit HTTPS/host-delta boundary differences
 are recorded in the foundation OpenSpec design and task 3.9 closure ledger.
+
+
+`priv/incus/constants.json` contains all 188 exported API constant values from
+the same unchanged reference. The generated fixture-only driver in
+`test/reference/constants` accesses official exports directly;
+`scripts/check-incus-constants.py` regenerates/verifies those declarations and
+values. Constant names/values are model data, not implementations or activation
+of authentication, scheduling, storage or other named features.

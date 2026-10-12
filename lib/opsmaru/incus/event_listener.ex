@@ -73,7 +73,7 @@ defmodule Opsmaru.Incus.EventListener do
 
   @impl true
   def init({client, opts, owner, ref, result}) do
-    Transport.watch_owner(owner)
+    Transport.watch_owner(owner, client.connection.request_context)
 
     case Events.subscribe(client, opts) do
       {:ok, channel} ->

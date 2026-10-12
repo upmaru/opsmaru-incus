@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.Transport do
   @moduledoc false
-  alias Opsmaru.Incus.{Connection, Error, WorkScope}
+  alias Opsmaru.Incus.{Connection, Error, RequestContext, WorkScope}
 
   @doc false
   def request_headers(%Connection{require_authenticated: true}, headers),
@@ -10,22 +10,34 @@ defmodule Opsmaru.Incus.Transport do
 
   # One passive connection per request. No pool/global remote/reconnect/retry.
   def request(connection, method, path, headers, body) do
-    bounded(connection.timeout, method, fn ->
-      do_request(connection, method, path, headers, body)
-    end)
+    bounded(
+      connection.timeout,
+      method,
+      fn ->
+        do_request(connection, method, path, headers, body)
+      end,
+      connection.request_context
+    )
   end
 
   @doc false
-  def bounded(timeout, method, fun) do
+  def bounded(timeout, method, fun, context \\ nil) do
+    case RequestContext.check(context) do
+      :ok -> bounded_active(timeout, method, fun, context)
+      {:error, kind} -> {:error, %Error{kind: kind}}
+    end
+  end
+
+  defp bounded_active(timeout, method, fun, context) do
     owner = self()
     ref = make_ref()
-    deadline = now() + timeout
+    deadline = RequestContext.deadline(context, now() + timeout)
     scope = WorkScope.current()
 
     {worker, monitor} =
       spawn_monitor(fn ->
         worker = self()
-        spawn(fn -> guard(owner, worker, deadline) end)
+        spawn(fn -> guard(owner, worker, deadline, context) end)
 
         receive do
           {^ref, :start} ->
@@ -54,7 +66,12 @@ defmodule Opsmaru.Incus.Transport do
         result
 
       {:DOWN, ^monitor, :process, ^worker, _} ->
-        failed(method, if(now() >= deadline, do: :deadline, else: :request))
+        reason =
+          if RequestContext.status(context) == :canceled,
+            do: :canceled,
+            else: if(now() >= deadline, do: :deadline, else: :request)
+
+        failed(method, reason)
     after
       remaining(deadline) ->
         Process.exit(worker, :kill)
@@ -70,26 +87,43 @@ defmodule Opsmaru.Incus.Transport do
   end
 
   # Independent of both the caller's timeout and callback exit trapping.
-  defp guard(owner, worker, deadline) do
+  defp guard(owner, worker, deadline, context) do
     owner_monitor = Process.monitor(owner)
     worker_monitor = Process.monitor(worker)
 
-    receive do
-      {:DOWN, ^owner_monitor, :process, _, _} -> Process.exit(worker, :kill)
-      {:DOWN, ^worker_monitor, :process, _, _} -> :ok
-    after
-      remaining(deadline) -> Process.exit(worker, :kill)
+    guard_until(owner_monitor, worker_monitor, worker, deadline, context)
+  end
+
+  defp guard_until(owner_monitor, worker_monitor, worker, deadline, context) do
+    if RequestContext.status(context) != :active or remaining(deadline) == 0 do
+      Process.exit(worker, :kill)
+    else
+      receive do
+        {:DOWN, ^owner_monitor, :process, _, _} -> Process.exit(worker, :kill)
+        {:DOWN, ^worker_monitor, :process, _, _} -> :ok
+      after
+        tick(context, remaining(deadline)) ->
+          guard_until(owner_monitor, worker_monitor, worker, deadline, context)
+      end
     end
   end
 
   @doc false
-  def watch_owner(owner) do
+  def watch_owner(owner, context \\ nil) do
     worker = self()
 
     spawn(fn ->
       owner_monitor = Process.monitor(owner)
       worker_monitor = Process.monitor(worker)
 
+      watch_until(owner_monitor, worker_monitor, worker, context)
+    end)
+  end
+
+  defp watch_until(owner_monitor, worker_monitor, worker, context) do
+    if RequestContext.status(context) != :active do
+      Process.exit(worker, :kill)
+    else
       receive do
         {:DOWN, ^worker_monitor, :process, _, _} ->
           :ok
@@ -102,12 +136,18 @@ defmodule Opsmaru.Incus.Transport do
           after
             100 -> Process.exit(worker, :kill)
           end
+      after
+        tick(context, :infinity) -> watch_until(owner_monitor, worker_monitor, worker, context)
       end
-    end)
+    end
   end
 
+  defp tick(nil, timeout), do: timeout
+  defp tick(_, :infinity), do: 20
+  defp tick(_, timeout), do: min(timeout, 20)
+
   defp do_request(connection, method, path, headers, body) do
-    deadline = now() + connection.timeout
+    deadline = RequestContext.deadline(connection.request_context, now() + connection.timeout)
 
     case open(connection, deadline) do
       {:ok, socket} ->

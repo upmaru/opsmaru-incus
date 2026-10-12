@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.OCITest do
   use ExUnit.Case, async: false
   alias Opsmaru.Context
-  alias Opsmaru.Incus.{Connection, Error, Model, OCI}
+  alias Opsmaru.Incus.{Connection, Error, Model, OCI, RequestContext}
   @driver Path.expand("../../.integration/oci-driver", __DIR__)
 
   defmodule Adapter do
@@ -464,6 +464,33 @@ defmodule Opsmaru.Incus.OCITest do
       assert_receive {:cleanup, _, _}
       refute_receive {:export, _, _}
     end
+  end
+
+  test "request context cancellation stops adapter work before per-call cleanup" do
+    scope = RequestContext.new!(timeout: 3_000)
+    parent = self()
+
+    original =
+      client(
+        inspect: fn _ ->
+          Process.flag(:trap_exit, true)
+          send(parent, {:blocked_adapter, self()})
+
+          receive do
+            :never -> :ok
+          end
+        end
+      )
+
+    scoped = %{original | connection: Connection.with_context(original.connection, scope)}
+    task = Task.async(fn -> OCI.resolve(scoped, "alpine") end)
+    assert_receive {:blocked_adapter, pid}, 500
+    monitor = Process.monitor(pid)
+    RequestContext.cancel(scope)
+    assert {:error, %Error{kind: :adapter_canceled}} = Task.await(task, 500)
+    assert_receive {:DOWN, ^monitor, :process, ^pid, :killed}, 500
+    assert_receive {:cleanup, _, :canceled}, 500
+    assert original.connection.request_context == nil
   end
 
   defp client(opts \\ []) do

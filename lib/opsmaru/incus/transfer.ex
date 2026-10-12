@@ -38,9 +38,14 @@ defmodule Opsmaru.Incus.Transfer do
          {:ok, path} <- path_builder.(client.connection, path),
          :ok <- headers(headers) do
       result =
-        Transport.bounded(client.connection.stream_timeout, method, fn ->
-          transfer(client.connection, method, path, headers, source, sink)
-        end)
+        Transport.bounded(
+          client.connection.stream_timeout,
+          method,
+          fn ->
+            transfer(client.connection, method, path, headers, source, sink)
+          end,
+          client.connection.request_context
+        )
 
       case result do
         {:ok, %Response{} = response} ->

@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.Connection do
-  alias Opsmaru.Incus.ServerTrust
+  alias Opsmaru.Incus.{RequestContext, ServerTrust}
 
   @moduledoc """
   Explicit immutable host-selected backend. Construction performs no I/O.
@@ -18,6 +18,7 @@ defmodule Opsmaru.Incus.Connection do
     :tls,
     :project,
     :member,
+    :request_context,
     require_authenticated: false,
     timeout: 5_000,
     max_response_bytes: 8_388_608,
@@ -36,6 +37,10 @@ defmodule Opsmaru.Incus.Connection do
 
     new!(opts, :unix, path, nil)
   end
+
+  @doc "Bind a local request lifetime immutably, without I/O or changing host identity."
+  def with_context(%__MODULE__{} = connection, context),
+    do: %{connection | request_context: RequestContext.validate!(context)}
 
   def https!(url, opts) do
     uri = URI.parse(url)
@@ -136,6 +141,7 @@ defmodule Opsmaru.Incus.Connection do
       struct!(__MODULE__, Keyword.merge(opts, transport: transport, address: address, tls: tls))
 
     if is_nil(connection.owner), do: raise(ArgumentError, "connection owner is required")
+    if connection.request_context, do: RequestContext.validate!(connection.request_context)
 
     unless is_boolean(connection.require_authenticated),
       do: raise(ArgumentError, "require_authenticated must be a boolean")

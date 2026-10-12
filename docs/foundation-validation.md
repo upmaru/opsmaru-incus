@@ -783,3 +783,37 @@ gate, not a successful review or an unfixed finding. The last completed full
 review remains `8283176e-90e3-4186-bfd5-7b7c55fbbf06` (3/5, both P1 findings
 reproduced and fixed); restore review access for current-head confirmation.
 Do not merge while 3.9 and current review remain open.
+
+
+## Task 3.9: constants, origin metadata and local request contexts — 2026-10-12
+
+The unchanged reference now verifies all 188 exported API constants, including
+171 previously missing declaration rows. Regeneration verifies the exact native
+export set and values. These are plain model data, not protocol activation.
+SimpleStreams connection-info matches the native CA-configured origin/default
+fields; independent checks prove no requests or credential-file reads, readiness
+and owner isolation. All 20 concrete SimpleStreams methods have partial mappings;
+full metadata/cache/delta/platform option coverage is still unverified.
+
+RequestContext adds explicit finite absolute deadlines, first-terminal-reason
+local cancellation and owner lifetime. Four Unix/HTTPS constructor/WithContext
+cases compare native query, ETag and complete profile results. Native canceled
+and deadline errors are compared; independent fixtures verify pre-dispatch
+rejection, uncertain dispatched POSTs, socket cleanup, blocked exit-trapping
+sinks, raw/WebSocket/event-callback cleanup, long poll sleeps, retained native
+operation data and adapter cancellation cleanup. Client binding remains immutable
+under the host isolation contract rather than reproducing Go shared-pointer
+mutation. No local cancellation sends backend DELETE or replays a mutation.
+
+All 647 database-free tests and strict Credo pass. Canonical checks and actual
+precommit pass with a disposable database stopped and removed afterward. All four
+OpenSpec changes pass strict validation. The existing nested-download cleanup
+regression initially could not identify the refactored guard; its identification
+now includes guard_until, while actual suspension and all termination/cleanup
+assertions remain intact. Focused verification and the full suite pass afterward.
+
+The manifest now records 1108 partial and 172 missing declarations out of 1280,
+complete_port=false. Foundation remains 21/22 with 3.9 open. Fresh immutable
+consumer/platform checks must verify publication. Greptile trial quota remains
+an external final-review gate; it does not stop implementation. Real-backend
+4.3 and installed-converter/Macus/gateway acceptance remain separately recorded.

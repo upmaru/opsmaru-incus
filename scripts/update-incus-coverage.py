@@ -6,6 +6,7 @@ def load(path): return json.loads((root/path).read_text())
 inv = load('priv/incus/inventory.json')
 methods = {m['name']: m for m in load('priv/incus/methods.json')['methods']}
 models = {m[key] for m in methods.values() for key in ['body','model'] if m[key]}
+constants = load('priv/incus/constants.json')['values']
 helpers = {
  'RawQuery': ('lib/opsmaru/incus.ex', ['test/library/client_test.exs','test/library/reference_wire_test.exs']),
  'UseProject': ('lib/opsmaru/incus.ex',['test/library/resource_slice_test.exs']),
@@ -24,6 +25,12 @@ for name in ['GetEvents','GetEventsByType','GetEventsAllProjects','GetEventsAllP
  helpers[name]=('lib/opsmaru/incus/web_socket.ex',['test/library/web_socket_test.exs','test/library/tls_stream_test.exs'])
 for name in ['operation.Wait','operation.Cancel','operation.Get']:
  helpers[name]=('lib/opsmaru/incus/operation.ex',['test/library/operation_test.exs'])
+for name in ['ConnectIncus','ConnectIncusUnix','ConnectIncusWithContext','ConnectIncusUnixWithContext','ProtocolIncus.WithContext','ProtocolIncus.Disconnect']:
+ helpers[name]=('lib/opsmaru/incus.ex',['test/library/request_context_test.exs'])
+for name in ['operation.Refresh','operation.WaitContext','Operation.Get','Operation.Refresh','Operation.Wait','Operation.WaitContext','Operation.Cancel']:
+ helpers[name]=('lib/opsmaru/incus/operation.ex',['test/library/request_context_test.exs','test/library/operation_test.exs'])
+for name in ['operation.GetWebsocket','Operation.GetWebsocket']:
+ helpers[name]=('lib/opsmaru/incus/operation.ex',['test/library/session_test.exs','test/library/request_context_test.exs'])
 for name in ['CopyInstance','CopyInstanceSnapshot','CopyStoragePoolVolume']:
  helpers[name]=('lib/opsmaru/incus/copy.ex',['test/library/copy_test.exs','test/library/migration_test.exs'])
 helpers['CopyInstance'][1].append('test/library/copy_guards_test.exs')
@@ -83,7 +90,7 @@ oci_helpers = 'Disconnect GetImageAliasArchitectures GetImage GetImageAlias GetI
 for name in oci_helpers:
  helpers['ProtocolOCI.'+name]=('lib/opsmaru/incus/oci.ex',['test/library/oci_test.exs'])
 helpers['ConnectOCI']=('lib/opsmaru/incus/oci.ex',['test/library/oci_test.exs'])
-simple_helpers = 'Disconnect GetHTTPClient DoHTTP GetImages GetImagesAllProjects GetImagesAllProjectsWithFilter GetImagesWithFilter GetImageFingerprints GetImage GetImageFile GetImageSecret GetPrivateImage GetPrivateImageFile GetImageAliases GetImageAliasNames GetImageAlias GetImageAliasType GetImageAliasArchitectures ExportImage'.split()
+simple_helpers = 'GetConnectionInfo Disconnect GetHTTPClient DoHTTP GetImages GetImagesAllProjects GetImagesAllProjectsWithFilter GetImagesWithFilter GetImageFingerprints GetImage GetImageFile GetImageSecret GetPrivateImage GetPrivateImageFile GetImageAliases GetImageAliasNames GetImageAlias GetImageAliasType GetImageAliasArchitectures ExportImage'.split()
 for name in simple_helpers:
  helpers['ProtocolSimpleStreams.'+name]=('lib/opsmaru/incus/simple_streams.ex',['test/library/simple_streams_test.exs'])
 helpers['ConnectSimpleStreams']=('lib/opsmaru/incus/simple_streams.ex',['test/library/simple_streams_test.exs'])
@@ -94,7 +101,7 @@ for entry in inv['entries']:
  if entry['name'] in helpers and entry['name'].startswith(('ProtocolOCI.', 'ConnectOCI')):
   impl,evidence=helpers[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified.')
  elif entry['name'] in helpers and entry['name'].startswith(('ProtocolSimpleStreams.', 'ConnectSimpleStreams')):
-  impl,evidence=helpers[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence.')
+  impl,evidence=helpers[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence.')
  elif entry['kind'] == 'method' and entry['name'].startswith(('ProtocolOCI.', 'ProtocolSimpleStreams.')):
   pass # Native Incus methods do not establish OCI or SimpleStreams implementation parity.
  elif entry['package']=='shared/api' and entry['kind']=='type' and name in ['ConfigMap','DevicesMap']:
@@ -113,6 +120,8 @@ for entry in inv['entries']:
   row.update(status='partial',elixir='lib/opsmaru/incus/model.ex',evidence=evidence,note='Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified.')
  elif entry['package']=='shared/api' and entry['kind'] in ['const','var'] and entry['source']=='shared/api/status_code.go':
   row.update(status='partial',elixir='lib/opsmaru/incus/status.ex',evidence=['test/library/model_helpers_reference_test.exs'],note='All pinned status names/values and unknown-code behavior compared with unchanged native helpers.')
+ elif entry['package']=='shared/api' and entry['kind']=='const' and entry['name'] in constants:
+  row.update(status='partial',elixir='lib/opsmaru/incus/constants.ex',evidence=['test/library/constants_reference_test.exs'],note='Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied.')
  entries.append(row)
 for row in entries:
  for path in row['evidence']: assert (root/path).is_file(), path

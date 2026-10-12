@@ -8,6 +8,7 @@ defmodule Opsmaru.Context do
   are host-owned references; the library neither creates nor invokes them.
   A context must never be constructed from untrusted agent request parameters.
   """
+  alias Opsmaru.Incus.RequestContext
   @enforce_keys [:owner, :identity, :ready?]
   defstruct [:owner, :identity, :ready?, :private_state, capabilities: %{}]
 
@@ -34,8 +35,10 @@ defmodule Opsmaru.Context do
   end
 
   @doc false
-  def authorize(%__MODULE__{owner: owner} = context, %{owner: owner}) do
-    if context.ready?.() == true, do: :ok, else: {:error, :host_not_ready}
+  def authorize(%__MODULE__{owner: owner} = context, %{owner: owner} = connection) do
+    if context.ready?.() == true,
+      do: RequestContext.check(Map.get(connection, :request_context)),
+      else: {:error, :host_not_ready}
   rescue
     _ -> {:error, :host_not_ready}
   catch

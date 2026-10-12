@@ -6,7 +6,7 @@ defmodule Opsmaru.Incus.Operation do
   issues at most one native DELETE. No application task/persistence is created.
   """
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Error, Model, Response, WebSocket}
+  alias Opsmaru.Incus.{Error, Model, RequestContext, Response, WebSocket}
   @enforce_keys [:client, :url]
   defstruct [:client, :url, :response]
 
@@ -27,22 +27,51 @@ defmodule Opsmaru.Incus.Operation do
   end
 
   def poll(operation) do
-    with {:ok, response} <- Incus.raw_query(operation.client, "GET", operation.url),
-         {:ok, metadata} <- Model.decode("Operation", response.metadata) do
-      {:ok, %{operation | response: %{response | metadata: metadata}}}
-    else
-      {:error, %Error{} = error} -> {:error, %{error | operation: operation.url}}
-      _ -> {:error, %Error{kind: :invalid_operation, operation: operation.url}}
+    case Incus.raw_query(operation.client, "GET", operation.url) do
+      {:ok, response} ->
+        case Model.decode("Operation", response.metadata) do
+          {:ok, metadata} ->
+            {:ok, %{operation | response: %{response | metadata: metadata}}}
+
+          _ ->
+            {:error,
+             %Error{kind: :invalid_operation, response: response, operation: operation.url}}
+        end
+
+      {:error, %Error{} = error} ->
+        {:error,
+         %{error | operation: operation.url, response: error.response || operation.response}}
     end
   end
 
+  @doc "Return the current immutable native snapshot without querying Incus."
+  def get(operation), do: Model.decode("Operation", data(operation))
+
+  @doc "Refresh the native snapshot on its originating client, retaining identity and ETag."
+  def refresh(operation), do: poll(operation)
+
+  @doc "Bound a local wait to an explicit request context; cancellation never sends a backend DELETE."
+  def wait_with_context(operation, request_context, opts \\ []),
+    do: wait(%{operation | client: Incus.with_context(operation.client, request_context)}, opts)
+
   def wait(operation, opts \\ []) do
+    if Keyword.keyword?(opts) and Keyword.keys(opts) -- [:timeout, :poll_interval] == [] and
+         length(opts) == length(Enum.uniq(Keyword.keys(opts))),
+       do: wait_options(operation, opts),
+       else: {:error, %Error{kind: :invalid_deadline, operation: operation.url}}
+  end
+
+  defp wait_options(operation, opts) do
     timeout = opts[:timeout] || operation.client.connection.timeout
     interval = opts[:poll_interval] || 50
 
     if is_integer(timeout) and timeout in 1..3_600_000 and is_integer(interval) and
          interval in 1..60_000 do
-      wait_until(operation, now() + timeout, interval)
+      wait_until(
+        operation,
+        RequestContext.deadline(operation.client.connection.request_context, now() + timeout),
+        interval
+      )
     else
       {:error, %Error{kind: :invalid_deadline, operation: operation.url}}
     end
@@ -69,13 +98,28 @@ defmodule Opsmaru.Incus.Operation do
           if completed?(current) do
             completion_result(current)
           else
-            Process.sleep(min(interval, max(0, deadline - now())))
+            sleep_until(
+              min(now() + interval, deadline),
+              operation.client.connection.request_context
+            )
+
             wait_until(current, deadline, interval)
           end
 
         {:error, error} ->
           {:error, %{error | operation: operation.url}}
       end
+    end
+  end
+
+  defp sleep_until(deadline, nil), do: Process.sleep(max(0, deadline - now()))
+
+  defp sleep_until(deadline, context) do
+    remaining = deadline - now()
+
+    if remaining > 0 and RequestContext.status(context) == :active do
+      Process.sleep(min(20, remaining))
+      sleep_until(deadline, context)
     end
   end
 

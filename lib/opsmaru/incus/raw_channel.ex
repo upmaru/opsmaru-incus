@@ -61,7 +61,7 @@ defmodule Opsmaru.Incus.RawChannel do
 
   @impl true
   def init({connection, path, protocol, owner, ref}) do
-    Transport.watch_owner(owner)
+    Transport.watch_owner(owner, connection.request_context)
     deadline = now() + connection.timeout
 
     case Transport.open(connection, deadline) do

@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.OCI.AdapterCall do
   @moduledoc false
-  alias Opsmaru.Incus.{Error, WorkScope}
+  alias Opsmaru.Incus.{Error, RequestContext, WorkScope}
 
   # Independent controller survives caller loss to run host cleanup. No links to
   # the host tree, no replay, and no callback exception/stack/credential logging.
@@ -9,6 +9,7 @@ defmodule Opsmaru.Incus.OCI.AdapterCall do
     id = make_ref()
     deadline = now() + timeout
     deadline = min(deadline, Map.get(request, :deadline, deadline))
+    deadline = RequestContext.deadline(client.connection.request_context, deadline)
     request = Map.merge(request, %{call_id: id, deadline: deadline})
 
     {pid, monitor} =
@@ -22,7 +23,7 @@ defmodule Opsmaru.Incus.OCI.AdapterCall do
       {:DOWN, ^monitor, :process, ^pid, _} ->
         error(:adapter_failed)
     after
-      timeout + min(client.connection.timeout, 1_000) + 100 ->
+      max(0, deadline - now()) + min(client.connection.timeout, 1_000) + 100 ->
         Process.demonitor(monitor, [:flush])
         # Keep the independent controller alive: cleanup must wait for actual
         # worker termination, even if host callback code is still unkillable.
@@ -47,7 +48,17 @@ defmodule Opsmaru.Incus.OCI.AdapterCall do
     watchdog(controller, worker)
     :ok = WorkScope.register(scope, worker)
     send(worker, :start)
-    result = await(owner_monitor, worker, monitor, id, request.deadline)
+
+    result =
+      await(
+        owner_monitor,
+        worker,
+        monitor,
+        id,
+        request.deadline,
+        client.connection.request_context
+      )
+
     WorkScope.stop(scope)
     WorkScope.close(scope)
     Process.demonitor(monitor, [:flush])
@@ -66,7 +77,15 @@ defmodule Opsmaru.Incus.OCI.AdapterCall do
     end
   end
 
-  defp await(owner_monitor, worker, monitor, id, deadline) do
+  defp await(owner_monitor, worker, monitor, id, deadline, context) do
+    case RequestContext.status(context) do
+      :canceled -> error(:adapter_canceled)
+      :deadline -> error(:adapter_deadline)
+      :active -> await_result(owner_monitor, worker, monitor, id, deadline, context)
+    end
+  end
+
+  defp await_result(owner_monitor, worker, monitor, id, deadline, context) do
     receive do
       {^id, result} ->
         result
@@ -77,7 +96,10 @@ defmodule Opsmaru.Incus.OCI.AdapterCall do
       {:DOWN, ^monitor, :process, ^worker, _} ->
         error(:adapter_failed)
     after
-      max(0, deadline - now()) -> error(:adapter_deadline)
+      min(max(0, deadline - now()), if(context, do: 20, else: :infinity)) ->
+        if now() >= deadline,
+          do: error(:adapter_deadline),
+          else: await(owner_monitor, worker, monitor, id, deadline, context)
     end
   end
 
@@ -129,6 +151,7 @@ defmodule Opsmaru.Incus.OCI.AdapterCall do
 
   defp outcome(:owner_lost), do: :owner_lost
   defp outcome({:error, %Error{kind: :adapter_deadline}}), do: :deadline
+  defp outcome({:error, %Error{kind: :adapter_canceled}}), do: :canceled
   defp outcome({:error, _}), do: :failed
   defp outcome(_), do: :completed
   defp error(kind), do: {:error, %Error{kind: kind}}

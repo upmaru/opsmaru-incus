@@ -250,10 +250,10 @@ the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
 close/error/EOF semantics apply. This does not expose an arbitrary dialer or
 an OIDC adapter.
 
-The checked manifest currently has 268 differential JSON methods, 921 partial
-reference mappings and 359 missing declarations out of 1,280. Native Incus
+The checked manifest currently has 268 differential JSON methods, 1108 partial
+reference mappings and 172 missing declarations out of 1,280. Native Incus
 method evidence is scoped to that implementation; OCI has 17 partial and three
-missing concrete method mappings; SimpleStreams has 19 partial and one missing concrete method mapping. Interface entries
+missing concrete method mappings; SimpleStreams has 20 partial concrete method mappings and none missing; full protocol/option coverage is still partial. Interface entries
 and schemas account for some mappings; these counts are not distinct client
 operations. Schema-derived field validation and positive fixture results do
 not establish full Incus semantic behavior. `scripts/update-incus-coverage.py`
@@ -441,3 +441,48 @@ Privileged error state retains `source` or `target` acceptance and the original
 The primary URL prefers the inner operation when known, otherwise the earlier
 accepted handle. Reconcile each handle on its originating client; a lost response
 may leave another accepted operation unknown. No token, copy or export is replayed.
+
+
+`Constants.names/0` and `fetch/1` expose all 188 pinned API constants by native
+string name, including exact status/response/instance/lifecycle values. They are
+pure model data: returning an authentication or feature enum does not implement
+or activate that feature. The generated native oracle and checked data can be
+reproduced with `python3 scripts/check-incus-constants.py --write`, or verified
+without edits by omitting `--write`.
+
+`SimpleStreams.connection_info/1` returns the canonical explicit HTTPS origin
+and native protocol/default fields without a request or credential-file read.
+Certificate PEM is empty because a CA/fingerprint reference is not a supplied
+server PEM; the native CA-configured getter has the same result. TLS verification
+still uses the connection's explicit trust and client-key references when needed.
+
+`RequestContext.new!(timeout: milliseconds)` creates an explicit local lifetime
+with a finite absolute deadline and owner PID (optionally supplied with `owner:`).
+It starts no worker or socket. `cancel/1` is idempotent; the first terminal reason
+remains observable with `status/1`. Bind it immutably with
+`Incus.with_context(client, request_context)`, `Connection.with_context/2`, or
+`Incus.connect(connection, host_context, request_context: request_context)`.
+Host identity/readiness and connection credentials remain independently bound.
+
+Unlike the pinned Go helper's shared receiver mutation, binding returns a new
+Elixir value: the original client and other connections retain their contexts.
+Cancellation before dispatch returns canceled with no I/O; interrupted dispatched
+mutations remain uncertain. Absolute deadlines and owner loss stop blocked
+requests, acknowledged sinks and owned raw/WebSocket/listener/console resources.
+Context checks occur at entry and independent guards observe cancellation within
+20 ms when scheduled. Local closure never sends backend DELETE or replays work.
+
+`Operation.get/1` reads the retained snapshot; `refresh/1` fetches a new native
+snapshot and preserves errors/ETags/identity. `wait_with_context/3` limits local
+waiting, including long poll sleeps, and retains the last native snapshot after
+cancellation. The original handle remains available for reconciliation. This
+implements the approved no-backend-cancellation exception to native WaitContext.
+
+Host OCI/delta calls inherit the context deadline and run per-call cleanup after
+tracked workers stop on local cancellation. Cleanup receives canceled as its
+outcome; delayed termination retains the existing visible cleanup-pending gate.
+Installed adapters must still enforce their separate external-resource contract.
+`Incus.disconnect/1` is passive: immutable clients own no pool; close separately
+owned channels/listeners or cancel their explicit request context when desired.
+These slices do not complete remaining handlers, SFTP, copy/protocol matrices
+or all model/JSON/YAML helpers in task 3.9.

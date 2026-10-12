@@ -73,7 +73,7 @@ defmodule Opsmaru.Incus.DynamicConsole do
 
   @impl true
   def init({operation, owner, limit}) do
-    Transport.watch_owner(owner)
+    Transport.watch_owner(owner, operation.client.connection.request_context)
     fds = get_in(Operation.data(operation), ["metadata", "fds"])
 
     if is_map(fds) and map_size(fds) <= 8 and

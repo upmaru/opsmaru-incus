@@ -5,6 +5,7 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../../.integration/simplestreams-driver", __DIR__)
   @http_driver Path.expand("../../.integration/simplestreams-http-driver", __DIR__)
+  @info_driver Path.expand("../../.integration/origin-info-driver", __DIR__)
 
   defmodule DeltaAdapter do
     @behaviour Opsmaru.Incus.SimpleStreams.DeltaAdapter
@@ -39,7 +40,58 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
       )
 
     assert status == 0, out
+
+    {out, status} =
+      System.cmd("mise", ["exec", "--", "go", "build", "-o", @info_driver, "./origininfo"],
+        cd: Path.expand("../reference", __DIR__),
+        env: [{"GOTOOLCHAIN", "local"}],
+        stderr_to_stdout: true
+      )
+
+    assert status == 0, out
     :ok
+  end
+
+  test "SimpleStreams origin metadata matches native CA configuration without connecting or reading credentials",
+       %{root: root, identity: identity} do
+    fixture = http_fixture(identity, 200, "unused")
+    endpoint = HTTPFixture.endpoint(fixture).url
+    stream = client(endpoint, identity, "aarch64")
+    path = Path.join(root, "origin-info.json")
+
+    File.write!(
+      path,
+      Jason.encode!(%{URL: endpoint, CA: File.read!(identity.cafile), Protocol: "simplestreams"})
+    )
+
+    {out, status} =
+      System.cmd("sh", ["-c", "exec \"$1\" < \"$2\"", "oracle", @info_driver, path],
+        stderr_to_stdout: true
+      )
+
+    assert status == 0, out
+    expected = Jason.decode!(out)
+    # File references are irrelevant to this passive getter; no PEM is inferred
+    # from CA roots or from a client certificate with another identity.
+    for file <- [identity.cafile, identity.certfile, identity.keyfile], do: File.rm!(file)
+    assert {:ok, info} = SimpleStreams.connection_info(stream)
+
+    assert %{
+             "Addresses" => info.addresses,
+             "Certificate" => info.certificate,
+             "Protocol" => info.protocol,
+             "URL" => info.url,
+             "SocketPath" => info.socket_path,
+             "Project" => info.project,
+             "Target" => info.target
+           } == expected
+
+    assert HTTPFixture.requests(fixture) == []
+    refute inspect(info) =~ root
+    unavailable = %{stream | context: %{stream.context | ready?: fn -> false end}}
+    assert {:error, %Error{kind: :host_not_ready}} = SimpleStreams.connection_info(unavailable)
+    mismatch = %{stream | connection: %{stream.connection | owner: :different}}
+    assert {:error, %Error{kind: :owner_mismatch}} = SimpleStreams.connection_info(mismatch)
   end
 
   setup do
@@ -1000,7 +1052,7 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
         case Process.info(pid, :current_stacktrace) do
           {:current_stacktrace, stack} ->
             Enum.any?(stack, fn {module, function, _, _} ->
-              module == Opsmaru.Incus.Transport and function == :guard
+              module == Opsmaru.Incus.Transport and function in [:guard, :guard_until]
             end)
 
           _ ->

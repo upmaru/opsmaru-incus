@@ -4,10 +4,12 @@
   "entries": [
     {
       "id": "client/function/ConnectIncus",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus.ex",
+      "evidence": [
+        "test/library/request_context_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/function/ConnectIncusHTTP",
@@ -25,24 +27,30 @@
     },
     {
       "id": "client/function/ConnectIncusUnix",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus.ex",
+      "evidence": [
+        "test/library/request_context_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/function/ConnectIncusUnixWithContext",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus.ex",
+      "evidence": [
+        "test/library/request_context_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/function/ConnectIncusWithContext",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus.ex",
+      "evidence": [
+        "test/library/request_context_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/function/ConnectOCI",
@@ -74,7 +82,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/interface_method/HTTPTransporter.Transport",
@@ -3050,31 +3058,43 @@
     },
     {
       "id": "client/interface_method/Operation.Cancel",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/request_context_test.exs",
+        "test/library/operation_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/Operation.Get",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/request_context_test.exs",
+        "test/library/operation_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/Operation.GetWebsocket",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/session_test.exs",
+        "test/library/request_context_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/Operation.Refresh",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/request_context_test.exs",
+        "test/library/operation_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/Operation.RemoveHandler",
@@ -3085,17 +3105,23 @@
     },
     {
       "id": "client/interface_method/Operation.Wait",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/request_context_test.exs",
+        "test/library/operation_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/Operation.WaitContext",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/request_context_test.exs",
+        "test/library/operation_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/RemoteOperation.AddHandler",
@@ -4003,10 +4029,12 @@
     },
     {
       "id": "client/method/ProtocolIncus.Disconnect",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus.ex",
+      "evidence": [
+        "test/library/request_context_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolIncus.DoHTTP",
@@ -6243,10 +6271,12 @@
     },
     {
       "id": "client/method/ProtocolIncus.WithContext",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus.ex",
+      "evidence": [
+        "test/library/request_context_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/ProtocolOCI.Disconnect",
@@ -6429,7 +6459,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.DoHTTP",
@@ -6438,7 +6468,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.ExportImage",
@@ -6447,14 +6477,16 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetConnectionInfo",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetHTTPClient",
@@ -6463,7 +6495,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImage",
@@ -6472,7 +6504,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAlias",
@@ -6481,7 +6513,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasArchitectures",
@@ -6490,7 +6522,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasNames",
@@ -6499,7 +6531,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasType",
@@ -6508,7 +6540,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliases",
@@ -6517,7 +6549,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageFile",
@@ -6526,7 +6558,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageFingerprints",
@@ -6535,7 +6567,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageSecret",
@@ -6544,7 +6576,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImages",
@@ -6553,7 +6585,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesAllProjects",
@@ -6562,7 +6594,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesAllProjectsWithFilter",
@@ -6571,7 +6603,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesWithFilter",
@@ -6580,7 +6612,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetPrivateImage",
@@ -6589,7 +6621,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetPrivateImageFile",
@@ -6598,7 +6630,7 @@
       "evidence": [
         "test/library/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion, connection-info and full protocol parity remain unverified. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
     },
     {
       "id": "client/method/oidcTransport.RoundTrip",
@@ -6634,17 +6666,23 @@
     },
     {
       "id": "client/method/operation.GetWebsocket",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/session_test.exs",
+        "test/library/request_context_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/operation.Refresh",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/request_context_test.exs",
+        "test/library/operation_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/operation.RemoveHandler",
@@ -6664,10 +6702,13 @@
     },
     {
       "id": "client/method/operation.WaitContext",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/request_context_test.exs",
+        "test/library/operation_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/remoteOperation.AddHandler",
@@ -6959,24 +7000,30 @@
     },
     {
       "id": "shared/api/const/AsyncResponse",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/AuthenticationMethodOIDC",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/AuthenticationMethodTLS",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/Cancelled",
@@ -6998,31 +7045,39 @@
     },
     {
       "id": "shared/api/const/CertificateTypeClient",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/CertificateTypeMetrics",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/CertificateTypeServer",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/CertificateTypeUnknown",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/Error",
@@ -7035,1004 +7090,1290 @@
     },
     {
       "id": "shared/api/const/ErrorResponse",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleCertificateCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleCertificateDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleCertificateUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterCertificateUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterDisabled",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterEnabled",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterGroupCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterGroupDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterGroupRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterGroupUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterMemberAdded",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterMemberEvacuated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterMemberHealed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterMemberRemoved",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterMemberRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterMemberRestored",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterMemberUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleClusterTokenCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleConfigUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleImageAliasCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleImageAliasDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleImageAliasRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleImageAliasUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleImageCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleImageDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleImageRefreshed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleImageRetrieved",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleImageSecretCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleImageUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceAgentStarted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceAgentStopped",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceBackupCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceBackupDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceBackupRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceBackupRetrieved",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceConsole",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceConsoleReset",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceConsoleRetrieved",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceExec",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceFileDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceFilePushed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceFileRetrieved",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceLogDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceLogRetrieved",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceMetadataRetrieved",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceMetadataTemplateCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceMetadataTemplateDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceMetadataTemplateRetrieved",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceMetadataUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceMigrated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstancePaused",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceReady",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceRestarted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceRestored",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceResumed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceShutdown",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceSnapshotCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceSnapshotDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceSnapshotRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceSnapshotUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceStarted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceStopped",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleInstanceUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkACLCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkACLDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkACLRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkACLUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkAddressSetCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkAddressSetDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkAddressSetRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkAddressSetUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkForwardCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkForwardDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkForwardUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkIntegrationCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkIntegrationDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkIntegrationRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkIntegrationUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkLoadBalancerCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkLoadBalancerDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkLoadBalancerUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkPeerCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkPeerDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkPeerUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkZoneCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkZoneDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkZoneRecordCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkZoneRecordDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkZoneRecordUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleNetworkZoneUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleOperationCancelled",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleProfileCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleProfileDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleProfileRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleProfileUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleProjectCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleProjectDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleProjectRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleProjectUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageBucketBackupCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageBucketBackupDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageBucketBackupRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageBucketBackupRetrieved",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageBucketCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageBucketDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageBucketKeyCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageBucketKeyDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageBucketKeyUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageBucketUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStoragePoolCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStoragePoolDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStoragePoolUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeBackupCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeBackupDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeBackupRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeBackupRetrieved",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeFileDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeFilePushed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeFileRetrieved",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeRestored",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeSnapshotCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeSnapshotDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeSnapshotRenamed",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeSnapshotUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleStorageVolumeUpdated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleWarningAcknowledged",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleWarningDeleted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventLifecycleWarningReset",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventTypeLifecycle",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventTypeLogging",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventTypeNetworkACL",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/EventTypeOperation",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/Failure",
@@ -8063,80 +8404,102 @@
     },
     {
       "id": "shared/api/const/InstanceTypeAny",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/InstanceTypeContainer",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/InstanceTypeVM",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/NetworkStatusCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/NetworkStatusErrored",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/NetworkStatusPending",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/NetworkStatusUnavailable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/NetworkStatusUnknown",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/OperationClassTask",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/OperationClassToken",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/OperationClassWebsocket",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/OperationCreated",
@@ -8158,10 +8521,12 @@
     },
     {
       "id": "shared/api/const/ProjectDefaultName",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/Ready",
@@ -8183,24 +8548,30 @@
     },
     {
       "id": "shared/api/const/SecretNameControl",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/SecretNameFilesystem",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/SecretNameState",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/Started",
@@ -8240,38 +8611,48 @@
     },
     {
       "id": "shared/api/const/StoragePoolStatusCreated",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/StoragePoolStatusErrored",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/StoragePoolStatusPending",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/StoragePoolStatusUnknown",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/StoragePoolStatusUnvailable",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/Success",
@@ -8284,10 +8665,12 @@
     },
     {
       "id": "shared/api/const/SyncResponse",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/constants.ex",
+      "evidence": [
+        "test/library/constants_reference_test.exs"
+      ],
+      "note": "Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied."
     },
     {
       "id": "shared/api/const/Thawed",

@@ -156,6 +156,16 @@ defmodule Opsmaru.Incus do
   def member(client, member),
     do: %{client | connection: Connection.member(client.connection, member)}
 
+  @doc "Return an independent client with an explicit local request context; no backend call or identity substitution."
+  def with_context(%__MODULE__{} = client, request_context),
+    do: %{client | connection: Connection.with_context(client.connection, request_context)}
+
+  @doc "No-op for an immutable client with per-request connections; close separately owned channels explicitly."
+  def disconnect(%__MODULE__{}), do: :ok
+
+  def connect(connection, context, request_context: request_context),
+    do: connect(Connection.with_context(connection, request_context), context)
+
   def raw_query(%__MODULE__{} = client, method, path), do: raw_query(client, method, path, [])
 
   def raw_query(%__MODULE__{} = client, method, path, opts),

@@ -5,7 +5,7 @@ closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
-The declaration manifest currently has 921 partial and 359 missing entries.
+The declaration manifest currently has 1108 partial and 172 missing entries.
 Declarations include Go methods, interfaces, types, constants and transport
 abstractions; these counts are not endpoint counts or complete parity evidence.
 No partial mapping is promoted to completion by this continuation.
@@ -119,3 +119,29 @@ queries and redirects, and enforce readiness and request/response budgets.
 All 69 focused OCI/SimpleStreams/native-HTTP cases pass. OCI now has 17 partial
 and three missing concrete methods; SimpleStreams has 19 partial and one missing.
 No mapping is promoted to complete, and 3.9 remains open.
+
+
+## Native constants, origin metadata and explicit request lifetimes
+
+All 188 exported API constants now have unchanged-native value comparison; 171
+previously missing constant rows gain partial evidence. Constant values remain
+model data and do not implement the named authentication/features. SimpleStreams
+CA-configured connection-info has native default/origin comparison and independent
+no-I/O/readiness/binding evidence; all 20 concrete SimpleStreams methods now have
+partial mappings, without claiming complete protocol/cache/option coverage.
+
+Explicit request contexts add finite absolute deadlines, idempotent local
+cancellation and owner lifetime. Unix/HTTPS constructors and WithContext preserve
+query/ETag/native profile results against unchanged helpers. The Elixir client
+remains immutable; it does not reproduce the Go WithContext shared-pointer
+mutation. Independent fixtures cover pre-dispatch rejection, uncertain dispatched
+POSTs, stalled I/O and exit-trapping sinks, raw/WebSocket/listener callbacks,
+long poll intervals, retained operation snapshots and adapter cleanup ordering.
+No cancellation sends Incus DELETE or replays mutations. Original clients remain
+independent. Native get/refresh/wait-context/websocket interface helpers gain
+scoped partial evidence; callback handler orchestration remains unimplemented.
+
+The manifest remains complete_port=false with 1108 partial and 172 missing
+declarations. Task 3.9 is still open: supported-scope/evidence completion gates,
+remaining client methods and model/helper/protocol matrices need further work.
+Greptile account access remains a final review gate, not a blocker on this work.
