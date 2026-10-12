@@ -34,6 +34,18 @@ defmodule Opsmaru.Incus.NativeInput do
     end)
   end
 
+  defp normalize("map[" <> suffix, value) do
+    case String.split(suffix, "]", parts: 2) do
+      [key_type, type] ->
+        if get_in(@schemas, [key_type, "underlying"]) == "string",
+          do: normalize("map[string]" <> type, value),
+          else: :error
+
+      _ ->
+        :error
+    end
+  end
+
   defp normalize(type, nil) when type in ["[]byte", "[]uint8"], do: {:ok, nil}
 
   defp normalize(type, value) when type in ["[]byte", "[]uint8"] and is_binary(value) do

@@ -8887,10 +8887,12 @@
     },
     {
       "id": "shared/api/method/MetadataConfiguration.GetKeys",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/metadata.ex",
+      "evidence": [
+        "test/library/metadata_keys_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/Network.Writable",
@@ -10055,45 +10057,56 @@
     },
     {
       "id": "shared/api/type/MetadataConfig",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/metadata_keys_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/MetadataConfigEntityName",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/metadata_keys_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/MetadataConfigGroup",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/metadata_keys_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/MetadataConfigGroupName",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/metadata_keys_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/MetadataConfigKey",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/metadata_keys_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/MetadataConfiguration",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/library/resource_slice_test.exs"
+        "test/library/resource_slice_test.exs",
+        "test/library/metadata_keys_reference_test.exs"
       ],
       "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },

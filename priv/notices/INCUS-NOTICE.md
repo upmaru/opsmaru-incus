@@ -37,3 +37,8 @@ they have no backend or host-command access. Native map iteration order is
 unspecified, so event context pair order is normalized for comparison while
 preserving every key/value pair. Null event metadata is rejected explicitly
 rather than propagating a native nil-pointer panic; no SDK code is patched.
+
+`lib/opsmaru/incus/metadata.ex` adapts pinned `shared/api/metadata.go` under the
+same Apache-2.0 license. Its fixture-only `test/reference/metadatakeys` driver
+uses the unchanged native GetKeys helper. Native string quoting preserves the
+helper's explicit caller-visible errors; Inspect remains redacted.

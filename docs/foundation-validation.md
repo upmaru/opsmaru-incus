@@ -882,3 +882,21 @@ A permanent process-isolated ambient-default regression asserts unique OIDs,
 SHA-256 signatures and native CA/hostname verification. Stock LibreSSL focused
 20-case verification and strict Credo pass; no client verification or SDK patch
 is introduced. Updated full/platform checks remain required.
+
+
+## Task 3.9: configuration metadata and final CA regression checks
+
+GetKeys compares native key defaults, nil entries, later-map replacement and
+exact entity/group diagnostics including control/non-ASCII/non-BMP quoting.
+Aliased entity/group maps now validate nested structure in Model and normalize
+through the existing bounded native projection. Permanent tests reject malformed
+entities/groups/keys, bound names/payloads, retain original data and prove no atom
+creation. Independent review checked the string-alias key resolution against the
+pinned schema, merge order, null/default handling and credential-safe errors.
+Six more declarations gain partial evidence: 1122 partial and 158 missing.
+
+All 663 library tests, strict Credo, isolated canonical checks, actual precommit
+and strict OpenSpec pass with the explicit CA configuration correction. The
+final non-BMP diagnostic case additionally passes its focused oracle test.
+Task 3.9 remains open; no complete-port or installed/hardware acceptance claim.
+The full published source still requires immutable consumer/platform results.

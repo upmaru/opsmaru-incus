@@ -5,7 +5,7 @@ closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
-The declaration manifest currently has 1116 partial and 164 missing entries.
+The declaration manifest currently has 1122 partial and 158 missing entries.
 Declarations include Go methods, interfaces, types, constants and transport
 abstractions; these counts are not endpoint counts or complete parity evidence.
 No partial mapping is promoted to completion by this continuation.
@@ -169,3 +169,14 @@ not broaden the native filter into an authorization or general secret detector.
 
 Eight additional declarations gain partial evidence. No mapping becomes complete;
 1116 partial and 164 missing declarations remain, with complete_port=false.
+
+
+## Native configuration metadata lookup
+
+GetKeys now has native last-map-wins/default/null-entry and exact entity/group
+error comparisons, including control/Unicode quoting. Codec validation supports
+its aliased string entity/group map keys and rejects malformed nested groups or
+key types. Inputs and names are bounded; original models remain unchanged and
+no runtime atoms or backend calls are created. Six more declarations gain partial
+evidence: 1122 partial, 158 missing, complete_port=false. All prior protocol,
+model, complete-evidence and installed/hardware acceptance gates remain open.

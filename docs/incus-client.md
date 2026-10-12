@@ -19,6 +19,7 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `Model.decode/2`, `encode/1` | Pinned native field schemas, preserving null/unknown fields without atom creation |
 | `FileHeaders.parse/1` | Pure bounded native header defaults, signed ownership/overflow and base-zero permission-mode semantics; first duplicate wins |
 | `Projections.filtered_server/1`, `logging_event/1` | Pure typed native server filter and logging/network-ACL/lifecycle/operation event records; bounded inputs, no log output; originals remain lossless |
+| `Metadata.keys/3` | Pure bounded native configuration-key lookup with typed defaults, last-map-wins merge and native entity/group diagnostics; aliased string-key maps are validated |
 | `Model.writable/1`, `active?/1`, `etag_values/1`, `ModelURL.resource/2`, `parent_snapshot_name/1`, `Status.string/1`, `final?/1`, `from_string/1` | 23 writable projections, nine native resource URL helpers, five ETag input tuples and pinned status semantics; original model remains lossless |
 | `Images.import/4`, `download/4`, `copy/4` | Bounded unified/multipart binary handoff; `download(..., secret: token)` matches native private exports; pull/push and host-staged relay copies retain native operations |
 | `ImageInstances.create/5`, `rebuild/6` | Local images or one approved verified HTTPS source; native alias/fingerprint/private token preparation; accepted target handle without replay |

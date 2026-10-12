@@ -91,6 +91,18 @@ defmodule Opsmaru.Incus.Model do
     do: Enum.all?(data, fn {key, value} -> is_binary(key) and valid?(type, value) end)
 
   defp valid?("map[string]" <> _, _), do: false
+
+  defp valid?("map[" <> suffix, data) do
+    case String.split(suffix, "]", parts: 2) do
+      [key_type, type] ->
+        get_in(@schemas, [key_type, "underlying"]) == "string" and
+          valid?("map[string]" <> type, data)
+
+      _ ->
+        false
+    end
+  end
+
   defp valid?("string", data), do: is_binary(data)
   defp valid?("bool", data), do: is_boolean(data)
 
