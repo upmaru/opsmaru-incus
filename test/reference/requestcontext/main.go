@@ -4,7 +4,13 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
+	"errors"
+	"fmt"
 	incus "github.com/lxc/incus/v7/client"
 	"os"
 	"time"
@@ -56,6 +62,29 @@ func main() {
 	out := map[string]any{"profile": profile, "etag": etag}
 	if err != nil {
 		out["error"] = err.Error()
+		// Public certificate diagnostics only, to distinguish fixture generation
+		// from a served-chain mismatch. Never include private-key material.
+		var verify *tls.CertificateVerificationError
+		if errors.As(err, &verify) {
+			diagnostic := map[string]any{}
+			if len(verify.UnverifiedCertificates) > 0 {
+				diagnostic["served_leaf_sha256"] = fmt.Sprintf("%x", sha256.Sum256(verify.UnverifiedCertificates[0].Raw))
+			}
+			block, _ := pem.Decode([]byte(in.Cert))
+			if block != nil {
+				diagnostic["fixture_leaf_sha256"] = fmt.Sprintf("%x", sha256.Sum256(block.Bytes))
+				leaf, parseErr := x509.ParseCertificate(block.Bytes)
+				roots := x509.NewCertPool()
+				roots.AppendCertsFromPEM([]byte(in.CA))
+				if parseErr == nil {
+					_, checkErr := leaf.Verify(x509.VerifyOptions{Roots: roots, DNSName: "localhost"})
+					if checkErr != nil {
+						diagnostic["fixture_verify_error"] = checkErr.Error()
+					}
+				}
+			}
+			out["certificate_diagnostic"] = diagnostic
+		}
 	}
 	if err := json.NewEncoder(os.Stdout).Encode(out); err != nil {
 		panic(err)

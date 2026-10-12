@@ -77,7 +77,7 @@ defmodule Opsmaru.Incus.RequestContextTest do
         else: Map.put(input, :Socket, endpoint.socket)
 
     expected = oracle(root, input)
-    refute expected["error"]
+    refute expected["error"], inspect(expected)
     [native] = HTTPFixture.requests(fixture)
     {:ok, original} = Incus.connect(connection, context)
 
