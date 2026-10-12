@@ -313,25 +313,47 @@ defmodule Opsmaru.Incus.NativeConfig do
   defp native_result(_ctx, {:scalar, :null, _raw}, _existing), do: {:ok, nil}
 
   defp native_result(%{type: "ConfigMap"}, {:map, entries, merges}, existing) do
-    with {:ok, value} <- native_entries(fold_map({:map, entries, merges})) do
+    with {:ok, folded} <- fold_node({:map, entries, merges}, :stringify),
+         {:ok, value} <- native_values(folded) do
       {:ok, Map.merge(existing || %{}, value)}
     end
   end
 
   defp native_result(%{type: "DevicesMap"}, {:map, entries, merges}, existing) do
-    existing = existing || %{}
-    entries = fold_map({:map, entries, merges})
+    with {:ok, folded} <- fold_node({:map, entries, merges}, :stringify) do
+      fold_devices(folded, existing || %{})
+    end
+  end
 
-    Enum.reduce_while(entries, {:ok, existing}, fn {key, value}, {:ok, acc} ->
+  defp native_result(_ctx, _node, _existing), do: :error
+
+  defp fold_devices(entries, acc) do
+    Enum.reduce_while(entries, {:ok, acc}, fn {key, value}, {:ok, acc} ->
+      case fold_device(value, Map.get(acc, key, %{})) do
+        {:ok, device} -> {:cont, {:ok, Map.put(acc, key, device)}}
+        _ -> {:halt, :error}
+      end
+    end)
+  end
+
+  defp fold_device({:map, inner, inner_merges}, device) do
+    with {:ok, props_folded} <- fold_node({:map, inner, inner_merges}, :string_keys),
+         {:ok, props} <- native_values(props_folded) do
+      {:ok, Map.merge(device, props)}
+    end
+  end
+
+  defp fold_device(_value, _device), do: :error
+
+  # Value construction at a result boundary: scalars stringify natively,
+  # any other shape (map, sequence, timestamp, failed tag) fails.
+  defp native_values(entries) do
+    Enum.reduce_while(entries, {:ok, %{}}, fn {key, value}, {:ok, acc} ->
       case value do
-        {:map, inner, inner_merges} ->
-          case native_entries(fold_map({:map, inner, inner_merges})) do
-            {:ok, props} ->
-              device = Map.get(acc, key, %{})
-              {:cont, {:ok, Map.put(acc, key, Map.merge(device, props))}}
-
-            :error ->
-              {:halt, :error}
+        {:scalar, term, _raw} ->
+          case scalar_string(term) do
+            {:ok, native} -> {:cont, {:ok, Map.put(acc, key, native)}}
+            :error -> {:halt, :error}
           end
 
         _ ->
@@ -339,28 +361,6 @@ defmodule Opsmaru.Incus.NativeConfig do
       end
     end)
   end
-
-  defp native_result(_ctx, _node, _existing), do: :error
-
-  defp native_entries(entries) do
-    Enum.reduce_while(entries, {:ok, %{}}, fn entry, {:ok, acc} ->
-      native_entry(entry, acc)
-    end)
-  end
-
-  # An unresolved key (a failed tag in a compose-only map) fails when it
-  # is actually constructed, for example through a merge without an
-  # override.
-  defp native_entry({:unresolved_key, _value}, _acc), do: {:halt, :error}
-
-  defp native_entry({key, {:scalar, term, _raw}}, acc) do
-    case scalar_string(term) do
-      {:ok, native} -> {:cont, {:ok, Map.put(acc, key, native)}}
-      :error -> {:halt, :error}
-    end
-  end
-
-  defp native_entry({_key, _value}, _acc), do: {:halt, :error}
 
   # ---------------------------------------------------------------------
   # Node parser over the token stream.
@@ -455,22 +455,22 @@ defmodule Opsmaru.Incus.NativeConfig do
   # Sequences and deeper mappings are unsupported shapes.
   defp parse_collection(_ctx, _depth, _anchor, _kind, _mode), do: :error
 
-  # Null keys: the outer map is built into map[string]any (a null key
-  # silently fails construction and is dropped); explicit device properties
-  # validate every key as a string (error). Merge sources construct directly
-  # into the target map, so null keys drop there.
+  # Entries keep their raw keys and duplicates; native applies the key and
+  # duplicate checks when the mapping is constructed, so parsing must not
+  # reject either. Checked and compose-only mappings differ only in scalar
+  # resolution mode: dropped subtrees keep tag failures unresolved.
   defp parse_checked_mapping(ctx, depth, anchor) do
-    null_policy = if depth == 0 or ctx.in_merge, do: :drop, else: :error
-
-    with {:ok, entries, merges, ctx} <- parse_mapping(ctx, depth, null_policy, :value),
+    with {:ok, entries, merges, ctx} <- parse_mapping(ctx, depth, :value),
          {:ok, ctx} <- expect(ctx, :yamerl_collection_end),
-         {:ok, ctx} <- charge(ctx, 1, 0),
-         {:ok, node} <- finalize_map(entries, merges) do
-      close_anchor(ctx, anchor, node)
+         {:ok, ctx} <- charge(ctx, 1, 0) do
+      close_anchor(ctx, anchor, {:map, entries, merges})
     end
   end
 
   defp collection_allowed?(%{type: "DevicesMap"}, 1, :value), do: true
+  # Merge sources construct into a map at any nesting depth, unlike regular
+  # values whose shape is bounded to the two top levels.
+  defp collection_allowed?(%{in_merge: true}, _depth, :value), do: true
   defp collection_allowed?(_ctx, 0, :value), do: true
   defp collection_allowed?(_ctx, _depth, _mode), do: false
 
@@ -479,12 +479,13 @@ defmodule Opsmaru.Incus.NativeConfig do
   # composed node is still anchored, so aliases can reference its contents
   # later and natively construct them into the alias's target.
   defp compose_unchecked(ctx, depth, anchor, :mapping) do
-    # No duplicate-key check: native composes the dropped value's mapping
-    # without one, and the contents are only constructed through aliases.
-    with {:ok, entries, merges, ctx} <- parse_mapping(ctx, depth, :drop, :drop),
+    # Dropped values compose without shape or key validation; their
+    # contents are only constructed (with the full key and duplicate
+    # checks) through an alias or merge.
+    with {:ok, entries, merges, ctx} <- parse_mapping(ctx, depth, :drop),
          {:ok, ctx} <- expect(ctx, :yamerl_collection_end),
          {:ok, ctx} <- charge(ctx, 1, 0) do
-      close_anchor(ctx, anchor, {:map, resolve_entries(entries), merges})
+      close_anchor(ctx, anchor, {:map, entries, merges})
     end
   end
 
@@ -496,37 +497,107 @@ defmodule Opsmaru.Incus.NativeConfig do
     end
   end
 
-  # Merge sources fill keys the explicit entries do not set; in a sequence
-  # of merge sources the earlier source wins. Sources are themselves folded
-  # first because they may carry their own merges.
-  defp fold_map({:map, entries, nil}), do: entries
+  # Folding a mapping node for construction: the explicit entries are
+  # constructed against the target policy, then the merge sources fill keys
+  # the explicit entries do not set (earlier source wins). Native applies
+  # the key and duplicate checks when the node is constructed, so anchored
+  # nodes keep their raw entries until this point and an alias or merge
+  # that never constructs the node stays accepted.
+  defp fold_node({:map, entries, nil}, policy), do: construct_entries(entries, policy)
 
-  defp fold_map({:map, entries, source}) do
-    merge_entries(merge_sources(source), entries)
+  defp fold_node({:map, entries, source}, policy) do
+    with {:ok, explicit} <- construct_entries(entries, policy) do
+      fold_sources(merge_sources(source), explicit)
+    end
   end
 
   defp merge_sources({:map, _entries, _merges} = node), do: [node]
   defp merge_sources({:seq, sources}), do: sources
 
-  defp merge_entries(sources, explicit) do
+  # Merge sources always construct into map[string]any, never the target
+  # type, so their keys take the stringify policy regardless of where the
+  # merge lands (root, device, or nested in another source).
+  defp fold_sources(sources, explicit) do
     keys = explicit |> Enum.map(&elem(&1, 0)) |> MapSet.new()
 
-    extra =
-      sources
-      |> Enum.reduce({keys, []}, fn source, {keys, acc} ->
-        Enum.reduce(fold_map(source), {keys, acc}, fn {key, value}, {keys, acc} ->
-          if MapSet.member?(keys, key) do
-            {keys, acc}
-          else
-            {MapSet.put(keys, key), [{key, value} | acc]}
-          end
-        end)
-      end)
-      |> elem(1)
-      |> Enum.reverse()
-
-    extra ++ explicit
+    case Enum.reduce_while(sources, {keys, []}, fn source, {keys, acc} ->
+           with {:ok, src_entries} <- fold_node(source, :stringify),
+                {keys, extra} <- fold_source_entries(src_entries, keys, []) do
+             {:cont, {keys, extra ++ acc}}
+           else
+             _ -> {:halt, :error}
+           end
+         end) do
+      {_keys, extra} -> {:ok, Enum.reverse(extra) ++ explicit}
+      :error -> :error
+    end
   end
+
+  defp fold_source_entries(entries, keys, acc) do
+    Enum.reduce_while(entries, {keys, acc}, fn {key, value}, {keys, acc} ->
+      if MapSet.member?(keys, key) do
+        {:cont, {keys, acc}}
+      else
+        {:cont, {MapSet.put(keys, key), [{key, value} | acc]}}
+      end
+    end)
+  end
+
+  # Key construction for a mapping: duplicate keys compare raw scalar text
+  # (native compares the key nodes), null keys are dropped, timestamps and
+  # failed tag resolution reject, and device property maps additionally
+  # require string keys. Every other scalar key keeps its raw text.
+  defp construct_entries(entries, policy) do
+    case Enum.reduce_while(entries, {MapSet.new(), []}, fn entry, acc ->
+           construct_entry(entry, policy, acc)
+         end) do
+      {_seen, acc} -> {:ok, Enum.reverse(acc)}
+      :error -> :error
+    end
+  end
+
+  defp construct_entry({_raw, :skip, _source}, _policy, {seen, acc}),
+    do: {:cont, {seen, acc}}
+
+  defp construct_entry({raw, term, value}, policy, {seen, acc}) do
+    if MapSet.member?(seen, raw) do
+      {:halt, :error}
+    else
+      seen = MapSet.put(seen, raw)
+
+      cond do
+        # Null keys fail device-property construction outright but drop
+        # silently into map[string]any targets.
+        term == :null and policy == :string_keys ->
+          {:halt, :error}
+
+        # Null keys and merge-tagged values drop their entry; the key text
+        # still participates in duplicate detection.
+        term == :null or is_nil(value) ->
+          {:cont, {seen, acc}}
+
+        true ->
+          case map_key(raw, term, policy) do
+            :error -> {:halt, :error}
+            key -> {:cont, {seen, [{key, value} | acc]}}
+          end
+      end
+    end
+  end
+
+  # Device property maps require string keys; map[string]any targets keep
+  # the raw text of any scalar key (integers, floats, booleans and the
+  # non-finite float markers all stringify to their raw form).
+  defp map_key(_raw, :timestamp, _policy), do: :error
+  defp map_key(_raw, :unresolved, _policy), do: :error
+
+  defp map_key(raw, term, :stringify)
+       when is_binary(term) or is_integer(term) or is_float(term) or is_boolean(term) or
+              term in [:nan, :pos_inf, :neg_inf],
+       do: raw
+
+  defp map_key(raw, term, :string_keys) when is_binary(term), do: raw
+  defp map_key(_raw, _term, _policy), do: :error
 
   defp parse_sequence(ctx, depth) do
     state =
@@ -611,7 +682,7 @@ defmodule Opsmaru.Incus.NativeConfig do
     end
   end
 
-  defp parse_mapping(ctx, depth, null_policy, mode) do
+  defp parse_mapping(ctx, depth, mode) do
     state =
       Enum.reduce_while(ctx.tokens, {ctx, [], nil}, fn _token, {c, entries, merges} ->
         case c.tokens do
@@ -625,7 +696,7 @@ defmodule Opsmaru.Incus.NativeConfig do
             end
 
           _ ->
-            case parse_entry(c, depth, null_policy, merges, mode) do
+            case parse_entry(c, depth, merges, mode) do
               {:ok, c2, entry, merges2} -> {:cont, {c2, [entry | entries], merges2}}
               :error -> {:halt, :error}
             end
@@ -641,7 +712,6 @@ defmodule Opsmaru.Incus.NativeConfig do
   defp parse_entry(
          %{tokens: [{:yamerl_mapping_key, _l, _c} | rest]} = ctx,
          depth,
-         null_policy,
          merges,
          mode
        ) do
@@ -653,15 +723,18 @@ defmodule Opsmaru.Incus.NativeConfig do
       {:ok, {:scalar, :merge, raw}, ctx} ->
         merge_key_entry(ctx, raw, depth, merges)
 
+      {:ok, {:scalar, :null, raw}, ctx} ->
+        dropped_key_entry(ctx, raw, depth, merges)
+
       {:ok, {:scalar, term, raw}, ctx} ->
-        scalar_key_entry(ctx, term, raw, depth, null_policy, merges, mode)
+        value_entry(ctx, raw, term, depth, merges, mode)
 
       _ ->
         :error
     end
   end
 
-  defp parse_entry(_ctx, _depth, _null_policy, _merges, _mode), do: :error
+  defp parse_entry(_ctx, _depth, _merges, _mode), do: :error
 
   defp merge_key_entry(ctx, raw, depth, nil) do
     with {:ok, ctx} <- expect(ctx, :yamerl_mapping_value),
@@ -673,32 +746,25 @@ defmodule Opsmaru.Incus.NativeConfig do
   # A second merge key is a duplicate-key error natively.
   defp merge_key_entry(_ctx, _raw, _depth, _merges), do: :error
 
-  defp scalar_key_entry(ctx, term, raw, depth, null_policy, merges, mode) do
-    case key_term(term, raw, null_policy) do
-      :error -> :error
-      :drop -> dropped_key_entry(ctx, raw, depth, merges)
-      key -> value_entry(ctx, raw, key, depth, merges, mode)
-    end
-  end
-
   defp dropped_key_entry(ctx, raw, depth, merges) do
     # A null key fails string construction and is dropped natively; its
     # value still composes (aliases must resolve) but is never constructed,
-    # so any shape is accepted.
+    # so any shape is accepted. The entry keeps its raw key so duplicate
+    # null keys still reject when the mapping is constructed.
     with {:ok, ctx} <- expect(ctx, :yamerl_mapping_value),
          {:ok, _value, ctx} <- parse_node(ctx, depth + 1, :drop) do
-      {:ok, ctx, {raw, :drop, nil}, merges}
+      {:ok, ctx, {raw, :null, nil}, merges}
     end
   end
 
-  defp value_entry(ctx, raw, key, depth, merges, mode) do
+  defp value_entry(ctx, raw, term, depth, merges, mode) do
     with {:ok, ctx} <- expect(ctx, :yamerl_mapping_value),
          {:ok, value, ctx} <- parse_node(ctx, depth + 1, mode) do
       if merge_value?(value) do
         # constructMerge always fails; the entry is dropped.
-        {:ok, ctx, {raw, :drop, nil}, merges}
+        {:ok, ctx, {raw, term, nil}, merges}
       else
-        {:ok, ctx, {raw, key, value}, merges}
+        {:ok, ctx, {raw, term, value}, merges}
       end
     end
   end
@@ -772,64 +838,9 @@ defmodule Opsmaru.Incus.NativeConfig do
     end
   end
 
-  # Duplicate keys compare raw scalar text (native: same kind + value);
-  # the merge key is tracked for duplicates but never becomes an entry.
-  defp finalize_map(entries, merges) do
-    seen =
-      Enum.reduce_while(entries, MapSet.new(), fn {raw, _key, _value}, seen ->
-        if MapSet.member?(seen, raw), do: {:halt, :error}, else: {:cont, MapSet.put(seen, raw)}
-      end)
-
-    case seen do
-      :error ->
-        :error
-
-      _set ->
-        # Merge sources stay in the node (see fold_map/1); construction
-        # into a map folds them at the result boundary.
-        {:ok, {:map, resolve_entries(entries), merges}}
-    end
-  end
-
-  # :skip is a merge key; :drop is an entry that fails native construction
-  # (null keys, merge-tagged values) and is dropped. Later duplicates win.
-  defp resolve_entries(entries) do
-    entries
-    |> Enum.reduce({MapSet.new(), []}, fn {_raw, key, value}, {keys, acc} ->
-      cond do
-        key in [:skip, :drop] -> {keys, acc}
-        MapSet.member?(keys, key) -> {keys, update_entry(acc, key, value)}
-        true -> {MapSet.put(keys, key), [{key, value} | acc]}
-      end
-    end)
-    |> elem(1)
-    |> Enum.reverse()
-  end
-
-  defp update_entry(list, key, value) do
-    Enum.map(list, fn item ->
-      if elem(item, 0) == key, do: {key, value}, else: item
-    end)
-  end
-
-  # Keys keep the raw scalar text (native construction into string targets
-  # preserves the text). Null keys are dropped or rejected by policy.
   # Token string fields are charlists of unicode codepoints.
   defp token_text(data) when is_binary(data), do: data
   defp token_text(data), do: List.to_string(data)
-
-  defp key_term(:null, _raw, :drop), do: :drop
-  defp key_term(:null, _raw, :error), do: :error
-
-  # Device property keys construct into a string-keyed map natively: a key
-  # that is not a string term fails. Outer and merge-source maps construct
-  # into map[string]any, where fromMapStringAny stringifies every scalar
-  # key. An unresolved (tag-failed) key in a compose-only map is a marker
-  # that fails construction if the entry is ever used through a merge.
-  defp key_term(:unresolved, _raw, :drop), do: :unresolved_key
-  defp key_term(_term, raw, :drop), do: raw
-  defp key_term(term, raw, :error) when is_binary(term), do: raw
-  defp key_term(_term, _raw, :error), do: :error
 
   # ---------------------------------------------------------------------
   # go-yaml v4 scalar resolution and native stringification.
@@ -1046,22 +1057,31 @@ defmodule Opsmaru.Incus.NativeConfig do
     end
   end
 
-  # Go strconv.underscoreOK: an underscore must sit between digits.
-  defp underscore_ok?(_cs, 0), do: true
+  # Go strconv.ParseFloat underscore validation: an underscore must not be
+  # first or last and must follow a digit or letter; the flag resets after
+  # every underscore and every other character, so a rejected underscore
+  # stays rejected even when later digits appear.
+  defp underscore_ok?(cs, n) do
+    case Enum.reduce_while(0..(n - 1), false, fn idx, saw ->
+           c = :erlang.element(idx + 1, cs)
 
-  defp underscore_ok?(cs, i) do
-    saw =
-      Enum.reduce(0..(i - 1), :start, fn idx, saw ->
-        c = :erlang.element(idx + 1, cs)
+           cond do
+             c in ?0..?9 or c in ?a..?z or c in ?A..?Z ->
+               {:cont, true}
 
-        cond do
-          c == ?_ -> if(saw == :digit, do: :under, else: :bad)
-          c in ?0..?9 -> :digit
-          true -> :other
-        end
-      end)
+             c == ?_ and idx > 0 and idx < n - 1 and saw ->
+               {:cont, false}
 
-    saw in [:start, :digit, :other]
+             c == ?_ ->
+               {:halt, :error}
+
+             true ->
+               {:cont, false}
+           end
+         end) do
+      :error -> false
+      _ -> true
+    end
   end
 
   # Go strconv.ParseInt(plain, 0, 64) followed by ParseUint(plain, 0, 64).
@@ -1370,8 +1390,15 @@ defmodule Opsmaru.Incus.NativeConfig do
         charge(ctx, 1, byte_size(raw))
 
       {:map, entries, merges} ->
+        # Merge-key entries carry the source node, charged by expand_merge;
+        # dropped entries (nil values) were charged at parse time.
+        values =
+          for {_raw, term, value} <- entries, term != :skip and not is_nil(value), reduce: [] do
+            acc -> [value | acc]
+          end
+
         with {:ok, ctx} <- charge(ctx, 1, 0),
-             {:ok, ctx} <- expand_items(entries |> Enum.map(&elem(&1, 1)), ctx) do
+             {:ok, ctx} <- expand_items(values, ctx) do
           expand_merge(merges, ctx)
         end
 

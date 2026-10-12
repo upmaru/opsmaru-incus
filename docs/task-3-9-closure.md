@@ -283,9 +283,9 @@ untagged scalars; quoted and block scalars stay strings. Explicit tags, anchors,
 undefined/forward/self aliases, duplicate keys, merge keys (including anchored
 flow and block templates), null/dropped keys, null versus absent documents and
 first-document selection follow the unchanged native decoder. Alias expansion
-is charged against an explicit node/byte budget before construction. A 235-row
-oracle matrix and 11,400 randomized reviewer-generated config/device documents
-across ten seeds match the unchanged native decoder, including values under
+is charged against an explicit node/byte budget before construction. A 291-row
+oracle matrix and 13,800 randomized reviewer-generated config/device documents
+across twelve seeds match the unchanged native decoder, including values under
 dropped null keys, anchored merge templates and leading-dot exponents. Three differences remain
 recorded side by side: yamerl accepts tab indentation that the native scanner
 rejects; native replaces invalid UTF-8 in `!!binary` with U+FFFD while ours
@@ -301,3 +301,12 @@ stayed strings. All four were confirmed against the unchanged native driver and
 fixed, together with trailing-dot floats, alias-to-sequence merge sources,
 flow-sequence anchors and lazy tag resolution under dropped keys found by a
 broader reviewer differential. Each case is now an oracle matrix row.
+
+Greptile batch re-review `bc6c830a-6675-4890-8069-946d21e2dad8` (2/5) confirmed
+those fixes and found three more: aliases to maps stored under dropped keys
+skipped key-type and duplicate checks, duplicate handling under dropped keys was
+quadratic (6.1 s for 458 KB), and `._5` became a number. Key and duplicate
+checks now run when a node is constructed, by any path; duplicate tracking is
+keyed; and underscore validation mirrors Go `strconv`. Decoding is linear in
+our code at roughly twice yamerl's own tokenizer time, about 1.4 s at the 1 MiB
+input bound in the worst measured shape.

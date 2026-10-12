@@ -108,6 +108,69 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
     {"ConfigMap", "~: &m {!!int abc: 1}\nk: v\n<<: *m\n", nil},
     # inline merge-source values are lazy too when overridden
     {"DevicesMap", "d: {<<: [{k: !!float abc}], k: x}\n", nil},
+    # aliased dropped maps run the same key checks native applies at
+    # construction: key type, raw-text duplicates, and null-key handling
+    {"DevicesMap", "~: &m {1: x}\nd: *m\n", nil},
+    {"DevicesMap", "~: &m {\"1\": x, 1: y}\nd: *m\n", nil},
+    {"DevicesMap", "~: &m {a: 1, a: 2}\nd: *m\n", nil},
+    {"DevicesMap", "~: &m {~: x}\nd: *m\n", nil},
+    {"DevicesMap", "~: &m {2024-01-01: x}\nd: *m\n", nil},
+    {"DevicesMap", "~: &m {true: x}\nd: *m\n", nil},
+    {"DevicesMap", "~: &m {k: v}\nn: &n {d: *m}\nd: *n\n", nil},
+    {"DevicesMap", "~: &m {a: 1, a: 2}\nd: {<<: *m, b: z}\n", nil},
+    {"DevicesMap", "d: &m {a: 1, a: 2}\ne: *m\n", nil},
+    {"ConfigMap", "~: &m {a: 1, a: 2}\n<<: *m\n", nil},
+    {"ConfigMap", "~: &m {a: 1, a: 2}\n<<: *m\na: x\n", nil},
+    {"ConfigMap", "~: &m {\"1\": x, 1: y}\n<<: *m\n", nil},
+    {"ConfigMap", "~: &m {1: x, 0x1: y}\n<<: *m\n", nil},
+    {"ConfigMap", "{1: x, 0x1: y}\n", nil},
+    {"ConfigMap", "~: &m {1.5: x, 1.50: y}\n<<: *m\n", nil},
+    {"ConfigMap", "~: &m {~: x, ~: y}\n<<: *m\n", nil},
+    {"ConfigMap", "~: &m {~: x, null: y}\n<<: *m\n", nil},
+    {"ConfigMap", "~: &m {\"\": x, ~: y}\n<<: *m\n", nil},
+    {"ConfigMap", "\"\": x\n", nil},
+    # timestamp keys fail string-key construction everywhere
+    {"ConfigMap", "2024-01-01: x\n", nil},
+    {"ConfigMap", "~: &m {2024-01-01: x}\n<<: *m\n", nil},
+    {"DevicesMap", "2024-01-01: {k: v}\n", nil},
+    # merge-tagged values drop their entry; the key still counts for dups
+    {"ConfigMap", "k: !!merge x\n", nil},
+    {"ConfigMap", "a: !!merge <<\n", nil},
+    {"ConfigMap", "k: !!merge x\nk: 1\n", nil},
+    {"ConfigMap", "~: &m {k: !!merge x}\n<<: *m\n", nil},
+    {"DevicesMap", "d: {.inf: !!merge x}\n", nil},
+    # non-finite float keys keep their raw text into map[string]any
+    {"ConfigMap", ".inf: 1\n", nil},
+    {"ConfigMap", ".nan: 1\nb: 2\n", nil},
+    {"ConfigMap", "~: &m {.inf: 1}\n<<: *m\n", nil},
+    {"DevicesMap", "d: {.nan: x}\n", nil},
+    # literal merge sources compose at any nesting depth
+    {"ConfigMap", "~: &m {<<: {a: 1}}\n<<: *m\n", nil},
+    {"ConfigMap", "~: &m {<<: {a: 1}, a: 2}\n<<: *m\n", nil},
+    {"DevicesMap", "~: &m {<<: [{a: 1}, {b: 2}]}\nd: {<<: *m}\n", nil},
+    # underscore handling mirrors Go strconv.ParseFloat exactly
+    {"ConfigMap", "k: _5\n", nil},
+    {"ConfigMap", "k: ._5\n", nil},
+    {"ConfigMap", "k: 5_\n", nil},
+    {"ConfigMap", "k: 5__0\n", nil},
+    {"ConfigMap", "k: 0x_1\n", nil},
+    {"ConfigMap", "k: 0_x1\n", nil},
+    {"ConfigMap", "k: 1e_5\n", nil},
+    {"ConfigMap", "k: 1_e5\n", nil},
+    {"ConfigMap", "k: .5_\n", nil},
+    {"ConfigMap", "k: -_5\n", nil},
+    {"ConfigMap", "k: +_.5\n", nil},
+    {"ConfigMap", "k: !!float _5\n", nil},
+    {"ConfigMap", "k: !!float ._5\n", nil},
+    {"ConfigMap", "k: !!float 5_\n", nil},
+    {"ConfigMap", "k: !!float 5__0\n", nil},
+    {"ConfigMap", "k: !!float 0x_1\n", nil},
+    {"ConfigMap", "k: !!float 0_x1\n", nil},
+    {"ConfigMap", "k: !!float 1e_5\n", nil},
+    {"ConfigMap", "k: !!float 1_e5\n", nil},
+    {"ConfigMap", "k: !!float .5_\n", nil},
+    {"ConfigMap", "k: !!float -_5\n", nil},
+    {"ConfigMap", "k: !!float +_.5\n", nil},
     # explicit tags
     {"ConfigMap", "k: !!int 1.5", nil},
     {"ConfigMap", "k: !!float 0x10", nil},
@@ -459,6 +522,50 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
   end
 
   # --- Safety ---------------------------------------------------------------
+
+  test "worst-case duplicate handling on near-limit inputs stays linear" do
+    # Duplicates inside a mapping whose key is dropped: the mapping is
+    # composed once and never constructed (native skips the duplicate
+    # check entirely), so the whole input must parse and finish quickly.
+    dropped_dups =
+      "~:\n" <>
+        Enum.map_join(0..39_999, "", fn n -> " d_#{n}: 1\n" end) <>
+        Enum.map_join(0..39_999, "", fn n -> " d_#{n}: 2\n" end) <>
+        "k: 1\n"
+
+    assert byte_size(dropped_dups) < 1_048_576
+
+    started = System.monotonic_time(:millisecond)
+    assert {:ok, %{"k" => "1"}} = NativeConfig.from_yaml("ConfigMap", dropped_dups)
+    elapsed = System.monotonic_time(:millisecond) - started
+    assert elapsed < 1_000, "dropped duplicates took #{elapsed}ms"
+
+    # A large checked map: every entry is constructed at the result
+    # boundary, so key and duplicate validation is the hot path.
+    # Sized so the encoded output stays under the result budget as well.
+    big_checked = Enum.map_join(0..69_999, "", fn n -> "k_#{n}: 1\n" end)
+
+    assert byte_size(big_checked) < 1_048_576
+
+    started = System.monotonic_time(:millisecond)
+
+    assert {:ok, value} =
+             NativeConfig.from_yaml("ConfigMap", big_checked)
+
+    elapsed = System.monotonic_time(:millisecond) - started
+    assert map_size(value) == 70_000
+    assert elapsed < 1_000, "checked map took #{elapsed}ms"
+
+    # Duplicates in the checked map reject just as fast.
+    dup_checked = big_checked <> "k_4242: 2\n"
+    started = System.monotonic_time(:millisecond)
+
+    assert {:error, %Error{kind: :invalid_native_config}} =
+             NativeConfig.from_yaml("ConfigMap", dup_checked)
+
+    elapsed = System.monotonic_time(:millisecond) - started
+    assert elapsed < 1_000, "duplicate check took #{elapsed}ms"
+  end
 
   test "oversized input and invalid types fail without exposing config" do
     for {type, yaml, existing} <- [
