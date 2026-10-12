@@ -30,6 +30,7 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `EventListener.open/2`, `add_handler/3`, `remove_handler/2`, `active?/1`, `send_event/2`, `wait/2`, `disconnect/1` | Explicit owner-bound callback listener; bounded capacity, sequential isolated callback workers, failure/lifetime cleanup and repeatable terminal result; local wait timeout does not disconnect or cancel work |
 | `Response.metadata_as_map/1`, `metadata_as_string_slice/1`, `metadata_as_operation/1`, `metadata_as_model/2` | Explicit native typed metadata extraction, including initialized-empty map/slice behavior for null, defaults and float64 metadata semantics; original response remains lossless |
 | `Tokens.certificate/1`, `cluster/1`, `encode/1` | Pure conversion of existing operation metadata and exact ordered JSON/base64 token formatting; tokens/addresses are privileged data, never provisioning or automatic connection targets |
+| `SimpleStreams.new!/3`, `refresh/1`, `images/1`, `image/2`, `aliases/1`, `alias/3`, `alias_architectures/3`, `files/2`, `image_file/3`, `unsupported/2` | Explicit verified HTTPS, host-supplied architecture and immutable catalog; pinned projections and checksummed binary sinks; delta adapter and full protocol parity remain open |
 | `OCI.new!/4`, `resolve/3`, `image/2`, `image_file/3`, `unsupported/2` | Explicit host-owned OCI adapter; passive construction, bounded immutable cache, pinned alias/image/unsupported projections and acknowledged binary output; no bundled host runner or installed conversion acceptance |
 | `Session.exec/3`, `console/3`, `input/2`, `output/3`, `control/2`, `resize/3`, `signal/2`, `exit_status/1`, `close/1` | Native operation channels and control messages; local closure does not cancel Incus |
 | `DynamicConsole.open/4`, `attach/1`, `detach/2`, `control/2`, `resize/3`, `close/1` | One accepted console operation/control connection, repeated owner-bound data attachments; bounded capacity/lifetime and no POST replay |
@@ -106,7 +107,7 @@ stdout stub for alias/image projections and unsupported helper errors; it does
 not run real skopeo, unpack an image, use root or contact a registry. Conversion
 contents, actual registry TLS/authentication and external process/file cleanup
 require separate installed-host-adapter acceptance. OCI connection-info/HTTP/
-disconnect and alias-architecture helpers and SimpleStreams remain uncovered.
+disconnect and alias-architecture helpers remain uncovered. SimpleStreams now has a separate verified partial catalog/full-file slice below.
 
 HTTPS uses peer trust, hostname and certificate validity checks. Hosts select
 CA and client certificate/private-key files, or an exact SHA-256 server pin.
@@ -249,10 +250,10 @@ the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
 close/error/EOF semantics apply. This does not expose an arbitrary dialer or
 an OIDC adapter.
 
-The checked manifest currently has 268 differential JSON methods, 899 partial
-reference mappings and 381 missing declarations out of 1,280. Native Incus
+The checked manifest currently has 268 differential JSON methods, 916 partial
+reference mappings and 364 missing declarations out of 1,280. Native Incus
 method evidence is scoped to that implementation; OCI has 15 partial and five
-missing concrete method mappings, while SimpleStreams remains missing. Interface entries
+missing concrete method mappings; SimpleStreams has 16 partial and four missing concrete method mappings. Interface entries
 and schemas account for some mappings; these counts are not distinct client
 operations. Schema-derived field validation and positive fixture results do
 not establish full Incus semantic behavior. `scripts/update-incus-coverage.py`
@@ -334,3 +335,28 @@ checks this error. Actual channel/control behavior is checked independently in
 `session_test.exs`. Private-image positive comparisons use native hexadecimal
 secrets; the pinned Go private-image helper double-escapes special-character
 secrets. No upstream patch or real workload is used by these fixtures.
+
+
+SimpleStreams is a verified partial slice, constructed without contacting a backend:
+
+```elixir
+stream = Opsmaru.Incus.SimpleStreams.new!(https_connection, context,
+  architecture: "aarch64")
+{:ok, catalog} = Opsmaru.Incus.SimpleStreams.refresh(stream)
+{:ok, image} = Opsmaru.Incus.SimpleStreams.alias(catalog, "ubuntu/24.04/arm64", "container")
+{:ok, result} = Opsmaru.Incus.SimpleStreams.image_file(catalog, image.data["target"],
+  %{metadata: metadata_sink, rootfs: rootfs_sink})
+```
+
+Supply a connection without project/member or Incus-authenticated-header selection.
+The host supplies architecture explicitly; pin-equivalent platform selection uses
+the oracle's native architecture (including its Darwin x86_64 fallback). Catalog
+requests share one deadline and aggregate response byte limit; `queue_limit`
+bounds image/alias expansion. Sinks acknowledge binary chunks with `:ok`. Parts
+are verified against SHA-256 and size at completion; a failure can leave partial
+host output, which the host must discard or reconcile. There is no automatic retry,
+HTTP downgrade, redirect following, `/dev/incus/sock` discovery or file creation.
+The approved optional delta adapter is still missing; downloads use full files.
+The four HTTP/connection/disconnect conveniences and complete cache/error variants
+remain open. These fixture results do not establish installed converter or
+real-backend acceptance.

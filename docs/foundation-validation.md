@@ -493,3 +493,39 @@ changes passed strict OpenSpec validation after the artifact revision. Foundatio
 
 The fresh independent Git consumer passed at cleanup runtime
 `81460d24703ec8efa4eb4db3fbd80210560d8717`; the captured lock, default pin and embedding example now record this verified revision.
+
+
+## Blocked-call owner guards and SimpleStreams catalog/full-file slice — 2026-10-12
+
+Full-branch Greptile run `8d76c77a-d61b-49b7-a9ac-353f6d9027e7` at
+`0ade70097778706dd65a62207ee09e3741e7650d` returned 4/5. It confirmed all
+preceding corrections and found one P1: synchronous attachment negotiation and
+control writes prevented the console from processing owner loss. Two regressions
+reproduced this. Independent owner watchers now give normal OTP cleanup a short
+grace period, then stop blocked console/WebSocket actors, including actors still
+negotiating. Existing local channel ownership closes the associated sockets.
+Both cases passed ten repeated runs; the attachment case independently observes
+closure of the unfinished upgrade socket. Accepted operations remain intact;
+there is no backend DELETE or mutation replay.
+
+SimpleStreams now has verified partial evidence for 16 concrete methods and its
+passive constructor. The unchanged Incus v7.0.1 oracle verifies catalog images,
+newest aliases, explicit architecture preference, partial fingerprint ambiguity,
+all six formats, optional fields, delta manifests and six native unsupported
+errors. Independent private HTTPS fixtures verify full-file bytes, names/sizes,
+SHA-256 checks, empty parts, sink rejection, aggregate byte limits, deadline and
+exit-trapping owner-loss cleanup, trust rejection and redirects without downgrade
+or replay. The optional host delta converter and four connection/HTTP/disconnect
+helpers remain missing; no full SimpleStreams claim is made. Catalog expansion
+and metadata share explicit bounds. Source attribution is recorded in the Incus
+notice. The declaration manifest is now 916 partial and 364 missing, unchanged
+pin and `complete_port=false`.
+
+All 573 library tests, strict Credo, canonical checks and actual precommit passed
+locally after the slice; scaffold tests used a disposable PostgreSQL cluster,
+stopped and removed afterward. Go inventory checks passed. Both push/PR CI at
+`0ade700` passed macOS/Linux (runs `38206776421` and `38206780817`); cleanup-only
+`81460d2` also passed both events (runs `38206663081` and `38206664805`). These
+platform results precede the new SimpleStreams/blocked-call slice. Fresh consumer,
+exact-head platform CI and follow-up Greptile remain gates for that slice.
+Foundation 3.9/4.3 and gateway/installed-adapter/Macus acceptance remain open.

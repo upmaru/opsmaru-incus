@@ -15,7 +15,7 @@ defmodule Opsmaru.Incus.DynamicConsole do
   """
   use GenServer
   alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, Model, Operation, WebSocket}
+  alias Opsmaru.Incus.{Error, Model, Operation, Transport, WebSocket}
   defstruct [:pid, :operation]
 
   def open(client, instance, body, opts \\ []) do
@@ -73,6 +73,7 @@ defmodule Opsmaru.Incus.DynamicConsole do
 
   @impl true
   def init({operation, owner, limit}) do
+    Transport.watch_owner(owner)
     fds = get_in(Operation.data(operation), ["metadata", "fds"])
 
     if is_map(fds) and map_size(fds) <= 8 and

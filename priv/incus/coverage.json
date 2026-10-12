@@ -69,10 +69,12 @@
     },
     {
       "id": "client/function/ConnectSimpleStreams",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/interface_method/HTTPTransporter.Transport",
@@ -6432,10 +6434,12 @@
     },
     {
       "id": "client/method/ProtocolSimpleStreams.ExportImage",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetConnectionInfo",
@@ -6453,108 +6457,138 @@
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImage",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAlias",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasArchitectures",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasNames",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasType",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliases",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageFingerprints",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageSecret",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImages",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesAllProjects",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesAllProjectsWithFilter",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesWithFilter",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetPrivateImage",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetPrivateImageFile",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/simple_streams.ex",
+      "evidence": [
+        "test/library/simple_streams_test.exs"
+      ],
+      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Host delta conversion, HTTP/connection lifecycle conveniences and full protocol parity remain unverified."
     },
     {
       "id": "client/method/oidcTransport.RoundTrip",

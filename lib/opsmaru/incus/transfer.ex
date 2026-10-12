@@ -9,7 +9,7 @@ defmodule Opsmaru.Incus.Transfer do
   deadline, completion or caller exit. Source/destination files stay host-owned.
   """
   alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, Response, Transport}
+  alias Opsmaru.Incus.{Error, Response, SimpleStreams, Transport}
   defstruct [:http_status, :headers, :bytes, :result]
 
   def download(client, path, sink, headers \\ []) when is_function(sink, 1),
@@ -26,9 +26,16 @@ defmodule Opsmaru.Incus.Transfer do
   def download_events(client, path, handler, headers \\ []),
     do: run(client, "GET", path, headers, nil, {:events, handler})
 
-  defp run(client, method, path, headers, source, sink) do
+  @doc false
+  def download_origin_events(%{connection: %{transport: :https}} = client, path, handler),
+    do:
+      run(client, "GET", path, [], nil, {:events, handler}, fn _, path ->
+        SimpleStreams.path(path)
+      end)
+
+  defp run(client, method, path, headers, source, sink, path_builder \\ &Incus.request_path/2) do
     with :ok <- Context.authorize(client.context, client.connection),
-         {:ok, path} <- Incus.request_path(client.connection, path),
+         {:ok, path} <- path_builder.(client.connection, path),
          :ok <- headers(headers) do
       result =
         Transport.bounded(client.connection.stream_timeout, method, fn ->

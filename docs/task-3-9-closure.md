@@ -5,7 +5,7 @@ closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
-The declaration manifest currently has 899 partial and 381 missing entries.
+The declaration manifest currently has 916 partial and 364 missing entries.
 Declarations include Go methods, interfaces, types, constants and transport
 abstractions; these counts are not endpoint counts or complete parity evidence.
 No partial mapping is promoted to completion by this continuation.
@@ -61,3 +61,29 @@ contract visible. Then run macOS/Linux library checks, immutable consumer build,
 strict Credo/precommit, isolated canonical checks, strict OpenSpec and Greptile.
 Only after those gates pass can the task checkbox be updated. Backend/hardware
 acceptance stays separate and cannot substitute for missing client evidence.
+
+
+## Approved SimpleStreams boundary and verified partial slice
+
+On 2026-10-12 the user approved keeping SimpleStreams in scope with explicit
+verified HTTPS and an optional host delta adapter. The unchanged native reference
+probes `/dev/incus/sock`, tries HTTP before HTTPS and runs xdelta3 with temporary
+files. Opsmaru omits that discovery/downgrade and delegates conversion/state to
+the host. These approved exceptions do not remove SimpleStreams from task 3.9.
+
+The first slice supplies 16 partial concrete method mappings and passive
+construction. The unchanged oracle verifies catalogs, newest aliases, native
+architecture preference, fingerprint ambiguity/errors, all six image formats,
+optional fields, delta manifests and unsupported-method errors. Independent TLS
+fixtures verify full-file binary/hash/name/size fidelity, empty parts, sink
+rejection, aggregate byte bounds, caller/deadline cleanup and redirect rejection.
+The host explicitly supplies architecture; reproducing pinned platform preference
+requires the same value, including its x86_64 Darwin fallback. Metadata has an
+immutable in-memory cache, not a shared/on-disk cache. Catalog entry and alias
+expansion limits are explicit and failure is visible.
+
+The optional host delta adapter is approved but not implemented. The four
+SimpleStreams HTTP/connection/disconnect helpers remain missing. Delta conversion,
+cache/fallback variants, exhaustive malformed metadata and any installed converter
+acceptance remain open. Full-file success must not be advertised as complete
+SimpleStreams support or used to close task 3.9. Task 4.3 remains separate.

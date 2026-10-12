@@ -94,13 +94,19 @@ defmodule Opsmaru.Incus.InventoryTest do
              entry["status"] == "missing" or entry["evidence"] == ["test/library/oci_test.exs"]
            end)
 
-    assert Enum.all?(
-             Enum.filter(
-               external_protocols,
-               &String.starts_with?(&1["id"], "client/method/ProtocolSimpleStreams.")
-             ),
-             &(&1["status"] == "missing")
-           )
+    simplestreams =
+      Enum.filter(
+        external_protocols,
+        &String.starts_with?(&1["id"], "client/method/ProtocolSimpleStreams.")
+      )
+
+    assert Enum.count(simplestreams, &(&1["status"] == "partial")) == 16
+    assert Enum.count(simplestreams, &(&1["status"] == "missing")) == 4
+
+    assert Enum.all?(simplestreams, fn entry ->
+             entry["status"] == "missing" or
+               entry["evidence"] == ["test/library/simple_streams_test.exs"]
+           end)
 
     for entry <- coverage["entries"] do
       assert entry["status"] in ["partial", "missing"]

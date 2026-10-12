@@ -87,6 +87,7 @@ defmodule Opsmaru.Incus.WebSocket do
 
   @impl true
   def init({connection, path, owner, ref, request_headers, identity}) do
+    Transport.watch_owner(owner)
     deadline = now() + connection.timeout
 
     case Transport.open(connection, deadline) do

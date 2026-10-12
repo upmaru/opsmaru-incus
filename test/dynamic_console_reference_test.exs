@@ -409,6 +409,88 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
   defp end_blocked_console(:owner_loss, owner, _), do: Process.exit(owner, :kill)
   defp end_blocked_console(:control_close, _, peer), do: send(peer, :close_control)
 
+  for call <- [:attach, :control] do
+    test "owner loss stops a console blocked inside #{call} and all owned channels", %{
+      root: root,
+      context: context
+    } do
+      parent = self()
+      counter = :atomics.new(1, [])
+
+      fixture =
+        blocked_console_fixture(root, parent, stalled_attachment: {unquote(call), counter})
+
+      connection =
+        Connection.unix!(HTTPFixture.endpoint(fixture).socket,
+          owner: :fixture,
+          timeout: 5_000,
+          stream_timeout: 30_000,
+          max_stream_bytes: 67_108_864
+        )
+
+      client = %Incus{
+        connection: connection,
+        context: context,
+        server: %Server{api_extensions: @extensions}
+      }
+
+      owner =
+        spawn(fn ->
+          {:ok, console} = DynamicConsole.open(client, "fixture", %{})
+          {:ok, channel} = DynamicConsole.attach(console)
+          send(parent, {:console_call, console, channel})
+
+          receive do
+            :block ->
+              case unquote(call) do
+                :attach ->
+                  DynamicConsole.attach(console)
+
+                :control ->
+                  Enum.reduce_while(1..1_000, nil, fn _, _ ->
+                    case DynamicConsole.control(console, %{
+                           "command" => String.duplicate("x", 65_000)
+                         }) do
+                      :ok -> {:cont, nil}
+                      error -> {:halt, error}
+                    end
+                  end)
+              end
+          end
+        end)
+
+      on_exit(fn -> if Process.alive?(owner), do: Process.exit(owner, :kill) end)
+      assert_receive {:console_call, console, channel}, 1_000
+      control = :sys.get_state(console.pid).control
+
+      on_exit(fn ->
+        for pid <- [console.pid, channel.pid, control.pid],
+            Process.alive?(pid),
+            do: Process.exit(pid, :kill)
+      end)
+
+      socket = :sys.get_state(control.pid).conn |> Mint.HTTP.get_socket()
+      :ok = :inet.setopts(socket, sndbuf: 1024)
+      send(owner, :block)
+
+      case unquote(call) do
+        :attach -> assert_receive {:stalled_upgrade, _}, 1_000
+        :control -> await_blocked_write(control.pid, System.monotonic_time(:millisecond) + 1_000)
+      end
+
+      monitors = for pid <- [console.pid, channel.pid, control.pid], do: Process.monitor(pid)
+      Process.exit(owner, :kill)
+      for monitor <- monitors, do: assert_receive({:DOWN, ^monitor, :process, _, _}, 500)
+
+      if unquote(call) == :attach,
+        do: assert_receive({:stalled_peer_closed, {:error, :closed}}, 1_000)
+
+      assert console.operation.url == "/1.0/operations/console-id"
+      assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
+      refute Enum.any?(HTTPFixture.requests(fixture), &(&1.method == "DELETE"))
+    end
+  end
+
   defp await_blocked_write(pid, deadline) do
     {:current_stacktrace, stack} = Process.info(pid, :current_stacktrace)
 
@@ -421,7 +503,7 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
     end
   end
 
-  defp blocked_console_fixture(root, parent) do
+  defp blocked_console_fixture(root, parent, opts \\ []) do
     start_supervised!(
       {HTTPFixture,
        transport: :gen_tcp,
@@ -433,6 +515,17 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
            %{
              upgrade: fn transport, socket ->
                secret = URI.decode_query(URI.parse(request.target).query)["secret"]
+
+               case opts[:stalled_attachment] do
+                 {:attach, counter} when secret == "private-data" ->
+                   if :atomics.add_get(counter, 1, 1) > 1 do
+                     send(parent, {:stalled_upgrade, self()})
+                     send(parent, {:stalled_peer_closed, transport.recv(socket, 0, 1_000)})
+                   end
+
+                 _ ->
+                   :ok
+               end
 
                accept =
                  Base.encode64(

@@ -72,6 +72,30 @@ defmodule Opsmaru.Incus.Transport do
     end
   end
 
+  @doc false
+  def watch_owner(owner) do
+    worker = self()
+
+    spawn(fn ->
+      owner_monitor = Process.monitor(owner)
+      worker_monitor = Process.monitor(worker)
+
+      receive do
+        {:DOWN, ^worker_monitor, :process, _, _} ->
+          :ok
+
+        {:DOWN, ^owner_monitor, :process, _, _} ->
+          # Allow normal OTP termination, but never depend on the actor reading
+          # its mailbox while negotiation or a socket write is blocked.
+          receive do
+            {:DOWN, ^worker_monitor, :process, _, _} -> :ok
+          after
+            100 -> Process.exit(worker, :kill)
+          end
+      end
+    end)
+  end
+
   defp do_request(connection, method, path, headers, body) do
     deadline = now() + connection.timeout
 
