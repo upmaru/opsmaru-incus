@@ -529,3 +529,6 @@ stopped and removed afterward. Go inventory checks passed. Both push/PR CI at
 platform results precede the new SimpleStreams/blocked-call slice. Fresh consumer,
 exact-head platform CI and follow-up Greptile remain gates for that slice.
 Foundation 3.9/4.3 and gateway/installed-adapter/Macus acceptance remain open.
+
+The fresh external Git consumer passed at SimpleStreams/owner-guard runtime
+`3f48920f36625d0adb92ddca087c9608b4107010`; its resolved lock, default pin and embedding example now record this verified source.

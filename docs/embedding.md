@@ -64,7 +64,7 @@ The independently verified implemented revision is:
 
 ```elixir
 {:opsmaru, git: "https://github.com/upmaru/opsmaru.git",
- ref: "81460d24703ec8efa4eb4db3fbd80210560d8717"}
+ ref: "3f48920f36625d0adb92ddca087c9608b4107010"}
 ```
 
 `test/consumer/revision.txt` records this revision; its `mix.lock` records the
