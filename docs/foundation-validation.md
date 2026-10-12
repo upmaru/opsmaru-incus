@@ -681,3 +681,6 @@ Both runtime and consumer-pin push/PR CI at `b9cd50f`/`e71335f` passed macOS/Lin
 results precede this four-case uncertainty correction; fresh consumer, CI and
 Greptile must verify the next published revision. Foundation 3.9/4.3 and separate
 installed/Macus/gateway acceptance remain open.
+
+The fresh independent consumer passed at uncertainty-corrected runtime
+`51790ed85c55c204863d43690219c9754e26f47c`; its captured lock, default pin and embedding example now record that verified source.
