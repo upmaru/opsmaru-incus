@@ -955,3 +955,43 @@ captured lock, default consumer revision and embedding example now pin that
 source, including Decimal 3.1.2. Exact platform check outcomes are recorded on
 [the draft foundation PR](https://github.com/upmaru/opsmaru/pull/1); task 3.9
 remains open, independently of direct-backend 4.3 and installed/hardware gates.
+
+## URL, copy matrix and relay cleanup continuation (2026-10-12)
+
+Published runtime `f1eea66127c7bb0ed89f385b3f30bed4d526a44f` adds the bounded
+immutable native URL builder and strict copy/migration option validation. Native
+fixtures compare all boolean copy combinations in pull/push modes across local
+and separate HTTPS endpoints, active/inactive source states and same-origin
+cluster member/internal-copy/project variants. Relay peers observe every opened
+socket close after a later upgrade rejection and after caller loss. Accepted
+handles survive errors; these fixtures issue no mutation retries or DELETEs.
+
+The unchanged Incus v7.0.1 reference inventory, model schemas and Go locks match
+the prior verified revision byte-for-byte. Eight URL exports and the URL type
+gain partial evidence: 1134 partial, 146 missing declarations; complete_port=false.
+No other mapping becomes complete. Task 3.9 remains unchecked with its remaining
+supported-entry/protocol completeness gates visible in the closure ledger.
+
+Greptile review `5c8949b1-a836-4ab0-b642-3285f32cc998` gave the continuation
+5/5 and one P2 finding. The full historical branch exceeded its payload limit
+before submission; this single completed sweep reviewed base
+`8a8a9b224fc3aefbf2a614fd4872eabd739cbc61` through
+`32228aa4277083571701a35ce81a9e3301bc6952`. Its ancestry was also verified locally.
+Both improper-list URL crashes were independently reproduced against that source.
+The published correction rejects malformed lists with bounded proper-tail checks
+and permanent regressions; no second Greptile sweep was requested. The score
+does not claim a whole-branch review or satisfy the open merge/3.9 gates.
+
+Post-correction validation passes all 679 database-free library tests,
+warnings-as-errors compilation and strict Credo. Canonical `mise run check` and
+actual `mix precommit` pass against disposable PostgreSQL (five scaffold tests
+each); the cluster is stopped and removed. All four OpenSpec changes validate
+strictly, and the 188 native constant comparisons and Go inventory/schema checks
+pass. A fresh isolated Git consumer passes at the exact published runtime with
+hostile PHX_SERVER/PORT, no database/provider configuration and no sibling checkout.
+Its actual captured lock, revision file and Macus embedding example now pin that
+source. Hosted macOS/Linux check results are recorded on the draft PR separately.
+
+No new real backend, installed converter, gateway or Macus hardware acceptance
+was attempted. The independently recorded direct-client 4.3 evidence remains at
+its recorded runtime; Macus source and ordinary workload/data ownership are unchanged.

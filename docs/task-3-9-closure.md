@@ -228,3 +228,13 @@ recorded exec/dynamic console behavior, complete protocol/option matrices and
 supported-entry completeness gates still need verification. Existing real-backend
 4.3 evidence is independent; no new backend or Macus hardware acceptance follows
 from these fixtures. Installed OCI/delta conversion and gateway remain separate.
+
+Greptile review `5c8949b1-a836-4ab0-b642-3285f32cc998` scored this continuation
+5/5 with one P2 malformed-input finding. The full historical branch exceeded
+its payload limit before submission; the single completed sweep covered
+8a8a9b224fc3aefbf2a614fd4872eabd739cbc61 through
+32228aa4277083571701a35ce81a9e3301bc6952, not the whole foundation. Both improper
+path/query list crashes were independently reproduced against the reviewed source.
+Bounded proper-list validation fixes them, with permanent direct-value/setter
+regressions. The correction is independently verified, without another quota-
+consuming Greptile sweep. Review confidence does not close 3.9 or authorize merge.
