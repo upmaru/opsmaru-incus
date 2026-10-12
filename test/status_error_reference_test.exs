@@ -146,6 +146,47 @@ defmodule Opsmaru.Incus.StatusErrorReferenceTest do
     assert StatusError.check(term, [])
   end
 
+  test "invalid or directly built values never raise or leak unchecked fields" do
+    invalid = {:error, %Error{kind: :invalid_input}}
+
+    for term <- [
+          nil,
+          :x,
+          "404",
+          %StatusError{message: nil},
+          %StatusError{status: "404"},
+          %StatusError{status: 9_223_372_036_854_775_808},
+          %StatusError{message: String.duplicate("a", 65_537)}
+        ] do
+      assert StatusError.error(term) == invalid
+      assert StatusError.status(term) == invalid
+    end
+
+    for term <- [
+          %StatusError{message: nil},
+          %StatusError{status: "404"},
+          %StatusError{status: 1.5, message: "x"}
+        ] do
+      assert StatusError.match(term, []) == invalid
+      assert StatusError.match(term, [404]) == invalid
+      assert StatusError.check(term) == invalid
+    end
+
+    refute inspect(%StatusError{status: "secret"}) =~ "secret"
+  end
+
+  test "oversized and improper code lists are rejected within the bound" do
+    {:ok, term} = StatusError.new(404, "missing")
+    invalid = {:error, %Error{kind: :invalid_input}}
+    huge = List.duplicate(404, 2_000_000)
+    {micros, result} = :timer.tc(fn -> StatusError.match(term, huge) end)
+    assert result == invalid
+    assert micros < 50_000
+    assert StatusError.match(term, List.duplicate(404, 1_024) ++ [404 | :tail]) == invalid
+    assert StatusError.match(term, List.duplicate(404, 10) ++ [404 | :tail]) == invalid
+    assert StatusError.match(:not_status, huge) == invalid
+  end
+
   test "Inspect redacts the message" do
     {:ok, term} = StatusError.new(404, "top secret message")
     rendering = inspect(term)

@@ -100,6 +100,12 @@ defmodule Opsmaru.Incus.StatusError do
     511 => "Network Authentication Required"
   }
 
+  defguardp valid_status(status)
+            when is_integer(status) and status >= @int64_min and status <= @int64_max
+
+  defguardp valid_message(message)
+            when is_binary(message) and byte_size(message) <= @message_max_bytes
+
   @doc """
   Constructs a `t/0` from an already-formatted message.
 
@@ -108,21 +114,31 @@ defmodule Opsmaru.Incus.StatusError do
   is not an integer in Go int64 range or the message is not a binary of at
   most 64 KiB.
   """
-  def new(status, message)
-      when is_integer(status) and status >= @int64_min and status <= @int64_max and
-             is_binary(message) and byte_size(message) <= @message_max_bytes do
-    {:ok, %__MODULE__{status: status, message: message}}
-  end
+  def new(status, message) when valid_status(status) and valid_message(message),
+    do: {:ok, %__MODULE__{status: status, message: message}}
 
-  def new(_status, _message), do: {:error, %Error{kind: :invalid_input}}
+  def new(_status, _message), do: invalid()
 
-  @doc "The message, or the native status text for the status when the message is empty."
-  def error(%__MODULE__{message: message} = term) do
-    if message == "", do: status_text(term.status), else: message
-  end
+  @doc """
+  The message, or the native status text for the status when the message is empty.
+  Values outside the `new/2` bounds, including directly built structs, return
+  `{:error, %Error{kind: :invalid_input}}`.
+  """
+  def error(%__MODULE__{status: status, message: ""}) when valid_status(status),
+    do: status_text(status)
 
-  @doc "The HTTP status code."
-  def status(%__MODULE__{status: status}), do: status
+  def error(%__MODULE__{status: status, message: message})
+      when valid_status(status) and valid_message(message),
+      do: message
+
+  def error(_term), do: invalid()
+
+  @doc "The HTTP status code; invalid values behave as in `error/1`."
+  def status(%__MODULE__{status: status, message: message})
+      when valid_status(status) and valid_message(message),
+      do: status
+
+  def status(_term), do: invalid()
 
   @doc """
   Counterpart of `StatusErrorMatch`.
@@ -133,18 +149,18 @@ defmodule Opsmaru.Incus.StatusError do
   """
   def match(_term, codes \\ [])
 
-  def match(%__MODULE__{} = term, codes) do
-    case validate_codes(codes) do
-      :ok ->
-        if codes == [] or term.status in codes, do: {term.status, true}, else: {-1, false}
-
-      :invalid ->
-        {:error, %Error{kind: :invalid_input}}
+  def match(%__MODULE__{status: status, message: message}, codes)
+      when valid_status(status) and valid_message(message) do
+    case validate_codes(codes, 0) do
+      :ok -> if codes == [] or status in codes, do: {status, true}, else: {-1, false}
+      :invalid -> invalid()
     end
   end
 
+  def match(%__MODULE__{}, _codes), do: invalid()
+
   def match(_term, codes) do
-    if validate_codes(codes) == :ok, do: {-1, false}, else: {:error, %Error{kind: :invalid_input}}
+    if validate_codes(codes, 0) == :ok, do: {-1, false}, else: invalid()
   end
 
   @doc "Counterpart of `StatusErrorCheck`; invalid code lists behave as in `match/2`."
@@ -157,26 +173,22 @@ defmodule Opsmaru.Incus.StatusError do
 
   defp status_text(status), do: Map.get(@status_texts, status, "")
 
-  defp validate_codes(codes) when is_list(codes) and not is_binary(codes) do
-    if proper_list?(codes) and length(codes) <= @codes_max and Enum.all?(codes, &int64?/1) do
-      :ok
-    else
-      :invalid
-    end
-  end
+  defp invalid, do: {:error, %Error{kind: :invalid_input}}
 
-  defp validate_codes(_), do: :invalid
+  # Counted single walk: stops at the bound and rejects improper tails without
+  # traversing an oversized or malformed list.
+  defp validate_codes([], _count), do: :ok
+  defp validate_codes([_ | _], @codes_max), do: :invalid
 
-  defp proper_list?([]), do: true
-  defp proper_list?([_ | rest]), do: proper_list?(rest)
-  defp proper_list?(_), do: false
+  defp validate_codes([code | rest], count) when valid_status(code),
+    do: validate_codes(rest, count + 1)
 
-  defp int64?(value) when is_integer(value), do: value >= @int64_min and value <= @int64_max
-
-  defp int64?(_), do: false
+  defp validate_codes(_codes, _count), do: :invalid
 end
 
 defimpl Inspect, for: Opsmaru.Incus.StatusError do
-  def inspect(error, _),
-    do: "#Opsmaru.Incus.StatusError<status: #{error.status} message redacted>"
+  def inspect(%{status: status}, _) when is_integer(status),
+    do: "#Opsmaru.Incus.StatusError<status: #{status} message redacted>"
+
+  def inspect(_error, _), do: "#Opsmaru.Incus.StatusError<invalid details redacted>"
 end
