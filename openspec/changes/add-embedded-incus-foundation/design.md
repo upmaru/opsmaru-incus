@@ -2,11 +2,13 @@
 
 ## Context
 
-See [proposal.md](proposal.md). The root Phoenix 1.8/Cowboy application already exists and its embedded branch supervises telemetry only, without Endpoint/Repo/PubSub. The existing `scripts/check-embedded.exs` verifies that narrow baseline. There is no Incus client implementation yet. `mix.exs` generates a `test` alias that runs Ecto setup and `config/test.exs` selects standalone web tests; these are unsuitable as the only checks for a reusable no-database library.
+See [proposal.md](proposal.md). At the original planning baseline, the root Phoenix 1.8/Cowboy application had embedded telemetry only, without Endpoint/Repo/PubSub or an Incus client; generated tests expected Ecto/standalone setup. Implementation now supplies safe embedding, a database-free profile and verified partial client slices. The existing `scripts/check-embedded.exs`, method/type manifest and tasks.md distinguish implemented evidence from remaining tasks 3.9 and 4.3.
 
 Macus has an in-progress headless Phoenix/Cowboy server, private Swift runtime.sock and Incus incus.sock relay, reference method/type inventory and fixture-only native protocol trial. Incus v7.0.1 at `13f3992766142d5087fff2e362cd2e1a75294fe8` is the existing reference baseline; transfer reusable inputs/notices and retain consumer-specific bridge evidence. The inspected dependency baseline is Elixir 1.19.5/OTP 27, Phoenix 1.8.15 and the Cowboy adapter recorded in the current locks; verify actual locked compatibility during implementation rather than inventing a release.
 
 This is the first delivery milestone. `add-compute-substrate` consumes its library/client and later adds tools, task adapters, central targets and connectors. `add-remote-api-and-oauth` supplies later central identity/REST/browser adapters. Neither later change is a prerequisite here.
+
+The separately proposed [add-embeddable-incus-gateway](../add-embeddable-incus-gateway/design.md) adds optional reusable native HTTP/upgrade relay mechanics under Opsmaru.Incus.Gateway. OpsmaruWeb or MacusWeb supplies the explicitly selected endpoint/router and host policy. It is not a prerequisite for direct real-Incus client acceptance or a replacement for outstanding typed-client behavior.
 
 ## Goals / Non-Goals
 
@@ -57,6 +59,8 @@ Add an explicit library/core test command/profile that bypasses the generated Ec
 Use fake Unix/HTTPS backends, a pinned official-client differential oracle and deterministic failure/stream fixtures. Run actual dependency startup with hostile web environment values and inspect processes/listeners/state/backend counters. An external Mix consumer fixture uses the Macus-compatible dependency set, hosts its own endpoint/runtime stubs and imports the implemented library without loading a second endpoint/Repo or requiring an absolute sibling source path. Its task is to prove library/client integration, not shared MCP/runner behavior.
 
 Record exactly which method/type entries have implementation/differential evidence. Partial pins may support deliberate Macus development slices, but the change's full-client completion requires every supported entry; no partial implementation is relabeled full parity. Linux real-Incus and Macus consumer bridge/hardware acceptance are separate explicit isolated opt-in gates. No provider, central database or connector setup is part of those foundation checks.
+
+Run task 4.3's direct Unix/verified HTTPS acceptance in Opsmaru against an explicitly supplied isolated real backend, independently of Macus installation or the optional gateway. If gateway acceptance tooling supplies the same environment, reference its exact direct-client results separately from proxy/CLI results. Proxy pass-through cannot close task 3.9, including requests whose typed methods remain missing. Macus installed bridge/VZ/hardware acceptance remains consumer-owned and cannot block an otherwise verified portable foundation.
 
 ### 4a. Explicit host-owned OCI conversion adapter
 

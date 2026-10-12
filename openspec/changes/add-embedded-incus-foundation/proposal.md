@@ -28,7 +28,8 @@ None in the empty main inventory. These two capabilities and their client/setup 
 
 ## Impact
 
-- The scaffold already starts only telemetry when embedded; no portable client exists yet. Its generated test alias and test configuration currently expect PostgreSQL/standalone mode, so a separate no-database library check is needed.
+- At the original proposal baseline, the scaffold started only telemetry when embedded and had no portable client; generated tests expected PostgreSQL/standalone mode. Implementation now has a database-free library profile and verified partial client slices; see tasks.md for outstanding completion gates.
 - Macus add-elixir-server may pin the implemented foundation revision and proceed with local gateway/runtime/native proxy and typed-client integration independently of central features. Shared MCP tools/local task runners are a later compute-substrate milestone, not a gate on library/client acceptance.
 - Implementation adds connection/client modules, fixtures, API/coverage docs and isolated consumer checks in Opsmaru. Swift/VZ and Macus sockets/proxy/launchd remain Macus-owned. Do not migrate another chat's active source or claim hardware acceptance from fixtures.
+- The separate [add-embeddable-incus-gateway](../add-embeddable-incus-gateway/proposal.md) proposes reusable Plug/Cowboy relay mechanics mounted by a host. Macus retains public endpoint/policy/trust/private bridge ownership. Portable real-Incus client acceptance can run in Opsmaru now without Macus or that gateway; proxy success never completes missing typed-client coverage.
 - Keep main/develop as the integration/release boundaries and publish development on feature branches. This request creates a complete proposal only; implementation and real-backend acceptance remain subsequent actions.
