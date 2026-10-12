@@ -40,7 +40,8 @@ The approved design excludes host commands and keeps platform behavior at the
 host boundary. The pinned `client/oci_images.go` has `exec.LookPath("skopeo")`,
 external process execution, a root requirement for `GetImageFile`, and private
 temporary image conversion directories. A literal runtime port conflicts with
-those constraints. Its 20 concrete OCI method declarations remain missing.
+those constraints. The explicit adapter now supplies partial evidence for 15 of
+its 20 concrete OCI methods; five remain missing and none is fully accepted.
 SimpleStreams is a separate protocol and is not excluded by this finding.
 
 The user approved keeping OCI in scope through an explicitly supplied host

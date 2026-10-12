@@ -185,6 +185,12 @@ WebSocket helper omits those parameters. Explicit selection is independently
 checked on every Opsmaru request under the approved connection contract, as
 with direct backups. Actual cluster forwarding remains a real-backend gate.
 
+Image relay copies use host-owned staging sinks and rewindable enumerable source
+factories. A split export requires both rootfs sink and source, including an
+empty rootfs part. A missing, invalid or failed rootfs source returns
+`:missing_relay_adapter` before the target upload; it never substitutes a
+metadata-only image. Staging remains host-owned and is not deleted on failure.
+
 ## Coverage limitations
 
 `Opsmaru.Incus.Preseed.apply(client, native_config, timeout: 30_000)` explicitly
@@ -237,10 +243,10 @@ the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
 close/error/EOF semantics apply. This does not expose an arbitrary dialer or
 an OIDC adapter.
 
-The checked manifest currently has 268 differential JSON methods, 870 partial
-reference mappings and 410 missing declarations out of 1,280. Native Incus
-method evidence is scoped to that implementation; same-named OCI/SimpleStreams
-methods remain missing. Interface entries
+The checked manifest currently has 268 differential JSON methods, 899 partial
+reference mappings and 381 missing declarations out of 1,280. Native Incus
+method evidence is scoped to that implementation; OCI has 15 partial and five
+missing concrete method mappings, while SimpleStreams remains missing. Interface entries
 and schemas account for some mappings; these counts are not distinct client
 operations. Schema-derived field validation and positive fixture results do
 not establish full Incus semantic behavior. `scripts/update-incus-coverage.py`

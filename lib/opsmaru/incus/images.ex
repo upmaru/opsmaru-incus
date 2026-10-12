@@ -268,24 +268,40 @@ defmodule Opsmaru.Incus.Images do
           do: Map.put(sinks, :rootfs, adapter[:rootfs_sink]),
           else: sinks
 
-      with {:ok, transfer} <- download(source, image["fingerprint"], sinks) do
-        upload_opts = [metadata_name: image["filename"] || transfer.result.names.metadata]
-
-        upload_opts =
-          if transfer.result.sizes.rootfs > 0 and is_function(adapter[:rootfs_source], 0),
-            do:
-              Keyword.merge(upload_opts,
-                rootfs: adapter[:rootfs_source].(),
-                rootfs_name: image["filename"] || transfer.result.names.rootfs,
-                type: image["type"]
-              ),
-            else: upload_opts
-
+      with {:ok, transfer} <- download(source, image["fingerprint"], sinks),
+           {:ok, upload_opts} <- relay_upload_options(adapter, image, transfer.result) do
         import(target, body, adapter[:metadata_source].(), upload_opts)
       end
     else
       {:error, %Error{kind: :missing_relay_adapter}}
     end
+  end
+
+  defp relay_upload_options(adapter, image, result) do
+    opts = [metadata_name: image["filename"] || result.names.metadata]
+
+    # Part presence distinguishes a split export even when rootfs is empty.
+    # A saved rootfs must never become a metadata-only target mutation.
+    if Map.has_key?(result.names, :rootfs) do
+      with true <- is_function(adapter[:rootfs_source], 0),
+           rootfs <- adapter[:rootfs_source].(),
+           true <- not is_nil(Enumerable.impl_for(rootfs)) do
+        {:ok,
+         Keyword.merge(opts,
+           rootfs: rootfs,
+           rootfs_name: image["filename"] || result.names.rootfs,
+           type: image["type"]
+         )}
+      else
+        _ -> {:error, %Error{kind: :missing_relay_adapter}}
+      end
+    else
+      {:ok, opts}
+    end
+  rescue
+    _ -> {:error, %Error{kind: :missing_relay_adapter}}
+  catch
+    _, _ -> {:error, %Error{kind: :missing_relay_adapter}}
   end
 
   defp compression(client, data) do

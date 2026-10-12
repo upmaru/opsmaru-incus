@@ -282,6 +282,119 @@ defmodule Opsmaru.Incus.ImageTransferTest do
              Images.copy(source, source, %{"fingerprint" => fingerprint})
   end
 
+  for rootfs <- ["", <<0, 255, 128, 1>>] do
+    test "split relay rejects missing rootfs sources before target upload (bytes=#{byte_size(rootfs)})",
+         %{root: root, context: context} do
+      rootfs = unquote(rootfs)
+      metadata = <<128, 0, 255>>
+      {raw, fingerprint} = split_export(metadata, rootfs)
+      source_fixture = backend(root, fn _ -> %{raw: raw} end)
+      target_fixture = backend(root, fn _ -> %{status: 200, body: %{type: "sync"}} end)
+      source = client(source_fixture, context)
+      target = client(target_fixture, context)
+      owner = self()
+
+      for rootfs_source <- [nil, fn _ -> [] end, fn -> nil end] do
+        adapter = %{
+          metadata_sink: fn bytes ->
+            send(owner, {:staged, :metadata, bytes})
+            :ok
+          end,
+          rootfs_sink: fn bytes ->
+            send(owner, {:staged, :rootfs, bytes})
+            :ok
+          end,
+          metadata_source: fn ->
+            send(owner, :metadata_source_called)
+            [metadata]
+          end,
+          rootfs_source: rootfs_source
+        }
+
+        assert {:error, %Error{kind: :missing_relay_adapter}} =
+                 Images.copy(target, source, %{"fingerprint" => fingerprint},
+                   mode: "relay",
+                   relay: adapter
+                 )
+
+        refute_received :metadata_source_called
+        assert HTTPFixture.requests(target_fixture) |> Enum.map(& &1.method) == ["GET"]
+      end
+
+      assert_received {:staged, :metadata, ^metadata}
+      assert_received {:staged, :rootfs, ^rootfs}
+      assert Enum.all?(HTTPFixture.requests(source_fixture), &(&1.method == "GET"))
+    end
+
+    test "split relay preserves both saved parts including empty rootfs (bytes=#{byte_size(rootfs)})",
+         %{root: root, context: context} do
+      rootfs = unquote(rootfs)
+      metadata = <<128, 0, 255>>
+      {raw, fingerprint} = split_export(metadata, rootfs)
+      source_fixture = backend(root, fn _ -> %{raw: raw} end)
+
+      target_fixture =
+        backend(root, fn _ ->
+          %{status: 202, body: %{type: "async", operation: "/1.0/operations/split-relay"}}
+        end)
+
+      source = client(source_fixture, context)
+      target = client(target_fixture, context)
+      {:ok, stage} = Agent.start_link(fn -> %{metadata: [], rootfs: []} end)
+      on_exit(fn -> if Process.alive?(stage), do: Agent.stop(stage) end)
+
+      adapter =
+        Map.new([:metadata, :rootfs], fn kind ->
+          {kind,
+           fn bytes ->
+             Agent.update(stage, &Map.update!(&1, kind, fn old -> [bytes | old] end))
+           end}
+        end)
+
+      adapter = %{
+        metadata_sink: adapter.metadata,
+        rootfs_sink: adapter.rootfs,
+        metadata_source: fn -> Agent.get(stage, &Enum.reverse(&1.metadata)) end,
+        rootfs_source: fn -> Agent.get(stage, &Enum.reverse(&1.rootfs)) end
+      }
+
+      assert {:ok, accepted} =
+               Images.copy(target, source, %{"fingerprint" => fingerprint},
+                 mode: "relay",
+                 relay: adapter
+               )
+
+      assert accepted.operation == "/1.0/operations/split-relay"
+      [request] = Enum.filter(HTTPFixture.requests(target_fixture), &(&1.method == "POST"))
+      {_, actual_metadata, _, actual_rootfs} = multipart(request)
+      assert actual_metadata == metadata
+      assert actual_rootfs == rootfs
+    end
+  end
+
+  defp split_export(metadata, rootfs) do
+    boundary = "fixture-split-relay"
+
+    header = fn kind ->
+      [{"content-disposition", "form-data; name=\"#{kind}\"; filename=\"#{kind}.tar\""}]
+    end
+
+    body =
+      IO.iodata_to_binary([
+        :cow_multipart.first_part(boundary, header.("metadata")),
+        metadata,
+        :cow_multipart.part(boundary, header.("rootfs")),
+        rootfs,
+        :cow_multipart.close(boundary)
+      ])
+
+    raw =
+      "HTTP/1.1 200 OK\r\nContent-Type: multipart/form-data; boundary=#{boundary}\r\nContent-Length: #{byte_size(body)}\r\n\r\n" <>
+        body
+
+    {raw, Base.encode16(:crypto.hash(:sha256, metadata <> rootfs), case: :lower)}
+  end
+
   defp tls_backend(identity, handler) do
     start_supervised!(
       {HTTPFixture,

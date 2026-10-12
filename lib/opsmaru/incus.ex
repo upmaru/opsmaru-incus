@@ -267,9 +267,5 @@ defmodule Opsmaru.Incus do
 end
 
 defimpl Inspect, for: Opsmaru.Incus do
-  def inspect(_, _), do: "#Opsmaru.Incus<bound client redacted>"
-end
-
-defimpl Inspect, for: Opsmaru.Incus do
   def inspect(_, _), do: "#Opsmaru.Incus<host-bound client redacted>"
 end
