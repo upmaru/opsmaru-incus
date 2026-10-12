@@ -817,3 +817,10 @@ complete_port=false. Foundation remains 21/22 with 3.9 open. Fresh immutable
 consumer/platform checks must verify publication. Greptile trial quota remains
 an external final-review gate; it does not stop implementation. Real-backend
 4.3 and installed-converter/Macus/gateway acceptance remain separately recorded.
+
+
+The fresh isolated Git consumer passed at continuation runtime
+`e9d3921ddddccc563a4b98c4233d8689bf32b277`, including hostile PHX_SERVER/PORT
+and passive startup. The captured dependency lock, default fixture pin and
+Macus embedding example now record that exact immutable source. This does not
+replace pending per-entry completeness, installed adapter or hardware gates.
