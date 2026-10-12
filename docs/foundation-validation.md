@@ -684,3 +684,22 @@ installed/Macus/gateway acceptance remain open.
 
 The fresh independent consumer passed at uncertainty-corrected runtime
 `51790ed85c55c204863d43690219c9754e26f47c`; its captured lock, default pin and embedding example now record that verified source.
+
+
+## Accepted image tokens and blocked session close — 2026-10-12
+
+Full-branch Greptile run `5094e3b6-f97a-4102-af40-b1c208aeeeae` reviewed
+`9fa7b6295bf0a0f57da463a87b2c637afd74bd1c`, returned 3/5 and confirmed
+the earlier accepted-response correction. Both P1 findings reproduced against
+that published runtime: three malformed accepted image-token responses lost
+their operation/response, and closing two blocked session channels returned
+with live workers. Four permanent regressions now preserve uncertainty and
+the original operation/response without a target copy or token replay, and
+terminate all owned session channels under a shared close deadline.
+
+All 606 library tests, strict Credo, canonical checks and actual precommit passed
+locally with a disposable database stopped and removed afterward. The four
+regressions failed on the preceding published runtime. Fresh immutable consumer,
+macOS/Linux CI and Greptile must verify this correction after publication.
+Foundation tasks 3.9 and 4.3, installed converters, Macus hardware and gateway
+acceptance remain open.

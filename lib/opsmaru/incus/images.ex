@@ -98,13 +98,21 @@ defmodule Opsmaru.Incus.Images do
   end
 
   def image_secret(client, fingerprint) do
-    with {:ok, response} <-
-           Incus.call(client, "CreateImageSecret", %{"fingerprint" => fingerprint}),
-         token when is_binary(token) <- get_in(response.metadata.data, ["metadata", "secret"]) do
+    with {:ok, token, response} <- secret_response(client, fingerprint) do
       {:ok, %{response | metadata: token}}
-    else
-      {:error, error} -> {:error, error}
-      _ -> {:error, %Error{kind: :invalid_copy_secret}}
+    end
+  end
+
+  defp secret_response(client, fingerprint) do
+    with {:ok, response} <-
+           Incus.call(client, "CreateImageSecret", %{"fingerprint" => fingerprint}) do
+      metadata = response.metadata.data["metadata"]
+      token = if is_map(metadata), do: metadata["secret"]
+
+      if is_binary(token),
+        do: {:ok, token, response},
+        else:
+          {:error, %Error{kind: :uncertain, response: response, operation: response.operation}}
     end
   end
 
@@ -165,14 +173,7 @@ defmodule Opsmaru.Incus.Images do
     if image["public"] == true do
       {:ok, nil, nil}
     else
-      with {:ok, response} <-
-             Incus.call(source, "CreateImageSecret", %{"fingerprint" => image["fingerprint"]}),
-           token when is_binary(token) <- get_in(response.metadata.data, ["metadata", "secret"]) do
-        {:ok, token, response}
-      else
-        {:error, error} -> {:error, error}
-        _ -> {:error, %Error{kind: :invalid_copy_secret}}
-      end
+      secret_response(source, image["fingerprint"])
     end
   end
 

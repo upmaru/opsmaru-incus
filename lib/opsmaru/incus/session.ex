@@ -99,8 +99,7 @@ defmodule Opsmaru.Incus.Session do
   end
 
   def close(session) do
-    Enum.each(session.channels, fn {_, channel} -> WebSocket.close(channel) end)
-    :ok
+    WebSocket.close_owned(Map.values(session.channels))
   end
 
   defp send_channel(session, name, frame) do

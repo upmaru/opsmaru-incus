@@ -29,6 +29,52 @@ defmodule Opsmaru.Incus.ImageTransferTest do
     }
   end
 
+  for secret <- [nil, 42, %{"bad" => true}] do
+    test "malformed accepted image token #{inspect(secret)} retains uncertainty in direct and private copy helpers",
+         %{root: root, context: context} do
+      secret = unquote(Macro.escape(secret))
+      identity = TLSIdentity.generate(root, "bad-secret", "localhost")
+
+      accepted = %{
+        status: 202,
+        body: %{
+          type: "async",
+          status_code: 100,
+          operation: "/1.0/operations/token-op",
+          metadata: %{id: "token-op", status_code: 103, metadata: %{secret: secret}}
+        }
+      }
+
+      fixture = tls_backend(identity, fn _ -> accepted end)
+      source = tls_client(fixture, identity, context)
+      target_fixture = backend(root, fn _ -> flunk("target mutation must not occur") end)
+      target = client(target_fixture, context)
+
+      for result <- [
+            Images.image_secret(source, "fingerprint"),
+            Images.copy(target, source, %{"fingerprint" => "fingerprint", "public" => false},
+              mode: "pull"
+            )
+          ] do
+        assert {:error,
+                %Error{
+                  kind: :uncertain,
+                  operation: "/1.0/operations/token-op",
+                  response: response
+                }} = result
+
+        assert response.type == "async"
+        assert response.operation == "/1.0/operations/token-op"
+        assert response.metadata.data["metadata"]["secret"] == secret
+        assert response.connection == source.connection
+        assert response.identity == context.identity
+      end
+
+      assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 2
+      assert [%{method: "GET", target: "/1.0"}] = HTTPFixture.requests(target_fixture)
+    end
+  end
+
   for split <- [false, true] do
     test "official unified/split image upload/download agrees (split=#{split})", %{
       root: root,
