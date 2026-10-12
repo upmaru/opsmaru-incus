@@ -2,6 +2,7 @@ defmodule Opsmaru.Incus.Files do
   @moduledoc "Native file/directory and backup handoff with host-owned bounded binary sources/sinks."
   alias Opsmaru.Incus
   alias Opsmaru.Incus.Error
+  alias Opsmaru.Incus.FileHeaders
   alias Opsmaru.Incus.Model
   alias Opsmaru.Incus.Response
   alias Opsmaru.Incus.Transfer
@@ -59,31 +60,23 @@ defmodule Opsmaru.Incus.Files do
       :done ->
         state = Process.get(ref)
 
-        info = %{
-          uid: integer(state.headers["x-incus-uid"], 10),
-          gid: integer(state.headers["x-incus-gid"], 10),
-          mode: integer(state.headers["x-incus-mode"], 8),
-          type: state.type,
-          entries: nil,
-          headers: state.headers
-        }
-
-        if state.type == "directory" do
-          with {:ok, response} <-
-                 Response.decode(
-                   IO.iodata_to_binary(Enum.reverse(state.body)),
-                   200,
-                   state.headers
-                 ),
-               true <- is_list(response.metadata) and Enum.all?(response.metadata, &is_binary/1),
-               do: {:ok, %{info | entries: response.metadata}}
-        else
-          {:ok, info}
+        with {:ok, parsed} <- FileHeaders.parse(state.headers) do
+          info = Map.merge(parsed, %{entries: nil, headers: state.headers})
+          finish_read(state, info)
         end
     end
 
     Transfer.download_events(client, path, handler)
   end
+
+  defp finish_read(%{type: "directory"} = state, info) do
+    with {:ok, response} <-
+           Response.decode(IO.iodata_to_binary(Enum.reverse(state.body)), 200, state.headers),
+         true <- is_list(response.metadata) and Enum.all?(response.metadata, &is_binary/1),
+         do: {:ok, %{info | entries: response.metadata}}
+  end
+
+  defp finish_read(_, info), do: {:ok, info}
 
   def create(client, instance, path, source, opts \\ []) do
     create_path(client, file_path(instance, path), source, opts)
@@ -289,15 +282,6 @@ defmodule Opsmaru.Incus.Files do
           {:halt, {:error, :invalid_file_mode}}
       end
     end)
-  end
-
-  defp integer(nil, _), do: -1
-
-  defp integer(value, base) do
-    case Integer.parse(value, base) do
-      {number, ""} -> number
-      _ -> -1
-    end
   end
 
   defp file_path(instance, path),

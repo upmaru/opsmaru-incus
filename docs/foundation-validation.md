@@ -842,3 +842,33 @@ Platform CI must verify the published correction.
 The user approved independent review in place of quota-blocked Greptile on
 2026-10-12. The review gate now requires independent current-source review;
 no Greptile follow-up success is claimed. Task 3.9 remains open.
+
+
+## Task 3.9: native file headers and pure projections — 2026-10-12
+
+All 658 database-free library tests and strict Credo pass. Isolated canonical
+checks and actual precommit pass; the disposable database was stopped/removed.
+All four OpenSpec changes pass strict validation. The 188-constant verifier
+and Go inventory/schema regressions pass. Ten permanent helper tests cover
+ParseFileHeaders and the server-filter/event-log native projections, including
+an actual binary Unix download with duplicate headers and overflow metadata.
+Operation log context ordering is compared exactly; only unordered native map
+contexts normalize pair order. Original models remain lossless and no log is
+emitted. Eight declarations gain partial mappings, yielding 1116 partial and
+164 missing declarations with complete_port=false. No task checkbox changes.
+
+Independent source review of the context/transport/adapter changes and this
+helper slice checked passive construction, absolute deadline/cancellation
+propagation, uncertain mutation handling, cleanup, immutable model boundaries
+and credential-safe diagnostics. Review tightened the new operation-log test
+to preserve exact native context order, rather than normalizing an ordered
+record. Existing ownership/stream/adapter/copy failure regressions remain in
+the full suite. This is review of the continuation, not full-port acceptance.
+
+The stock macOS crypto fixture correction passed locally with both LibreSSL
+and Homebrew OpenSSL and the clean Git consumer passed at 1d038cd4886eb6123967231ce52b5c740c50b20e.
+However macOS CI still failed its two native context HTTPS positive cases
+(runs 38234980305/38234989410); Linux passed. Unchanged-native failure diagnostics
+now report only public leaf fingerprints and offline verification errors to
+distinguish certificate generation from served-chain mismatch. This remains
+an unresolved platform gate; no passing-CI or complete-client claim is made.

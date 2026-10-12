@@ -5,7 +5,7 @@ closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
-The declaration manifest currently has 1108 partial and 172 missing entries.
+The declaration manifest currently has 1116 partial and 164 missing entries.
 Declarations include Go methods, interfaces, types, constants and transport
 abstractions; these counts are not endpoint counts or complete parity evidence.
 No partial mapping is promoted to completion by this continuation.
@@ -58,7 +58,8 @@ member selection, operation identities, credential redaction, bounded queues/
 deadlines/streams and cleanup. Possibly accepted mutations must never be replayed.
 Keep the approved coalesced-byte oracle exception and local-wait-no-cancellation
 contract visible. Then run macOS/Linux library checks, immutable consumer build,
-strict Credo/precommit, isolated canonical checks, strict OpenSpec and Greptile.
+strict Credo/precommit, isolated canonical checks, strict OpenSpec and independent review
+(the user approved this replacement after Greptile quota exhaustion).
 Only after those gates pass can the task checkbox be updated. Backend/hardware
 acceptance stays separate and cannot substitute for missing client evidence.
 
@@ -144,4 +145,27 @@ scoped partial evidence; callback handler orchestration remains unimplemented.
 The manifest remains complete_port=false with 1108 partial and 172 missing
 declarations. Task 3.9 is still open: supported-scope/evidence completion gates,
 remaining client methods and model/helper/protocol matrices need further work.
-Greptile account access remains a final review gate, not a blocker on this work.
+The user subsequently approved independent review in place of quota-blocked Greptile;
+review does not replace any implementation or acceptance gate.
+
+
+## Verified native file headers and pure model projections
+
+ParseFileHeaders now compares native signed ownership, overflow, leading zeros,
+base-zero permission masks, malformed octal fallback, defaults and first duplicate
+semantics. A binary Unix file download compares the actual resulting metadata;
+transfer response maps preserve the native first value rather than the last.
+The helper bounds aggregate headers and returns a redacted failure on invalid
+structure or excess input. No file state is created.
+
+Server.Filtered and Event.ToLogging now compare unchanged native output: exact
+case-sensitive config suffix filtering, certificate removal, extension counts,
+logging/network-ACL/lifecycle/operation records, requestor formatting, timestamps,
+float64 contexts and native defaults. Go map-context pair order is unspecified;
+only those unordered pairs are normalized for comparison. Operation context
+order remains exact. Null event metadata is rejected explicitly instead of
+propagating the reference's nil-pointer panic. The library emits no log and does
+not broaden the native filter into an authorization or general secret detector.
+
+Eight additional declarations gain partial evidence. No mapping becomes complete;
+1116 partial and 164 missing declarations remain, with complete_port=false.

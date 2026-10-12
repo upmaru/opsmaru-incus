@@ -94,6 +94,11 @@ simple_helpers = 'GetConnectionInfo Disconnect GetHTTPClient DoHTTP GetImages Ge
 for name in simple_helpers:
  helpers['ProtocolSimpleStreams.'+name]=('lib/opsmaru/incus/simple_streams.ex',['test/library/simple_streams_test.exs'])
 helpers['ConnectSimpleStreams']=('lib/opsmaru/incus/simple_streams.ex',['test/library/simple_streams_test.exs'])
+helpers['ParseFileHeaders']=('lib/opsmaru/incus/file_headers.ex',['test/library/file_headers_reference_test.exs'])
+for name in ['Server.Filtered','Event.ToLogging']:
+ helpers[name]=('lib/opsmaru/incus/projections.ex',['test/library/projections_reference_test.exs'])
+projection_types = 'ServerFiltered EventLogRecord EventLogging EventLifecycle EventLifecycleRequestor'.split()
+models.update(projection_types)
 entries=[]
 for entry in inv['entries']:
  name=entry['name'].split('.')[-1]
@@ -117,6 +122,7 @@ for entry in inv['entries']:
   if name == 'Event': evidence.append('test/library/event_send_test.exs')
   if name in preseed_types: evidence.append('test/library/preseed_reference_test.exs')
   if name in network_normalisers: evidence.append('test/library/network_models_reference_test.exs')
+  if name in projection_types: evidence.append('test/library/projections_reference_test.exs')
   row.update(status='partial',elixir='lib/opsmaru/incus/model.ex',evidence=evidence,note='Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified.')
  elif entry['package']=='shared/api' and entry['kind'] in ['const','var'] and entry['source']=='shared/api/status_code.go':
   row.update(status='partial',elixir='lib/opsmaru/incus/status.ex',evidence=['test/library/model_helpers_reference_test.exs'],note='All pinned status names/values and unknown-code behavior compared with unchanged native helpers.')

@@ -173,7 +173,12 @@ defmodule Opsmaru.Incus.Transfer do
   defp collect(_, _, _, _, _), do: {:error, :invalid_transfer}
 
   defp collect_headers(rest, ref, connection, sink, acc, headers) do
-    acc = %{acc | headers: Map.merge(acc.headers, Map.new(headers))}
+    native_headers =
+      Enum.reduce(headers, acc.headers, fn {key, value}, values ->
+        Map.put_new(values, key, value)
+      end)
+
+    acc = %{acc | headers: native_headers}
 
     case sink do
       {:events, handler} when acc.status in 200..299 ->

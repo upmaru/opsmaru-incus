@@ -29,3 +29,11 @@ the same unchanged reference. The generated fixture-only driver in
 `scripts/check-incus-constants.py` regenerates/verifies those declarations and
 values. Constant names/values are model data, not implementations or activation
 of authentication, scheduling, storage or other named features.
+
+`lib/opsmaru/incus/file_headers.ex` and `projections.ex` adapt the same pinned
+`shared/api/{headers,event,server}.go` helpers under Apache-2.0. Fixture-only
+drivers in `test/reference/{fileheaders,projections}` import unchanged exports;
+they have no backend or host-command access. Native map iteration order is
+unspecified, so event context pair order is normalized for comparison while
+preserving every key/value pair. Null event metadata is rejected explicitly
+rather than propagating a native nil-pointer panic; no SDK code is patched.
