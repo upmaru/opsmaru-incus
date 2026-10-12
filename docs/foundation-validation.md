@@ -655,3 +655,6 @@ installed converters, Macus hardware and gateway acceptance remain open.
 All 598 library tests, strict Credo, canonical checks and actual precommit passed
 locally after the correction with a disposable test database. The four reproduced
 adapter cases passed ten repetitions; strict OpenSpec validation remains green.
+
+The fresh independent consumer passed at settled callback runtime
+`b9cd50fa2fc5f0e9b8026ae00bce722ef5338fb0`; its captured lock, default revision and embedding example now pin that verified source.
