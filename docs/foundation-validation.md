@@ -1,4 +1,37 @@
-# Foundation verification — 2026-10-11
+# Foundation verification — rolling fixture ledger
+
+## Merge preparation — 2026-10-12
+
+The corrected published runtime is
+`3b172fbe7453ecc7b0063bb567e702db0babd1b5`. All 545 database-free library tests,
+strict Credo, a forced warning-free library rebuild, canonical checks and actual
+`mix precommit` passed locally. Scaffold checks used a new disposable PostgreSQL
+cluster (five tests in each run), stopped and removed afterward. All four
+OpenSpec changes passed strict validation. The fresh independent Git consumer
+passed at this runtime; its default source pin and captured dependency lock now
+record the correction. No Macus source or real workload was modified.
+
+The full-branch Greptile review against `develop` at `61cbb45` returned 3/5 and
+two P1 findings (run `edd5b788-fff3-4131-bd50-53711109f54a`). The duplicate client
+Inspect definition was removed; the reported compile failure did not reproduce
+with a forced compile. Split-image relay data loss did reproduce: a missing
+rootfs source allowed a metadata-only target upload, and an empty rootfs part
+was omitted even with a valid source. Four permanent regressions now verify
+missing/wrong-arity/invalid sources reject before target POST and both empty
+and nonempty rootfs bytes survive a single multipart upload. Host staging stays
+owned by the host. Final follow-up review and exact-head platform CI are
+submission gates recorded in the PR, not inferred from this local evidence.
+
+The earlier exact-head run at `61cbb45` passed macOS/Linux CI and immutable
+consumers: https://github.com/upmaru/opsmaru/actions/runs/38199888936. It predates
+these corrections and does not establish their platform acceptance.
+
+Current coverage is 899 partial and 381 missing declarations of 1,280;
+`complete_port` remains false. Foundation tasks 3.9 and 4.3 stay open. Gateway
+implementation stays at 0/19 and has separate acceptance. Installed OCI adapter,
+real Incus and Macus installed/VZ/hardware gates remain unverified. The rest of
+this document records historical slices against their own revisions.
+
 
 This is fixture/library evidence for `add-embedded-incus-foundation`, not full
 client, installed-service or real-backend acceptance. The approved scaffold
