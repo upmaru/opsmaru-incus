@@ -82,6 +82,18 @@ defmodule Opsmaru.Incus.URLReferenceTest do
     assert {:ok, "?secret=private"} = URL.render(private)
   end
 
+  test "improper path/query lists return redacted errors rather than crashing the caller" do
+    for malformed <- [%URL{parts: ["ok" | :bad]}, %URL{query: [{"a", "private"} | :bad]}] do
+      assert {:error, %Error{kind: :invalid_native_url} = error} = URL.render(malformed)
+      refute inspect(error) =~ "private"
+      assert {:error, %Error{kind: :invalid_native_url}} = URL.project(malformed, "default")
+      assert {:error, %Error{kind: :invalid_native_url}} = URL.scheme(malformed, "https")
+    end
+
+    assert {:error, %Error{}} = URL.path(URL.new(), ["ok" | :bad])
+    assert {:error, %Error{}} = URL.with_query(%URL{query: [{"a", "b"} | :bad]}, "c", "d")
+  end
+
   defp compare(steps) do
     {_, actual} =
       Enum.reduce(steps, {URL.new(), [""]}, fn {action, values}, {url, results} ->

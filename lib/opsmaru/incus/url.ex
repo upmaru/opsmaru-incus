@@ -61,13 +61,20 @@ defmodule Opsmaru.Incus.URL do
 
   defp valid?(url) do
     component?(url.scheme) and component?(url.host) and component?(url.fragment) and
-      is_list(url.parts) and length(url.parts) <= 64 and Enum.all?(url.parts, &component?/1) and
-      is_list(url.query) and length(url.query) <= 128 and
+      bounded_list?(url.parts, 64) and Enum.all?(url.parts, &component?/1) and
+      bounded_list?(url.query, 128) and
       Enum.all?(url.query, fn
         {key, value} -> component?(key) and component?(value)
         _ -> false
       end)
   end
+
+  defp bounded_list?([], _), do: true
+
+  defp bounded_list?([_ | rest], remaining) when remaining > 0,
+    do: bounded_list?(rest, remaining - 1)
+
+  defp bounded_list?(_, _), do: false
 
   defp component?(value),
     do: is_binary(value) and byte_size(value) <= 4096 and String.valid?(value)
