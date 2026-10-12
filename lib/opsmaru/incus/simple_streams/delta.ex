@@ -78,7 +78,7 @@ defmodule Opsmaru.Incus.SimpleStreams.Delta do
         byte_size(bytes) <= client.connection.max_chunk_bytes and
         state.size + byte_size(bytes) <= request.rootfs.size and now() < request.deadline
 
-    if valid and sink.(bytes) == :ok do
+    if valid and acknowledge(sink, bytes) == :ok do
       Process.put(ref, %{
         state
         | size: state.size + byte_size(bytes),
@@ -89,6 +89,14 @@ defmodule Opsmaru.Incus.SimpleStreams.Delta do
     else
       reject(rejected)
     end
+  end
+
+  defp acknowledge(sink, bytes) do
+    sink.(bytes)
+  rescue
+    _ -> :error
+  catch
+    _, _ -> :error
   end
 
   defp finish(:ok, state, hash, rootfs, rejected) do

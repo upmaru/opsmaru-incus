@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.Transport do
   @moduledoc false
-  alias Opsmaru.Incus.{Connection, Error}
+  alias Opsmaru.Incus.{Connection, Error, WorkScope}
 
   @doc false
   def request_headers(%Connection{require_authenticated: true}, headers),
@@ -20,23 +20,33 @@ defmodule Opsmaru.Incus.Transport do
     owner = self()
     ref = make_ref()
     deadline = now() + timeout
+    scope = WorkScope.current()
 
     {worker, monitor} =
       spawn_monitor(fn ->
         worker = self()
         spawn(fn -> guard(owner, worker, deadline) end)
 
-        result =
-          try do
-            fun.()
-          rescue
-            _ -> failed(method, :request)
-          catch
-            _, _ -> failed(method, :request)
-          end
+        receive do
+          {^ref, :start} ->
+            WorkScope.bind(scope)
 
-        send(owner, {ref, result})
+            result =
+              try do
+                fun.()
+              rescue
+                _ -> failed(method, :request)
+              catch
+                _, _ -> failed(method, :request)
+              end
+
+            send(owner, {ref, result})
+        end
       end)
+
+    if WorkScope.register(scope, worker) == :ok,
+      do: send(worker, {ref, :start}),
+      else: Process.exit(worker, :kill)
 
     receive do
       {^ref, result} ->

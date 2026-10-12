@@ -402,3 +402,15 @@ are host-owned; `cleanup/3` receives the call identity and completion/failure/
 deadline/owner-loss outcome under a bounded cleanup budget. No xdelta command,
 conversion files or base-image lookup is supplied by Opsmaru. Installed actual
 conversion, process/file cleanup and platform acceptance remain unverified.
+
+
+Sink raises/throws/exits are caught by the delta emitter and latch rejection,
+including when a converter catches failures itself. Adapter callbacks share a
+per-call scope with nested library transport workers; no worker begins callback
+work before registration. Cleanup waits for those workers to terminate, including
+nested delta sinks, rather than racing their kill signals. The scope bounds tracked
+workers by `connection.queue_limit`. If host callback termination is delayed beyond
+the caller's deadline plus cleanup allowance, the caller receives a privileged
+`adapter_cleanup` result with `call_id` and `cleanup_pending: true`; the independent
+controller retains the scope and defers cleanup until work actually stops. Such a
+result is not successful cleanup or installed-adapter acceptance.

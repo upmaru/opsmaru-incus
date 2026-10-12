@@ -625,3 +625,33 @@ changes passed strict validation, and all 28 SimpleStreams cases passed five rep
 
 The fresh independent Git consumer passed at delta/listener runtime
 `525c3a788a0f5817fa81a250aa70c6ec86995d5c`; its captured lock, default pin and embedding example now record that verified source.
+
+
+## Delta sink exceptions and nested teardown ordering — 2026-10-12
+
+Full-branch Greptile run `6f7bff03-8f3b-4d91-852d-0f98e2e1a5e4` reviewed
+`14fde6f89a33a84ea3f5cfcce8494a782c60ca50`, returned 3/5 and confirmed earlier
+corrections. Both new P1 adapter findings reproduced against the published code:
+three converters caught raised/thrown/exited sinks and then completed with further
+output; cleanup observed a live nested download sink when its independent guard
+was deliberately suspended. Four permanent regressions demonstrate these failures.
+
+The delta emitter now catches all sink failures and latches rejection before
+returning to the adapter. A bounded per-call work scope registers callback workers
+before they start and propagates into nested native transports. Conversion cleanup
+waits for actual worker termination, including nested sinks, and checks descendants
+again after observed parents stop. Caller waiting has an explicit deadline plus
+cleanup allowance; if termination is delayed, the caller gets a visible privileged
+cleanup-pending call identity while the independent controller defers cleanup.
+There is no false cleanup success, conversion replay or backend cancellation.
+
+Exact-head push/PR CI at `14fde6f` passed macOS/Linux (runs `38211903966` and
+`38211907689`), with 594 library tests and immutable consumers. The delta runtime
+`525c3a7` also passed both events (runs `38211683834` and `38211687620`). These
+platform results predate the new four regressions and teardown correction; fresh
+consumer, CI and Greptile must verify their published source. Foundation 3.9/4.3,
+installed converters, Macus hardware and gateway acceptance remain open.
+
+All 598 library tests, strict Credo, canonical checks and actual precommit passed
+locally after the correction with a disposable test database. The four reproduced
+adapter cases passed ten repetitions; strict OpenSpec validation remains green.

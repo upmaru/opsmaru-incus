@@ -757,6 +757,124 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
       |> Enum.map(& &1.target)
       |> Enum.filter(&String.starts_with?(&1, "/images/"))
 
+  for failure <- [:raise, :throw, :exit] do
+    test "caught delta sink #{failure} remains rejected with no further output", %{
+      identity: identity
+    } do
+      {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+
+      client =
+        with_delta(
+          client,
+          delta_config(fn request, emit ->
+            assert {:ok, _} = request.download_delta.(fn _ -> :ok end)
+
+            try do
+              emit.("root")
+            rescue
+              _ -> :caught
+            catch
+              _, _ -> :caught
+            end
+
+            emit.("root")
+            :ok
+          end)
+        )
+
+      parent = self()
+      count = :atomics.new(1, [])
+
+      sink = fn _ ->
+        send(parent, :sink_attempt)
+        if :atomics.add_get(count, 1, 1) == 1, do: sink_failure(unquote(failure)), else: :ok
+      end
+
+      assert {:error, %Error{kind: :delta_failed}} =
+               SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: sink},
+                 delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+               )
+
+      assert_received :sink_attempt
+      refute_received :sink_attempt
+      assert_receive {:delta_cleanup, _, :failed}
+      assert download_paths(fixture) == ["/images/delta.vcdiff"]
+    end
+  end
+
+  defp sink_failure(:raise), do: raise("private sink failure")
+  defp sink_failure(:throw), do: throw(:private_sink_failure)
+  defp sink_failure(:exit), do: exit(:private_sink_failure)
+
+  test "cleanup waits for a nested download sink even if its owner guard is suspended", %{
+    root: root,
+    identity: identity
+  } do
+    {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+    {:ok, state} = Agent.start_link(fn -> nil end)
+    parent = self()
+    artifact = Path.join(root, "conversion-artifact")
+
+    config =
+      delta_config(fn request, _ ->
+        request.download_delta.(fn _ ->
+          Process.flag(:trap_exit, true)
+          worker = self()
+          Agent.update(state, fn _ -> worker end)
+          send(parent, {:nested_sink, worker})
+
+          receive do
+            :late_write -> File.write!(artifact, "must not survive cleanup")
+          end
+
+          :ok
+        end)
+      end)
+      |> Map.put(:cleanup, fn _, _ ->
+        worker = Agent.get(state, & &1)
+        send(parent, {:cleanup_observed_live_sink, Process.alive?(worker)})
+        send(worker, :late_write)
+        File.rm(artifact)
+        :ok
+      end)
+
+    client = with_delta(client, config)
+
+    caller =
+      spawn(fn ->
+        SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: fn _ -> :ok end},
+          delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+        )
+      end)
+
+    on_exit(fn -> if Process.alive?(caller), do: Process.exit(caller, :kill) end)
+    assert_receive {:nested_sink, worker}, 1_000
+    {:monitored_by, watchers} = Process.info(worker, :monitored_by)
+
+    guard =
+      Enum.find(watchers, fn pid ->
+        case Process.info(pid, :current_stacktrace) do
+          {:current_stacktrace, stack} ->
+            Enum.any?(stack, fn {module, function, _, _} ->
+              module == Opsmaru.Incus.Transport and function == :guard
+            end)
+
+          _ ->
+            false
+        end
+      end)
+
+    assert is_pid(guard)
+    :erlang.suspend_process(guard)
+    on_exit(fn -> if Process.alive?(guard), do: Process.exit(guard, :kill) end)
+    Process.exit(caller, :kill)
+    assert_receive {:cleanup_observed_live_sink, false}, 500
+    assert_receive {:delta_cleanup, _, :owner_lost}, 500
+    refute Process.alive?(worker)
+    refute File.exists?(artifact)
+    assert download_paths(fixture) == ["/images/delta.vcdiff"]
+  end
+
   test "construction/readiness stays passive and catalogs are connection-local", %{
     identity: identity
   } do

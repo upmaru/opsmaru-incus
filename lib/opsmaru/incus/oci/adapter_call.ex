@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.OCI.AdapterCall do
   @moduledoc false
-  alias Opsmaru.Incus.Error
+  alias Opsmaru.Incus.{Error, WorkScope}
 
   # Independent controller survives caller loss to run host cleanup. No links to
   # the host tree, no replay, and no callback exception/stack/credential logging.
@@ -21,16 +21,35 @@ defmodule Opsmaru.Incus.OCI.AdapterCall do
 
       {:DOWN, ^monitor, :process, ^pid, _} ->
         error(:adapter_failed)
+    after
+      timeout + min(client.connection.timeout, 1_000) + 100 ->
+        Process.demonitor(monitor, [:flush])
+        # Keep the independent controller alive: cleanup must wait for actual
+        # worker termination, even if host callback code is still unkillable.
+        {:error, %Error{kind: :adapter_cleanup, response: %{call_id: id, cleanup_pending: true}}}
     end
   end
 
   defp control(owner, id, client, request, callback) do
     owner_monitor = Process.monitor(owner)
     controller = self()
-    {worker, monitor} = spawn_monitor(fn -> send(controller, {id, safely(callback, request)}) end)
+    scope = WorkScope.new(client.connection.queue_limit)
+
+    {worker, monitor} =
+      spawn_monitor(fn ->
+        receive do
+          :start ->
+            WorkScope.bind(scope)
+            send(controller, {id, safely(callback, request)})
+        end
+      end)
+
     watchdog(controller, worker)
+    :ok = WorkScope.register(scope, worker)
+    send(worker, :start)
     result = await(owner_monitor, worker, monitor, id, request.deadline)
-    Process.exit(worker, :kill)
+    WorkScope.stop(scope)
+    WorkScope.close(scope)
     Process.demonitor(monitor, [:flush])
     outcome = outcome(result)
 
