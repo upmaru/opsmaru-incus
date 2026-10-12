@@ -2,7 +2,7 @@
 
 ## Merge preparation — 2026-10-12
 
-The corrected published runtime is
+The earlier corrected published runtime is
 `3b172fbe7453ecc7b0063bb567e702db0babd1b5`. All 545 database-free library tests,
 strict Credo, a forced warning-free library rebuild, canonical checks and actual
 `mix precommit` passed locally. Scaffold checks used a new disposable PostgreSQL
@@ -26,7 +26,7 @@ The earlier exact-head run at `61cbb45` passed macOS/Linux CI and immutable
 consumers: https://github.com/upmaru/opsmaru/actions/runs/38199888936. It predates
 these corrections and does not establish their platform acceptance.
 
-Current coverage is 899 partial and 381 missing declarations of 1,280;
+Current coverage is 916 partial and 364 missing declarations of 1,280;
 `complete_port` remains false. Foundation tasks 3.9 and 4.3 stay open. Gateway
 implementation stays at 0/19 and has separate acceptance. Installed OCI adapter,
 real Incus and Macus installed/VZ/hardware gates remain unverified. The rest of
@@ -35,9 +35,9 @@ this document records historical slices against their own revisions.
 
 This is fixture/library evidence for `add-embedded-incus-foundation`, not full
 client, installed-service or real-backend acceptance. The approved scaffold
-was extended on `feature/phoenix-bootstrap-and-remote-access`; no phx.new,
-Macus source modification, VM startup, backend install or workload mutation
-was used. Full copy/migration option and remaining reference parity remain incomplete.
+was extended on `feature/phoenix-bootstrap-and-remote-access`; the initial fixture
+phase used no phx.new, Macus source modification, VM startup, backend install
+or workload mutation. Later explicitly opted-in real preflight is recorded below. Full copy/migration option and remaining reference parity remain incomplete.
 
 Toolchain: Elixir 1.19.5/OTP 27.3.4.16, Node 26.10.0/OpenSpec 1.14.0,
 Go 1.25.14 (verification only), PostgreSQL 16.9 (disposable web checks only).
@@ -532,3 +532,45 @@ Foundation 3.9/4.3 and gateway/installed-adapter/Macus acceptance remain open.
 
 The fresh external Git consumer passed at SimpleStreams/owner-guard runtime
 `3f48920f36625d0adb92ddca087c9608b4107010`; its resolved lock, default pin and embedding example now record this verified source.
+
+
+## Raw-owner, image-project and pinned OTP trust-cache corrections — 2026-10-12
+
+Full-branch Greptile run `9e9e3b19-740a-4fae-8bca-101a93c89752` reviewed
+`4557fd6f7712a15e1a37be47461aa825110a4e79` against develop `2678ed7`, returned
+3/5 and identified two P1 findings. Raw SFTP/NBD actors now start their independent
+owner guard before opening a connection, so blocked upgrades and writes cannot
+outlive caller loss. Four permanent regressions verify socket closure/worker exit
+without replay. Image create/rebuild uses complete pinned request projections,
+derives the source project from its explicitly bound connection and rejects a
+conflicting request project before token issuance or target mutation.
+
+The unchanged native 7.0.1 `getSourceImageConnectionInfo` also omits automatic
+project inference. A dedicated oracle test proves that omission; corrected wire
+comparisons pass the project's explicit request field to the unchanged helper.
+Opsmaru derives that same field from its source connection, preserving the
+user-required project binding. This documented reference exception does not
+change the pin, patch the upstream helper or excuse other body differences.
+Complete request-object comparisons replaced the old subset checks and exposed
+missing native default fields, now normalized through the existing NativeInput.
+
+At `4557fd6`, macOS push CI and Linux push/PR checks passed, while macOS PR
+run `38208052669` failed after `ssl_manager` crashed refreshing a deleted test CA.
+Pinned OTP 27's periodic PEM invalidation refreshes trusted filenames; a removed
+CA raises enoent, destroys trust tables and terminates unrelated fixture listeners.
+An isolated child-BEAM regression reproduced that crash deterministically. TLS
+setup now reads bounded CA certificate bytes for each authorized connection and
+passes DER roots to OTP without registering host filenames in its shared refresh
+cache. The reusable TLS fixture also passes DER roots for peer verification.
+Peer trust, hostname, validity, fingerprint and client-key checks remain intact.
+The child regression now confirms that deleted-file invalidation preserves the
+same SSL manager and closes its owned socket. This is a causal correction, not a
+retry or suppressed fixture failure; the earlier preseed failure remains historical
+and is not claimed independently explained by this different trace.
+
+All 580 library tests, strict Credo, canonical checks and actual precommit passed
+locally with a disposable database. The affected 39 tests passed at CI seed
+`807195`/max_cases 6; raw/cache cases passed ten repetitions. All four changes pass
+strict OpenSpec. New exact-head macOS/Linux CI, fresh immutable consumer and
+follow-up Greptile must still verify the published correction. Foundation 3.9 and
+4.3 remain open, as do separate gateway, installed converter and Macus gates.

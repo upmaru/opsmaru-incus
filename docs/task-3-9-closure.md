@@ -87,3 +87,11 @@ SimpleStreams HTTP/connection/disconnect helpers remain missing. Delta conversio
 cache/fallback variants, exhaustive malformed metadata and any installed converter
 acceptance remain open. Full-file success must not be advertised as complete
 SimpleStreams support or used to close task 3.9. Task 4.3 remains separate.
+
+
+Image create/rebuild now has complete native body comparisons and explicit source
+project binding. The unchanged reference omits project inference; a dedicated
+oracle test records that defect, while corrected comparisons supply its explicit
+request field. Conflicting projects reject before token/target I/O. Raw upgrades
+and writes have independent caller-loss guards verified under stalled I/O. These
+corrections do not close the remaining copy matrix, helper or acceptance gates.

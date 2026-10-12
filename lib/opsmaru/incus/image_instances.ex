@@ -5,7 +5,7 @@ defmodule Opsmaru.Incus.ImageInstances do
   advertised address fallback, mutation replay or automatic operation wait.
   """
   alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, Images, Model, Operation}
+  alias Opsmaru.Incus.{Error, Images, Model, NativeInput, Operation}
 
   def create(target, source, image, request, opts \\ []),
     do: issue(target, source, image, "CreateInstance", %{}, "InstancesPost", request, opts)
@@ -33,10 +33,12 @@ defmodule Opsmaru.Incus.ImageInstances do
          true <-
            is_binary(image.data["fingerprint"]) and
              byte_size(image.data["fingerprint"]) in 1..1024,
-         {:ok, request} <- Model.decode(type, Model.encode(request)),
+         {:ok, request} <- NativeInput.cast(type, Model.encode(request)),
+         {:ok, request} <- Model.decode(type, request),
          true <-
            Enum.all?(args, fn {_, value} -> is_binary(value) and byte_size(value) <= 1024 end),
          :ok <- instance_only(target, request.data),
+         :ok <- source_project(source, request.data["source"] || %{}),
          {:ok, fields, remote?} <-
            source_fields(target, source, image.data, request.data["source"] || %{}, opts) do
       issue_with_token(target, source, image.data, request.data, fields, remote?, method, args)
@@ -89,6 +91,7 @@ defmodule Opsmaru.Incus.ImageInstances do
            "mode" => "pull",
            "protocol" => "incus",
            "server" => opts[:approved_origin],
+           "project" => image_project(source, fields),
            "certificate" => (source.server.environment || %{})["certificate"] || "",
            "fingerprint" => if(use_alias, do: "", else: image["fingerprint"]),
            "alias" => if(use_alias, do: alias_name, else: "")
@@ -97,6 +100,14 @@ defmodule Opsmaru.Incus.ImageInstances do
         {:error, %Error{kind: :unapproved_image_origin}}
       end
     end
+  end
+
+  defp image_project(source, fields), do: source.connection.project || fields["project"] || ""
+
+  defp source_project(source, fields) do
+    if fields["project"] in [nil, "", source.connection.project || "default"],
+      do: :ok,
+      else: {:error, %Error{kind: :image_project_mismatch}}
   end
 
   defp same_backend?(target, source),

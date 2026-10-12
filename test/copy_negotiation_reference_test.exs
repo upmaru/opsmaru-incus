@@ -319,6 +319,52 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
     end
   end
 
+  test "unchanged reference omits implicit source project; Opsmaru retains its bound selection",
+       %{root: root} do
+    {target, target_fixture, target_endpoint} = fixture(root, "project-target", :https)
+    {source, _, source_endpoint} = fixture(root, "project-source", :https)
+    image = %{"fingerprint" => String.duplicate("a", 64), "public" => true}
+    body = %{"name" => "project-image", "source" => %{"alias" => "latest"}}
+
+    expected =
+      reference(%{
+        action: "create-image",
+        target: target_endpoint,
+        source: source_endpoint,
+        image: image,
+        body: body
+      })
+
+    refute expected["error"], inspect(expected)
+    native = posts(target_fixture) |> List.last() |> Map.fetch!(:body) |> Jason.decode!()
+    refute Map.has_key?(native["source"], "project")
+
+    assert {:ok, operation} =
+             ImageInstances.create(target, source, image, body,
+               approved_origin: source_endpoint.url
+             )
+
+    actual = posts(target_fixture) |> List.last() |> Map.fetch!(:body) |> Jason.decode!()
+    assert actual == put_in(native, ["source", "project"], source.connection.project)
+    assert operation.url == "/1.0/operations/project-target"
+    refute Operation.completed?(operation)
+  end
+
+  test "conflicting source project rejects before token creation or target mutation", %{
+    root: root
+  } do
+    {target, target_fixture, _} = fixture(root, "bound-target", :https)
+    {source, source_fixture, endpoint} = fixture(root, "bound-source", :https)
+    image = %{"fingerprint" => String.duplicate("a", 64), "public" => false}
+    body = %{"name" => "wrong", "source" => %{"project" => "another-project"}}
+
+    assert {:error, %Error{kind: :image_project_mismatch}} =
+             ImageInstances.create(target, source, image, body, approved_origin: endpoint.url)
+
+    assert posts(source_fixture) == []
+    assert posts(target_fixture) == []
+  end
+
   defp compare_image(root, action, location) do
     {target, target_fixture, target_endpoint} =
       fixture(root, "target", if(location == :local, do: :unix, else: :https))
@@ -342,7 +388,13 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
         target: target_endpoint,
         source: source_endpoint,
         image: image,
-        body: body,
+        # The unchanged 7.0.1 helper does not infer source project; provide its
+        # explicit request field. Opsmaru must derive it from the bound source.
+        body:
+          if(location == :local,
+            do: body,
+            else: put_in(body, ["source", "project"], source.connection.project)
+          ),
         parent: "existing"
       })
 
@@ -369,7 +421,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
     actual = posts(target_fixture) |> List.last()
     assert actual.target == native.target
 
-    assert subset?(Jason.decode!(actual.body), Jason.decode!(native.body)),
+    assert Jason.decode!(actual.body) == Jason.decode!(native.body),
            inspect({Jason.decode!(actual.body), Jason.decode!(native.body)})
 
     fields = Jason.decode!(actual.body)["source"]
@@ -379,6 +431,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
       assert Map.get(fields, "alias", "") == ""
     else
       assert fields["server"] == source_endpoint.url
+      assert fields["project"] == source.connection.project
       assert fields["protocol"] == "incus"
       assert fields["certificate"] == source_endpoint.certificate
 

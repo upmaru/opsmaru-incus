@@ -20,6 +20,135 @@ defmodule Opsmaru.Incus.RawChannelTest do
   end
 
   for protocol <- ["sftp", "nbd"] do
+    test "#{protocol} caller loss closes a stalled upgrade before its request deadline", %{
+      root: root,
+      context: context
+    } do
+      parent = self()
+
+      fixture =
+        start_supervised!(
+          {HTTPFixture,
+           transport: :gen_tcp,
+           path: Path.join(root, "stalled"),
+           handler: fn _ ->
+             %{
+               upgrade: fn transport, socket ->
+                 send(parent, :negotiating)
+                 send(parent, {:peer_closed, transport.recv(socket, 0, 1_000)})
+               end
+             }
+           end}
+        )
+
+      connection =
+        Connection.unix!(HTTPFixture.endpoint(fixture).socket, owner: :fixture, timeout: 5_000)
+
+      client = %Incus{
+        connection: connection,
+        context: context,
+        server: %Server{api_extensions: []}
+      }
+
+      caller =
+        spawn(fn -> RawChannel.open(client, "/1.0/instances/fixture/sftp", unquote(protocol)) end)
+
+      on_exit(fn -> if Process.alive?(caller), do: Process.exit(caller, :kill) end)
+      assert_receive :negotiating, 1_000
+      Process.exit(caller, :kill)
+      assert_receive {:peer_closed, {:error, :closed}}, 500
+      assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+    end
+
+    test "#{protocol} caller loss stops a blocked raw write within the owner grace", %{
+      root: root,
+      context: context
+    } do
+      parent = self()
+      protocol = unquote(protocol)
+
+      fixture =
+        start_supervised!(
+          {HTTPFixture,
+           transport: :gen_tcp,
+           path: Path.join(root, "blocked-write"),
+           handler: fn _ ->
+             %{
+               upgrade: fn transport, socket ->
+                 :ok =
+                   transport.send(
+                     socket,
+                     "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: #{protocol}\r\n\r\n"
+                   )
+
+                 receive do
+                   :never -> :ok
+                 after
+                   10_000 -> :ok
+                 end
+               end
+             }
+           end}
+        )
+
+      connection =
+        Connection.unix!(HTTPFixture.endpoint(fixture).socket,
+          owner: :fixture,
+          timeout: 5_000,
+          stream_timeout: 30_000,
+          max_chunk_bytes: 1_048_576,
+          max_stream_bytes: 67_108_864
+        )
+
+      client = %Incus{
+        connection: connection,
+        context: context,
+        server: %Server{api_extensions: []}
+      }
+
+      caller =
+        spawn(fn ->
+          {:ok, channel} = RawChannel.open(client, "/1.0/instances/fixture/sftp", protocol)
+          send(parent, {:raw_writer, channel})
+
+          receive do
+            :write -> :ok
+          end
+
+          Enum.reduce_while(1..64, nil, fn _, _ ->
+            case RawChannel.send_data(channel, :binary.copy(<<7>>, 1_048_576)) do
+              :ok -> {:cont, nil}
+              error -> {:halt, error}
+            end
+          end)
+        end)
+
+      on_exit(fn -> if Process.alive?(caller), do: Process.exit(caller, :kill) end)
+      assert_receive {:raw_writer, channel}, 1_000
+      on_exit(fn -> if Process.alive?(channel.pid), do: Process.exit(channel.pid, :kill) end)
+      :ok = :inet.setopts(:sys.get_state(channel.pid).socket, sndbuf: 1024)
+      send(caller, :write)
+      await_raw_write(channel.pid, System.monotonic_time(:millisecond) + 1_000)
+      monitor = Process.monitor(channel.pid)
+      Process.exit(caller, :kill)
+      assert_receive {:DOWN, ^monitor, :process, _, :killed}, 500
+      assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+    end
+  end
+
+  defp await_raw_write(pid, deadline) do
+    {:current_stacktrace, stack} = Process.info(pid, :current_stacktrace)
+
+    unless Enum.any?(stack, fn {module, function, _, _} ->
+             module == :prim_inet and function == :send
+           end) do
+      assert System.monotonic_time(:millisecond) < deadline
+      Process.sleep(1)
+      await_raw_write(pid, deadline)
+    end
+  end
+
+  for protocol <- ["sftp", "nbd"] do
     test "#{protocol} preserves coalesced bytes and writes after backend half-close", %{
       root: root,
       context: context

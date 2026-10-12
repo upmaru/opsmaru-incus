@@ -6,6 +6,7 @@ defmodule Opsmaru.TestSupport.HTTPFixture do
   """
 
   use GenServer
+  alias Opsmaru.Incus.Connection
   alias Plug.Conn.Status
 
   def start_link(opts), do: GenServer.start_link(__MODULE__, opts)
@@ -47,7 +48,7 @@ defmodule Opsmaru.TestSupport.HTTPFixture do
                 keyfile: String.to_charlist(Keyword.fetch!(opts, :keyfile)),
                 versions: [:"tlsv1.3"],
                 reuseaddr: true
-              ] ++ Keyword.get(opts, :peer_options, [])
+              ] ++ peer_options(opts)
             )
 
           {:ok, {_address, port}} = :ssl.sockname(listener)
@@ -66,6 +67,15 @@ defmodule Opsmaru.TestSupport.HTTPFixture do
        handler: Keyword.fetch!(opts, :handler),
        requests: []
      }}
+  end
+
+  defp peer_options(opts) do
+    options = Keyword.get(opts, :peer_options, [])
+
+    case Keyword.pop(options, :cacertfile) do
+      {nil, options} -> options
+      {file, options} -> Keyword.put(options, :cacerts, Connection.ca_certificates(file))
+    end
   end
 
   @impl true

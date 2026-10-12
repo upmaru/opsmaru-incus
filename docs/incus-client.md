@@ -360,3 +360,18 @@ The approved optional delta adapter is still missing; downloads use full files.
 The four HTTP/connection/disconnect conveniences and complete cache/error variants
 remain open. These fixture results do not establish installed converter or
 real-backend acceptance.
+
+
+Image-based create/rebuild retains the source connection's project. An explicitly
+conflicting `source.project` fails before source token creation or target POST.
+The unchanged v7.0.1 helper does not infer this field; oracle comparisons use its
+explicit request field while an independent test records that reference omission.
+Opsmaru preserves the host-selected project rather than silently choosing another
+project's alias. Complete typed request projections include native default fields.
+
+CA trust files are read within authorized TLS setup with a 1 MiB/256-certificate
+bound and passed to OTP as DER roots. No host trust filename is registered for
+periodic shared-cache refresh; removing a file fails subsequent use locally rather
+than crashing other TLS connections. Construction stays passive, and peer identity,
+validity, configured pin and client certificate/private-key authentication checks
+remain enabled.

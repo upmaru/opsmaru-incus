@@ -96,7 +96,7 @@ defmodule Opsmaru.Incus.Connection do
 
     options =
       if tls[:cacertfile],
-        do: Keyword.put(options, :cacertfile, String.to_charlist(tls[:cacertfile])),
+        do: Keyword.put(options, :cacerts, ca_certificates(tls[:cacertfile])),
         else: Keyword.put(options, :cacerts, [])
 
     if tls[:fingerprint] do
@@ -113,6 +113,22 @@ defmodule Opsmaru.Incus.Connection do
     else
       options
     end
+  end
+
+  @doc false
+  def ca_certificates(path) do
+    # Resolve trusted bytes per authorized connection, rather than registering
+    # a host file in OTP's shared periodic trust-file refresh cache.
+    %{type: :regular, size: size} = File.stat!(path)
+    if size > 1_048_576, do: raise(ArgumentError, "CA bundle exceeds its byte limit")
+    bytes = File.read!(path)
+    if byte_size(bytes) > 1_048_576, do: raise(ArgumentError, "CA bundle exceeds its byte limit")
+
+    certificates =
+      for {:Certificate, der, :not_encrypted} <- :public_key.pem_decode(bytes), do: der
+
+    unless length(certificates) in 1..256, do: raise(ArgumentError, "Invalid CA bundle")
+    certificates
   end
 
   defp new!(opts, transport, address, tls) do
