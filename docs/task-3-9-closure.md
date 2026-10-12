@@ -95,3 +95,12 @@ oracle test records that defect, while corrected comparisons supply its explicit
 request field. Conflicting projects reject before token/target I/O. Raw upgrades
 and writes have independent caller-loss guards verified under stalled I/O. These
 corrections do not close the remaining copy matrix, helper or acceptance gates.
+
+
+## Direct-backend gate is now independent and verified
+
+Task 4.3 passed on 2026-10-12; see [direct acceptance evidence](real-incus-acceptance.md).
+That backend result does not promote partial/missing inventory mappings or close
+3.9. Installed host converters, gateway and Macus integration/hardware gates
+remain separate. Earlier references to open 4.3 above describe their recorded
+validation point, before this direct-backend run.

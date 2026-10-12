@@ -703,3 +703,18 @@ regressions failed on the preceding published runtime. Fresh immutable consumer,
 macOS/Linux CI and Greptile must verify this correction after publication.
 Foundation tasks 3.9 and 4.3, installed converters, Macus hardware and gateway
 acceptance remain open.
+
+
+## Isolated direct-backend gate — 2026-10-12
+
+Foundation task 4.3 now passes at runtime
+`2b308f8487a88cfd5b5397b505d61c044c317b19` on an explicitly authorized fresh
+Incus 7.0.1 backend. Both Unix and authenticated hostname-verified HTTPS proved
+inspection, mutation, stale ETag rejection, binary file transfer, native accepted
+snapshot identities, polling completion and matching WebSocket operation events.
+The successful run cleaned only its own resources; prior failed-run data is
+retained. No Opsmaru supervisor, Endpoint or Repo ran.
+See [the reproducible opt-in runner and exact evidence](real-incus-acceptance.md).
+This closes 4.3 only; 3.9, installed converters, Macus integration/hardware and
+gateway acceptance remain open. The fresh immutable Git consumer also passed
+at the same runtime revision with hostile PHX_SERVER/PORT settings.
