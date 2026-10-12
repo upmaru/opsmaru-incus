@@ -947,3 +947,11 @@ disposable test database stopped/removed afterward. Strict OpenSpec validates al
 four changes and the unchanged 188-constant verifier passes. No runtime/library
 coverage claim is based on the earlier green metadata PR alone: the final
 published revision requires its own immutable consumer and macOS/Linux checks.
+
+
+A fresh isolated Git consumer passed at final runtime 97182a3cf118cd2253bb545fa7a06ce56bafac83,
+with hostile PHX_SERVER/PORT and no database/provider configuration. The actual
+captured lock, default consumer revision and embedding example now pin that
+source, including Decimal 3.1.2. Exact platform check outcomes are recorded on
+[the draft foundation PR](https://github.com/upmaru/opsmaru/pull/1); task 3.9
+remains open, independently of direct-backend 4.3 and installed/hardware gates.
