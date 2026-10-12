@@ -87,11 +87,20 @@ defmodule Opsmaru.Incus.InventoryTest do
         &String.starts_with?(&1["id"], "client/method/ProtocolOCI.")
       )
 
-    assert Enum.count(oci, &(&1["status"] == "partial")) == 17
-    assert Enum.count(oci, &(&1["status"] == "missing")) == 3
+    assert Enum.count(oci, &(&1["status"] == "partial")) == 20
+    refute Enum.any?(oci, &(&1["status"] == "missing"))
 
     assert Enum.all?(oci, fn entry ->
-             entry["status"] == "missing" or entry["evidence"] == ["test/library/oci_test.exs"]
+             expected =
+               if String.ends_with?(entry["id"], [
+                    ".GetConnectionInfo",
+                    ".GetHTTPClient",
+                    ".DoHTTP"
+                  ]),
+                  do: "test/library/oci_origin_reference_test.exs",
+                  else: "test/library/oci_test.exs"
+
+             entry["evidence"] == [expected]
            end)
 
     simplestreams =

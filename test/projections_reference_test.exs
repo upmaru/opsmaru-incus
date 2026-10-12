@@ -147,6 +147,12 @@ defmodule Opsmaru.Incus.ProjectionsReferenceTest do
     assert {:error, %Error{kind: :invalid_metadata}} = Projections.filtered_server([])
 
     assert {:error, %Error{kind: :invalid_metadata}} =
+             Projections.filtered_server(%Model{type: "Event", data: %{}})
+
+    assert {:error, %Error{kind: :invalid_metadata}} =
+             Projections.logging_event(%Model{type: "Server", data: %{}})
+
+    assert {:error, %Error{kind: :invalid_metadata}} =
              Projections.filtered_server(%{"config" => []})
   end
 

@@ -81,6 +81,9 @@ defmodule Opsmaru.Incus.MetadataKeysReferenceTest do
   end
 
   test "bounded names and payloads reject without exposing data or creating atoms" do
+    assert {:error, %Error{kind: :invalid_metadata}} =
+             Metadata.keys(%Model{type: "Server", data: %{}}, "entity", "group")
+
     for {body, entity, group} <- [
           {[], "entity", "group"},
           {%{}, nil, "group"},

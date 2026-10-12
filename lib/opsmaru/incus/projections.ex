@@ -9,6 +9,7 @@ defmodule Opsmaru.Incus.Projections do
 
   def filtered_server(%Server{raw: raw}), do: filtered_server(raw)
   def filtered_server(%Model{type: "Server", data: raw}), do: filtered_server(raw)
+  def filtered_server(%Model{}), do: invalid()
 
   def filtered_server(raw) when is_map(raw) or is_nil(raw) do
     with {:ok, server} <- project("Server", raw) do
@@ -26,6 +27,7 @@ defmodule Opsmaru.Incus.Projections do
   def filtered_server(_), do: invalid()
 
   def logging_event(%Model{type: "Event", data: raw}), do: logging_event(raw)
+  def logging_event(%Model{}), do: invalid()
 
   def logging_event(raw) when is_map(raw) do
     with {:ok, event} <- project("Event", raw),

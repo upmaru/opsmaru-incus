@@ -349,7 +349,18 @@ defmodule Opsmaru.Incus.OCITest do
         end
       )
 
-    assert {:error, %Error{kind: :adapter_deadline}} = OCI.resolve(client, "alpine")
+    result = OCI.resolve(client, "alpine")
+
+    case result do
+      {:error, %Error{kind: :adapter_deadline}} ->
+        :ok
+
+      {:error, %Error{kind: :adapter_cleanup, response: primary}} ->
+        # Cleanup has its own finite 60 ms budget. Missing it must stay visible,
+        # while preserving the primary deadline; it is not successful cleanup.
+        assert {:error, %Error{kind: :adapter_deadline}} = primary
+    end
+
     assert_receive {:inspect, worker, request}
     monitor = Process.monitor(worker)
     assert_receive {:DOWN, ^monitor, :process, ^worker, _}

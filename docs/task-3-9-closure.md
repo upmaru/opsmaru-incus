@@ -5,12 +5,12 @@ closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
-The declaration manifest currently has 1122 partial and 158 missing entries.
+The declaration manifest currently has 1125 partial and 155 missing entries.
 Declarations include Go methods, interfaces, types, constants and transport
 abstractions; these counts are not endpoint counts or complete parity evidence.
 No partial mapping is promoted to completion by this continuation.
 
-Verified in this continuation: the four response metadata extraction helpers,
+Earlier verified slices include the four response metadata extraction helpers,
 operation-to-certificate/cluster token conversion and both token String helpers,
 and the five EventListener lifecycle helpers. Permanent unchanged-native
 differential drivers and independent failure/budget/owner-cleanup fixtures are
@@ -28,7 +28,8 @@ Remaining groups:
 
 - Full copy/cross-cluster option matrices, negotiation and relay failure cleanup.
 - Full SFTP protocol helpers beyond the native raw byte connections.
-- Context/disconnect conveniences, operation and remote-operation handlers/waits.
+- Remaining constructors/transport abstractions, operation and remote-operation
+  handlers/waits and exhaustive context/error paths.
 - Full dynamic console callback/IO and recorded exec-output helpers.
 - OCI and SimpleStreams protocols, backup variants, remaining model/JSON/YAML helpers.
 - Per-entry supported-scope classification and meaningful complete-evidence gates
@@ -180,3 +181,18 @@ key types. Inputs and names are bounded; original models remain unchanged and
 no runtime atoms or backend calls are created. Six more declarations gain partial
 evidence: 1122 partial, 158 missing, complete_port=false. All prior protocol,
 model, complete-evidence and installed/hardware acceptance gates remain open.
+
+
+## OCI origin helpers
+
+OCI connection-info, GetHTTPClient and DoHTTP now have unchanged-native
+CA-configured origin/status/body/ETag/query comparisons. Helpers use only the
+explicit verified HTTPS connection, not an origin or credential inferred from
+opaque adapter configuration. Metadata/handle construction is passive and needs
+no credential-file reads or converter. Raw HTTP checks readiness/owner, rejects
+foreign/invalid paths, bounds requests/responses and retains uncertain dispatched
+mutations without replay. Redirect rejection is independently verified. Unix
+adapter-only configurations cannot supply these HTTPS-origin helpers. All 20
+concrete OCI and all 20 SimpleStreams methods now have partial mappings; registry
+authentication, installed conversion and complete option/protocol matrices remain
+unverified. Three declarations gain partial evidence: 1125 partial, 155 missing.

@@ -40,6 +40,8 @@ func main() {
 	var err error
 	if in.Protocol == "simplestreams" {
 		client, err = incus.ConnectSimpleStreams(in.URL, args)
+	} else if in.Protocol == "oci" {
+		client, err = incus.ConnectOCI(in.URL, args)
 	} else if in.Socket != "" {
 		client, err = incus.ConnectIncusUnixWithContext(ctx, in.Socket, args)
 	} else {

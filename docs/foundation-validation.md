@@ -900,3 +900,50 @@ and strict OpenSpec pass with the explicit CA configuration correction. The
 final non-BMP diagnostic case additionally passes its focused oracle test.
 Task 3.9 remains open; no complete-port or installed/hardware acceptance claim.
 The full published source still requires immutable consumer/platform results.
+
+
+## Independent review corrections and OCI origin helper completion
+
+Independent review rejects mismatched typed models in server/event/metadata
+helpers; permanent regressions preserve valid models and raw native input. HTTP
+options now reject duplicate keys before I/O, and adapter-only Unix OCI values
+return a structured invalid-origin error instead of raising for an HTTP handle.
+
+OCI connection-info/GetHTTPClient/DoHTTP compare unchanged native CA-configured
+origin fields, binary HTTP results/status/ETag and duplicate query parameters.
+Independent fixtures verify no credential-file reads or converter activation for
+passive handles/metadata, readiness/owner isolation, explicit HTTPS, invalid paths,
+request/response bounds, redirect rejection and uncertain canceled POSTs without
+replay. All 56 focused OCI-origin/HTTP/SimpleStreams tests and strict Credo pass.
+All 20 concrete OCI methods now have partial mappings; full registry/conversion
+and protocol/option acceptance remain unverified. The manifest remains
+complete_port=false: 1125 partial, 155 missing out of 1280.
+
+The causally corrected CA passed macOS native verification. A subsequent older
+CI run failed a 500 ms console owner-loss assertion; both cases passed 20
+constrained-scheduler repetitions without changing that bound. Permanent failure
+diagnostics now identify the remaining process/status/stack. Another macOS run
+reported the OCI adapter's documented independent cleanup failure after a 60 ms
+budget. That fixture now verifies either a primary deadline or a visible cleanup
+failure retaining that exact deadline, and still requires worker termination,
+exact call identity, one cleanup invocation and no retry. Cleanup-pending success
+is never inferred. The older metadata PR CI passed both platforms (38237116439);
+its push run retained the OCI assertion failure (38237110085).
+
+Consumer resolution reported Decimal 3.1.1's newly published allocation advisory.
+The compatible dependency requirement/lock now uses 3.1.2, and the fixture lock
+will be captured again from the verified new source. See the
+[maintainer advisory](https://github.com/ericmj/decimal/security/advisories/GHSA-6c27-994x-c52f).
+Hex also reports the existing Cowlib structured-field encoder advisory; locked
+Cowboy 2.19.0 has the default outgoing CR/LF response-header rejection described
+by the [CNA mitigation](https://cna.erlef.org/cves/CVE-2026-43966.html). The portable
+client uses Mint and does not call that encoder; no blanket dependency-audit or
+future gateway acceptance is claimed. Macus source and the native pin are unchanged.
+
+
+The finalized continuation passes all 667 database-free library tests, warnings-as-
+errors compilation, strict Credo, canonical checks and actual precommit with a
+disposable test database stopped/removed afterward. Strict OpenSpec validates all
+four changes and the unchanged 188-constant verifier passes. No runtime/library
+coverage claim is based on the earlier green metadata PR alone: the final
+published revision requires its own immutable consumer and macOS/Linux checks.

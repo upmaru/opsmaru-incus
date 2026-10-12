@@ -9,7 +9,7 @@ defmodule Opsmaru.Incus.OCI do
   Registry authentication and installed conversion remain host acceptance gates.
   """
   alias Opsmaru.Context
-  alias Opsmaru.Incus.{Connection, Error, Model, NativeInput, Response}
+  alias Opsmaru.Incus.{Connection, Discovery, Error, HTTP, Model, NativeInput, Response}
   alias Opsmaru.Incus.OCI.AdapterCall
   @enforce_keys [:connection, :context, :adapter, :config]
   defstruct [:connection, :context, :adapter, :config, cache: %{}]
@@ -81,6 +81,37 @@ defmodule Opsmaru.Incus.OCI do
 
   @doc "Native no-op disconnect; no persistent connection or host conversion is owned by this value."
   def disconnect(%__MODULE__{}), do: :ok
+
+  @doc "Passive native OCI origin metadata; the explicit HTTPS connection is not inferred from adapter config."
+  def connection_info(client) do
+    with :ok <- authorize(client),
+         :ok <- https_origin(client) do
+      url = URI.to_string(client.connection.address)
+
+      {:ok,
+       %Discovery{
+         certificate: "",
+         protocol: "oci",
+         url: url,
+         addresses: [url],
+         project: "",
+         target: "",
+         socket_path: ""
+       }}
+    end
+  end
+
+  @doc "Passive bounded HTTP handle on the explicitly supplied verified HTTPS origin; no conversion adapter call."
+  def http_client(client) do
+    with :ok <- https_origin(client), do: HTTP.client(client)
+  end
+
+  def http_request(client, method, path, opts \\ []) do
+    with {:ok, handle} <- http_client(client), do: HTTP.request(handle, method, path, opts)
+  end
+
+  defp https_origin(%__MODULE__{connection: %Connection{transport: :https}}), do: :ok
+  defp https_origin(_), do: error(:invalid_origin, nil)
 
   @doc "Convert through the host adapter; both native output sinks are explicit."
   def image_file(client, fingerprint, %{metadata: metadata, rootfs: rootfs})

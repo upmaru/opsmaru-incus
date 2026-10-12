@@ -17,6 +17,8 @@ func main() {
 	var err error
 	if in.Protocol == "simplestreams" {
 		client, err = incus.ConnectSimpleStreams(in.URL, args)
+	} else if in.Protocol == "oci" {
+		client, err = incus.ConnectOCI(in.URL, args)
 	} else {
 		panic("unsupported fixture protocol")
 	}

@@ -478,9 +478,11 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
         :control -> await_blocked_write(control.pid, System.monotonic_time(:millisecond) + 1_000)
       end
 
-      monitors = for pid <- [console.pid, channel.pid, control.pid], do: Process.monitor(pid)
+      monitors =
+        for pid <- [console.pid, channel.pid, control.pid], do: {pid, Process.monitor(pid)}
+
       Process.exit(owner, :kill)
-      for monitor <- monitors, do: assert_receive({:DOWN, ^monitor, :process, _, _}, 500)
+      for {pid, monitor} <- monitors, do: assert_shutdown(pid, monitor)
 
       if unquote(call) == :attach,
         do: assert_receive({:stalled_peer_closed, {:error, :closed}}, 1_000)
@@ -488,6 +490,17 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
       assert console.operation.url == "/1.0/operations/console-id"
       assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
       refute Enum.any?(HTTPFixture.requests(fixture), &(&1.method == "DELETE"))
+    end
+  end
+
+  defp assert_shutdown(pid, monitor) do
+    receive do
+      {:DOWN, ^monitor, :process, ^pid, _} -> :ok
+    after
+      500 ->
+        flunk(
+          "owned console process exceeded 500 ms cleanup: #{inspect(Process.info(pid, [:current_stacktrace, :status]))}"
+        )
     end
   end
 

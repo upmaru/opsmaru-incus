@@ -89,6 +89,8 @@ for name in ['EventListener.AddHandler','EventListener.RemoveHandler','EventList
 oci_helpers = 'Disconnect GetImageAliasArchitectures GetImage GetImageAlias GetImageAliasType GetImageFile GetImages GetImagesAllProjects GetImagesAllProjectsWithFilter GetImagesWithFilter GetImageFingerprints GetImageAliases GetImageAliasNames GetImageSecret GetPrivateImage GetPrivateImageFile ExportImage'.split()
 for name in oci_helpers:
  helpers['ProtocolOCI.'+name]=('lib/opsmaru/incus/oci.ex',['test/library/oci_test.exs'])
+for name in ['GetConnectionInfo','GetHTTPClient','DoHTTP']:
+ helpers['ProtocolOCI.'+name]=('lib/opsmaru/incus/oci.ex',['test/library/oci_origin_reference_test.exs'])
 helpers['ConnectOCI']=('lib/opsmaru/incus/oci.ex',['test/library/oci_test.exs'])
 simple_helpers = 'GetConnectionInfo Disconnect GetHTTPClient DoHTTP GetImages GetImagesAllProjects GetImagesAllProjectsWithFilter GetImagesWithFilter GetImageFingerprints GetImage GetImageFile GetImageSecret GetPrivateImage GetPrivateImageFile GetImageAliases GetImageAliasNames GetImageAlias GetImageAliasType GetImageAliasArchitectures ExportImage'.split()
 for name in simple_helpers:

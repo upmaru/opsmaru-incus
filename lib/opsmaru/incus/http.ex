@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.HTTP do
   @moduledoc """
-  Portable GetHTTPClient/DoHTTP slice over an explicitly bound native backend or SimpleStreams origin.
+  Portable GetHTTPClient/DoHTTP slice over an explicitly bound native backend or verified image origin.
 
   `client/1` returns an immutable HTTP handle without starting a pool or process.
   `request/4` accepts a native relative API path and optional binary body/headers,
@@ -10,12 +10,17 @@ defmodule Opsmaru.Incus.HTTP do
   native transfers use the separate Transfer/Files/Images interfaces.
   """
   alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, SimpleStreams, Transport}
+  alias Opsmaru.Incus.{Error, OCI, SimpleStreams, Transport}
   @enforce_keys [:client]
   defstruct [:client]
 
   def client(%Incus{} = client), do: {:ok, %__MODULE__{client: client}}
   def client(%SimpleStreams{} = client), do: {:ok, %__MODULE__{client: client}}
+
+  def client(%OCI{connection: %{transport: :https}} = client),
+    do: {:ok, %__MODULE__{client: client}}
+
+  def client(%OCI{}), do: {:error, %Error{kind: :invalid_origin}}
 
   def request(%__MODULE__{client: client}, method, path, opts \\ []) do
     with :ok <- options(method, opts, client.connection.max_request_bytes),
@@ -46,7 +51,8 @@ defmodule Opsmaru.Incus.HTTP do
 
   defp request_path(%Incus{} = client, path), do: Incus.request_path(client.connection, path)
 
-  defp request_path(%SimpleStreams{}, path) when is_binary(path) and byte_size(path) <= 16_384 do
+  defp request_path(%module{}, path)
+       when module in [OCI, SimpleStreams] and is_binary(path) and byte_size(path) <= 16_384 do
     uri = URI.parse(path)
 
     with true <-
@@ -64,7 +70,7 @@ defmodule Opsmaru.Incus.HTTP do
     _ -> {:error, :invalid_path}
   end
 
-  defp request_path(%SimpleStreams{}, _), do: {:error, :invalid_path}
+  defp request_path(%module{}, _) when module in [OCI, SimpleStreams], do: {:error, :invalid_path}
 
   defp perform(connection, method, path, headers, body) do
     case Transport.request(connection, method, path, headers, body) do
@@ -79,6 +85,7 @@ defmodule Opsmaru.Incus.HTTP do
   defp options(method, opts, maximum) do
     if method in ~w(GET HEAD POST PUT PATCH DELETE OPTIONS) and Keyword.keyword?(opts) and
          length(opts) <= 2 and Keyword.keys(opts) -- [:body, :headers] == [] and
+         length(opts) == length(Enum.uniq(Keyword.keys(opts))) and
          (is_nil(opts[:body]) or (is_binary(opts[:body]) and byte_size(opts[:body]) <= maximum)) and
          valid_headers?(Keyword.get(opts, :headers, [])),
        do: :ok,

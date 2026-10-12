@@ -7,6 +7,8 @@ defmodule Opsmaru.Incus.Metadata do
   def keys(%Model{type: "MetadataConfiguration", data: data}, entity, group),
     do: keys(data, entity, group)
 
+  def keys(%Model{}, _, _), do: invalid()
+
   def keys(data, entity, group) when is_map(data) or is_nil(data) do
     with true <- valid_name?(entity) and valid_name?(group),
          {:ok, model} <-

@@ -42,3 +42,10 @@ rather than propagating a native nil-pointer panic; no SDK code is patched.
 same Apache-2.0 license. Its fixture-only `test/reference/metadatakeys` driver
 uses the unchanged native GetKeys helper. Native string quoting preserves the
 helper's explicit caller-visible errors; Inspect remains redacted.
+
+
+OCI origin helpers adapt pinned client/oci.go connection metadata and HTTP
+conveniences. The unchanged drivers in test/reference/{origininfo,httpclient}
+now include ConnectOCI; independent tests keep verified origin/credential
+binding and non-replayable mutation behavior explicit. No registry authentication
+or installed conversion acceptance follows from this helper evidence.
