@@ -72,6 +72,8 @@ helpers['GetPrivateImageFile']=('lib/opsmaru/incus/images.ex',['test/library/pri
 helpers['ConsoleInstanceDynamic']=('lib/opsmaru/incus/dynamic_console.ex',['test/library/dynamic_console_reference_test.exs'])
 for name in ['ConfigMap.UnmarshalJSON','DevicesMap.UnmarshalJSON']:
  helpers[name]=('lib/opsmaru/incus/native_config.ex',['test/library/native_config_reference_test.exs'])
+for name in ['ConfigMap.UnmarshalYAML','DevicesMap.UnmarshalYAML']:
+ helpers[name]=('lib/opsmaru/incus/native_config.ex',['test/library/native_yaml_reference_test.exs'])
 helpers['ApplyServerPreseed']=('lib/opsmaru/incus/preseed.ex',['test/library/preseed_reference_test.exs'])
 preseed_types = 'InitPreseed InitLocalPreseed InitClusterPreseed InitNetworksProjectPost InitStorageVolumesProjectPost InitProfileProjectPost'.split()
 models.update(preseed_types)
@@ -125,7 +127,7 @@ for entry in inv['entries']:
  elif entry['package']=='shared/api' and entry['kind']=='type' and name == 'StatusError':
   row.update(status='partial',elixir='lib/opsmaru/incus/status_error.ex',evidence=['test/library/status_error_reference_test.exs'],note='Pure bounded native status/message value; zero value, status text and match helpers compared with unchanged reference. No Go fmt formatting or errors.As unwrapping.')
  elif entry['package']=='shared/api' and entry['kind']=='type' and name in ['ConfigMap','DevicesMap']:
-  row.update(status='partial',elixir='lib/opsmaru/incus/native_config.ex',evidence=['test/library/native_config_reference_test.exs'],note='Explicit bounded native JSON coercion/merge slice; YAML and full type parity remain unverified.')
+  row.update(status='partial',elixir='lib/opsmaru/incus/native_config.ex',evidence=['test/library/native_config_reference_test.exs','test/library/native_yaml_reference_test.exs'],note='Explicit bounded native JSON and go-yaml v4 YAML coercion/merge slices; three recorded YAML scanner/alias-ratio differences and full type parity remain open.')
  elif entry['kind'] in ['method','interface_method'] and name in methods:
   row.update(status='partial',elixir='lib/opsmaru/incus/api.ex',evidence=['test/library/resource_slice_test.exs'] + (['test/library/session_test.exs'] if name in ['ExecInstance','ConsoleInstance'] else []) + (['test/library/migration_test.exs'] if name.startswith('Migrate') else []),note='Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate.')
  elif entry['kind'] in ['method','interface_method','function'] and (entry['name'] in helpers or name in helpers):

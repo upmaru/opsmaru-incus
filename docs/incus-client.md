@@ -18,6 +18,7 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `NativeConfig.from_json/3` | Explicit ConfigMap/DevicesMap JSON coercion and existing-key merge, with byte/type bounds; no YAML parser |
 | `Model.decode/2`, `encode/1` | Pinned native field schemas, preserving null/unknown fields without atom creation |
 | `FileHeaders.parse/1` | Pure bounded native header defaults, signed ownership/overflow and base-zero permission-mode semantics; first duplicate wins |
+| `NativeConfig.from_yaml/3` | Bounded go-yaml v4 ConfigMap/DevicesMap decoding from yamerl tokens: native scalar resolution, tags, aliases, merge keys, duplicate rejection and existing-map merges; three recorded scanner/alias-ratio differences |
 | `StatusError.new/2`, `error/1`, `status/1`, `match/2`, `check/2` | Pure bounded native status/message value with the pinned Go zero value and `net/http` status text; takes a preformatted message (no Go `fmt` verbs) and matches only a direct `%StatusError{}` (no `errors.As` unwrapping) |
 | `Projections.filtered_server/1`, `logging_event/1` | Pure typed native server filter and logging/network-ACL/lifecycle/operation event records; bounded inputs, no log output; originals remain lossless |
 | `Metadata.keys/3` | Pure bounded native configuration-key lookup with typed defaults, last-map-wins merge and native entity/group diagnostics; aliased string-key maps are validated |

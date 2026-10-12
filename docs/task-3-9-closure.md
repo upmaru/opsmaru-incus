@@ -5,7 +5,7 @@ closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
-The declaration manifest currently has 1219 partial and 61 missing entries.
+The declaration manifest currently has 1221 partial and 59 missing entries.
 Declarations include Go methods, interfaces, types, constants and transport
 abstractions; these counts are not endpoint counts or complete parity evidence.
 No partial mapping is promoted to completion by this continuation.
@@ -273,3 +273,21 @@ remain missing.
 The status-error Inspect redaction applies to values with the struct's own
 keys. Hand-built maps with different keys bypass custom Inspect implementations
 entirely (as with `Opsmaru.Incus.Error`); they cannot be intercepted.
+
+
+## Native ConfigMap/DevicesMap YAML decoding
+
+`NativeConfig.from_yaml/3` decodes from yamerl's public token stream rather than
+its YAML 1.2 resolved values, so go-yaml v4 resolution applies only to plain
+untagged scalars; quoted and block scalars stay strings. Explicit tags, anchors,
+undefined/forward/self aliases, duplicate keys, merge keys (including anchored
+flow and block templates), null/dropped keys, null versus absent documents and
+first-document selection follow the unchanged native decoder. Alias expansion
+is charged against an explicit node/byte budget before construction. A 185-row
+oracle matrix and 2,400 randomized reviewer-generated config/device documents
+across three seeds match the unchanged native decoder. Three differences remain
+recorded side by side: yamerl accepts tab indentation that the native scanner
+rejects; native replaces invalid UTF-8 in `!!binary` with U+FFFD while ours
+rejects; and go-yaml's aliasing-ratio check rejects some expansions that remain
+within our bounded budget. `ServerFiltered.MarshalYAML` is still missing. Two
+declarations gain partial evidence: 1221 partial, 59 missing, complete_port=false.
