@@ -179,9 +179,13 @@ defmodule Opsmaru.Incus.StatusErrorReferenceTest do
     {:ok, term} = StatusError.new(404, "missing")
     invalid = {:error, %Error{kind: :invalid_input}}
     huge = List.duplicate(404, 2_000_000)
+    # The rejected walk must cost less than even one full length/1 pass, which
+    # the earlier double-walk implementation performed before rejecting.
+    {walk_micros, length} = :timer.tc(fn -> length(huge) end)
     {micros, result} = :timer.tc(fn -> StatusError.match(term, huge) end)
+    assert length == 2_000_000
     assert result == invalid
-    assert micros < 50_000
+    assert micros < walk_micros
     assert StatusError.match(term, List.duplicate(404, 1_024) ++ [404 | :tail]) == invalid
     assert StatusError.match(term, List.duplicate(404, 10) ++ [404 | :tail]) == invalid
     assert StatusError.match(:not_status, huge) == invalid

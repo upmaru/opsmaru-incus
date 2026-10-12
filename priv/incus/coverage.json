@@ -9412,17 +9412,21 @@
     },
     {
       "id": "shared/api/type/AccessEntry",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/BackupTarget",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/Certificate",
@@ -9436,10 +9440,12 @@
     },
     {
       "id": "shared/api/type/CertificateAddToken",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/CertificatePut",
@@ -9528,17 +9534,21 @@
     },
     {
       "id": "shared/api/type/ClusterMemberConfigKey",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterMemberJoinToken",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterMemberPost",
@@ -9579,10 +9589,12 @@
     },
     {
       "id": "shared/api/type/ClusterMemberSysInfo",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ClusterMembersPost",
@@ -9677,10 +9689,12 @@
     },
     {
       "id": "shared/api/type/ImageAlias",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ImageAliasesEntry",
@@ -9738,10 +9752,12 @@
     },
     {
       "id": "shared/api/type/ImageMetadataTemplate",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ImagePut",
@@ -9755,10 +9771,12 @@
     },
     {
       "id": "shared/api/type/ImageSource",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ImagesPost",
@@ -9771,10 +9789,12 @@
     },
     {
       "id": "shared/api/type/ImagesPostSource",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InitClusterPreseed",
@@ -9869,10 +9889,12 @@
     },
     {
       "id": "shared/api/type/InstanceConsoleControl",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceConsolePost",
@@ -9885,17 +9907,21 @@
     },
     {
       "id": "shared/api/type/InstanceDebugRepairPost",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceExecControl",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceExecPost",
@@ -9926,10 +9952,12 @@
     },
     {
       "id": "shared/api/type/InstancePostTarget",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstancePut",
@@ -9990,10 +10018,12 @@
     },
     {
       "id": "shared/api/type/InstanceSource",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceState",
@@ -10006,52 +10036,66 @@
     },
     {
       "id": "shared/api/type/InstanceStateCPU",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceStateDisk",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceStateMemory",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceStateNetwork",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceStateNetworkAddress",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceStateNetworkCounters",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceStateOSInfo",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstanceStatePut",
@@ -10064,10 +10108,12 @@
     },
     {
       "id": "shared/api/type/InstanceType",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/InstancesPost",
@@ -10384,17 +10430,21 @@
     },
     {
       "id": "shared/api/type/NetworkLoadBalancerStateBackendHealth",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkLoadBalancerStateBackendHealthPort",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkLoadBalancersPost",
@@ -10464,45 +10514,57 @@
     },
     {
       "id": "shared/api/type/NetworkStateAddress",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkStateBond",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkStateBridge",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkStateCounters",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkStateOVN",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkStateVLAN",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkZone",
@@ -10536,10 +10598,12 @@
     },
     {
       "id": "shared/api/type/NetworkZoneRecordEntry",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/NetworkZoneRecordPut",
@@ -10665,10 +10729,12 @@
     },
     {
       "id": "shared/api/type/ProjectStateResource",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ProjectsPost",
@@ -10690,206 +10756,264 @@
     },
     {
       "id": "shared/api/type/ResourcesCPU",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesCPUAddressSizes",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesCPUCache",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesCPUCore",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesCPUSocket",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesCPUThread",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesGPU",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesGPUCard",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesGPUCardDRM",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesGPUCardMdev",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesGPUCardNvidia",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesGPUCardSRIOV",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesLoad",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesMemory",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesMemoryNode",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesNetwork",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesNetworkCard",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesNetworkCardPort",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesNetworkCardPortInfiniband",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesNetworkCardSRIOV",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesNetworkCardVDPA",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesPCI",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesPCIDevice",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesPCIVPD",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesSerial",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesSerialDevice",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesStorage",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesStorageDisk",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesStorageDiskPartition",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesStoragePool",
@@ -10902,66 +11026,84 @@
     },
     {
       "id": "shared/api/type/ResourcesStoragePoolInodes",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesStoragePoolSpace",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesSystem",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesSystemChassis",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesSystemFirmware",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesSystemMotherboard",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesUSB",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesUSBDevice",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ResourcesUSBDeviceInterface",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/Response",
@@ -11023,17 +11165,21 @@
     },
     {
       "id": "shared/api/type/ServerStorageDriverInfo",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/ServerUntrusted",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StatusCode",
@@ -11065,17 +11211,21 @@
     },
     {
       "id": "shared/api/type/StorageBucketBackup",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageBucketBackupPost",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageBucketBackupsPost",
@@ -11165,10 +11315,12 @@
     },
     {
       "id": "shared/api/type/StoragePoolState",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StoragePoolsPost",
@@ -11254,10 +11406,12 @@
     },
     {
       "id": "shared/api/type/StorageVolumePostTarget",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumePut",
@@ -11318,10 +11472,12 @@
     },
     {
       "id": "shared/api/type/StorageVolumeSource",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumeState",
@@ -11334,10 +11490,12 @@
     },
     {
       "id": "shared/api/type/StorageVolumeStateUsage",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/model.ex",
+      "evidence": [
+        "test/library/nested_models_reference_test.exs"
+      ],
+      "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
     {
       "id": "shared/api/type/StorageVolumesPost",

@@ -1008,3 +1008,16 @@ reject invalid statuses, messages over 64 KiB and malformed/oversized code lists
 without raising, and prove Inspect redaction. Focused 8-test run, library
 compile with warnings as errors and strict Credo pass. Six declarations gain
 partial evidence: 1140 partial and 140 missing. Task 3.9 remains open.
+
+
+## Task 3.9: nested shared/api model schemas
+
+`test/library/nested_models_reference_test.exs` (239 cases) builds the
+fixture-only `test/reference/nestedmodels` registry of 79 unchanged native types
+and compares acceptance, canonical round trips, schema/emitted key sets, empty
+and null inputs, and per-field rejection with `Model.decode/2`. Value generation
+is depth-bounded and the module has a timeout after an unbounded first draft
+recursed through the SR-IOV card types. Recorded open difference: native RFC
+3339 `time.Time` validation. Status-error bounded-walk evidence now compares the
+rejected walk with a single native `length/1` pass rather than a fixed budget.
+Focused runs, library compile with warnings as errors and strict Credo pass.

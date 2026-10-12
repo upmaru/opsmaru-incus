@@ -106,6 +106,8 @@ models.update(projection_types)
 helpers['MetadataConfiguration.GetKeys']=('lib/opsmaru/incus/metadata.ex',['test/library/metadata_keys_reference_test.exs'])
 metadata_types = 'MetadataConfiguration MetadataConfig MetadataConfigEntityName MetadataConfigGroupName MetadataConfigGroup MetadataConfigKey'.split()
 models.update(metadata_types)
+nested_model_types = 'AccessEntry BackupTarget CertificateAddToken ClusterMemberConfigKey ClusterMemberJoinToken ClusterMemberSysInfo ImageAlias ImageMetadataTemplate ImageSource ImagesPostSource InstanceConsoleControl InstanceDebugRepairPost InstanceExecControl InstancePostTarget InstanceSource InstanceStateCPU InstanceStateDisk InstanceStateMemory InstanceStateNetwork InstanceStateNetworkAddress InstanceStateNetworkCounters InstanceStateOSInfo InstanceType NetworkLoadBalancerStateBackendHealth NetworkLoadBalancerStateBackendHealthPort NetworkStateAddress NetworkStateBond NetworkStateBridge NetworkStateCounters NetworkStateOVN NetworkStateVLAN NetworkZoneRecordEntry ProjectStateResource ResourcesCPU ResourcesCPUAddressSizes ResourcesCPUCache ResourcesCPUCore ResourcesCPUSocket ResourcesCPUThread ResourcesGPU ResourcesGPUCard ResourcesGPUCardDRM ResourcesGPUCardMdev ResourcesGPUCardNvidia ResourcesGPUCardSRIOV ResourcesLoad ResourcesMemory ResourcesMemoryNode ResourcesNetwork ResourcesNetworkCard ResourcesNetworkCardPort ResourcesNetworkCardPortInfiniband ResourcesNetworkCardSRIOV ResourcesNetworkCardVDPA ResourcesPCI ResourcesPCIDevice ResourcesPCIVPD ResourcesSerial ResourcesSerialDevice ResourcesStorage ResourcesStorageDisk ResourcesStorageDiskPartition ResourcesStoragePoolInodes ResourcesStoragePoolSpace ResourcesSystem ResourcesSystemChassis ResourcesSystemFirmware ResourcesSystemMotherboard ResourcesUSB ResourcesUSBDevice ResourcesUSBDeviceInterface ServerStorageDriverInfo ServerUntrusted StorageBucketBackup StorageBucketBackupPost StoragePoolState StorageVolumePostTarget StorageVolumeSource StorageVolumeStateUsage'.split()
+models.update(nested_model_types)
 for name in ['StatusErrorf','StatusErrorMatch','StatusErrorCheck','StatusError.Error','StatusError.Status']:
  helpers[name]=('lib/opsmaru/incus/status_error.ex',['test/library/status_error_reference_test.exs'])
 entries=[]
@@ -137,6 +139,7 @@ for entry in inv['entries']:
   if name in network_normalisers: evidence.append('test/library/network_models_reference_test.exs')
   if name in projection_types: evidence.append('test/library/projections_reference_test.exs')
   if name in metadata_types: evidence.append('test/library/metadata_keys_reference_test.exs')
+  if name in nested_model_types: evidence.append('test/library/nested_models_reference_test.exs')
   row.update(status='partial',elixir='lib/opsmaru/incus/model.ex',evidence=evidence,note='Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified.')
  elif entry['package']=='shared/api' and entry['kind'] in ['const','var'] and entry['source']=='shared/api/status_code.go':
   row.update(status='partial',elixir='lib/opsmaru/incus/status.ex',evidence=['test/library/model_helpers_reference_test.exs'],note='All pinned status names/values and unknown-code behavior compared with unchanged native helpers.')

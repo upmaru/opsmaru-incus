@@ -5,7 +5,7 @@ closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
-The declaration manifest currently has 1140 partial and 140 missing entries.
+The declaration manifest currently has 1219 partial and 61 missing entries.
 Declarations include Go methods, interfaces, types, constants and transport
 abstractions; these counts are not endpoint counts or complete parity evidence.
 No partial mapping is promoted to completion by this continuation.
@@ -252,3 +252,24 @@ Elixir counterpart. Inputs are bounded and Inspect is redacted. Six declarations
 gain partial evidence: 1140 partial, 140 missing, complete_port=false. Task 3.9
 remains open; this slice was implemented by a delegated pi-web agent session and
 independently reviewed and re-verified before commit.
+
+
+## Nested shared/api model schemas
+
+Seventy-nine nested resource, state, source/target and control models now have
+unchanged-native JSON evidence through `Model.decode/2`. Schema-generated values
+(bounded at depth three for the mutually recursive GPU/network SR-IOV card
+types) are accepted by both sides, native canonical output decodes in Elixir,
+and emitted top-level keys equal the schema fields, including Go-promoted inline
+structs. Empty and all-null inputs are accepted by both; every scalar field's
+wrong-type, float-into-integer, out-of-range and negative-unsigned values are
+rejected by both. Two recorded differences remain open, asserted side by side:
+native `time.Time` requires RFC 3339 while `Model.decode/2` accepts any string,
+and native decoding drops unknown fields while the lossless model retains them
+(intended). Seventy-nine declarations gain partial evidence: 1219 partial, 61
+missing, complete_port=false. `Response`, `ResponseRaw` and `ResponseType`
+remain missing.
+
+The status-error Inspect redaction applies to values with the struct's own
+keys. Hand-built maps with different keys bypass custom Inspect implementations
+entirely (as with `Opsmaru.Incus.Error`); they cannot be intercepted.
