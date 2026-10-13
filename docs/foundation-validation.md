@@ -1049,3 +1049,15 @@ documents decode in under a second without leaving workers or messages, and
 inputs never create atoms, raise or change yamerl's environment. Library
 compile with warnings as errors, strict Credo, 935 library tests, embedded
 startup and strict OpenSpec pass.
+
+
+## Task 3.9: ServerFiltered YAML rendering
+
+`test/library/server_yaml_reference_test.exs` builds the fixture-only
+`test/reference/serveryaml` driver (unchanged `api.Server.Filtered()` with
+go-yaml v4 `yaml.Marshal`) and asserts byte equality or rejection for realistic,
+empty and null servers, a one- and two-atom string matrix used as values and
+keys, and seeded randomized servers; recorded rejection categories are pinned
+as natively rendered, and invalid input is rejected as natively. Library compile
+with warnings as errors, strict Credo, 941 library tests, embedded startup and
+strict OpenSpec pass.

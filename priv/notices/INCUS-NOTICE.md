@@ -68,3 +68,8 @@ subset, reproducing go-yaml v4 (go.yaml.in/yaml/v4, Apache-2.0 and MIT) scalar
 resolution and merge precedence. Tokens come from yamerl (BSD-2-Clause) via
 yaml_elixir (MIT). The fixture-only `test/reference/nativeyaml` driver calls the
 unchanged native types and performs no network or filesystem operation.
+`lib/opsmaru/incus/server_yaml.ex` adapts pinned `shared/api/server.go`
+`ServerFiltered.MarshalYAML` and reproduces go-yaml v4 (go.yaml.in/yaml/v4,
+Apache-2.0 and MIT) string styling, key ordering and layout for its subset. The
+fixture-only `test/reference/serveryaml` driver calls the unchanged native types
+and performs no network or filesystem operation.

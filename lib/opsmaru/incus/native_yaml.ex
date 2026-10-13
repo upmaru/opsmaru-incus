@@ -465,6 +465,20 @@ defmodule Opsmaru.Incus.NativeYaml do
   defp scalar(:plain, text), do: plain(text)
   defp scalar(_substyle, text), do: {:str, text}
 
+  # Shared with `ServerYaml`: :str when go-yaml resolves the plain scalar to a
+  # string, :other for another type, :unknown outside the mirrored resolver.
+  # Reserved indicators resolve to strings natively (decoding rejects them).
+  @doc false
+  def plain_kind(<<c, _::binary>>) when c in [?@, ?`], do: :str
+
+  def plain_kind(text) when is_binary(text) do
+    case plain(text) do
+      {:str, _} -> :str
+      :reject -> :unknown
+      _ -> :other
+    end
+  end
+
   defp plain(text) do
     case Map.fetch(@resolve_map, text) do
       {:ok, term} -> term

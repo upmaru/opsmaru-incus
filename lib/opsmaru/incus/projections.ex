@@ -5,7 +5,7 @@ defmodule Opsmaru.Incus.Projections do
   Filtering matches the pinned native suffix heuristic, not a general secret
   detector. Original lossless models remain unchanged.
   """
-  alias Opsmaru.Incus.{Error, Model, Response, Server}
+  alias Opsmaru.Incus.{Error, Model, Response, Server, ServerYaml}
 
   def filtered_server(%Server{raw: raw}), do: filtered_server(raw)
   def filtered_server(%Model{type: "Server", data: raw}), do: filtered_server(raw)
@@ -25,6 +25,19 @@ defmodule Opsmaru.Incus.Projections do
   end
 
   def filtered_server(_), do: invalid()
+
+  @doc """
+  Native `ServerFiltered.MarshalYAML` bytes for the filtered server, or an
+  `:invalid_input` error for input outside the byte-exact subset.
+  """
+  def filtered_server_yaml(server) do
+    with {:ok, %Model{data: filtered}} <- filtered_server(server),
+         {:ok, yaml} <- ServerYaml.render(filtered) do
+      {:ok, yaml}
+    else
+      _ -> invalid()
+    end
+  end
 
   def logging_event(%Model{type: "Event", data: raw}), do: logging_event(raw)
   def logging_event(%Model{}), do: invalid()

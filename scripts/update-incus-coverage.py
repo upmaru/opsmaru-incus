@@ -72,6 +72,7 @@ helpers['GetPrivateImageFile']=('lib/opsmaru/incus/images.ex',['test/library/pri
 helpers['ConsoleInstanceDynamic']=('lib/opsmaru/incus/dynamic_console.ex',['test/library/dynamic_console_reference_test.exs'])
 for name in ['ConfigMap.UnmarshalJSON','DevicesMap.UnmarshalJSON']:
  helpers[name]=('lib/opsmaru/incus/native_config.ex',['test/library/native_config_reference_test.exs'])
+helpers['ServerFiltered.MarshalYAML']=('lib/opsmaru/incus/server_yaml.ex',['test/library/server_yaml_reference_test.exs'])
 for name in ['ConfigMap.UnmarshalYAML','DevicesMap.UnmarshalYAML']:
  helpers[name]=('lib/opsmaru/incus/native_yaml.ex',['test/library/native_yaml_reference_test.exs'])
 helpers['ApplyServerPreseed']=('lib/opsmaru/incus/preseed.ex',['test/library/preseed_reference_test.exs'])

@@ -9211,10 +9211,12 @@
     },
     {
       "id": "shared/api/method/ServerFiltered.MarshalYAML",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/server_yaml.ex",
+      "evidence": [
+        "test/library/server_yaml_reference_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "shared/api/method/StatusCode.IsFinal",

@@ -5,7 +5,7 @@ closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
-The declaration manifest currently has 1221 partial and 59 missing entries.
+The declaration manifest currently has 1222 partial and 58 missing entries.
 Declarations include Go methods, interfaces, types, constants and transport
 abstractions; these counts are not endpoint counts or complete parity evidence.
 No partial mapping is promoted to completion by this continuation.
@@ -368,3 +368,26 @@ that a timed-out worker could still deliver a late result after cleanup. The
 float range check now uses the leading significant digit's decimal magnitude,
 worker failures return a rejection, and cleanup waits for the worker's
 termination before draining its messages. Both cases are regression tests.
+
+
+## ServerFiltered.MarshalYAML (byte-exact subset)
+
+`Projections.filtered_server_yaml/1` renders the filtered server through
+`Opsmaru.Incus.ServerYaml` and must equal the bytes of go-yaml v4
+`yaml.Marshal(server.Filtered())` (v3-compatible defaults: four-space indent,
+unlimited width), or reject. It mirrors the native field order and inline
+structs, `api_extensions_count` insertion before `api_status` when positive,
+empty collections as `{}`/`[]`, lowercase driver-info keys, go-yaml's natural
+map-key ordering, double quotes for strings that would resolve to another type,
+single quotes for YAML 1.1 booleans, base-60 floats, `<<` and strings the
+emitter cannot write plain, and plain style otherwise. Recorded rejections where
+native renders: strings with tabs or line breaks (native emits literal blocks or
+escapes), date-like plain values and float-overflow forms outside the mirrored
+resolver, and map keys over 128 bytes, non-ASCII or with 19+ digit runs. The
+server-filter config coercion and SENSITIVE censoring are reused unchanged.
+
+Byte comparisons against the unchanged native driver: realistic, empty and null
+servers; every one- and two-atom string (5,391) as a value and as a key with no
+mismatch (99.8% rendered); 6,400 randomized adversarial servers and 1,500
+typed-config servers with no mismatch. One declaration gains partial evidence:
+1222 partial, 58 missing, complete_port=false. Task 3.9 remains open.
