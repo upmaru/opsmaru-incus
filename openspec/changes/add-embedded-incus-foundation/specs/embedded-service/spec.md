@@ -2,35 +2,35 @@
 
 ## Purpose
 
-Allows another host application to embed the reusable compute service without activating a second public server or taking over host installation and runtime lifecycle.
+Allows another host application to embed the portable Incus library without activating a second public server or taking over host installation and runtime lifecycle.
 
 ## ADDED Requirements
 
-### Requirement: Safe embedded default
+### Requirement: Passive library loading
 
-The service SHALL default to embedded mode. Embedded startup SHALL expose configured compute services without starting its own endpoint process, repository or network listener. Ambient web-server environment variables MUST NOT override the host's embedded configuration.
+The library SHALL have no application callback or supervision tree of its own. Loading, starting or restarting it MUST NOT start an endpoint, repository, listener or worker, create state, read credentials or contact a backend. Ambient web-server environment variables MUST NOT have any effect.
 
 #### Scenario: Dependency startup
 
-- **WHEN** a host starts the dependency in embedded mode while PHX_SERVER and PORT are present
-- **THEN** no dependency-owned endpoint, repository or listener starts and the host retains its existing public endpoint
+- **WHEN** a host starts and restarts the dependency while PHX_SERVER and PORT are present
+- **THEN** no dependency-owned process, endpoint, repository, listener or state is created and the host retains its existing public endpoint
 
 ### Requirement: Host-supplied integration
 
-Embedding SHALL accept the host's backend connection, private state location, identity integration and host capabilities. Shared operations MUST NOT require Macus, Swift, a fixed state directory, an independent database or a separately running Opsmaru process.
+Library calls SHALL accept the host's backend connection, private state location, identity integration and host capabilities explicitly. Client operations MUST NOT require Macus, Swift, a fixed state directory, a database, Phoenix or a separately running Opsmaru process.
 
 #### Scenario: Macus embedding
 
-- **WHEN** Macus supplies its native socket backend and registered runtime adapter
-- **THEN** shared compute operations execute inside the Macus server process without an Opsmaru service installation
+- **WHEN** Macus supplies its native socket backend and host context
+- **THEN** client operations execute inside the Macus server process without an Opsmaru service installation
 
 ### Requirement: Independent runtime ownership
 
-Starting, stopping or recovering the compute service MUST NOT implicitly start, stop or delete its host runtime or Incus workloads. Optional host lifecycle actions SHALL require an explicitly selected host operation and authorization.
+Starting, stopping or recovering the library or host-supervised client workers MUST NOT implicitly start, stop or delete the host runtime or Incus workloads. Optional host lifecycle actions SHALL require an explicitly selected host operation and authorization.
 
 #### Scenario: Embedded workers restart
 
-- **WHEN** the shared worker supervision tree restarts
+- **WHEN** a host-supervised client worker supervisor restarts
 - **THEN** existing host runtime and Incus workloads remain owned by their original services and are not restarted
 
 ### Requirement: Host readiness before execution
@@ -48,12 +48,12 @@ Production consumers SHALL identify an immutable dependency revision or released
 
 #### Scenario: Isolated consumer build
 
-- **WHEN** Macus is built without a sibling Opsmaru checkout
-- **THEN** its pinned dependency resolves reproducibly and its installed package records the Opsmaru source identity
+- **WHEN** Macus is built without a sibling opsmaru-incus checkout
+- **THEN** its pinned dependency resolves reproducibly and its installed package records the opsmaru-incus source identity
 
 ### Requirement: Database-free library verification
 
-Library embedding and client fixture checks SHALL be runnable without database credentials, provider login, an HTTP endpoint or a live backend. Generated web-test database setup MUST NOT be required for the library test profile. Consumer builds SHALL remain reproducible without a sibling checkout.
+Library embedding and client fixture checks SHALL be runnable without database credentials, provider login, an HTTP endpoint or a live backend. The library's ordinary test command MUST NOT require database setup. Consumer builds SHALL remain reproducible without a sibling checkout.
 
 #### Scenario: Isolated library checks
 

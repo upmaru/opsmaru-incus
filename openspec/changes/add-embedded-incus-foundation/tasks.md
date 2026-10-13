@@ -1,6 +1,8 @@
 # Tasks
 
-First implementation target. Existing scaffold checks are baseline evidence, not completion of the public library/client contracts below. All tasks start unchecked. No central database, OIDC provider, registry, connector, MCP tool or application task runner is required to complete this change.
+First implementation target. No central database, OIDC provider, registry, connector, MCP tool or application task runner is required to complete this change.
+
+Tasks 1–4 were implemented and verified in `upmaru/opsmaru` (up to `a00805d`) while the client lived in the `:opsmaru` application; their wording describes that context and their evidence is in `docs/foundation-validation.md`. Section 5 records the move to `upmaru/opsmaru-incus`, where task 3.9 continues.
 
 ## 1. Public library and safe embedding
 
@@ -27,7 +29,7 @@ First implementation target. Existing scaffold checks are baseline evidence, not
 - [x] 3.6 Port files/backups/native SFTP/NBD client upgrades; verify official wire comparison, coalesced handshake bytes, duplex binary traffic, half-close and cleanup independently of Macus proxy fixtures.
 - [x] 3.7 Port operation wait/poll/supported cancellation and bounded events; verify local timeout versus backend cancellation, overflow/completion races and uncertainty without retrying possible accepted mutations.
 - [x] 3.8 Port exec/console input/output/control streams; verify native exit status/control, bounds/backpressure and disconnect cleanup.
-- [ ] 3.9 Port migration/copy and remaining reference entries, including OCI through an explicit host conversion adapter and SimpleStreams through explicit verified HTTPS with an optional host delta adapter; verify approved address/operation negotiation, transport-secret redaction, bounded adapter calls/binary handoff and cleanup for every affected model/method. Verify native SimpleStreams projections/checksums and adapter deadlines, ownership and cleanup; document the unchanged pin's approved socket-discovery/HTTP/tool differences. Keep installed OCI/delta adapter, real-backend and Macus hardware acceptance separately recorded.
+- [ ] 3.9 In `upmaru/opsmaru-incus`, port migration/copy and remaining reference entries, including OCI through an explicit host conversion adapter and SimpleStreams through explicit verified HTTPS with an optional host delta adapter; verify approved address/operation negotiation, transport-secret redaction, bounded adapter calls/binary handoff and cleanup for every affected model/method. Verify native SimpleStreams projections/checksums and adapter deadlines, ownership and cleanup; document the unchanged pin's approved socket-discovery/HTTP/tool differences. Keep installed OCI/delta adapter, real-backend and Macus hardware acceptance separately recorded.
 - [x] 3.10 Complete and document the method/type evidence manifest; verify every supported entry has implementation/differential evidence before full-client acceptance and partial slices remain visibly incomplete.
 
 ## 4. Independent library and consumer acceptance
@@ -35,3 +37,9 @@ First implementation target. Existing scaffold checks are baseline evidence, not
 - [x] 4.1 Run the database-free core checks and macOS/Linux protocol fixtures; verify no endpoint/Repo/listener/backend activation and separate embedding/client/stream evidence with exact dependency/reference provenance.
 - [x] 4.2 Add an external Macus-compatible Mix consumer fixture and document an actual immutable implemented dependency revision; verify a clean consumer build/call without sibling checkout or an Opsmaru process while source builds use their pinned toolchain and installed Macus runtime packaging remains consumer-owned.
 - [x] 4.3 With explicit isolated real-backend opt-in, prove native Unix/HTTPS inspection, mutation, operation and stream behavior directly in Opsmaru without requiring Macus integration or the optional gateway; preserve Incus data, record direct-client evidence separately from proxy evidence, and keep Macus VZ/installed-hardware acceptance separately owned and unchecked when unavailable.
+
+## 5. Standalone library repository
+
+- [x] 5.1 Extract the client, reference inventory, notices, fixtures, verifier scripts, docs and this change with history from `upmaru/opsmaru` into `upmaru/opsmaru-incus`; verify every carried file is byte-identical to source `a00805d` apart from the `test/library/` to `test/` relocation.
+- [x] 5.2 Establish the pure `:opsmaru_incus` library with no application callback, ranged runtime dependencies (adding the previously transitive cowlib and yamerl) and a lockfile pruned from Opsmaru's tested versions; verify warning-free compilation, formatting, strict Credo, the full database-free fixture suite, identical coverage-ledger regeneration and the Go reference/constants checks, with no database or real backend.
+- [ ] 5.3 Publish the feature branch and pin the isolated consumer fixture to a pushed revision of this repository; verify a fresh consumer build without a sibling checkout or Opsmaru application, and CI on macOS and Linux.

@@ -2,19 +2,19 @@
 
 ## Context
 
-See [proposal.md](proposal.md). At the original planning baseline, the root Phoenix 1.8/Cowboy application had embedded telemetry only, without Endpoint/Repo/PubSub or an Incus client; generated tests expected Ecto/standalone setup. Implementation now supplies safe embedding, a database-free profile and verified partial client slices. The existing `scripts/check-embedded.exs`, method/type manifest and tasks.md distinguish implemented evidence from remaining tasks 3.9 and 4.3.
+See [proposal.md](proposal.md). This change was planned and largely implemented inside `upmaru/opsmaru`, then moved with its code and history into `upmaru/opsmaru-incus` on 2026-10-13 (source revision `a00805d`). The rest of this context describes that original baseline. At the original planning baseline, the root Phoenix 1.8/Cowboy application had embedded telemetry only, without Endpoint/Repo/PubSub or an Incus client; generated tests expected Ecto/standalone setup. Implementation now supplies safe embedding, a database-free profile and verified partial client slices. The existing `scripts/check-embedded.exs`, method/type manifest and tasks.md distinguish implemented evidence from remaining tasks 3.9 and 4.3.
 
 Macus has an in-progress headless Phoenix/Cowboy server, private Swift runtime.sock and Incus incus.sock relay, reference method/type inventory and fixture-only native protocol trial. Incus v7.0.1 at `13f3992766142d5087fff2e362cd2e1a75294fe8` is the existing reference baseline; transfer reusable inputs/notices and retain consumer-specific bridge evidence. The inspected dependency baseline is Elixir 1.19.5/OTP 27, Phoenix 1.8.15 and the Cowboy adapter recorded in the current locks; verify actual locked compatibility during implementation rather than inventing a release.
 
-This is the first delivery milestone. `add-compute-substrate` consumes its library/client and later adds tools, task adapters, central targets and connectors. `add-remote-api-and-oauth` supplies later central identity/REST/browser adapters. Neither later change is a prerequisite here.
+This is the first delivery milestone. Opsmaru's `add-compute-substrate` consumes its library/client and later adds tools, task adapters, central targets and connectors. Opsmaru's `add-remote-api-and-oauth` supplies later central identity/REST/browser adapters. Neither later change is a prerequisite here.
 
-The separately proposed [add-embeddable-incus-gateway](../add-embeddable-incus-gateway/design.md) adds optional reusable native HTTP/upgrade relay mechanics under Opsmaru.Incus.Gateway. OpsmaruWeb or MacusWeb supplies the explicitly selected endpoint/router and host policy. It is not a prerequisite for direct real-Incus client acceptance or a replacement for outstanding typed-client behavior.
+The separately proposed Opsmaru [add-embeddable-incus-gateway](https://github.com/upmaru/opsmaru/blob/feature/phoenix-bootstrap-and-remote-access/openspec/changes/add-embeddable-incus-gateway/design.md) adds optional reusable native HTTP/upgrade relay mechanics under Opsmaru.Incus.Gateway. OpsmaruWeb or MacusWeb supplies the explicitly selected endpoint/router and host policy. It is not a prerequisite for direct real-Incus client acceptance or a replacement for outstanding typed-client behavior.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- A safely importable `:opsmaru` dependency with a documented public client and host-supplied configuration.
+- A safely importable pure-library dependency, `:opsmaru_incus`, with a documented public client and host-supplied configuration.
 - Native Unix/HTTPS Incus behavior, transparent provenance and complete planned method/type coverage.
 - Database-free fixture checks and a Macus-compatible external consumer that can pin an implemented revision.
 
@@ -26,13 +26,13 @@ The separately proposed [add-embeddable-incus-gateway](../add-embeddable-incus-g
 
 ## Decisions
 
-### 1. Extend the existing single app as a library first
+### 1. A standalone pure library repository
 
-Keep `:opsmaru` and Opsmaru/OpsmaruWeb namespaces; no new Mix app/repository is needed. Embedded mode is the default and contains only safe explicitly configured library workers. Starting the dependency must not create private runtime state, generate credentials, contact a backend or start Endpoint/Repo/standalone PubSub because ambient PHX_SERVER/PORT exist. Do not evaluate a dependency's release runtime.exs as host configuration. Macus configures the library before startup and retains its own endpoint/job tree.
+Deliver the client as OTP application `:opsmaru_incus` in `upmaru/opsmaru-incus`, with no application callback. A library without a supervision tree cannot start an Endpoint, Repo, PubSub, listener or worker on load, so passive embedding holds by construction rather than by a runtime `deployment_mode` switch, and ambient PHX_SERVER/PORT values have nothing to act on. Keep the existing `Opsmaru.Incus.*`, `Opsmaru.Context` and `Opsmaru.ClientSupervisor` module names so consumer call sites are unchanged. Hosts that want bounded concurrency add `Opsmaru.ClientSupervisor` to their own tree; restarting it cannot stop Swift/Incus.
 
-Preserve the existing optional standalone scaffold without turning it into an authenticated central service in this change. Central and connector role activation will be specified/implemented later. No central role is required to exercise the client. Client supervision/cleanup is bounded and cannot stop Swift/Incus when the library restarts.
+Declare runtime dependencies as version ranges (Mint, MintWebSocket, Jason, cowlib for native multipart/content-type parsing, yamerl for the strict YAML subset) and let each consumer lock exact versions. Plug is test-only. No Phoenix, Ecto, Postgrex, LiveView, asset or OIDC dependency is permitted.
 
-Alternative: a separate client-only package adds a second versioned product before implementation; retain an internal client boundary that can be extracted later without forcing extra packaging now.
+Superseded alternative: the original plan extended the single `:opsmaru` Phoenix app and deferred extraction ("two Mix projects add versioning and wiring before there is separate functionality"). Once the client had a clean boundary and its own gates, keeping it there forced Macus to compile and ship the central service's web/SQL stack and to resolve its versions. A same-repository second Mix project was also considered; a separate repository gives independent tags, CI and a plain Git dependency without a sparse checkout.
 
 ### 2. Explicit connection and caller contracts
 
@@ -54,17 +54,17 @@ Bound event queues, subscriptions, captured results and connection workers. Nati
 
 ### 4. Library-only and consumer checks
 
-Add an explicit library/core test command/profile that bypasses the generated Ecto test alias and standalone test supervision. It must compile/run meaningful tests with no PostgreSQL, DATABASE_URL, OIDC keys, listener or real Incus. Keep the web test profile for the existing scaffold separately; do not silently pretend full web checks run without their database.
+The library's ordinary `mix test` is the database-free profile: it compiles and runs meaningful tests with no PostgreSQL, DATABASE_URL, OIDC keys, listener or real Incus. (While the client lived in the Opsmaru app this required a separate `:library` Mix environment that bypassed the generated Ecto test alias; extraction removed that need.)
 
-Use fake Unix/HTTPS backends, a pinned official-client differential oracle and deterministic failure/stream fixtures. Run actual dependency startup with hostile web environment values and inspect processes/listeners/state/backend counters. An external Mix consumer fixture uses the Macus-compatible dependency set, hosts its own endpoint/runtime stubs and imports the implemented library without loading a second endpoint/Repo or requiring an absolute sibling source path. Its task is to prove library/client integration, not shared MCP/runner behavior.
+Use fake Unix/HTTPS backends, a pinned official-client differential oracle and deterministic failure/stream fixtures. Start and restart the library with hostile web environment values and verify it has no application callback and creates no processes, ports, state or backend contact. An external Mix consumer fixture uses the Macus-compatible dependency set, hosts its own endpoint/runtime stubs and imports the implemented library without loading a second endpoint/Repo or requiring an absolute sibling source path. Its task is to prove library/client integration, not shared MCP/runner behavior.
 
 Record exactly which method/type entries have implementation/differential evidence. Partial pins may support deliberate Macus development slices, but the change's full-client completion requires every supported entry; no partial implementation is relabeled full parity. Linux real-Incus and Macus consumer bridge/hardware acceptance are separate explicit isolated opt-in gates. No provider, central database or connector setup is part of those foundation checks.
 
-Run task 4.3's direct Unix/verified HTTPS acceptance in Opsmaru against an explicitly supplied isolated real backend, independently of Macus installation or the optional gateway. If gateway acceptance tooling supplies the same environment, reference its exact direct-client results separately from proxy/CLI results. Proxy pass-through cannot close task 3.9, including requests whose typed methods remain missing. Macus installed bridge/VZ/hardware acceptance remains consumer-owned and cannot block an otherwise verified portable foundation.
+Run task 4.3's direct Unix/verified HTTPS acceptance in this library's repository (originally Opsmaru) against an explicitly supplied isolated real backend, independently of Macus installation or the optional gateway. If gateway acceptance tooling supplies the same environment, reference its exact direct-client results separately from proxy/CLI results. Proxy pass-through cannot close task 3.9, including requests whose typed methods remain missing. Macus installed bridge/VZ/hardware acceptance remains consumer-owned and cannot block an otherwise verified portable foundation.
 
 ### 4a. Explicit host-owned OCI conversion adapter
 
-OCI remains in scope. The pinned OCI implementation delegates inspection to skopeo and exports through root-only unpacking, tar processes and temporary directories. Opsmaru does not copy those host commands into shared code. Construction accepts an explicit host adapter module and opaque host-owned configuration alongside a verified connection/context; it performs no I/O. The adapter supplies bounded skopeo-compatible inspection JSON and converted metadata/rootfs bytes. Opsmaru preserves native alias normalization, layer-derived fingerprint, architecture names, image models and native unsupported-method errors. Inspection results are connection-local immutable cache values; there is no global registry or automatic discovery.
+OCI remains in scope. The pinned OCI implementation delegates inspection to skopeo and exports through root-only unpacking, tar processes and temporary directories. The library does not copy those host commands into shared code. Construction accepts an explicit host adapter module and opaque host-owned configuration alongside a verified connection/context; it performs no I/O. The adapter supplies bounded skopeo-compatible inspection JSON and converted metadata/rootfs bytes. Opsmaru preserves native alias normalization, layer-derived fingerprint, architecture names, image models and native unsupported-method errors. Inspection results are connection-local immutable cache values; there is no global registry or automatic discovery.
 
 Each explicit adapter invocation receives a unique call identity and absolute monotonic deadline. The adapter must enforce verified registry identity, isolate credentials, authorize external work and associate all subprocesses/files with that call identity. It must provide idempotent bounded cleanup for completion, failure, deadline and owner loss, without affecting other calls or workloads. Shared code bounds callbacks and sinks, acknowledges binary chunks synchronously, rejects oversized/invalid results and never retries a failed adapter call. Adapter diagnostics are redacted; structured native failures remain available to the caller. No bundled skopeo runner, root escalation, trust generation, temporary state directory or Macus implementation is added here.
 
@@ -104,7 +104,7 @@ remaining closure gates stay explicit.
 
 ### 5. Delivery and subsequent work
 
-After implementation and fixture/consumer checks, publish an actual immutable feature revision that Macus can lock, with source/reference provenance and documented direct Elixir usage. Do not invent a Hex release/version or require a sibling checkout for CI/installed consumers. Macus's local gateway/runtime/proxy/client work may proceed from this foundation; later tool/task integration explicitly waits for add-compute-substrate's corresponding milestone. Central enrollment/connectivity never gates standalone embedding/client progress.
+After implementation and fixture/consumer checks, publish an actual immutable revision of `upmaru/opsmaru-incus` that Macus and Opsmaru can lock, with source/reference provenance and documented direct Elixir usage. Do not invent a Hex release/version or require a sibling checkout for CI/installed consumers. Macus's local gateway/runtime/proxy/client work may proceed from this foundation; later tool/task integration explicitly waits for add-compute-substrate's corresponding milestone. Central enrollment/connectivity never gates standalone embedding/client progress.
 
 ## Risks / Trade-offs
 
@@ -116,6 +116,6 @@ After implementation and fixture/consumer checks, publish an actual immutable fe
 
 ## Migration Plan
 
-Extract the embedded-service/incus-client deltas and their pending implementation tasks from add-compute-substrate into this independently implementable change. Preserve that broader change's historical scaffold task and the seven Macus evidence tasks, with ownership references rather than duplicate client tasks. No deployed client state exists to migrate.
+Originally the embedded-service/incus-client deltas and their pending tasks were extracted from Opsmaru's add-compute-substrate into this independently implementable change. On 2026-10-13 the change, the client code, fixtures, scripts and docs moved with history from `upmaru/opsmaru` (`a00805d`) into `upmaru/opsmaru-incus`. Files were byte-identical apart from relocating `test/library/` to `test/` and adapting path references and application-mode checks. No deployed client state exists to migrate.
 
-Implement and verify the library first, then select a real immutable consumer revision. Macus adopts it through its own apply workflow and retains native/private bridge state. Do not merge/release/activate services as part of proposing the change. Remaining tools/tasks, central service/OIDC and connectors follow their own pending artifacts.
+Continue task 3.9 here. Consumers then pin a real immutable revision of this repository: Macus adopts it through its own apply workflow and retains native/private bridge state; Opsmaru removes its in-app copy and depends on `:opsmaru_incus` where later changes need the client. Earlier `:opsmaru` revisions remain valid historical pins. Do not merge/release/activate services as part of this change.
