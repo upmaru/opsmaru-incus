@@ -1,43 +1,16 @@
-defmodule Opsmaru.Incus.NativeYamlFixtures do
-  # Nested flow mapping/sequence of the given depth, placed under a dropped
-  # key so deep flows (which the Incus shapes otherwise reject) can be
-  # probed at the scanner nesting boundary.
-  def deep_flow(depth) do
-    nest = Enum.reduce(depth..1, "x", fn i, acc -> "{a#{i}: #{acc}}" end)
-    "~:\n  k: " <> nest <> "\n"
-  end
-
-  def deep_seq(depth) do
-    nest = String.duplicate("[", depth) <> "x" <> String.duplicate("]", depth)
-    "~:\n  k: " <> nest <> "\n"
-  end
-
-  def devices_deep_flow(depth) do
-    nest = Enum.reduce(depth..1, "x", fn i, acc -> "{a#{i}: #{acc}}" end)
-    "~:\n  d: " <> nest <> "\n"
-  end
-
-  # A nested literal merge chain of the given depth: `depth` flow mappings,
-  # each carrying one entry and merging the next, ending in {z: x}.
-  # Placed under a device key so the chain is a valid DevicesMap shape.
-  def merge_chain(depth) do
-    nest = Enum.reduce(depth..1//-1, "{z: x}", fn i, acc -> "{a#{i}: x, <<: #{acc}}" end)
-    "d: " <> nest <> "\n"
-  end
-end
-
 defmodule Opsmaru.Incus.NativeYamlReferenceTest do
   use ExUnit.Case, async: true
   alias Opsmaru.Incus.Error
   alias Opsmaru.Incus.NativeConfig
-  alias Opsmaru.Incus.NativeYamlFixtures
   @moduletag timeout: 120_000
   @driver Path.expand("../../.integration/incus-yaml-driver", __DIR__)
 
-  # Oracle matrix: Elixir must match native go-yaml v4 + Incus api decoding
-  # exactly on every row. Each row was probed against the native driver in
-  # test/reference/nativeyaml before being pinned here.
-  @oracle_matrix [
+  # Contract: from_yaml/3 returns exactly the unchanged native go-yaml v4 +
+  # Incus api result, or rejects. It never accepts what native rejects and
+  # never returns a different value. Rows were probed against the native
+  # driver in test/reference/nativeyaml; many are deliberately outside the
+  # supported subset and must simply not violate the contract.
+  @contract_matrix [
     # requested regression rows
     {"ConfigMap", "mode: \"2024-01-01\"", nil},
     {"ConfigMap", "k: '2024-01-01'", nil},
@@ -374,23 +347,93 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
     {"ConfigMap", "a: 1\n---\nb: &x [1, 2]\n", nil},
     {"DevicesMap", "d1: {a: 1}\n---\nd2: [bad\n", nil},
     {"ConfigMap", "a: 1\n---\n\"unterminated\n", nil},
-    {"ConfigMap", "a: 1\n---\n'bad\n", nil},
+    {"ConfigMap", "a: 1\n---\n'bad\n", nil}
     # nesting beyond the native 10_000-level scanner limit (dropped values,
     # which are the only place deep flows can be accepted at all)
-    {"ConfigMap", NativeYamlFixtures.deep_flow(50), nil},
-    {"ConfigMap", NativeYamlFixtures.deep_flow(1_000), nil},
-    {"ConfigMap", NativeYamlFixtures.deep_flow(10_001), nil},
-    {"ConfigMap", NativeYamlFixtures.deep_seq(1_000), nil},
-    {"ConfigMap", NativeYamlFixtures.deep_seq(10_001), nil},
-    {"DevicesMap", NativeYamlFixtures.devices_deep_flow(10_001), nil},
     # nested literal merge chains within the flow nesting work bound
-    {"DevicesMap", NativeYamlFixtures.merge_chain(100), nil},
-    {"DevicesMap", NativeYamlFixtures.merge_chain(400), nil}
+  ]
+
+  # Realistic Incus documents inside the subset: native accepts them and so
+  # must we, with the same value.
+  @realistic [
+    {"ConfigMap",
+     """
+     limits.cpu: 2
+     limits.memory: 4GiB
+     security.nesting: true
+     boot.autostart: false
+     user.created: "2024-01-01"
+     user.mode: 0755
+     user.ratio: 0.5
+     user.count: 1_000
+     user.empty:
+     user.quoted: 'it''s "quoted"'
+     user.user-data: |
+       #cloud-config
+       runcmd:
+         - [ sh, -c, "if [[ -f /etc/x ]]; then echo ok; fi" ]
+     user.folded: >
+       folded
+       text
+     """, nil},
+    {"ConfigMap", "{limits.cpu: 4, security.privileged: false, user.note: \"a: b # c\"}\n", nil},
+    {"ConfigMap", "---\nlimits.cpu: 1\n...\n", %{"limits.memory" => "1GiB", "limits.cpu" => "8"}},
+    {"ConfigMap", "# only a comment\n", %{"limits.cpu" => "8"}},
+    {"ConfigMap", "~\n", %{"limits.cpu" => "8"}},
+    {"DevicesMap",
+     """
+     nic_base: &nic
+       type: nic
+       nictype: bridged
+       parent: incusbr0
+     eth0:
+       <<: *nic
+       name: eth0
+     eth1:
+       <<: *nic
+       name: eth1
+       parent: incusbr1
+     root:
+       type: disk
+       path: /
+       pool: default
+       size: 20GiB
+     gpu0: {type: gpu, gputype: physical, id: 0}
+     proxy0:
+       type: proxy
+       listen: tcp:0.0.0.0:80
+       connect: tcp:127.0.0.1:8080
+     """, nil},
+    {"DevicesMap",
+     """
+     disk_base: &disk
+       type: disk
+       pool: default
+     ssd: &ssd
+       pool: fast
+     data:
+       <<: [*ssd, *disk]
+       path: /data
+     """, %{"data" => %{"readonly" => "true"}, "other" => %{"type" => "none"}}},
+    {"DevicesMap", "eth0: {type: nic, network: incusbr0, <<: {name: eth0, mtu: 1500}}\n", nil}
+  ]
+
+  # Recorded differences: native accepts these, the subset rejects them.
+  @outside_subset [
+    {"explicit tag", "ConfigMap", "k: !!str 5\n"},
+    {"directive", "ConfigMap", "%YAML 1.1\n---\na: 1\n"},
+    {"second document", "ConfigMap", "a: 1\n---\nb: 2\n"},
+    {"null key", "ConfigMap", "~: 1\nb: 2\n"},
+    {"non-string key", "ConfigMap", "0755: 1\n"},
+    {"anchor on a flow collection", "DevicesMap", "d0: &d0 {k: v}\nd1: *d0\n"},
+    {"date-like plain scalar", "ConfigMap", "k: 2024-02-30\n"},
+    {"underscore dot float", "ConfigMap", "k: .5_5\n"},
+    {"more than 100 aliases", "DevicesMap",
+     "b: &b\n  type: nic\n" <> Enum.map_join(1..101, "", &"d#{&1}:\n  <<: *b\n")},
+    {"tab-indented later document", "ConfigMap", "a: 1\n---\nb:\n\t- x\n"}
   ]
 
   setup_all do
-    File.mkdir_p!(Path.dirname(@driver))
-
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./nativeyaml"],
         cd: Path.expand("../reference", __DIR__),
@@ -402,493 +445,164 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
     :ok
   end
 
-  for type <- ["ConfigMap", "DevicesMap"] do
-    test "#{type} plain, quoted and structural scalars match native go-yaml v4", %{} do
-      type = unquote(type)
-
-      for body <- [
-            "k: v",
-            "k: 'quoted'",
-            "k: \"doubles\"",
-            "k: 'a # b'",
-            "k: a # trailing",
-            "k: ''",
-            "k: yes\nl: no\nm: on",
-            "k: true\nl: False\nm: FALSE",
-            "k: null\nl: ~\nm: NULL",
-            "k: 雪\nl: native+/é",
-            "k: 123abc\nl: 1.2.3",
-            "k: |-\n  line",
-            "k: >\n  fold\n  me",
-            "k: |\n  l1\n  l2",
-            "k: >-\n  fold\n  me",
-            "k: multi\n  line",
-            "v: &v n\na: *v\nb: *v"
-          ] do
-        yaml = device_yaml(type, body)
-        assert_matches(type, yaml, nil, oracle(type, yaml, nil))
-      end
-    end
-
-    test "#{type} null documents, absent documents and existing merges match native", %{} do
-      type = unquote(type)
-      existing = if type == "ConfigMap", do: %{"kept" => "k"}, else: %{"dev" => %{"kept" => "k"}}
-
-      for {yaml, note} <- [
-            {"", "absent document leaves existing untouched"},
-            {"# only a comment", "comment-only input leaves existing untouched"},
-            {"null", "null document resets the target to nil"},
-            {"~", "tilde document resets the target to nil"},
-            {"---", "bare document marker resets the target to nil"},
-            {"k: 1", "update merges into existing"},
-            {if(type == "ConfigMap", do: "k: null", else: "dev:\n  k: null"),
-             "null value becomes the empty string"}
-          ] do
-        _ = note
-        result = oracle(type, yaml, existing)
-        assert_matches(type, yaml, existing, result)
-      end
-
-      # A null document resets even when existing is populated, and an absent
-      # document leaves it untouched.
-      assert {:ok, nil} = NativeConfig.from_yaml(type, "null", existing)
-      assert {:ok, ^existing} = NativeConfig.from_yaml(type, "", existing)
-    end
-
-    test "#{type} rejects unsupported shapes exactly like the native decoder", %{} do
-      type = unquote(type)
-
-      bad =
-        if type == "ConfigMap",
-          do: [
-            "k: [1, 2]",
-            "k:\n  nested: x",
-            "- a",
-            "just a string"
-          ],
-          else: [
-            "dev: null",
-            "dev: x",
-            "dev:\n  k: [1]",
-            "dev:\n  1: x",
-            "- a"
-          ]
-
-      for yaml <- bad do
-        result = oracle(type, yaml, nil)
-
-        assert result["accepted"] == false,
-               "#{inspect(yaml)} unexpectedly accepted: #{inspect(result)}"
-
-        assert {:error, %Error{kind: :invalid_native_config}} = NativeConfig.from_yaml(type, yaml)
-      end
+  test "realistic Incus documents decode exactly like the native decoder" do
+    for {{type, yaml, existing}, native} <- Enum.zip(@realistic, oracle(@realistic)) do
+      assert native["accepted"], "native rejected #{inspect(yaml)}"
+      assert NativeConfig.from_yaml(type, yaml, existing) == {:ok, native["value"]}, yaml
     end
   end
 
-  test "integer bases, uint64 range and float64 fallback match native resolution" do
-    for body <- [
-          "k: 0\nl: -1\nm: 42",
-          "k: +42\nl: 08\nm: 9223372036854775806",
-          "k: 9223372036854775807\nl: -9223372036854775808",
-          "k: 9223372036854775808\nl: 18446744073709551615",
-          "k: 18446744073709551616\nl: -9223372036854775809",
-          "k: 99999999999999999999999999",
-          "k: 0x1a\nl: -0x10\nm: 0o17",
-          "k: 7.0\nl: -2.75\nm: 0.00001",
-          "k: .5\nl: 1e3\nm: 2.5e2",
-          "k: 1.5e-3\nl: 1.0e20\nm: 1.7976931348623157e308",
-          "k: .inf\nl: -.inf\nm: .nan",
-          "k: -0\nl: -0.0",
-          "k: 9223372036854775808.0"
+  test "every matrix row satisfies the contract" do
+    rows = Enum.zip(@contract_matrix, oracle(@contract_matrix))
+
+    Enum.each(rows, fn {{type, yaml, existing}, native} ->
+      assert_contract(type, yaml, existing, native)
+    end)
+
+    accepted =
+      Enum.count(rows, fn {{t, y, e}, _} -> match?({:ok, _}, NativeConfig.from_yaml(t, y, e)) end)
+
+    assert accepted > 80
+  end
+
+  test "randomized documents satisfy the contract" do
+    :rand.seed(:exsss, {1, 2, 3})
+    cases = for _ <- 1..400, do: random_case()
+    results = oracle(cases)
+
+    Enum.each(Enum.zip(cases, results), fn {{type, yaml, existing}, native} ->
+      assert_contract(type, yaml, existing, native)
+    end)
+
+    assert Enum.count(results, & &1["accepted"]) > 100
+  end
+
+  test "recorded differences: native accepts, the subset rejects" do
+    cases = Enum.map(@outside_subset, fn {_, type, yaml} -> {type, yaml, nil} end)
+
+    for {{label, type, yaml}, native} <- Enum.zip(@outside_subset, oracle(cases)) do
+      assert native["accepted"], "native no longer accepts #{label}"
+
+      assert {:error, %Error{kind: :invalid_native_config}} = NativeConfig.from_yaml(type, yaml),
+             label
+    end
+  end
+
+  test "pathological documents are rejected within the decode deadline" do
+    deep = fn d -> String.duplicate("[", d) <> "x" <> String.duplicate("]", d) end
+    flat = "[" <> Enum.map_join(1..200_000, ", ", fn _ -> "x" end) <> "]"
+    chain = Enum.reduce(9_999..1//-1, "{z: x}", fn i, acc -> "{a#{i}: x, <<: #{acc}}" end)
+
+    for {type, yaml} <- [
+          {"ConfigMap", "k: " <> deep.(10_000) <> "\n"},
+          {"ConfigMap", "~:\n  k: " <> deep.(200_000) <> "\n"},
+          {"ConfigMap", flat <> ": 1\n"},
+          {"ConfigMap", "<<: [" <> flat <> "]\n"},
+          {"DevicesMap", Enum.map_join(1..6, "", &"d#{&1}: #{chain}\n")}
         ] do
-      for {type, yaml} <- [
-            {"ConfigMap", body},
-            {"DevicesMap", "dev:\n  " <> String.replace(body, "\n", "\n  ")}
-          ] do
-        result = oracle(type, yaml, nil)
-        assert_matches(type, yaml, nil, result)
+      started = System.monotonic_time(:millisecond)
+      assert {:error, %Error{}} = NativeConfig.from_yaml(type, yaml)
+      assert System.monotonic_time(:millisecond) - started < 3_000
+    end
+  end
+
+  test "near-limit realistic documents decode quickly and leave no worker or messages" do
+    yaml = Enum.map_join(1..20_000, "", &"user.key#{&1}: \"value #{&1}\"\n")
+    before = Process.list() |> length()
+    started = System.monotonic_time(:millisecond)
+    assert {:ok, value} = NativeConfig.from_yaml("ConfigMap", yaml)
+    assert map_size(value) == 20_000
+    assert System.monotonic_time(:millisecond) - started < 1_000
+
+    assert {:error, _} =
+             NativeConfig.from_yaml(
+               "ConfigMap",
+               "k: [" <> String.duplicate("[x, ", 50_000) <> "]: 1\n"
+             )
+
+    Process.sleep(50)
+    assert length(Process.list()) <= before
+    refute_received _
+  end
+
+  test "bounds, atoms, raising and yamerl state" do
+    env = :application.get_all_env(:yamerl)
+    assert {:error, _} = NativeConfig.from_yaml("ConfigMap", String.duplicate("a", 1_048_577))
+    assert {:error, _} = NativeConfig.from_yaml("ConfigMap", <<0xFF, 0xFE>>)
+    assert {:error, _} = NativeConfig.from_yaml("ConfigMap", "a: 1\u0000")
+    assert {:error, _} = NativeConfig.from_yaml("Other", "a: 1")
+    assert {:error, _} = NativeConfig.from_yaml("ConfigMap", "a: 1", %{"x" => 1})
+
+    keys = for i <- 1..200, do: "opsmaru_yaml_atom_probe_#{i}"
+    {:ok, _} = NativeConfig.from_yaml("ConfigMap", Enum.map_join(keys, "", &"#{&1}: #{&1}\n"))
+    refute Enum.any?(keys, &atom_exists?/1)
+
+    garbage = ["{", "[", "a: [", "a: 'x", "&a", "*a", ": :", "- - -", "? ? ?", "a: *missing"]
+    cases = Enum.map(garbage, &{"ConfigMap", &1, nil})
+
+    for {{type, yaml, existing}, native} <- Enum.zip(cases, oracle(cases)) do
+      assert_contract(type, yaml, existing, native)
+    end
+
+    refute inspect(NativeConfig.from_yaml("ConfigMap", "secret: [")) =~ "secret"
+    assert :application.get_all_env(:yamerl) == env
+  end
+
+  defp assert_contract(type, yaml, existing, native) do
+    case NativeConfig.from_yaml(type, yaml, existing) do
+      {:ok, value} ->
+        assert native["accepted"], "accepted what native rejects: #{inspect(yaml)}"
+        assert value == native["value"], "value differs from native: #{inspect(yaml)}"
+
+      {:error, %Error{kind: :invalid_native_config}} ->
+        :ok
+    end
+  end
+
+  defp random_case do
+    scalars =
+      ~w(true no ~ null 0 -1 +7 0755 0x1F 0b101 1_000 08 1.5 -0.0 .5 1e3 .5e2 .inf .NaN 2024-01-01 9223372036854775808 abc @x) ++
+        ["a b", "*.example.com"]
+
+    val = fn ->
+      s = Enum.random(scalars)
+
+      case :rand.uniform(5) do
+        1 -> "\"" <> s <> "\""
+        2 -> "'" <> s <> "'"
+        3 -> "!!float " <> s
+        _ -> s
       end
     end
-  end
 
-  test "scalar outer keys, first-document selection and device merges match native" do
-    for {type, yaml, existing} <- [
-          {"ConfigMap", "1: x\n2: y", nil},
-          {"ConfigMap", "1.5: x", nil},
-          {"ConfigMap", "true: x", nil},
-          {"ConfigMap", "k: 1\n---\nl: 2", nil},
-          {"ConfigMap", "k: 1\nl: 2", %{"k" => "old", "kept" => "k"}},
-          {"DevicesMap", "dev:\n  k: v\nother:\n  a: b", nil},
-          {"DevicesMap", "dev:\n  k: 7\n  b: true", %{"dev" => %{"kept" => "k"}}}
-        ] do
-      result = oracle(type, yaml, existing)
-      assert_matches(type, yaml, existing, result)
+    if :rand.uniform(2) == 1 do
+      yaml =
+        Enum.map_join(1..:rand.uniform(4), "", fn i ->
+          Enum.random([
+            "k#{i}: #{val.()}\n",
+            "m#{i}: &m#{i}\n  a: #{val.()}\n",
+            "<<: *m#{i - 1}\n",
+            "~: &n#{i} {a: #{val.()}}\n",
+            "#{Enum.random(["1", "true", "'1'"])}: #{val.()}\n"
+          ])
+        end)
+
+      {"ConfigMap", yaml, Enum.random([nil, %{"k1" => "old"}])}
+    else
+      yaml =
+        "base: &base\n  type: nic\n  mtu: #{val.()}\n" <>
+          Enum.map_join(1..:rand.uniform(3), "", fn i ->
+            Enum.random([
+              "eth#{i}:\n  <<: *base\n  name: #{val.()}\n",
+              "eth#{i}: {<<: *base, x: #{val.()}}\n",
+              "eth#{i}:\n  <<: [*base, {z: #{val.()}}]\n  #{Enum.random(["p", "1", "on"])}: #{val.()}\n"
+            ])
+          end)
+
+      {"DevicesMap", yaml, Enum.random([nil, %{"eth1" => %{"old" => "1"}}])}
     end
   end
 
-  test "oracle matrix matches native go-yaml v4 on every case" do
-    entries =
-      for {type, yaml, existing} <- @oracle_matrix do
-        entry = %{"type" => type, "yaml" => yaml}
-        if(existing, do: Map.put(entry, "existing", existing), else: entry)
-      end
-
-    results = oracle_many(entries)
-
-    for {row, result} <- Enum.zip(Enum.zip(entries, @oracle_matrix), results),
-        {_entry, {type, yaml, existing}} = row do
-      assert_matches(type, yaml, existing, result)
-    end
-  end
-
-  # --- Documented yamerl vs go-yaml v4 divergences -------------------------
-  # Each test pins both sides: the native oracle result and the Elixir result.
-  # These remain divergences because yamerl, the fixed scanner/lexer
-  # dependency, accepts or rejects the input differently from libyaml.
-
-  test "divergence: tab indentation is rejected natively, accepted by yamerl" do
-    yaml = "k:\n\tl: x"
-    result = oracle("ConfigMap", yaml, nil)
-    assert result["accepted"] == false
-    assert {:ok, %{"k" => "", "l" => "x"}} = NativeConfig.from_yaml("ConfigMap", yaml)
-  end
-
-  test "divergence: non-UTF8 !!binary is accepted natively with U+FFFD replacement" do
-    result = oracle("ConfigMap", "k: !!binary gYG=", nil)
-    assert result["accepted"] == true
-
-    assert {:error, %Error{kind: :invalid_native_config}} =
-             NativeConfig.from_yaml("ConfigMap", "k: !!binary gYG=")
-
-    # Valid UTF-8 binary content matches on both sides.
-    result = oracle("ConfigMap", "k: !!binary aGk=", nil)
-    assert result["value"] == %{"k" => "hi"}
-    assert {:ok, %{"k" => "hi"}} = NativeConfig.from_yaml("ConfigMap", "k: !!binary aGk=")
-  end
-
-  test "divergence: the native aliasing-ratio check is stricter than our expansion budget" do
-    # Four tail aliases charge about 983k expanded nodes, just under our
-    # 1M-node budget, so the parser accepts the input. go-yaml v4 rejects
-    # the same input with its alias/construct ratio check, which fires for
-    # any substantial alias fan-out (even the single-alias variant of the
-    # 9-fan-out bomb). The bound is demonstrated by the bomb test above,
-    # where the just-under variant is accepted on the parser side only.
-    just_under = merge_bomb(4)
-    result = oracle("DevicesMap", just_under, nil)
-    assert result["accepted"] == false
-
-    assert {:ok, value} = NativeConfig.from_yaml("DevicesMap", just_under)
-    assert value["d6"] == %{"k" => "v"}
-  end
-
-  test "divergence: native accepts flow nesting to 10_000 levels; ours bounds total nesting work" do
-    # A depth-10_000 nested flow mapping fits the native 10_000-level
-    # scanner limit, so the native oracle accepts it. Its flow nesting
-    # work (about 10^8 depth-units) exceeds the 10_000_000 bound in
-    # Opsmaru.Incus.NativeConfig (@max_flow_work): yamerl's scan of such a
-    # document takes seconds (its implicit-key index is walked once per
-    # token), so ours rejects it before scanning to keep worst-case
-    # decoding inside the reference bound. The depth-1_000 variant stays
-    # under the bound and matches native (matrix row).
-    for yaml <- [NativeYamlFixtures.deep_flow(10_000), NativeYamlFixtures.deep_seq(10_000)] do
-      result = oracle("ConfigMap", yaml, nil)
-      assert result["accepted"] == true
-
-      assert {:error, %Error{kind: :invalid_native_config}} =
-               NativeConfig.from_yaml("ConfigMap", yaml)
-    end
-
-    # The nested merge chain shape from the native decoder's perspective:
-    # a single depth-9999 chain is accepted natively but rejected here on
-    # the same bound.
-    chain = NativeYamlFixtures.merge_chain(9999)
-    result = oracle("DevicesMap", chain, nil)
-    assert result["accepted"] == true
-
-    assert {:error, %Error{kind: :invalid_native_config}} =
-             NativeConfig.from_yaml("DevicesMap", chain)
-  end
-
-  # --- Safety ---------------------------------------------------------------
-
-  test "worst-case duplicate handling on near-limit inputs stays linear" do
-    # Duplicates inside a mapping whose key is dropped: the mapping is
-    # composed once and never constructed (native skips the duplicate
-    # check entirely), so the whole input must parse and finish quickly.
-    dropped_dups =
-      "~:\n" <>
-        Enum.map_join(0..39_999, "", fn n -> " d_#{n}: 1\n" end) <>
-        Enum.map_join(0..39_999, "", fn n -> " d_#{n}: 2\n" end) <>
-        "k: 1\n"
-
-    assert byte_size(dropped_dups) < 1_048_576
-
-    started = System.monotonic_time(:millisecond)
-    assert {:ok, %{"k" => "1"}} = NativeConfig.from_yaml("ConfigMap", dropped_dups)
-    elapsed = System.monotonic_time(:millisecond) - started
-    assert elapsed < 1_000, "dropped duplicates took #{elapsed}ms"
-
-    # A large checked map: every entry is constructed at the result
-    # boundary, so key and duplicate validation is the hot path.
-    # Sized so the encoded output stays under the result budget as well.
-    big_checked = Enum.map_join(0..69_999, "", fn n -> "k_#{n}: 1\n" end)
-
-    assert byte_size(big_checked) < 1_048_576
-
-    started = System.monotonic_time(:millisecond)
-
-    assert {:ok, value} =
-             NativeConfig.from_yaml("ConfigMap", big_checked)
-
-    elapsed = System.monotonic_time(:millisecond) - started
-    assert map_size(value) == 70_000
-    assert elapsed < 1_000, "checked map took #{elapsed}ms"
-
-    # Duplicates in the checked map reject just as fast.
-    dup_checked = big_checked <> "k_4242: 2\n"
-    started = System.monotonic_time(:millisecond)
-
-    assert {:error, %Error{kind: :invalid_native_config}} =
-             NativeConfig.from_yaml("ConfigMap", dup_checked)
-
-    elapsed = System.monotonic_time(:millisecond) - started
-    assert elapsed < 1_000, "duplicate check took #{elapsed}ms"
-  end
-
-  test "the deepest nesting that fits in the input bound rejects within the bound" do
-    # The native scanner rejects flow and block nesting beyond 10_000
-    # levels. yamerl has no such limit and its scan cost grows
-    # super-linearly in flow depth, so deeper input must be rejected before
-    # yamerl runs. Dropped values are the only place deep flows can be
-    # accepted, which is why the boundary rows use them.
-
-    # The deepest flow mapping that still fits in the 1 MiB input bound:
-    # the five-byte-per-level shape reaches about 200k levels.
-    deepest_map = Enum.reduce(1..199_990, "x", fn _i, acc -> "{a: #{acc}}" end)
-
-    deep_yaml = "~:\n  k: " <> deepest_map <> "\n"
-    assert byte_size(deep_yaml) < 1_048_576
-
-    started = System.monotonic_time(:millisecond)
-
-    assert {:error, %Error{kind: :invalid_native_config}} =
-             NativeConfig.from_yaml("ConfigMap", deep_yaml)
-
-    elapsed = System.monotonic_time(:millisecond) - started
-    assert elapsed < 1_000, "deep flow mapping took #{elapsed}ms"
-
-    # The deepest pure flow sequence that fits: a single byte per level.
-    seq_yaml = NativeYamlFixtures.deep_seq(524_000)
-    assert byte_size(seq_yaml) < 1_048_576
-
-    started = System.monotonic_time(:millisecond)
-
-    assert {:error, %Error{kind: :invalid_native_config}} =
-             NativeConfig.from_yaml("ConfigMap", seq_yaml)
-
-    elapsed = System.monotonic_time(:millisecond) - started
-    assert elapsed < 1_000, "deep flow sequence took #{elapsed}ms"
-
-    # Moderate nesting stays accepted and matches the native oracle.
-    assert_matches(
-      "ConfigMap",
-      NativeYamlFixtures.deep_flow(400),
-      nil,
-      oracle("ConfigMap", NativeYamlFixtures.deep_flow(400), nil)
-    )
-  end
-
-  test "high nesting work is rejected fast and realistic large configs decode within the bound" do
-    # A single depth-9999 nested merge chain: the native oracle accepts it
-    # (10_000-level scanner limit), but its flow nesting work exceeds
-    # @max_flow_work, so ours must reject it before yamerl runs.
-    chain = NativeYamlFixtures.merge_chain(9999)
-    assert byte_size(chain) < 1_048_576
-
-    started = System.monotonic_time(:millisecond)
-
-    assert {:error, %Error{kind: :invalid_native_config}} =
-             NativeConfig.from_yaml("DevicesMap", chain)
-
-    elapsed = System.monotonic_time(:millisecond) - started
-    assert elapsed < 1_000, "deep merge chain took #{elapsed}ms"
-
-    # Six such chains in one document (about 953 KB, under the input
-    # bound): the same bound must reject the whole document fast.
-    six_chains = Enum.map_join(1..6, "", fn k -> "d#{k}: " <> merge_chain_body() <> "\n" end)
-    assert byte_size(six_chains) < 1_048_576
-
-    started = System.monotonic_time(:millisecond)
-
-    assert {:error, %Error{kind: :invalid_native_config}} =
-             NativeConfig.from_yaml("DevicesMap", six_chains)
-
-    elapsed = System.monotonic_time(:millisecond) - started
-    assert elapsed < 1_000, "six merge chains took #{elapsed}ms"
-
-    # A moderate nested merge chain stays accepted and matches native.
-    shallow = NativeYamlFixtures.merge_chain(400)
-
-    started = System.monotonic_time(:millisecond)
-    assert {:ok, _} = NativeConfig.from_yaml("DevicesMap", shallow)
-    elapsed = System.monotonic_time(:millisecond) - started
-    assert elapsed < 1_000, "shallow merge chain took #{elapsed}ms"
-
-    assert_matches("DevicesMap", shallow, nil, oracle("DevicesMap", shallow, nil))
-
-    # A realistic large config: 2_000 devices with five properties each,
-    # merging one anchored template. This is the common production shape
-    # and must decode well inside the bound, matching native.
-    realistic = realistic_devices()
-    assert byte_size(realistic) < 1_048_576
-
-    started = System.monotonic_time(:millisecond)
-    assert {:ok, value} = NativeConfig.from_yaml("DevicesMap", realistic)
-    elapsed = System.monotonic_time(:millisecond) - started
-    # the template key plus 2_000 devices
-    assert map_size(value) == 2_001
-
-    assert value["d1"] == %{
-             "a" => "1",
-             "b" => "2",
-             "p1" => "v1",
-             "p2" => "v1",
-             "p3" => "v1",
-             "p4" => "v1",
-             "p5" => "v1"
-           }
-
-    assert elapsed < 1_000, "realistic devices took #{elapsed}ms"
-
-    assert_matches("DevicesMap", realistic, nil, oracle("DevicesMap", realistic, nil))
-  end
-
-  # The body of the depth-9999 merge chain without its device key, so the
-  # six-chain document can give each chain a distinct key.
-  defp merge_chain_body do
-    Enum.reduce(9999..1//-1, "{z: x}", fn i, acc -> "{a#{i}: x, <<: #{acc}}" end)
-  end
-
-  # 2_000 devices, five properties each, all merging an anchored two-
-  # property template through an alias.
-  defp realistic_devices do
-    body =
-      Enum.map_join(1..2_000, "", fn n ->
-        ~s(d#{n}: {<<: *t, p1: "v#{n}", p2: "v#{n}", p3: "v#{n}", p4: "v#{n}", p5: "v#{n}"}\n)
-      end)
-
-    ~s(t: &t {a: "1", b: "2"}\n) <> body
-  end
-
-  test "oversized input and invalid types fail without exposing config" do
-    for {type, yaml, existing} <- [
-          {"ConfigMap", String.duplicate("k: v\n", 210_000), nil},
-          {"unknown", "k: v", nil},
-          {"ConfigMap", 42, nil},
-          {"ConfigMap", "k: private-value", %{"private" => 7}},
-          {"DevicesMap", "k: v", %{"dev" => []}}
-        ] do
-      assert {:error, %Error{kind: :invalid_native_config} = error} =
-               NativeConfig.from_yaml(type, yaml, existing)
-
-      refute inspect(error) =~ "private"
-    end
-  end
-
-  # dN: &dN {<<: [*d(N-1) x9]} for N=1..6: every alias re-expands the whole
-  # anchored subtree, so the cost grows as 9**(N-1). Expansion charges at
-  # parse time and construction re-charges the folded tree, so the last
-  # level's tail lands at: 4 aliases about 983k charged nodes (just under
-  # the 1M-node budget), 5 just over.
-  defp merge_bomb(tail_aliases) do
-    lines =
-      Enum.map(1..6, fn n ->
-        count = if n == 6, do: tail_aliases, else: 9
-        alias = Enum.join(List.duplicate("*d" <> Integer.to_string(n - 1), count), ", ")
-        "d#{n}: &d#{n} {<<: [#{alias}]}"
-      end)
-
-    Enum.join(["d0: &d0 {k: v}" | lines], "\n") <> "\n"
-  end
-
-  test "alias bombs are rejected by the expansion budget within the reference bound" do
-    # (a) Small fan-out is accepted and equals native.
-    small =
-      "d0: &d0 {k: v}\n" <>
-        "d1: &d1 {<<: [*d0, *d0]}\n" <>
-        "d2: {<<: [*d1, *d1]}\n"
-
-    assert_matches("DevicesMap", small, nil, oracle("DevicesMap", small, nil))
-
-    # (b) Full 9-alias fan-out: native rejects it for excessive aliasing and
-    # ours rejects it on the expansion budget, fast and without
-    # materializing the fan-out.
-    bomb = merge_bomb(9)
-    assert_matches("DevicesMap", bomb, nil, oracle("DevicesMap", bomb, nil))
-
-    memory_before = :erlang.process_info(self(), :memory)
-    started = System.monotonic_time(:millisecond)
-
-    assert {:error, %Error{kind: :invalid_native_config}} =
-             NativeConfig.from_yaml("DevicesMap", bomb)
-
-    elapsed = System.monotonic_time(:millisecond) - started
-    memory_after = :erlang.process_info(self(), :memory)
-
-    assert elapsed < 2000, "bomb took #{elapsed}ms"
-
-    assert elem(memory_after, 1) - elem(memory_before, 1) < 1_000_000
-
-    # (c) Four tail aliases charge about 983k expanded nodes, just under
-    # the 1M-node budget, so the rejection in (b) comes from the budget,
-    # not a shape error. The native driver has no verdict to compare
-    # against: its own aliasing-ratio check (named divergence below)
-    # rejects this input too, strictly stricter than our bound.
-    assert {:ok, value} = NativeConfig.from_yaml("DevicesMap", merge_bomb(4))
-    assert value["d6"] == %{"k" => "v"}
-
-    # Five tail aliases cross the budget just over the 1M-node limit.
-    assert {:error, %Error{kind: :invalid_native_config}} =
-             NativeConfig.from_yaml("DevicesMap", merge_bomb(5))
-  end
-
-  test "unique input keys create no atoms and parsing never raises" do
-    for index <- 1..200 do
-      key = "key-#{index}-unique-#{:erlang.phash2(index)}"
-      value = "value-#{index}"
-      yaml = "#{key}: #{value}"
-
-      assert {:ok, %{^key => ^value}} = NativeConfig.from_yaml("ConfigMap", yaml)
-      refute atom_exists?(key), "input key became an atom"
-    end
-
-    for garbage <- [
-          <<0, 0, 0>>,
-          "k: [",
-          "k:\n- a\n- b\nc: d",
-          String.duplicate("k: v\n", 5000),
-          "!!binary not-base64"
-        ] do
-      case NativeConfig.from_yaml("ConfigMap", garbage) do
-        {:ok, _} -> :ok
-        {:error, %Error{}} -> :ok
-        other -> flunk("unexpected result for #{inspect(garbage)}: #{inspect(other)}")
-      end
-    end
-  end
-
-  test "errors redact payloads and leave the yamerl application env untouched" do
-    env_before = :application.get_all_env(:yamerl)
-    secret = "secret-" <> Integer.to_string(:erlang.phash2(System.unique_integer()))
-
-    assert {:error, %Error{kind: :invalid_native_config} = error} =
-             NativeConfig.from_yaml("ConfigMap", "k: #{secret}\nl: [1]", nil)
-
-    refute inspect(error) =~ secret
-    assert :application.get_all_env(:yamerl) == env_before
-  end
-
-  # Precise "does this atom already exist" check that creates nothing.
   defp atom_exists?(binary) do
     _ = String.to_existing_atom(binary)
     true
@@ -896,55 +610,29 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
     ArgumentError -> false
   end
 
-  defp assert_matches(type, yaml, existing, result) do
-    got = NativeConfig.from_yaml(type, yaml, existing)
+  defp oracle(cases) do
+    input =
+      Jason.encode!(%{
+        cases:
+          Enum.map(cases, fn {type, yaml, existing} ->
+            %{type: type, yaml: yaml, existing: existing}
+          end)
+      })
 
-    case result["accepted"] do
-      true ->
-        assert {:ok, value} = got,
-               "expected #{inspect(yaml)} to be accepted, got #{inspect(got)}"
-
-        assert value == result["value"],
-               "native mismatch for #{type} #{inspect(yaml)}: #{inspect(value)} != #{inspect(result["value"])}"
-
-      false ->
-        assert {:error, %Error{kind: :invalid_native_config}} = got,
-               "expected #{inspect(yaml)} to be rejected, got #{inspect(got)}"
-    end
-  end
-
-  defp device_yaml("ConfigMap", body), do: body
-
-  defp device_yaml("DevicesMap", body) do
-    "dev:\n  " <> String.replace(body, "\n", "\n  ")
-  end
-
-  defp oracle(type, yaml, existing) do
-    case = %{"type" => type, "yaml" => yaml}
-    case = if(existing, do: Map.put(case, "existing", existing), else: case)
-    hd(oracle_many([case]))
-  end
-
-  defp oracle_many(cases) do
     port = Port.open({:spawn_executable, @driver}, [:binary, :exit_status, :use_stdio])
-    Port.command(port, Jason.encode!(%{cases: cases}) <> "\n")
+    Port.command(port, input <> "\n")
     collect(port, "")
   end
 
   defp collect(port, data) do
     receive do
-      {^port, {:data, bytes}} when byte_size(data) + byte_size(bytes) <= 1_048_576 ->
-        collect(port, data <> bytes)
-
-      {^port, {:exit_status, 0}} ->
-        Jason.decode!(data)["results"]
-
-      {^port, {:exit_status, status}} ->
-        flunk("native yaml oracle failed #{status}: #{data}")
+      {^port, {:data, bytes}} -> collect(port, data <> bytes)
+      {^port, {:exit_status, 0}} -> Jason.decode!(data)["results"]
+      {^port, {:exit_status, status}} -> flunk("native YAML oracle failed #{status}: #{data}")
     after
-      10_000 ->
+      30_000 ->
         Port.close(port)
-        flunk("native yaml oracle deadline")
+        flunk("native YAML oracle deadline")
     end
   end
 end

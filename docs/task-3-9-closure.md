@@ -325,3 +325,38 @@ bound in a pre-pass before yamerl runs. The pathological documents are rejected
 in milliseconds; the slowest accepted reviewer-measured shapes (hundreds of
 moderately nested merge chains near the input bound) take about 1.7 s, linear in
 input size.
+
+
+## YAML rescoped to a strict subset (supersedes the YAML sections above)
+
+The exact go-yaml re-implementation grew to about 2,050 lines and each review
+round found further corner-case or denial-of-service defects. The user chose
+on 2026-10-13 to rescope ConfigMap/DevicesMap UnmarshalYAML to a strict subset
+with a simpler contract: every accepted document equals the unchanged native
+result, and everything else is rejected. `Opsmaru.Incus.NativeYaml` (about 535
+lines) replaces the previous implementation; `NativeConfig` returns to its JSON
+code plus a delegate.
+
+Supported: one document of block or flow mappings (ConfigMap scalar values;
+DevicesMap mappings of scalars), string keys, quoted/block scalars, plain scalars
+resolved with go-yaml v4 rules (nulls, booleans, base-0 integers including
+leading-zero octal and underscores, uint64, floats, .inf/.nan), anchors on
+scalars and block mappings, aliases, `<<` merges with native precedence,
+duplicate-key rejection, null versus absent documents and existing-map merges.
+Recorded rejections where native accepts: explicit tags, directives, additional
+documents, sequences other than merge lists, null and non-string keys, anchors
+inside flow collections or on keys (yamerl misplaces them), date-like plain
+scalars, numeric forms outside the mirrored resolver, more than 100 alias
+expansions (go-yaml's aliasing check cannot fire at or below 100), and plain
+scalars starting with reserved indicators (`@`, backtick) that yamerl accepts.
+
+yamerl rescans flow collections that could become implicit keys quadratically
+before emitting tokens, so a token gate alone cannot bound it. Decoding runs in
+a linked worker with a 2 s deadline, a 100 M reduction budget and a 64 M-word
+heap cap; pathological 1 MiB documents are rejected at the deadline and
+realistic 1 MiB documents decode in about 0.1-0.2 s. yamerl's own crashes on
+malformed input (for example `: :`) are converted to rejections at the scanner
+call only. A 310-row contract matrix, realistic Incus documents, a seeded
+randomized contract test and 17,600 reviewer-generated documents across eight
+seeds show no contract violation; about 83% of native-accepted random
+documents are accepted.

@@ -62,8 +62,9 @@ StatusText values (BSD-3-Clause, Copyright The Go Authors) from the pinned
 toolchain. The fixture-only `test/reference/statuserror` driver calls unchanged
 native helpers and performs no network or filesystem operation.
 
-`NativeConfig.from_yaml/3` adapts pinned `shared/api/config.go` and `devices.go`
-UnmarshalYAML behavior and reproduces go-yaml v4 (go.yaml.in/yaml/v4, Apache-2.0
-and MIT) scalar resolution rules. Tokens come from yamerl (BSD-2-Clause) via
+`NativeConfig.from_yaml/3` (via `Opsmaru.Incus.NativeYaml`) adapts pinned
+`shared/api/config.go` and `devices.go` UnmarshalYAML behavior for a strict
+subset, reproducing go-yaml v4 (go.yaml.in/yaml/v4, Apache-2.0 and MIT) scalar
+resolution and merge precedence. Tokens come from yamerl (BSD-2-Clause) via
 yaml_elixir (MIT). The fixture-only `test/reference/nativeyaml` driver calls the
 unchanged native types and performs no network or filesystem operation.

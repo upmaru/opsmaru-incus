@@ -1036,3 +1036,16 @@ application environment untouched. Reviewer randomized differentials (13,800
 documents, twelve seeds, including dropped-key, merge-template and exponent cases)
 found no mismatch after the Greptile and differential corrections. Library compile with warnings as
 errors, strict Credo, 944 library tests, embedded startup and strict OpenSpec pass.
+
+
+## Task 3.9: strict-subset YAML decoding
+
+`test/library/native_yaml_reference_test.exs` now asserts the contract (native
+result or rejection) on 310 reviewed rows and a seeded randomized set, requires
+realistic Incus config/profile/device documents to equal native, pins the
+recorded rejection categories against the native driver, and checks that
+pathological documents are rejected within the 3 s test bound, near-limit
+documents decode in under a second without leaving workers or messages, and
+inputs never create atoms, raise or change yamerl's environment. Library
+compile with warnings as errors, strict Credo, 935 library tests, embedded
+startup and strict OpenSpec pass.

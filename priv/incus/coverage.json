@@ -8816,7 +8816,7 @@
     {
       "id": "shared/api/method/ConfigMap.UnmarshalYAML",
       "status": "partial",
-      "elixir": "lib/opsmaru/incus/native_config.ex",
+      "elixir": "lib/opsmaru/incus/native_yaml.ex",
       "evidence": [
         "test/library/native_yaml_reference_test.exs"
       ],
@@ -8834,7 +8834,7 @@
     {
       "id": "shared/api/method/DevicesMap.UnmarshalYAML",
       "status": "partial",
-      "elixir": "lib/opsmaru/incus/native_config.ex",
+      "elixir": "lib/opsmaru/incus/native_yaml.ex",
       "evidence": [
         "test/library/native_yaml_reference_test.exs"
       ],
@@ -9626,7 +9626,7 @@
         "test/library/native_config_reference_test.exs",
         "test/library/native_yaml_reference_test.exs"
       ],
-      "note": "Explicit bounded native JSON and go-yaml v4 YAML coercion/merge slices; three recorded YAML scanner/alias-ratio differences and full type parity remain open."
+      "note": "Explicit bounded native JSON coercion and a strict-subset YAML decoder that equals native go-yaml v4 or rejects; YAML outside the subset and full type parity remain open."
     },
     {
       "id": "shared/api/type/DevicesMap",
@@ -9636,7 +9636,7 @@
         "test/library/native_config_reference_test.exs",
         "test/library/native_yaml_reference_test.exs"
       ],
-      "note": "Explicit bounded native JSON and go-yaml v4 YAML coercion/merge slices; three recorded YAML scanner/alias-ratio differences and full type parity remain open."
+      "note": "Explicit bounded native JSON coercion and a strict-subset YAML decoder that equals native go-yaml v4 or rejects; YAML outside the subset and full type parity remain open."
     },
     {
       "id": "shared/api/type/Event",
