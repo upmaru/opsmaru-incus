@@ -512,3 +512,21 @@ Installed adapters must still enforce their separate external-resource contract.
 owned channels/listeners or cancel their explicit request context when desired.
 These slices do not complete remaining handlers, SFTP, copy/protocol matrices
 or all model/JSON/YAML helpers in task 3.9.
+
+
+`Response.decode_native(type, json)` explicitly projects `"Response"`,
+`"ResponseRaw"` or `"ResponseType"` JSON into a native `Model`. It materializes
+native zero defaults, drops unknown fields and accepts arbitrary response-type
+strings; the wire envelope decoder retains its stricter sync/async/error
+contract. `Model.decode/2` continues retaining absent/null/unknown fields.
+Response metadata preserves parsed JSON integer precision; ResponseRaw metadata
+uses native float64 values. Comparison is of parsed RawMessage data and exact
+float64 bits, with no guarantee of Go's raw JSON number/whitespace spelling.
+
+Input and projected output are limited to 1 MiB and nesting to 64 levels.
+Duplicate object keys, ambiguous case aliases and non-ASCII envelope keys
+reject. ResponseRaw also rejects negative zero with an integer mantissa,
+including exponent forms, whose sign the JSON parser discards; decimal signed
+zero is preserved. Failures return a redacted `:invalid_response_model` error.
+This pure helper performs no I/O, does not create an accepted operation and
+does not establish YAML or complete Response type parity.

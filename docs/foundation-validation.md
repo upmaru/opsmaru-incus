@@ -1074,3 +1074,24 @@ without I/O and Migration forwarding. `copy_negotiation_reference_test.exs`
 compares native `RemoteOperation.Wait` with `Migration.wait_target/2` for
 successful and failed targets. Library compile, strict Credo, the library suite,
 embedded startup and strict OpenSpec pass.
+
+
+## Task 3.9: response model types
+
+`test/library/response_models_reference_test.exs` builds the fixture-only
+`test/reference/responsemodels` driver with pinned Go and unchanged Incus v7.0.1
+types. Twelve tests compare canonical envelope/default/alias fields, integer
+validation and parsed RawMessage metadata, while independently extracting Go
+float64 bits for ResponseRaw metadata. The seeded corpus has 1,600 comparisons
+across valid and adversarial inputs. Boundary cases cover signed zero, nested
+metadata, duplicate/ambiguous keys, lossless Model behavior, redacted errors,
+invalid input, depth and near-1-MiB plain/escaped strings. Integer-mantissa
+negative zero rejects on ResponseRaw because Jason loses its native float sign;
+decimal negative zero compares exactly. Other native-accepted rejections and
+raw JSON/YAML limitations are recorded in the closure ledger. Three declarations
+gain partial evidence: 1235 partial, 45 missing, complete_port=false.
+Final formatting, warnings-as-errors library compilation, strict Credo, all
+959 library tests, passive embedded startup/restart and strict OpenSpec pass.
+PostgreSQL and full standalone `mise run check` were not started; this slice
+adds fixture evidence only, with no new installed service/backend/hardware
+acceptance. External review remains for the next significant batch.

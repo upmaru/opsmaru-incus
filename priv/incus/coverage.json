@@ -11140,24 +11140,30 @@
     },
     {
       "id": "shared/api/type/Response",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/response.ex",
+      "evidence": [
+        "test/library/response_models_reference_test.exs"
+      ],
+      "note": "Bounded explicit native JSON projection plus lossless model schemas: defaults/nulls, open string enum, int64 rejection and RawMessage versus float64 any metadata compared with unchanged native types. Parsed RawMessage JSON and exact ResponseRaw float64 bits compared; no raw JSON spelling/whitespace preservation. Duplicate-key merging, ambiguous case aliases, non-ASCII envelope keys, ResponseRaw integer-mantissa negative zero and inputs outside byte/depth limits reject. YAML and full type parity remain unverified."
     },
     {
       "id": "shared/api/type/ResponseRaw",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/response.ex",
+      "evidence": [
+        "test/library/response_models_reference_test.exs"
+      ],
+      "note": "Bounded explicit native JSON projection plus lossless model schemas: defaults/nulls, open string enum, int64 rejection and RawMessage versus float64 any metadata compared with unchanged native types. Parsed RawMessage JSON and exact ResponseRaw float64 bits compared; no raw JSON spelling/whitespace preservation. Duplicate-key merging, ambiguous case aliases, non-ASCII envelope keys, ResponseRaw integer-mantissa negative zero and inputs outside byte/depth limits reject. YAML and full type parity remain unverified."
     },
     {
       "id": "shared/api/type/ResponseType",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/response.ex",
+      "evidence": [
+        "test/library/response_models_reference_test.exs"
+      ],
+      "note": "Bounded explicit native JSON projection plus lossless model schemas: defaults/nulls, open string enum, int64 rejection and RawMessage versus float64 any metadata compared with unchanged native types. Parsed RawMessage JSON and exact ResponseRaw float64 bits compared; no raw JSON spelling/whitespace preservation. Duplicate-key merging, ambiguous case aliases, non-ASCII envelope keys, ResponseRaw integer-mantissa negative zero and inputs outside byte/depth limits reject. YAML and full type parity remain unverified."
     },
     {
       "id": "shared/api/type/Server",

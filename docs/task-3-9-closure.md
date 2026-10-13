@@ -5,7 +5,7 @@ closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
-The declaration manifest currently has 1232 partial and 48 missing entries.
+The declaration manifest currently has 1235 partial and 45 missing entries.
 Declarations include Go methods, interfaces, types, constants and transport
 abstractions; these counts are not endpoint counts or complete parity evidence.
 No partial mapping is promoted to completion by this continuation.
@@ -422,3 +422,36 @@ target is fixed at negotiation. Native multi-address copies wrap target errors
 as "Failed ... creation"; with one approved origin the native operation `err`
 is retained. The test fixture now echoes 16-bit-length WebSocket frames.
 Ten declarations gain partial evidence: 1232 partial, 48 missing.
+
+
+## Native response model types
+
+`Response.decode_native/2` adds an explicit pure JSON projection for shared/api
+`Response`, `ResponseRaw` and `ResponseType`, alongside the lossless
+`Model.decode/2` schemas and the existing wire envelope decoder. The unchanged
+native driver compares all seven envelope fields, empty/null defaults, unknown
+field dropping, arbitrary response-type strings, signed int64 limits, field-type
+rejections and case-insensitive ASCII field names. Response RawMessage metadata
+retains parsed integer precision; ResponseRaw's `any` metadata is compared by
+exact native float64 bits, including large numbers and decimal signed zero.
+Go can marshal large float64 values as integer-looking decimals whose exact
+integer value differs from the represented float; bit comparisons avoid treating
+that serialization spelling as a type-value mismatch.
+
+The 12 focused tests include 1,600 seeded valid/adversarial comparisons, nested
+metadata, near-1-MiB plain/escaped strings and independently recorded native-
+accepted rejections. Input/output are bounded to 1 MiB and nesting to 64 levels.
+Duplicate-key merging, ambiguous case aliases and non-ASCII envelope keys reject;
+ResponseRaw also rejects negative zero with an integer mantissa (with or without
+an exponent), because Jason discards its native float sign. JSON whitespace and
+number spelling are not preserved. These are partial JSON type mappings, not
+YAML parity, Go RawMessage byte preservation or full type acceptance.
+
+Self-review verified signed-zero behavior against the unchanged driver before
+adding the rejection guard. No external review was run for this small slice;
+the new commit and the previously recorded unreviewed commits remain for the
+next significant batch review. Three declarations gain partial evidence:
+1235 partial, 45 missing, complete_port=false. Task 3.9 remains unchecked.
+Formatting, warnings-as-errors library compilation, strict Credo, 959 library
+tests, passive embedded startup/restart and strict OpenSpec all pass. Full
+standalone checks and any new installed/backend/hardware acceptance are separate.

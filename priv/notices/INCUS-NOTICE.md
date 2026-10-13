@@ -73,3 +73,12 @@ unchanged native types and performs no network or filesystem operation.
 Apache-2.0 and MIT) string styling, key ordering and layout for its subset. The
 fixture-only `test/reference/serveryaml` driver calls the unchanged native types
 and performs no network or filesystem operation.
+
+`Response.decode_native/2` in `lib/opsmaru/incus/response.ex` projects the pinned
+`shared/api/response.go` types under the same Apache-2.0 license, using the
+checked native schemas and explicit bounded JSON rules. The fixture-only
+`test/reference/responsemodels` driver unmarshals/marshals unchanged native
+Response, ResponseRaw and ResponseType values and extracts their float64 bits;
+it uses only stdin/stdout and performs no network or filesystem operation.
+Raw JSON spelling/whitespace, duplicate merging and YAML are not ported;
+documented parser and budget rejections remain visible as partial evidence.
