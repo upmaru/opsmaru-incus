@@ -1142,3 +1142,17 @@ consumer built and passed against pushed revision `3c5d6b1` over HTTPS with no
 sibling checkout or Opsmaru application. The consumer test moved out of the
 library suite (982 to 981 tests). Linux CI evidence for this repository is
 pending its first run. Task 3.9 remains open.
+
+## macOS CI timing corrections — 2026-10-13
+
+GitHub macOS runs failed two scheduling-sensitive tests (Linux passed).
+`operation_handler_test.exs` required the pinned client's handler deliveries in
+arrival order, but Incus v7.0.1 runs each handler in its own goroutine
+(`client/incus_events.go`), so native order is not guaranteed; native results are
+now compared as a set, while our serial dispatch order is still asserted
+exactly. `oci_test.exs` rejected the documented `adapter_cleanup` result with
+`cleanup_pending: true`, which the caller returns when the controller reports
+after deadline + cleanup budget + 100 ms; the test now accepts it, checks its
+call identity and still requires worker termination and exactly one deadline
+cleanup. No library code changed. Full local `mise run check`: 981 tests, 0
+failures; both files passed 5 repeated runs.

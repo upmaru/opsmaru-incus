@@ -351,17 +351,25 @@ defmodule Opsmaru.Incus.OCITest do
 
     result = OCI.resolve(client, "alpine")
 
-    case result do
-      {:error, %Error{kind: :adapter_deadline}} ->
-        :ok
+    pending =
+      case result do
+        {:error, %Error{kind: :adapter_deadline}} ->
+          nil
 
-      {:error, %Error{kind: :adapter_cleanup, response: primary}} ->
-        # Cleanup has its own finite 60 ms budget. Missing it must stay visible,
-        # while preserving the primary deadline; it is not successful cleanup.
-        assert {:error, %Error{kind: :adapter_deadline}} = primary
-    end
+        {:error, %Error{kind: :adapter_cleanup, response: %{cleanup_pending: true} = pending}} ->
+          # On a slow scheduler the caller stops waiting before the controller
+          # reports; cleanup continues independently and stays visible.
+          pending
+
+        {:error, %Error{kind: :adapter_cleanup, response: primary}} ->
+          # Cleanup has its own finite 60 ms budget. Missing it must stay visible,
+          # while preserving the primary deadline; it is not successful cleanup.
+          assert {:error, %Error{kind: :adapter_deadline}} = primary
+          nil
+      end
 
     assert_receive {:inspect, worker, request}
+    if pending, do: assert(pending.call_id == request.call_id)
     monitor = Process.monitor(worker)
     assert_receive {:DOWN, ^monitor, :process, ^worker, _}
     assert_receive {:cleanup, id, :deadline}

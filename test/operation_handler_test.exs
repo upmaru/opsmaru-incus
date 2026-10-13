@@ -40,8 +40,10 @@ defmodule Opsmaru.Incus.OperationHandlerTest do
     native = oracle(%{socket: client.connection.address, events: events, expect: 2})
     assert native["add_error"] == nil
     refute native["target_nil"]
-    # Native delivers the running and the final event for this ID only.
-    assert Enum.map(native["seen"], &{&1["id"], &1["status_code"]}) == [
+    # Native delivers the running and the final event for this ID only. It runs
+    # each handler in its own goroutine (client/incus_events.go), so its
+    # delivery order is not guaranteed; compare it as a set.
+    assert Enum.sort(Enum.map(native["seen"], &{&1["id"], &1["status_code"]})) == [
              {"op1", 103},
              {"op1", 200}
            ]
@@ -68,7 +70,15 @@ defmodule Opsmaru.Incus.OperationHandlerTest do
 
     for event <- events, do: assert(:ok = EventListener.send_event(listener, event))
     seen = collect_ops(length(native["seen"]))
-    assert Enum.map(seen, & &1.data) == native["seen"]
+    # Our listener dispatches handlers serially, so event order is preserved.
+    assert Enum.map(seen, &{&1.data["id"], &1.data["status_code"]}) == [
+             {"op1", 103},
+             {"op1", 200}
+           ]
+
+    assert Enum.sort_by(Enum.map(seen, & &1.data), & &1["status_code"]) ==
+             Enum.sort_by(native["seen"], & &1["status_code"])
+
     assert Enum.all?(seen, &match?(%Model{type: "Operation"}, &1))
     refute_receive {:removed, _}, 100
     refute_receive {:op, _}, 100
