@@ -217,7 +217,9 @@ defmodule Opsmaru.Incus.ExecOutputTest do
 
   for mode <- [:deadline, :cancellation] do
     test "run #{mode} interrupts a confirmed blocked stdin write", %{root: root} do
-      {client, fixture, _} = fixture(root, :gen_tcp, input_gate: true, control: true)
+      {client, fixture, _} =
+        fixture(root, :gen_tcp, input_gate: true, control: true, read_timeout: 30_000)
+
       context = RequestContext.new!(timeout: 60_000)
       client = Incus.with_context(client, context)
 
@@ -804,7 +806,7 @@ defmodule Opsmaru.Incus.ExecOutputTest do
         5_000 -> raise "fixture disconnect gate"
       end
     else
-      receive_frames(t, s, name, parent, "")
+      receive_frames(t, s, name, parent, "", Keyword.get(opts, :read_timeout, 5_000))
     end
   end
 
@@ -820,20 +822,14 @@ defmodule Opsmaru.Incus.ExecOutputTest do
 
   defp request_gate(_, _), do: :ok
 
-  defp receive_frames(t, s, name, parent, buffer) do
+  defp receive_frames(t, s, name, parent, buffer, timeout) do
     case :cow_ws.parse_header(buffer, %{}, :undefined) do
       :more ->
-        case t.recv(s, 0, 5_000) do
-          {:ok, bytes} -> receive_frames(t, s, name, parent, buffer <> bytes)
-          _ -> send(parent, {:peer_closed, name})
-        end
+        receive_bytes(t, s, name, parent, buffer, 0, timeout)
 
       {type, frag, rsv, length, mask, rest} ->
         if byte_size(rest) < length do
-          case t.recv(s, length - byte_size(rest), 5_000) do
-            {:ok, bytes} -> receive_frames(t, s, name, parent, buffer <> bytes)
-            _ -> send(parent, {:peer_closed, name})
-          end
+          receive_bytes(t, s, name, parent, buffer, length - byte_size(rest), timeout)
         else
           {:ok, payload, _, rest} =
             :cow_ws.parse_payload(rest, mask, 0, 0, type, length, frag, %{}, rsv)
@@ -844,8 +840,16 @@ defmodule Opsmaru.Incus.ExecOutputTest do
             :close -> send(parent, {:peer_closed, name})
           end
 
-          if type != :close, do: receive_frames(t, s, name, parent, rest)
+          if type != :close, do: receive_frames(t, s, name, parent, rest, timeout)
         end
+    end
+  end
+
+  defp receive_bytes(t, s, name, parent, buffer, length, timeout) do
+    case t.recv(s, length, timeout) do
+      {:ok, bytes} -> receive_frames(t, s, name, parent, buffer <> bytes, timeout)
+      {:error, :closed} -> send(parent, {:peer_closed, name})
+      {:error, reason} -> send(parent, {:peer_error, name, reason})
     end
   end
 end

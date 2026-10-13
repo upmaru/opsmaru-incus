@@ -1240,9 +1240,21 @@ survives, and no input barrier, final poll, DELETE or replay occurs. Local timeo
 leaves the shared host context active and the original operation pollable. The
 test observer explicitly loads its traced module before installing the pattern;
 partial-frame EOF is observed by the existing fixture rather than causing a match
-exception. No production code, parser, native oracle or timing limit changed.
+exception. Receive timeouts are reported as errors, not peer closure. These two
+cases give the fixture a 30-second receive window around the tested 10-second
+client deadline; other cases retain their 5-second fixture default. Production
+code and the native oracle are unchanged. No parser or elapsed-time performance
+assertion is added.
 
 Own review and canonical checks pass: 1000 tests, formatting, warning-free compile,
 strict Credo and all three OpenSpec changes. Reference checks and byte-identical
 coverage regeneration pass: 1239 partial, 41 missing, `complete_port=false`.
 Latest pushed consumer/CI evidence is recorded on PR #5; task 3.9 remains open.
+
+The first evidence commit `1227b10` passed Ubuntu but its macOS
+[run 38450333962](https://github.com/upmaru/opsmaru-incus/actions/runs/38450333962)
+failed the pre-existing console-control owner-loss test's 500 ms cleanup assertion;
+the diagnostic was `Process.info(...) == nil` (already dead), and both new exec
+cases passed. The console cases passed 10 local repetitions with CI seed 563238,
+three schedulers and max_cases=6. The log cannot distinguish delayed cleanup from
+monitor/timeout scheduling; no console code or its 500 ms bound was changed.
