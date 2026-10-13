@@ -17,9 +17,14 @@ context: |
   temporary state; the library never probes sockets, downgrades HTTPS,
   discovers tools or runs commands. Preserve native operation identity and
   never replay possibly accepted mutations. Fixture, isolated consumer,
-  real-Incus and Macus hardware evidence are distinct. MCP tools, durable
-  tasks, central registry, OIDC and connectors belong to upmaru/opsmaru;
-  Swift/VZ, the public gateway and packaging belong to upmaru/macus. Pin
+  real-Incus and Macus hardware evidence are distinct. This repository also
+  owns the optional native gateway mechanics (add-embeddable-incus-gateway)
+  and the shared Incus operation/MCP tool definitions (add-incus-operations);
+  Plug, Cowboy and tama_mcp are optional dependencies so client-only
+  consumers carry no web stack. Durable tasks, central registry, OIDC and
+  connectors belong to upmaru/opsmaru; Swift/VZ, the public endpoint, gateway
+  policy/trust, runtime tools and packaging belong to upmaru/macus. The first
+  milestone is a standalone Macus; registration comes later. Pin
   dependencies as ranges here; consumers lock exact versions. Use Git Flow
   feature branches from develop. Canonical checks are mise run check and
   mise run check:reference.
