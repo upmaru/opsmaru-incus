@@ -1186,3 +1186,18 @@ batch Greptile review. Fresh pushed-revision consumer and ubuntu-24.04/macos-15
 CI results are separate publication gates recorded on the feature PR; local
 fixture success alone does not establish them. No real Incus, installed adapter,
 gateway, shared-tool, central-service or Macus hardware acceptance was attempted.
+
+The first published PR run passed both platforms. Its separate macOS push run
+failed the pre-existing async YAML test's global process-count comparison (208
+before, 211 after), while all exec cases passed. A controlled reproducer starts
+three unrelated processes between the snapshots: the 20,000-key decode succeeds
+and the global count still increases from 111 to 114. The assertion therefore
+cannot establish a parser leak in an async suite. The corrected test traces its
+own two decoder workers, requires both to be dead immediately on return and
+retains the unchanged 3-second decode bound and empty-mailbox check. The focused
+test and final canonical check (991 tests, strict Credo/OpenSpec, warning-free
+compile and formatting) pass. No YAML runtime, parser budget or timing bound
+changes; final published CI remains required. The original failure is recorded
+in [push run 38394427391](https://github.com/upmaru/opsmaru-incus/actions/runs/38394427391);
+the unchanged runtime passed both platforms in
+[PR run 38394496006](https://github.com/upmaru/opsmaru-incus/actions/runs/38394496006).

@@ -517,21 +517,63 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
 
   test "near-limit realistic documents decode quickly and leave no worker or messages" do
     yaml = Enum.map_join(1..20_000, "", &"user.key#{&1}: \"value #{&1}\"\n")
-    before = Process.list() |> length()
-    started = System.monotonic_time(:millisecond)
-    assert {:ok, value} = NativeConfig.from_yaml("ConfigMap", yaml)
-    assert map_size(value) == 20_000
-    assert System.monotonic_time(:millisecond) - started < 3_000
 
-    assert {:error, _} =
-             NativeConfig.from_yaml(
-               "ConfigMap",
-               "k: [" <> String.duplicate("[x, ", 50_000) <> "]: 1\n"
-             )
+    workers =
+      spawned_during(fn ->
+        started = System.monotonic_time(:millisecond)
+        assert {:ok, value} = NativeConfig.from_yaml("ConfigMap", yaml)
+        assert map_size(value) == 20_000
+        assert System.monotonic_time(:millisecond) - started < 3_000
 
-    Process.sleep(50)
-    assert length(Process.list()) <= before
+        assert {:error, _} =
+                 NativeConfig.from_yaml(
+                   "ConfigMap",
+                   "k: [" <> String.duplicate("[x, ", 50_000) <> "]: 1\n"
+                 )
+      end)
+
+    # This module is async. Other tests may start processes while decoding;
+    # trace the actual two decode workers instead of counting the whole VM.
+    assert length(workers) == 2
+    for worker <- workers, do: refute(Process.alive?(worker))
     refute_received _
+  end
+
+  defp spawned_during(fun) do
+    tracer = spawn(fn -> collect_spawns([]) end)
+    :erlang.trace(self(), true, [:procs, {:tracer, tracer}])
+
+    try do
+      fun.()
+      :erlang.trace(self(), false, [:procs])
+      barrier = :erlang.trace_delivered(self())
+
+      receive do
+        {:trace_delivered, _, ^barrier} -> :ok
+      after
+        5_000 -> flunk("spawn trace delivery")
+      end
+
+      ref = make_ref()
+      send(tracer, {:finish, self(), ref})
+
+      receive do
+        {^ref, workers} -> workers
+      after
+        5_000 -> flunk("spawn trace collection")
+      end
+    after
+      :erlang.trace(self(), false, [:procs])
+      Process.exit(tracer, :kill)
+    end
+  end
+
+  defp collect_spawns(workers) do
+    receive do
+      {:trace, _, :spawn, worker, _} -> collect_spawns([worker | workers])
+      {:finish, caller, ref} -> send(caller, {ref, workers})
+      _ -> collect_spawns(workers)
+    end
   end
 
   test "timed-out decodes leave no late result in the caller mailbox" do
