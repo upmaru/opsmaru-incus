@@ -16,12 +16,12 @@ defmodule Opsmaru.Incus.RequestContextTest do
   }
 
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture}
-  @driver Path.expand("../../.integration/request-context-driver", __DIR__)
+  @driver Path.expand("../.integration/request-context-driver", __DIR__)
 
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./requestcontext"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

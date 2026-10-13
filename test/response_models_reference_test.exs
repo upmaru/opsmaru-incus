@@ -2,13 +2,13 @@ defmodule Opsmaru.Incus.ResponseModelsReferenceTest do
   use ExUnit.Case, async: false
   alias Opsmaru.Incus.{Error, Model, Response}
 
-  @driver Path.expand("../../.integration/response-models-driver", __DIR__)
+  @driver Path.expand("../.integration/response-models-driver", __DIR__)
   @fields ~w(type status status_code operation error_code error metadata)
 
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./responsemodels"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

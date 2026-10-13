@@ -3,8 +3,8 @@ defmodule Opsmaru.Incus.OCIOriginReferenceTest do
   alias Opsmaru.Context
   alias Opsmaru.Incus.{Connection, Error, HTTP, OCI, RequestContext}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
-  @info_driver Path.expand("../../.integration/oci-origin-info-driver", __DIR__)
-  @http_driver Path.expand("../../.integration/oci-origin-http-driver", __DIR__)
+  @info_driver Path.expand("../.integration/oci-origin-info-driver", __DIR__)
+  @http_driver Path.expand("../.integration/oci-origin-http-driver", __DIR__)
 
   defmodule NoCallAdapter do
     @behaviour Opsmaru.Incus.OCI.Adapter
@@ -17,7 +17,7 @@ defmodule Opsmaru.Incus.OCIOriginReferenceTest do
     for {driver, source} <- [{@info_driver, "./origininfo"}, {@http_driver, "./httpclient"}] do
       {out, status} =
         System.cmd("mise", ["exec", "--", "go", "build", "-o", driver, source],
-          cd: Path.expand("../reference", __DIR__),
+          cd: Path.expand("reference", __DIR__),
           env: [{"GOTOOLCHAIN", "local"}],
           stderr_to_stdout: true
         )

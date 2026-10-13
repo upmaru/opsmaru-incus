@@ -1,4 +1,4 @@
 ExUnit.start()
 
-Application.load(:opsmaru)
-for app <- Application.spec(:opsmaru, :applications), do: Application.ensure_all_started(app)
+# :opsmaru_incus has no application callback; this only starts :ssl and friends.
+{:ok, _} = Application.ensure_all_started(:opsmaru_incus)

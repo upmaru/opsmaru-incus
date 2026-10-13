@@ -3,7 +3,7 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
   alias Opsmaru.Incus.Error
   alias Opsmaru.Incus.NativeConfig
   @moduletag timeout: 120_000
-  @driver Path.expand("../../.integration/incus-yaml-driver", __DIR__)
+  @driver Path.expand("../.integration/incus-yaml-driver", __DIR__)
 
   # Contract: from_yaml/3 returns exactly the unchanged native go-yaml v4 +
   # Incus api result, or rejects. It never accepts what native rejects and
@@ -445,7 +445,7 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./nativeyaml"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

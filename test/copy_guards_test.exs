@@ -3,12 +3,12 @@ defmodule Opsmaru.Incus.CopyGuardsTest do
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Copy, Error, Server}
   alias Opsmaru.TestSupport.HTTPFixture
-  @driver Path.expand("../../.integration/incus-copy-guards", __DIR__)
+  @driver Path.expand("../.integration/incus-copy-guards", __DIR__)
 
   setup_all do
     {out, code} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./copyguards"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

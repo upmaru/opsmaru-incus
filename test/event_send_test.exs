@@ -3,12 +3,12 @@ defmodule Opsmaru.Incus.EventSendTest do
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Error, Events, Server}
   alias Opsmaru.TestSupport.WebSocketFixture
-  @driver Path.expand("../../.integration/event-send-driver", __DIR__)
+  @driver Path.expand("../.integration/event-send-driver", __DIR__)
   @event %{"type" => "logging", "timestamp" => "2026-10-10T12:00:00Z", "metadata" => %{"x" => 1}}
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./eventsend"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

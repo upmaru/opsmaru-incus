@@ -3,13 +3,13 @@ defmodule Opsmaru.Incus.FileVariantsReferenceTest do
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Error, Files, Server}
   alias Opsmaru.TestSupport.HTTPFixture
-  @driver Path.expand("../../.integration/file-variants-driver", __DIR__)
+  @driver Path.expand("../.integration/file-variants-driver", __DIR__)
   @bytes :binary.copy(<<0, 255, 128, 13, 10>>, 100)
   @extensions ~w(container_backup custom_volume_backup storage_bucket_backup backup_override_name custom_volume_iso direct_backup directory_manipulation file_append file_symlinks)
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./filevariants"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

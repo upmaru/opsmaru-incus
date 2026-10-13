@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.AcceptanceRunnerTest do
   use ExUnit.Case, async: false
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
-  @runner Path.expand("../../scripts/accept-incus.exs", __DIR__)
+  @runner Path.expand("../scripts/accept-incus.exs", __DIR__)
 
   setup do
     root = Path.join(System.tmp_dir!(), "op-accept-#{System.unique_integer([:positive])}")
@@ -49,8 +49,8 @@ defmodule Opsmaru.Incus.AcceptanceRunnerTest do
 
     {out, status} =
       System.cmd("mise", ["exec", "--", "mix", "run", "--no-start", @runner],
-        cd: Path.expand("../..", __DIR__),
-        env: [{"MIX_ENV", "library"}, {"OPSMARU_ACCEPTANCE_CONFIG", config}],
+        cd: Path.expand("..", __DIR__),
+        env: [{"MIX_ENV", "test"}, {"OPSMARU_ACCEPTANCE_CONFIG", config}],
         stderr_to_stdout: true
       )
 

@@ -3,12 +3,12 @@ defmodule Opsmaru.Incus.StatusErrorReferenceTest do
 
   alias Opsmaru.Incus.{Error, StatusError}
 
-  @driver Path.expand("../../.integration/status-error-driver", __DIR__)
+  @driver Path.expand("../.integration/status-error-driver", __DIR__)
 
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./statuserror"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

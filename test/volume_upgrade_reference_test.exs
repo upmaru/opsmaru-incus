@@ -3,7 +3,7 @@ defmodule Opsmaru.Incus.VolumeUpgradeReferenceTest do
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Error, RawChannel, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
-  @driver Path.expand("../../.integration/incus-volume-upgrade-driver", __DIR__)
+  @driver Path.expand("../.integration/incus-volume-upgrade-driver", __DIR__)
   @initial <<0, 255, 128>>
   @payload <<255, 0, 128, 13, 10>>
   @extensions ["custom_volume_sftp", "storage_volume_nbd"]
@@ -13,7 +13,7 @@ defmodule Opsmaru.Incus.VolumeUpgradeReferenceTest do
 
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "."],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

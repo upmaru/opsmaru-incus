@@ -2,7 +2,7 @@ defmodule Opsmaru.Incus.OCITest do
   use ExUnit.Case, async: false
   alias Opsmaru.Context
   alias Opsmaru.Incus.{Connection, Error, Model, OCI, RequestContext}
-  @driver Path.expand("../../.integration/oci-driver", __DIR__)
+  @driver Path.expand("../.integration/oci-driver", __DIR__)
 
   defmodule Adapter do
     @behaviour Opsmaru.Incus.OCI.Adapter
@@ -27,7 +27,7 @@ defmodule Opsmaru.Incus.OCITest do
 
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./oci"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

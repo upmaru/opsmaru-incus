@@ -3,11 +3,11 @@ defmodule Opsmaru.Incus.FileReferenceTest do
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Files, Server}
   alias Opsmaru.TestSupport.HTTPFixture
-  @driver Path.expand("../../.integration/incus-file-driver", __DIR__)
+  @driver Path.expand("../.integration/incus-file-driver", __DIR__)
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "."],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

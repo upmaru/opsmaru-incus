@@ -3,12 +3,12 @@ defmodule Opsmaru.Incus.RawOperationReferenceTest do
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Error, Operation, Server}
   alias Opsmaru.TestSupport.HTTPFixture
-  @driver Path.expand("../../.integration/raw-operation-driver", __DIR__)
+  @driver Path.expand("../.integration/raw-operation-driver", __DIR__)
 
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "."],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

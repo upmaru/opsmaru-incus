@@ -13,12 +13,12 @@ defmodule Opsmaru.Incus.TLSCacheTest do
       "mix",
       "run",
       "--no-start",
-      "test/library/support/tls_cache_trial.exs",
+      "test/support/tls_cache_trial.exs",
       root
     ]
 
     {out, status} =
-      System.cmd("mise", args, env: [{"MIX_ENV", "library"}], stderr_to_stdout: true)
+      System.cmd("mise", args, env: [{"MIX_ENV", "test"}], stderr_to_stdout: true)
 
     assert status == 0, out
     assert out =~ "Deleted CA refresh preserves SSL manager"

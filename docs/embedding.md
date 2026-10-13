@@ -1,10 +1,10 @@
 # Embedded library boundary
 
-Opsmaru defaults to `:embedded`, supervising no children. Starting or restarting
-the dependency does not start Endpoint, Repo, PubSub or a listener, create state,
-read keys or contact a backend. PHX_SERVER/PORT have no effect in this mode.
-Standalone is an explicit scaffold role; it is not an authenticated service.
-The dependency's runtime.exs is not host configuration.
+`:opsmaru_incus` is a pure library with no application callback, so it has no
+supervision tree. Loading, starting or restarting it starts no process,
+listener, Endpoint or Repo, creates no state, reads no keys and contacts no
+backend. PHX_SERVER/PORT have no effect. There is no deployment mode to
+configure and no dependency runtime.exs to evaluate.
 
 A host supplies verified identity, authorization, private state references,
 readiness and platform capabilities. These are values, not provisioning hooks.
@@ -12,8 +12,6 @@ No Opsmaru code invokes host capabilities or owns Swift/Incus lifecycle.
 Configuration is per call, not a mutable global current remote:
 
 ```elixir
-config :opsmaru, :deployment_mode, :embedded
-
 context = Opsmaru.Context.new!(
   owner: :macus,
   identity: verified_host_identity,
@@ -50,27 +48,34 @@ max_children: 8}` to your host tree and explicitly call
 `Opsmaru.ClientSupervisor.async(MyHost.Clients, fn -> ... end)`. Capacity is
 immediate failure, with no work queue or replay/recovery. A worker loss says
 nothing about backend cancellation. Your existing endpoint and runtime remain
-host-owned. The library can be called without starting the Opsmaru application.
+host-owned.
 
-`mise run check:library` uses MIX_ENV=library, no Ecto alias, no standalone test
-configuration and no database credentials. It compiles the same application
-and runs isolated fixtures with no SQL setup. `mise run check` separately
-checks the existing Phoenix scaffold and requires a dedicated test database.
-Fixture evidence does not establish installed Macus or real Incus acceptance.
+`mise run check` formats, compiles warning-free, runs strict Credo, the
+database-free fixture suite and strict OpenSpec validation. No database,
+provider credentials, listener or real backend is involved.
+`mise run check:reference` runs the Go inventory/schema verifier tests and the
+generated constants check. Fixture evidence does not establish installed Macus
+or real Incus acceptance.
 
 ## Immutable consumer dependency
 
-The independently verified implemented revision is:
+Pin an implemented immutable revision of this repository:
 
 ```elixir
-{:opsmaru, git: "https://github.com/upmaru/opsmaru.git",
- ref: "f1eea66127c7bb0ed89f385b3f30bed4d526a44f"}
+{:opsmaru_incus, git: "https://github.com/upmaru/opsmaru-incus.git",
+ ref: "<40-character revision from test/consumer/revision.txt>"}
 ```
 
-`test/consumer/revision.txt` records this revision; its `mix.lock` records the
-resolved Macus-compatible dependency set. Run `python3 scripts/check-consumer.py`
-to fetch it in a fresh directory. An explicit `OPSMARU_FIXTURE_REVISION` permits
-verifying a newer immutable feature revision; no local path dependency is used.
-The fixture's private Unix server is an independent fake backend, never an
+`test/consumer/revision.txt` records the independently verified revision; its
+`mix.lock` records the resolved Macus-compatible dependency set. Run
+`mise run check:consumer` (or `python3 scripts/check-consumer.py`) to fetch it
+in a fresh directory. An explicit `OPSMARU_INCUS_FIXTURE_REVISION` permits
+verifying a newer pushed revision; no local path dependency is used. The
+fixture's private Unix server is an independent fake backend, never an
 installed Macus socket. Installation, bundled ERTS and real Macus hardware
 acceptance remain owned by the consumer.
+
+Revisions before the extraction were published from
+[upmaru/opsmaru](https://github.com/upmaru/opsmaru) as the `:opsmaru`
+application; those pins remain valid history but new consumers use this
+repository.

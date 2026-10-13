@@ -3,7 +3,7 @@ defmodule Opsmaru.Incus.InventoryTest do
 
   alias Opsmaru.Incus.Inventory
 
-  @inventory Path.expand("../../priv/incus/inventory.json", __DIR__)
+  @inventory Path.expand("../priv/incus/inventory.json", __DIR__)
 
   test "pinned inventory records complete provenance and evidence slots" do
     inventory = Jason.decode!(File.read!(@inventory))
@@ -97,8 +97,8 @@ defmodule Opsmaru.Incus.InventoryTest do
                     ".GetHTTPClient",
                     ".DoHTTP"
                   ]),
-                  do: "test/library/oci_origin_reference_test.exs",
-                  else: "test/library/oci_test.exs"
+                  do: "test/oci_origin_reference_test.exs",
+                  else: "test/oci_test.exs"
 
              entry["evidence"] == [expected]
            end)
@@ -114,7 +114,7 @@ defmodule Opsmaru.Incus.InventoryTest do
 
     assert Enum.all?(simplestreams, fn entry ->
              entry["status"] == "missing" or
-               entry["evidence"] == ["test/library/simple_streams_test.exs"]
+               entry["evidence"] == ["test/simple_streams_test.exs"]
            end)
 
     for entry <- coverage["entries"] do

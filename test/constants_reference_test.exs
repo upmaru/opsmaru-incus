@@ -5,7 +5,7 @@ defmodule Opsmaru.Incus.ConstantsReferenceTest do
   test "every exported pinned API constant has its unchanged native JSON value" do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "run", "./constants"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

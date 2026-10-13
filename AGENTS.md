@@ -1,0 +1,11 @@
+# Project instructions
+
+Use the pinned mise Elixir/OTP, Go and Node/OpenSpec tools. opsmaru-incus is a pure Elixir library (`:opsmaru_incus`) providing the portable native Incus client consumed by Macus and central Opsmaru. Keep it a library: no application callback, endpoint, repository, listener, credentials, runtime state or backend connection may start merely because a host loads or starts the dependency. Hosts supply connections, verified identity and readiness explicitly on every call.
+
+Incus remains the canonical workload backend. Never implement its workload manager, invoke a host VM CLI, probe local Incus sockets or add Apple virtualization, Macus, Phoenix, Ecto or central-service code here. Preserve native routes, queries, ETags, errors, operation identity and streaming/upgrade semantics; never replay a possibly accepted mutation.
+
+Use OpenSpec for substantial behavior changes and validate planning before implementation. Keep `priv/incus/coverage.json` truthful: every supported reference entry needs implementation and differential evidence; partial slices stay visibly incomplete and raw-proxy success never counts as typed-client evidence. Distinguish fixture checks, the isolated consumer build, explicit real-Incus acceptance and consumer-owned Macus hardware acceptance. Do not advertise complete client parity before it is verified.
+
+Run `mise trust` and `mise install` for the checkout. Canonical checks are `mise run check` and `mise run check:reference`; `mise run check:consumer` verifies a pushed immutable revision. Real-backend acceptance requires explicit opt-in, an isolated project and private credentials; never run tests against production data or commit ignored `_build`, `deps`, `.integration`, secrets or acceptance state.
+
+Use Git Flow: main is released history, develop is integration, feature/* starts from develop, release/* starts from develop and finishes into both branches, and hotfix/* starts from main and finishes into both. Publish development work on its feature branch. Do not finish/merge branches, create release tags or publish packages without user authorization.

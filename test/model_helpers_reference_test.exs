@@ -1,15 +1,15 @@
 defmodule Opsmaru.Incus.ModelHelpersReferenceTest do
   use ExUnit.Case, async: false
   alias Opsmaru.Incus.{Model, ModelURL, Status}
-  @driver Path.expand("../../.integration/model-helpers-driver", __DIR__)
-  @schemas Jason.decode!(File.read!(Path.expand("../../priv/incus/models.json", __DIR__)))[
+  @driver Path.expand("../.integration/model-helpers-driver", __DIR__)
+  @schemas Jason.decode!(File.read!(Path.expand("../priv/incus/models.json", __DIR__)))[
              "models"
            ]
 
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./modelhelpers"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

@@ -1,0 +1,35 @@
+[tools]
+elixir = "1.19.5-otp-27"
+erlang = "27.3.4.16"
+node = "26.10.0"
+"npm:@fission-ai/openspec" = "1.14.0"
+go = "1.25.14" # Incus inventory/differential verifier only; never a runtime sidecar.
+
+[tasks.setup]
+description = "Fetch dependencies"
+run = "mix deps.get"
+
+[tasks."spec:validate"]
+description = "Validate all OpenSpec artifacts strictly"
+run = "openspec validate --all --strict --no-interactive"
+
+[tasks.check]
+description = "Format, compile, strict Credo and database-free library/fixture tests; no real backend"
+run = [
+  "mix format --check-formatted",
+  "mix compile --warnings-as-errors",
+  "mix credo --strict",
+  "mix test",
+  "openspec validate --all --strict --no-interactive",
+]
+
+[tasks."check:reference"]
+description = "Go inventory/schema verifier tests and generated constants check"
+run = [
+  "GO111MODULE=off go test ./scripts ./scripts/incus-model-schema",
+  "python3 scripts/check-incus-constants.py",
+]
+
+[tasks."check:consumer"]
+description = "Build a pushed immutable revision in an isolated Macus-compatible consumer"
+run = "python3 scripts/check-consumer.py"

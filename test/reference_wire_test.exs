@@ -6,9 +6,9 @@ defmodule Opsmaru.Incus.ReferenceWireTest do
   alias Opsmaru.TestSupport.TLSIdentity
   alias Opsmaru.TestSupport.WireComparison
 
-  @fixtures Path.expand("../fixtures/incus/wire.json", __DIR__)
-  @driver Path.expand("../../.integration/incus-reference-driver", __DIR__)
-  @reference_dir Path.expand("../reference", __DIR__)
+  @fixtures Path.expand("fixtures/incus/wire.json", __DIR__)
+  @driver Path.expand("../.integration/incus-reference-driver", __DIR__)
+  @reference_dir Path.expand("reference", __DIR__)
 
   setup_all do
     {module, 0} =

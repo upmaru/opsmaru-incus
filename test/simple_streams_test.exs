@@ -3,9 +3,9 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
   alias Opsmaru.Context
   alias Opsmaru.Incus.{Connection, Error, HTTP, Model, SimpleStreams}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
-  @driver Path.expand("../../.integration/simplestreams-driver", __DIR__)
-  @http_driver Path.expand("../../.integration/simplestreams-http-driver", __DIR__)
-  @info_driver Path.expand("../../.integration/origin-info-driver", __DIR__)
+  @driver Path.expand("../.integration/simplestreams-driver", __DIR__)
+  @http_driver Path.expand("../.integration/simplestreams-http-driver", __DIR__)
+  @info_driver Path.expand("../.integration/origin-info-driver", __DIR__)
 
   defmodule DeltaAdapter do
     @behaviour Opsmaru.Incus.SimpleStreams.DeltaAdapter
@@ -25,7 +25,7 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
 
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./simplestreams"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )
@@ -34,7 +34,7 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
 
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @http_driver, "./httpclient"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )
@@ -43,7 +43,7 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
 
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @info_driver, "./origininfo"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

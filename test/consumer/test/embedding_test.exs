@@ -31,11 +31,9 @@ defmodule FoundationConsumer.EmbeddingTest do
   test "independent host endpoint and private Unix backend use direct library calls" do
     assert Process.whereis(FoundationConsumer.Endpoint)
 
-    for name <- [OpsmaruWeb.Endpoint, Opsmaru.Repo, Opsmaru.PubSub],
-        do: refute(Process.whereis(name))
-
-    assert Supervisor.which_children(Opsmaru.Supervisor) == []
-    Application.stop(:opsmaru)
+    # The dependency is a pure library: no application callback or processes.
+    assert Application.spec(:opsmaru_incus, :mod) == []
+    refute Process.whereis(Opsmaru.Supervisor)
 
     root = Path.join(System.tmp_dir!(), "op-consumer-#{System.unique_integer([:positive])}")
     File.mkdir!(root)

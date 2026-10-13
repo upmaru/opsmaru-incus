@@ -3,7 +3,7 @@ defmodule Opsmaru.Incus.PreseedReferenceTest do
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Error, Preseed}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
-  @driver Path.expand("../../.integration/incus-preseed-driver", __DIR__)
+  @driver Path.expand("../.integration/incus-preseed-driver", __DIR__)
   @extensions ~w(network projects storage clustering clustering_groups clustering_join certificate_update)
 
   setup_all do
@@ -11,7 +11,7 @@ defmodule Opsmaru.Incus.PreseedReferenceTest do
 
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "."],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

@@ -3,12 +3,12 @@ defmodule Opsmaru.Incus.FileHeadersReferenceTest do
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Error, FileHeaders, Files, Server}
   alias Opsmaru.TestSupport.HTTPFixture
-  @driver Path.expand("../../.integration/file-headers-driver", __DIR__)
+  @driver Path.expand("../.integration/file-headers-driver", __DIR__)
 
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./fileheaders"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

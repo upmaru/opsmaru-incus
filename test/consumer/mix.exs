@@ -8,12 +8,16 @@ defmodule FoundationConsumer.MixProject do
   def application, do: [mod: {FoundationConsumer.Application, []}, extra_applications: [:logger]]
 
   defp deps do
-    revision = System.fetch_env!("OPSMARU_FIXTURE_REVISION")
+    revision = System.fetch_env!("OPSMARU_INCUS_FIXTURE_REVISION")
     unless Regex.match?(~r/\A[0-9a-f]{40}\z/, revision), do: raise("immutable revision required")
 
     [
-      {:opsmaru,
-       git: System.get_env("OPSMARU_FIXTURE_REPOSITORY", "https://github.com/upmaru/opsmaru.git"),
+      {:opsmaru_incus,
+       git:
+         System.get_env(
+           "OPSMARU_INCUS_FIXTURE_REPOSITORY",
+           "https://github.com/upmaru/opsmaru-incus.git"
+         ),
        ref: revision},
       {:phoenix, "1.8.15"},
       {:mint, "1.11.0"},

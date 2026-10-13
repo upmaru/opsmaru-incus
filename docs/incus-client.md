@@ -1,6 +1,6 @@
 # Public portable Incus library
 
-The library is usable independently of Opsmaru startup, SQL, Macus, Swift or a
+The library is usable without application startup, SQL, Macus, Swift or a
 central service. Fixture-tested slices are listed below. This is **not a
 complete Incus client port**: `priv/incus/coverage.json` records every pinned
 reference declaration and keeps missing coverage visible (`complete_port=false`).

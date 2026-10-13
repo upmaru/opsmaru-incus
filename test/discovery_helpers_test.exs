@@ -3,11 +3,11 @@ defmodule Opsmaru.Incus.DiscoveryHelpersTest do
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Discovery, Error, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
-  @driver Path.expand("../../.integration/discovery-driver", __DIR__)
+  @driver Path.expand("../.integration/discovery-driver", __DIR__)
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./discovery"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

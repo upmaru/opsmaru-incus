@@ -73,6 +73,7 @@ defmodule OpsmaruAcceptance do
     # visibility of this run's unguessable marker before either transport suite.
     for client <- [local, remote] do
       {:ok, visible} = call(client, "GetProject", %{"name" => project})
+
       unless visible.metadata.data["description"] == description,
         do: raise("Acceptance project identity mismatch")
     end
@@ -99,11 +100,8 @@ defmodule OpsmaruAcceptance do
     {:ok, _} = call(local, "DeleteProject", %{"name" => project})
     {:error, %Error{http_status: 404}} = call(remote, "GetProject", %{"name" => project})
 
-    true =
-      Enum.all?(
-        [Opsmaru.Supervisor, OpsmaruWeb.Endpoint, Opsmaru.Repo],
-        &is_nil(Process.whereis(&1))
-      )
+    # The library has no application callback, so it cannot own processes.
+    [] = Application.spec(:opsmaru_incus, :mod)
 
     update(
       report,
@@ -121,15 +119,21 @@ defmodule OpsmaruAcceptance do
        do: raise("Acceptance backend identity mismatch")
 
     for client <- [local, remote] do
-      unless match?({:error, %Error{http_status: 404}}, call(client, "GetProject", %{"name" => project})),
-        do: raise("Acceptance project must be absent on both transports")
+      unless match?(
+               {:error, %Error{http_status: 404}},
+               call(client, "GetProject", %{"name" => project})
+             ),
+             do: raise("Acceptance project must be absent on both transports")
     end
   end
 
   defp certificate_pin(pem) when is_binary(pem) and byte_size(pem) <= 1_048_576 do
     case :public_key.pem_decode(pem) do
-      [{:Certificate, der, :not_encrypted}] -> Base.encode16(:crypto.hash(:sha256, der), case: :lower)
-      _ -> nil
+      [{:Certificate, der, :not_encrypted}] ->
+        Base.encode16(:crypto.hash(:sha256, der), case: :lower)
+
+      _ ->
+        nil
     end
   rescue
     _ -> nil

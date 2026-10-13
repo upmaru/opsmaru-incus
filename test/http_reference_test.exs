@@ -5,14 +5,14 @@ defmodule Opsmaru.Incus.HTTPReferenceTest do
   alias Opsmaru.Incus.HTTP.Response
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   alias Plug.Conn.Status
-  @driver Path.expand("../../.integration/incus-http-client", __DIR__)
+  @driver Path.expand("../.integration/incus-http-client", __DIR__)
 
   setup_all do
     File.mkdir_p!(Path.dirname(@driver))
 
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./httpclient"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

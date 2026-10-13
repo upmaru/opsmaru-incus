@@ -4,12 +4,12 @@ defmodule Opsmaru.Incus.ResourceSliceTest do
   alias Opsmaru.Incus.{Connection, Error, Model, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, WireComparison}
   @definitions Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
-  @driver Path.expand("../../.integration/incus-typed-driver", __DIR__)
+  @driver Path.expand("../.integration/incus-typed-driver", __DIR__)
 
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "."],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

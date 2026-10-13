@@ -64,19 +64,19 @@
     },
     {
       "source": "test/support/http_fixture.ex",
-      "destination": "test/library/support/http_fixture.ex",
+      "destination": "test/support/http_fixture.ex",
       "source_sha256": "43a35bc6f9abcdf1dad37f068b759cee83795cd21380192ff7c3163c4be86ee1",
       "transferred_sha256": "d8be2bcc84671f3be9a8191bc42f7f8b71f0c1b195d39ee83e30fda0831898b8"
     },
     {
       "source": "test/support/wire_comparison.ex",
-      "destination": "test/library/support/wire_comparison.ex",
+      "destination": "test/support/wire_comparison.ex",
       "source_sha256": "14e71e8111f705b5426bc0bcc7fc9310ecff7d17963af5aa60823264910a9b57",
       "transferred_sha256": "56677e653411c66e3f1259912eec760444e007b697d6ffb26f1ba73f8610bcbd"
     },
     {
       "source": "test/support/tls_identity.ex",
-      "destination": "test/library/support/tls_identity.ex",
+      "destination": "test/support/tls_identity.ex",
       "source_sha256": "277b1c17f48b726df93b98836a3b14c0790b63d959ed0546665d80fb2053de75",
       "transferred_sha256": "2c2e6b24070e3d56136b109bcd3680fb126a95a90124b6bbc9c37b81c19ee5b3"
     },
@@ -94,7 +94,7 @@
     },
     {
       "source": "test/macus/incus/inventory_test.exs",
-      "destination": "test/library/inventory_test.exs",
+      "destination": "test/inventory_test.exs",
       "source_sha256": "22e5cc172209cb95a9a04130378b41ed5288c7b58ba8d3206cd4a63d1de78e02",
       "transferred_sha256": "0c6dba22d36e44fc590d3b7c381a789c00c97a8bb9351c75880f1feb34b85c76"
     }

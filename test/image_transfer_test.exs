@@ -3,12 +3,12 @@ defmodule Opsmaru.Incus.ImageTransferTest do
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Error, Images, Model}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
-  @driver Path.expand("../../.integration/incus-image-driver", __DIR__)
+  @driver Path.expand("../.integration/incus-image-driver", __DIR__)
 
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "."],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

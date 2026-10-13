@@ -1,13 +1,13 @@
 defmodule Opsmaru.Incus.NetworkModelsReferenceTest do
   use ExUnit.Case, async: false
   alias Opsmaru.Incus.{Error, Model, NetworkModels}
-  @driver Path.expand("../../.integration/incus-network-models", __DIR__)
+  @driver Path.expand("../.integration/incus-network-models", __DIR__)
   setup_all do
     File.mkdir_p!(Path.dirname(@driver))
 
     {out, code} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./networkmodels"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )
@@ -106,8 +106,7 @@ defmodule Opsmaru.Incus.NetworkModelsReferenceTest do
     refute Map.has_key?(result.data, "future_native_field")
     assert result.data == native(model.type, data)
     refute inspect(result) =~ "retained"
-    refute Process.whereis(Opsmaru.Repo)
-    refute Process.whereis(OpsmaruWeb.Endpoint)
+    assert Application.spec(:opsmaru_incus, :mod) == []
   end
 
   test "invalid types and oversized inputs fail visibly" do

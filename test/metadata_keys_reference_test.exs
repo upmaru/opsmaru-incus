@@ -1,12 +1,12 @@
 defmodule Opsmaru.Incus.MetadataKeysReferenceTest do
   use ExUnit.Case, async: false
   alias Opsmaru.Incus.{Error, Metadata, Model}
-  @driver Path.expand("../../.integration/metadata-keys-driver", __DIR__)
+  @driver Path.expand("../.integration/metadata-keys-driver", __DIR__)
 
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./metadatakeys"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

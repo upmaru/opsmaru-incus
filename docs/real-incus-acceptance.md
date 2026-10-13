@@ -76,7 +76,7 @@ by time and 128 messages. Only the successfully verified run is cleaned up.
 
 ```sh
 OPSMARU_ACCEPTANCE_CONFIG=/absolute/private/run/config.json \
-  MIX_ENV=library mise exec -- mix run --no-start scripts/accept-incus.exs
+  mise exec -- mix run --no-start scripts/accept-incus.exs
 ```
 
 Host DNS must resolve the verified hostname. The local run used a private

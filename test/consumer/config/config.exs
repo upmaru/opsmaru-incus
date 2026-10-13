@@ -1,5 +1,4 @@
 import Config
-config :opsmaru, :deployment_mode, :embedded
 
 config :foundation_consumer, FoundationConsumer.Endpoint,
   adapter: Phoenix.Endpoint.Cowboy2Adapter,

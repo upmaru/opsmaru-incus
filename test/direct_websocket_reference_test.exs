@@ -4,13 +4,13 @@ defmodule Opsmaru.Incus.DirectWebSocketReferenceTest do
   alias Opsmaru.Incus.{Connection, Error, Server, WebSocket}
   alias Opsmaru.Incus.HTTP.Response
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture}
-  @driver Path.expand("../../.integration/incus-direct-websocket", __DIR__)
+  @driver Path.expand("../.integration/incus-direct-websocket", __DIR__)
   setup_all do
     File.mkdir_p!(Path.dirname(@driver))
 
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./directwebsocket"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

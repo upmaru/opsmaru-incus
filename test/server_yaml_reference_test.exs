@@ -2,7 +2,7 @@ defmodule Opsmaru.Incus.ServerYamlReferenceTest do
   use ExUnit.Case, async: true
   alias Opsmaru.Incus.{Error, Model, Projections}
   @moduletag timeout: 120_000
-  @driver Path.expand("../../.integration/server-yaml-driver", __DIR__)
+  @driver Path.expand("../.integration/server-yaml-driver", __DIR__)
 
   @realistic %{
     "config" => %{
@@ -106,7 +106,7 @@ defmodule Opsmaru.Incus.ServerYamlReferenceTest do
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./serveryaml"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

@@ -3,8 +3,19 @@ defmodule Opsmaru.EmbeddingTest do
   alias Opsmaru.{ClientSupervisor, Context}
   alias Opsmaru.Incus.Connection
 
-  test "actual dependency startup/restart remains passive under hostile web environment" do
-    Code.eval_file("scripts/check-embedded.exs")
+  test "library startup/restart is passive under a hostile web environment" do
+    System.put_env("PHX_SERVER", "true")
+    System.put_env("PORT", "not-a-port")
+    on_exit(fn -> Enum.each(["PHX_SERVER", "PORT"], &System.delete_env/1) end)
+    ports = MapSet.new(Port.list())
+    registered = MapSet.new(Process.registered())
+
+    assert Application.spec(:opsmaru_incus, :mod) == []
+    Application.stop(:opsmaru_incus)
+    {:ok, _} = Application.ensure_all_started(:opsmaru_incus)
+
+    assert MapSet.subset?(MapSet.new(Port.list()), ports)
+    assert MapSet.subset?(MapSet.new(Process.registered()), registered)
   end
 
   test "explicit host binding gates readiness without invoking platform adapters" do

@@ -1,12 +1,12 @@
 defmodule Opsmaru.Incus.TLSIdentityTest do
   use ExUnit.Case, async: true
   alias Opsmaru.TestSupport.TLSIdentity
-  @driver Path.expand("../../.integration/tls-identity-driver", __DIR__)
+  @driver Path.expand("../.integration/tls-identity-driver", __DIR__)
 
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./requestcontext"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )
@@ -33,7 +33,7 @@ defmodule Opsmaru.Incus.TLSIdentityTest do
 
     {out, status} =
       System.cmd("mise", ["exec", "--", "mix", "run", "--no-start", script, root],
-        env: [{"MIX_ENV", "library"}],
+        env: [{"MIX_ENV", "test"}],
         stderr_to_stdout: true
       )
 

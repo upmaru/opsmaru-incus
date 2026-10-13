@@ -12,7 +12,7 @@ defmodule Opsmaru.Incus.StreamsTest do
   alias Opsmaru.Incus.{Connection, Error, Response, Server, Streams}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
 
-  @reference_dir Path.expand("../reference", __DIR__)
+  @reference_dir Path.expand("reference", __DIR__)
   @extensions ["metrics", "network_acl_log", "console", "container_edit_metadata"]
   @binary_payload :binary.copy(<<0, 255, 128, 13, 10, 0, 97>>, 3_000)
 

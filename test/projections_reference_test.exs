@@ -1,12 +1,12 @@
 defmodule Opsmaru.Incus.ProjectionsReferenceTest do
   use ExUnit.Case, async: false
   alias Opsmaru.Incus.{Error, Model, Projections}
-  @driver Path.expand("../../.integration/projections-driver", __DIR__)
+  @driver Path.expand("../.integration/projections-driver", __DIR__)
 
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./projections"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

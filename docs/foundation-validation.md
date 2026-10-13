@@ -1,5 +1,14 @@
 # Foundation verification — rolling fixture ledger
 
+> **Extraction note (2026-10-13).** Everything below this note was recorded
+> while the client lived in [upmaru/opsmaru](https://github.com/upmaru/opsmaru)
+> on `feature/phoenix-bootstrap-and-remote-access`, up to `a00805d`. Revisions,
+> CI run links, `mise run check:library`/`MIX_ENV=library` commands and
+> PostgreSQL scaffold checks refer to that repository. The history was carried
+> into this repository with `test/library/` renamed to `test/`; test file
+> references below were updated to the new paths. New entries are recorded in
+> this repository against `mise run check`.
+
 ## Merge preparation — 2026-10-12
 
 The earlier corrected published runtime is
@@ -999,7 +1008,7 @@ its recorded runtime; Macus source and ordinary workload/data ownership are unch
 
 ## Task 3.9: native status-error helpers
 
-`test/library/status_error_reference_test.exs` builds the fixture-only
+`test/status_error_reference_test.exs` builds the fixture-only
 `test/reference/statuserror` driver with the pinned Go toolchain and compares
 StatusErrorf, the literal StatusError zero value, Error, Status, StatusErrorMatch
 and StatusErrorCheck. The pinned Go 1.25.14 `net/http` status text is embedded
@@ -1012,7 +1021,7 @@ partial evidence: 1140 partial and 140 missing. Task 3.9 remains open.
 
 ## Task 3.9: nested shared/api model schemas
 
-`test/library/nested_models_reference_test.exs` (239 cases) builds the
+`test/nested_models_reference_test.exs` (239 cases) builds the
 fixture-only `test/reference/nestedmodels` registry of 79 unchanged native types
 and compares acceptance, canonical round trips, schema/emitted key sets, empty
 and null inputs, and per-field rejection with `Model.decode/2`. Value generation
@@ -1025,7 +1034,7 @@ Focused runs, library compile with warnings as errors and strict Credo pass.
 
 ## Task 3.9: native YAML configuration decoding
 
-`test/library/native_yaml_reference_test.exs` builds the fixture-only
+`test/native_yaml_reference_test.exs` builds the fixture-only
 `test/reference/nativeyaml` driver (unchanged go-yaml v4 into api.ConfigMap and
 api.DevicesMap, optionally pre-populated) and compares a 318-row matrix covering
 scalar resolution, tags, anchors/aliases, merge keys, duplicates, documents and
@@ -1040,7 +1049,7 @@ errors, strict Credo, 944 library tests, embedded startup and strict OpenSpec pa
 
 ## Task 3.9: strict-subset YAML decoding
 
-`test/library/native_yaml_reference_test.exs` now asserts the contract (native
+`test/native_yaml_reference_test.exs` now asserts the contract (native
 result or rejection) on 310 reviewed rows and a seeded randomized set, requires
 realistic Incus config/profile/device documents to equal native, pins the
 recorded rejection categories against the native driver, and checks that
@@ -1053,7 +1062,7 @@ startup and strict OpenSpec pass.
 
 ## Task 3.9: ServerFiltered YAML rendering
 
-`test/library/server_yaml_reference_test.exs` builds the fixture-only
+`test/server_yaml_reference_test.exs` builds the fixture-only
 `test/reference/serveryaml` driver (unchanged `api.Server.Filtered()` with
 go-yaml v4 `yaml.Marshal`) and asserts byte equality or rejection for realistic,
 empty and null servers, a one- and two-atom string matrix used as values and
@@ -1065,7 +1074,7 @@ strict OpenSpec pass.
 
 ## Task 3.9: operation handlers and remote-operation waits
 
-`test/library/operation_handler_test.exs` builds the fixture-only
+`test/operation_handler_test.exs` builds the fixture-only
 `test/reference/operationhandlers` driver (unchanged `operation.AddHandler` and
 `RemoveHandler` on a DELETE-created operation) and compares delivered decoded
 operations, removal results, already-successful (no target) and already-failed
@@ -1078,7 +1087,7 @@ embedded startup and strict OpenSpec pass.
 
 ## Task 3.9: response model types
 
-`test/library/response_models_reference_test.exs` builds the fixture-only
+`test/response_models_reference_test.exs` builds the fixture-only
 `test/reference/responsemodels` driver with pinned Go and unchanged Incus v7.0.1
 types. Twelve tests compare canonical envelope/default/alias fields, integer
 validation and parsed RawMessage metadata, while independently extracting Go
@@ -1100,7 +1109,7 @@ acceptance. External review remains for the next significant batch.
 ## Task 3.9: bounded SFTP v3 convenience helpers
 
 The approved design section 4c defines the subset before implementation.
-`test/library/sftp_helpers_reference_test.exs` builds `test/reference/sftphelpers`
+`test/sftp_helpers_reference_test.exs` builds `test/reference/sftphelpers`
 using pinned Go, unchanged Incus v7.0.1 and pkg/sftp v1.13.10. Its 22 tests compare
 both real convenience helpers over private Unix and verified mutual TLS:
 project/member/upgrade requests, INIT/version/extensions, all five supported

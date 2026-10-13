@@ -3,7 +3,7 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, DynamicConsole, Error, Server, WebSocket}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture, WireComparison}
-  @driver Path.expand("../../.integration/incus-dynamic-console-driver", __DIR__)
+  @driver Path.expand("../.integration/incus-dynamic-console-driver", __DIR__)
   @extensions ["instances", "console", "console_vga_type", "console_force"]
   @payload <<255, 0, 128, 42>>
 
@@ -12,7 +12,7 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
 
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./dynamicconsole"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

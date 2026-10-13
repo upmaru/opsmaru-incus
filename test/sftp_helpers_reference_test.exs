@@ -4,7 +4,7 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
   alias Opsmaru.Incus.{Connection, Error, RequestContext, Server, SFTP}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
 
-  @driver Path.expand("../../.integration/sftp-helpers-driver", __DIR__)
+  @driver Path.expand("../.integration/sftp-helpers-driver", __DIR__)
   @handle <<255, 0, 128, 42>>
   @read <<0, 255, 128, 10, 42>>
   @write <<128, 255, 0, 13, 10>>
@@ -15,7 +15,7 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
 
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./sftphelpers"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

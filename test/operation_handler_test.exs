@@ -3,13 +3,13 @@ defmodule Opsmaru.Incus.OperationHandlerTest do
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Error, EventListener, Migration, Model, Operation, Server}
   alias Opsmaru.TestSupport.WebSocketFixture
-  @driver Path.expand("../../.integration/operation-handlers-driver", __DIR__)
+  @driver Path.expand("../.integration/operation-handlers-driver", __DIR__)
   @time "2026-01-01T00:00:00Z"
 
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./operationhandlers"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

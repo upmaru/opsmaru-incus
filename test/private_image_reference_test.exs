@@ -3,7 +3,7 @@ defmodule Opsmaru.Incus.PrivateImageReferenceTest do
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Error, Images, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
-  @driver Path.expand("../../.integration/incus-private-image-driver", __DIR__)
+  @driver Path.expand("../.integration/incus-private-image-driver", __DIR__)
   @secret "private+/token? é&="
 
   setup_all do
@@ -11,7 +11,7 @@ defmodule Opsmaru.Incus.PrivateImageReferenceTest do
 
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "."],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )

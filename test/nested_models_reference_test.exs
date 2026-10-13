@@ -4,8 +4,8 @@ defmodule Opsmaru.Incus.NestedModelsReferenceTest do
 
   alias Opsmaru.Incus.Model
 
-  @driver Path.expand("../../.integration/nested-models-driver", __DIR__)
-  @schemas Jason.decode!(File.read!(Path.expand("../../priv/incus/models.json", __DIR__)))[
+  @driver Path.expand("../.integration/nested-models-driver", __DIR__)
+  @schemas Jason.decode!(File.read!(Path.expand("../priv/incus/models.json", __DIR__)))[
              "models"
            ]
 
@@ -94,7 +94,7 @@ defmodule Opsmaru.Incus.NestedModelsReferenceTest do
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./nestedmodels"],
-        cd: Path.expand("../reference", __DIR__),
+        cd: Path.expand("reference", __DIR__),
         env: [{"GOTOOLCHAIN", "local"}],
         stderr_to_stdout: true
       )
