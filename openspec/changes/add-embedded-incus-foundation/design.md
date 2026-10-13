@@ -8,7 +8,7 @@ Macus has an in-progress headless Phoenix/Cowboy server, private Swift runtime.s
 
 This is the first delivery milestone. Opsmaru's `add-compute-substrate` consumes its library/client and later adds tools, task adapters, central targets and connectors. Opsmaru's `add-remote-api-and-oauth` supplies later central identity/REST/browser adapters. Neither later change is a prerequisite here.
 
-The separately proposed Opsmaru [add-embeddable-incus-gateway](https://github.com/upmaru/opsmaru/blob/feature/phoenix-bootstrap-and-remote-access/openspec/changes/add-embeddable-incus-gateway/design.md) adds optional reusable native HTTP/upgrade relay mechanics under Opsmaru.Incus.Gateway. OpsmaruWeb or MacusWeb supplies the explicitly selected endpoint/router and host policy. It is not a prerequisite for direct real-Incus client acceptance or a replacement for outstanding typed-client behavior.
+The separately proposed [add-embeddable-incus-gateway](../add-embeddable-incus-gateway/design.md) (planned in Opsmaru, moved to this repository on 2026-10-13) adds optional reusable native HTTP/upgrade relay mechanics under Opsmaru.Incus.Gateway. The host (MacusWeb) supplies the explicitly selected endpoint/router and host policy. It is not a prerequisite for direct real-Incus client acceptance or a replacement for outstanding typed-client behavior.
 
 ## Goals / Non-Goals
 
