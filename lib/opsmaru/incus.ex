@@ -15,6 +15,7 @@ defmodule Opsmaru.Incus do
   alias Opsmaru.Incus.RawChannel
   alias Opsmaru.Incus.Response
   alias Opsmaru.Incus.Server
+  alias Opsmaru.Incus.SFTP
   alias Opsmaru.Incus.Transfer
   alias Opsmaru.Incus.Transport
   @enforce_keys [:connection, :context, :server]
@@ -33,6 +34,16 @@ defmodule Opsmaru.Incus do
   def call(client, "GetImageSecret", %{"fingerprint" => fingerprint}, []),
     do: Images.image_secret(client, fingerprint)
 
+  def call(client, "GetInstanceFileSFTP", %{"name" => name}, []), do: file_sftp(client, name)
+
+  def call(
+        client,
+        "GetStoragePoolVolumeFileSFTP",
+        %{"pool" => pool, "type" => type, "name" => name},
+        []
+      ),
+      do: volume_file_sftp(client, pool, type, name)
+
   def call(client, method, arguments, opts),
     do: API.call(client, method, arguments, opts)
 
@@ -41,7 +52,13 @@ defmodule Opsmaru.Incus do
     do:
       Enum.sort(
         API.methods() ++
-          ["GetImageAliasType", "GetImageAliasArchitectures", "GetImageSecret"]
+          [
+            "GetImageAliasType",
+            "GetImageAliasArchitectures",
+            "GetImageSecret",
+            "GetInstanceFileSFTP",
+            "GetStoragePoolVolumeFileSFTP"
+          ]
       )
 
   @doc "Download a native ACL log to a bounded acknowledged binary sink."
@@ -65,6 +82,12 @@ defmodule Opsmaru.Incus do
       )
     end
   end
+
+  @doc "Initialize the approved owner-bound SFTP v3 file-I/O subset."
+  def file_sftp(client, instance), do: SFTP.instance(client, instance)
+
+  @doc "Initialize the bounded volume SFTP v3 subset after its native extension check."
+  def volume_file_sftp(client, pool, type, name), do: SFTP.volume(client, pool, type, name)
 
   @doc "Open the native NBD byte connection after checking the native extension."
   def nbd(client, instance, opts \\ []) do

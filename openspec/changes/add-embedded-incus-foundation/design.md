@@ -80,6 +80,28 @@ Optional delta retrieval/conversion requires an explicit host adapter and host-p
 
 Acceptance separately verifies pinned native projections/full-file protocol and independent adapter bounds, checksum/byte fidelity, ownership and cleanup. Fake conversion proves only the adapter contract. Actual xdelta conversion and subprocess/file cleanup require installed-adapter acceptance; real Incus and Macus hardware evidence remain distinct. The reference pin and missing-entry ledger remain unchanged until each slice has verification evidence.
 
+### 4c. Approved bounded SFTP v3 helper subset
+
+The two native SFTP convenience constructors remain in scope. On 2026-10-13
+the user approved a safe v3 subset after source inspection showed that OTP's
+SSH SFTP client cannot consume Incus's raw upgraded stream. Keep the existing
+raw-channel APIs. New helpers initialize v3, retain advertised extension bytes
+and expose explicit open, positional read/write, file-handle close and session
+close. Other SFTP operations fail explicitly; no SSH discovery, host command,
+runtime Go sidecar or local file is introduced. This is partial native evidence,
+not a full pkg/sftp.Client port or installed-backend acceptance.
+
+Use one owner-bound request at a time with fixed packet, handle, extension,
+stream and absolute deadline limits. Compare initialization, request bytes,
+binary responses, status codes/messages and helper cleanup against unchanged
+pinned Incus and pkg/sftp fixtures over Unix and verified HTTPS. Independent
+fixtures must cover fragmented/coalesced packets, malformed/version/oversize
+rejection, caller loss, local cancellation and stalled I/O. Close local resources
+after negotiation or protocol failure. A possibly dispatched file mutation
+must retain its request identity and uncertainty without automatic replay or
+deleting backend file state. Unsupported/missing protocol scope and task 3.9's
+remaining closure gates stay explicit.
+
 ### 5. Delivery and subsequent work
 
 After implementation and fixture/consumer checks, publish an actual immutable feature revision that Macus can lock, with source/reference provenance and documented direct Elixir usage. Do not invent a Hex release/version or require a sibling checkout for CI/installed consumers. Macus's local gateway/runtime/proxy/client work may proceed from this foundation; later tool/task integration explicitly waits for add-compute-substrate's corresponding milestone. Central enrollment/connectivity never gates standalone embedding/client progress.

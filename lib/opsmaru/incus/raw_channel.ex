@@ -52,6 +52,8 @@ defmodule Opsmaru.Incus.RawChannel do
   def send_data(channel, bytes), do: call(channel, {:send, bytes}, 3_600_100)
   def shutdown_write(channel), do: call(channel, :shutdown_write, 3_600_100)
   def close(channel), do: call(channel, :close, 5_000)
+  @doc false
+  def notify_read_eof(channel), do: call(channel, :notify_read_eof, 5_000)
 
   defp call(channel, message, timeout) do
     GenServer.call(channel.pid, message, timeout)
@@ -97,6 +99,7 @@ defmodule Opsmaru.Incus.RawChannel do
               written: 0,
               pending: nil,
               read_eof: false,
+              notify_read_eof: false,
               write_eof: false
             }
 
@@ -214,6 +217,11 @@ defmodule Opsmaru.Incus.RawChannel do
 
   def handle_call(:close, _, state), do: {:stop, :normal, :ok, state}
 
+  def handle_call(:notify_read_eof, _, state) do
+    if state.read_eof, do: send(state.owner, {state.ref, :read_eof})
+    {:reply, :ok, %{state | notify_read_eof: true}}
+  end
+
   @impl true
   def handle_info({tag, socket, bytes}, %{socket: socket} = state) when tag in [:tcp, :ssl] do
     case enqueue(state, bytes) do
@@ -230,6 +238,7 @@ defmodule Opsmaru.Incus.RawChannel do
   def handle_info({tag, socket}, %{socket: socket} = state)
       when tag in [:tcp_closed, :ssl_closed] do
     state = %{state | read_eof: true}
+    if state.notify_read_eof, do: send(state.owner, {state.ref, :read_eof})
 
     if state.pending do
       {from, _, timer} = state.pending

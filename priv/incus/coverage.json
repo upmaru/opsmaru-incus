@@ -1267,10 +1267,12 @@
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceFileSFTP",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/sftp.ex",
+      "evidence": [
+        "test/library/sftp_helpers_reference_test.exs"
+      ],
+      "note": "User-approved bounded SFTP v3 subset: unchanged Incus helper initialization, extensions, five open modes, positional binary read/write and file/session close compared over Unix and verified HTTPS; independent malformed/oversize/deadline/cancellation/owner/EOF cleanup fixtures. One owner/request, bounded packets/handles; short DATA and other protocol operations reject. Native status code/message/language retained rather than Go filesystem-error normalization. Full pkg/sftp.Client parity and new installed/backend/hardware acceptance are not claimed."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceFileSFTPConn",
@@ -2216,10 +2218,12 @@
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumeFileSFTP",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/sftp.ex",
+      "evidence": [
+        "test/library/sftp_helpers_reference_test.exs"
+      ],
+      "note": "User-approved bounded SFTP v3 subset: unchanged Incus helper initialization, extensions, five open modes, positional binary read/write and file/session close compared over Unix and verified HTTPS; independent malformed/oversize/deadline/cancellation/owner/EOF cleanup fixtures. One owner/request, bounded packets/handles; short DATA and other protocol operations reject. Native status code/message/language retained rather than Go filesystem-error normalization. Full pkg/sftp.Client parity and new installed/backend/hardware acceptance are not claimed."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumeFileSFTPConn",
@@ -4461,10 +4465,12 @@
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceFileSFTP",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/sftp.ex",
+      "evidence": [
+        "test/library/sftp_helpers_reference_test.exs"
+      ],
+      "note": "User-approved bounded SFTP v3 subset: unchanged Incus helper initialization, extensions, five open modes, positional binary read/write and file/session close compared over Unix and verified HTTPS; independent malformed/oversize/deadline/cancellation/owner/EOF cleanup fixtures. One owner/request, bounded packets/handles; short DATA and other protocol operations reject. Native status code/message/language retained rather than Go filesystem-error normalization. Full pkg/sftp.Client parity and new installed/backend/hardware acceptance are not claimed."
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceFileSFTPConn",
@@ -5435,10 +5441,12 @@
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumeFileSFTP",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/sftp.ex",
+      "evidence": [
+        "test/library/sftp_helpers_reference_test.exs"
+      ],
+      "note": "User-approved bounded SFTP v3 subset: unchanged Incus helper initialization, extensions, five open modes, positional binary read/write and file/session close compared over Unix and verified HTTPS; independent malformed/oversize/deadline/cancellation/owner/EOF cleanup fixtures. One owner/request, bounded packets/handles; short DATA and other protocol operations reject. Native status code/message/language retained rather than Go filesystem-error normalization. Full pkg/sftp.Client parity and new installed/backend/hardware acceptance are not claimed."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumeFileSFTPConn",

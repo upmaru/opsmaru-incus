@@ -82,3 +82,15 @@ Response, ResponseRaw and ResponseType values and extracts their float64 bits;
 it uses only stdin/stdout and performs no network or filesystem operation.
 Raw JSON spelling/whitespace, duplicate merging and YAML are not ported;
 documented parser and budget rejections remain visible as partial evidence.
+
+The bounded `lib/opsmaru/incus/sftp.ex` helper lifecycle adapts pinned
+`client/{incus_instances,incus_storage_volumes}.go` (Apache-2.0).
+`lib/opsmaru/incus/sftp/packet.ex` reproduces the supported v3 packet forms from
+the pinned pkg/sftp v1.13.10 `client.go`/`packet.go` (BSD-2-Clause,
+Copyright (c) 2013, Dave Cheney). Its complete license is included as
+`pkg-sftp-BSD-2-Clause.txt`. The fixture-only `test/reference/sftphelpers` driver
+imports both unchanged libraries, uses stdin/stdout and explicitly supplied
+private Unix/TLS fixtures, and performs no local file operation. The runtime
+has no Go sidecar, SSH discovery, host command or local file implementation.
+The approved subset and remaining acceptance gates are recorded in the design
+and closure ledger.

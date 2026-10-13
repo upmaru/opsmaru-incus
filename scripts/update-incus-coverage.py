@@ -21,6 +21,7 @@ for name in ['GetInstanceFile','CreateInstanceFile','CreateInstanceFromBackup']:
  helpers[name]=('lib/opsmaru/incus/files.ex',['test/library/file_reference_test.exs'])
 for name in ['GetInstanceFileSFTPConn','GetInstanceNBDConn']:
  helpers[name]=('lib/opsmaru/incus/raw_channel.ex',['test/library/raw_channel_test.exs','test/library/native_upgrade_reference_test.exs','test/library/tls_stream_test.exs'])
+sftp_helpers = ['GetInstanceFileSFTP','GetStoragePoolVolumeFileSFTP']
 for name in ['GetEvents','GetEventsByType','GetEventsAllProjects','GetEventsAllProjectsByType','RawWebsocket','GetOperationWebsocket']:
  helpers[name]=('lib/opsmaru/incus/web_socket.ex',['test/library/web_socket_test.exs','test/library/tls_stream_test.exs'])
 for name in ['operation.Wait','operation.Cancel','operation.Get']:
@@ -140,6 +141,8 @@ for entry in inv['entries']:
   row.update(status='partial',elixir='lib/opsmaru/incus/native_config.ex',evidence=['test/library/native_config_reference_test.exs','test/library/native_yaml_reference_test.exs'],note='Explicit bounded native JSON coercion and a strict-subset YAML decoder that equals native go-yaml v4 or rejects; YAML outside the subset and full type parity remain open.')
  elif entry['package']=='client' and entry['kind']=='type' and entry['name'] in client_interface_types:
   impl,evidence=client_interface_types[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='Immutable handle counterpart of the native interface; every interface method has bounded partial evidence. Native mutable listener lifetime and asynchronous handler attachment are not reproduced.')
+ elif entry['package']=='client' and entry['kind'] in ['method','interface_method'] and name in sftp_helpers:
+  row.update(status='partial',elixir='lib/opsmaru/incus/sftp.ex',evidence=['test/library/sftp_helpers_reference_test.exs'],note='User-approved bounded SFTP v3 subset: unchanged Incus helper initialization, extensions, five open modes, positional binary read/write and file/session close compared over Unix and verified HTTPS; independent malformed/oversize/deadline/cancellation/owner/EOF cleanup fixtures. One owner/request, bounded packets/handles; short DATA and other protocol operations reject. Native status code/message/language retained rather than Go filesystem-error normalization. Full pkg/sftp.Client parity and new installed/backend/hardware acceptance are not claimed.')
  elif entry['kind'] in ['method','interface_method'] and name in methods:
   row.update(status='partial',elixir='lib/opsmaru/incus/api.ex',evidence=['test/library/resource_slice_test.exs'] + (['test/library/session_test.exs'] if name in ['ExecInstance','ConsoleInstance'] else []) + (['test/library/migration_test.exs'] if name.startswith('Migrate') else []),note='Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate.')
  elif entry['kind'] in ['method','interface_method','function'] and (entry['name'] in helpers or name in helpers):

@@ -32,6 +32,8 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `Files.volume_read/6`, `volume_create/7`, `volume_delete/5`, volume/bucket backup helpers, `backup_stream/4` | Twelve native file/archive helpers have differential byte/header/query evidence; full option/platform/backend coverage remains separate |
 | `Streams.metrics/2`, `network_acl_log/3`, `instance_logfile/4`, `instance_console_log/3`, `instance_template_file/4`, `create_instance_template_file/4`, `instance_debug_memory/4` | Native binary/text handoff to an acknowledged host sink or bounded source; no collector or implicit file writes |
 | `Incus.sftp/2`, `nbd/3`, `volume_sftp/4`, `volume_nbd/5` | Native raw 101 byte channels; consumers supply their SFTP/NBD implementation |
+| `Incus.file_sftp/2`, `volume_file_sftp/4` | Approved bounded SFTP v3 subset: initialize a creator-owned session over the existing raw upgrade; volume extension, host identity/readiness and verified transport still apply |
+| `SFTP.extensions/1`, `open/3`, `read_at/4`, `write_at/4`, `close_file/2`, `close/1` | One request at a time; explicit file modes, native opaque handles and byte/status fidelity; other operations reject and possibly dispatched mutations are never replayed |
 | `RawChannel.recv/2`, `send_data/2`, `shutdown_write/1`, `close/1` | Bounded binary duplex and native half-close |
 | `Operation.raw/4`, `from_response/2`, `poll/1`, `wait/2`, `cancel/1`, `websocket/2` | Bound native handles and raw operation ETags; authoritative completion and supported cancellation |
 | `Events.subscribe/2`, `next/2`, `send/2`, `close/1` | Native events through an owner-monitored bounded WebSocket queue; sending acknowledges the local write, not backend processing |
@@ -530,3 +532,46 @@ including exponent forms, whose sign the JSON parser discards; decimal signed
 zero is preserved. Failures return a redacted `:invalid_response_model` error.
 This pure helper performs no I/O, does not create an accepted operation and
 does not establish YAML or complete Response type parity.
+
+
+The native names `GetInstanceFileSFTP` (`%{"name" => instance}`) and
+`GetStoragePoolVolumeFileSFTP` (`%{"pool" => pool, "type" => type, "name" => name}`)
+also dispatch through `Incus.call/4` with no options. They return `SFTP` sessions,
+distinct from the raw connections returned by `sftp/2` and `volume_sftp/4`.
+Only the creating process can invoke session operations. Both sessions and
+`SFTP.Handle` values redact native bytes on inspection; explicit handle fields
+are privileged data for the host.
+
+```elixir
+{:ok, sftp} = Incus.file_sftp(client, "instance")
+{:ok, file} = SFTP.open(sftp, "/known-size-file", :read)
+{:ok, bytes} = SFTP.read_at(sftp, file, 0, 1024)
+:ok = SFTP.close_file(sftp, file)
+:ok = SFTP.close(sftp)
+```
+
+Supported modes are `:read`, `:write`, `:read_write`, `:append` (existing file),
+and `:create` (read/write plus create/truncate). Read/write calls accept positive
+sizes up to 128 KiB and nonnegative signed-int64 offsets. Reads accept one full
+requested DATA response or EOF; short/empty DATA rejects rather than generating
+more requests. Paths are valid UTF-8, NUL-free and at most 4096 bytes. Each
+outgoing packet must fit both `max_request_bytes` and `max_chunk_bytes`, so a
+128-KiB write requires room for its native framing as well. Reply packets are
+limited to 132096 bytes and `max_response_bytes`; raw stream/queue/chunk limits
+still apply. Extensions are limited to 64 pairs (1024-byte names/4096-byte data),
+and live nonempty handle values to 256 bytes, with at most
+`min(queue_limit, 128)` handles.
+
+Every request has an absolute local deadline. Closing, protocol failure, caller
+loss, cancellation, remote EOF or local stream expiry releases the local channel;
+stream expiry does not cancel a shared host context or another session. Failed
+file-close attempts invalidate the handle as natively. SFTP status errors retain
+wire code/message/language; known codes are not replaced by Go filesystem errors.
+Unanswered or malformed replies to potentially dispatched mutations return
+`:uncertain` with the native request ID when known. Privileged error response data
+retains the connection, verified host identity and session reference even after
+the process ends. Reconcile backend file state
+before any further mutation; the helper never replays, unlinks a file or sends
+Incus cancellation. `unsupported/2` returns `:unsupported_sftp_operation` for
+other protocol operations. This remains a fixture-verified subset, not complete
+SFTP, directory/stat/attribute/extension-operation or installed-backend acceptance.

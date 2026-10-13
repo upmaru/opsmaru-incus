@@ -1095,3 +1095,27 @@ Final formatting, warnings-as-errors library compilation, strict Credo, all
 PostgreSQL and full standalone `mise run check` were not started; this slice
 adds fixture evidence only, with no new installed service/backend/hardware
 acceptance. External review remains for the next significant batch.
+
+
+## Task 3.9: bounded SFTP v3 convenience helpers
+
+The approved design section 4c defines the subset before implementation.
+`test/library/sftp_helpers_reference_test.exs` builds `test/reference/sftphelpers`
+using pinned Go, unchanged Incus v7.0.1 and pkg/sftp v1.13.10. Its 22 tests compare
+both real convenience helpers over private Unix and verified mutual TLS:
+project/member/upgrade requests, INIT/version/extensions, all five supported
+open flags, native IDs, binary reads/writes through the 128-KiB limit, EOF and
+file/session close, including handle invalidation after close failure. Thirty
+seeded version/extension cases compare native acceptance and data. Independent
+fixtures verify fragmentation/coalescing, malformed/oversized replies,
+pre-dispatch bounds, cancellation, absolute deadlines, caller loss, idle EOF,
+unrelated-process protection and shared-context isolation after stream expiry.
+All 22 focused tests pass. Four method/interface entries gain partial evidence:
+1239 partial, 41 missing, complete_port=false. Full client behavior, other
+protocol operations and installed/backend/hardware acceptance remain separate.
+Final formatting, warnings-as-errors library compilation, strict Credo, all
+981 library tests, passive embedded startup/restart and strict OpenSpec pass.
+Failure regressions retain original backend, identity, session and native request
+ID after the process ends. PostgreSQL/full standalone `mise run check`, a new
+Linux/consumer build and significant-batch review were not run for this slice;
+those remain distinct gates. No service, real backend or Macus state was changed.

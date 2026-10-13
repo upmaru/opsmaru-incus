@@ -5,7 +5,7 @@ closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
-The declaration manifest currently has 1235 partial and 45 missing entries.
+The declaration manifest currently has 1239 partial and 41 missing entries.
 Declarations include Go methods, interfaces, types, constants and transport
 abstractions; these counts are not endpoint counts or complete parity evidence.
 No partial mapping is promoted to completion by this continuation.
@@ -27,7 +27,8 @@ alias-architecture and no-op disconnect now have pinned differential evidence. N
 Remaining groups:
 
 - Full copy/cross-cluster option matrices, negotiation and relay failure cleanup.
-- Full SFTP protocol helpers beyond the native raw byte connections.
+- SFTP behavior outside the approved v3 file-I/O subset and its remaining
+  supported-scope/acceptance gates; full pkg/sftp.Client parity is not claimed.
 - Remaining constructors/transport abstractions, operation and remote-operation
   handlers/waits and exhaustive context/error paths.
 - Full dynamic console callback/IO and recorded exec-output helpers.
@@ -455,3 +456,52 @@ next significant batch review. Three declarations gain partial evidence:
 Formatting, warnings-as-errors library compilation, strict Credo, 959 library
 tests, passive embedded startup/restart and strict OpenSpec all pass. Full
 standalone checks and any new installed/backend/hardware acceptance are separate.
+
+
+## Approved bounded SFTP v3 helpers
+
+On 2026-10-13 the user approved a safe SFTP v3 subset for
+`GetInstanceFileSFTP` and `GetStoragePoolVolumeFileSFTP`. OTP's `ssh_sftp` requires
+an SSH connection; Incus supplies a raw SFTP upgrade. The approved design is
+recorded in section 4c and was strictly validated before implementation. Existing
+`Incus.sftp/2` and `volume_sftp/4` still expose raw channels. New
+`Incus.file_sftp/2`, `volume_file_sftp/4` and both native names through `call/4`
+return an owner-bound `SFTP` session with initialization, extension metadata,
+five explicit open modes, positional read/write, file close and session close.
+
+The unchanged native driver calls both actual Incus helpers and pkg/sftp file
+methods against private Unix and mutually verified HTTPS fixtures. Comparisons
+cover HTTP paths/project/member/upgrade, INIT v3, duplicate extension last-wins,
+open flags, binary request/response bytes and native IDs, EOF, successful close
+and failed close's handle invalidation. Maximum 128-KiB data reads/writes compare
+exactly; a 30-row seeded version/extension corpus checks success/rejection.
+Native constructor failures demonstrably close the peer connection. Independent
+fixtures cover the pinned coalesced-byte exception, fragmentation, malformed/
+oversized replies, pre-I/O validation, absolute deadlines, cancellation, caller
+loss, idle EOF and stream expiry. Local stream expiry leaves a shared host request
+context and another session usable. Inspect redacts session and native handle
+bytes; failed mutations retain request identity/uncertainty without replay.
+
+Scope is explicit: one creator-owned request at a time; at most 64 extensions
+(name 1024/data 4096 bytes), 128 live handles further limited by queue_limit,
+256-byte nonempty handle values, 4096-byte UTF-8/NUL-free paths, positive transfers
+up to 128 KiB, nonnegative int64 offsets and 132096-byte reply packets further
+limited by max_response_bytes. Outgoing packets must fit request/chunk budgets.
+Short/empty DATA, invalid/mismatched/trailing packets, unsupported versions and
+other SFTP operations reject. Reads do not perform Go's additional requests to
+fill a short result; directory/stat/attribute/extension operations, arbitrary
+flags, concurrent pipelines and full pkg/sftp.Client behavior are not provided.
+Status code/message/language are retained from the wire rather than replacing
+known codes with Go filesystem errors. These differences do not close 3.9.
+
+Self-review added regressions for request timeout identity, invalidation after a
+failed close, unrelated-PID protection, idle EOF cleanup and shared-context
+isolation. Four method/interface declarations gain partial mappings: 1239 partial,
+41 missing, complete_port=false. No entry is promoted to complete. New Linux,
+immutable-consumer, installed/backend/Macus hardware and significant-batch review
+acceptance remain separate; no such acceptance follows from these fixtures.
+The final slice checks pass: formatting, warnings-as-errors library compilation,
+strict Credo, 981 library tests, passive embedded startup/restart and strict
+OpenSpec. SFTP failure values retain the original connection, verified host
+identity, session reference and native request ID for reconciliation. PostgreSQL
+and full standalone checks were not started. Task 3.9 remains unchecked.
