@@ -10,6 +10,15 @@ Declarations include Go methods, interfaces, types, constants and transport
 abstractions; these counts are not endpoint counts or complete parity evidence.
 No partial mapping is promoted to completion by this continuation.
 
+On 2026-10-13 the user approved task 3.9 completion against a verified Incus
+REST endpoint/method inventory, native streaming/upgrade contracts and the public
+client behavior required by `add-incus-operations`. Literal Go declaration parity
+is a separate claim: keep this declaration ledger and `complete_port=false`
+truthful even when the task's behavioral gate is eventually satisfied. The 268
+JSON method descriptors currently cover 188 distinct verb/path pairs; these are
+not yet a verified complete REST inventory. Required protocol/option/error
+behavior and explicit supported scope still need evidence.
+
 Earlier verified slices include the four response metadata extraction helpers,
 operation-to-certificate/cluster token conversion and both token String helpers,
 and the five EventListener lifecycle helpers. Permanent unchanged-native
@@ -54,7 +63,8 @@ escalation or temporary conversion directory. SimpleStreams remains in scope.
 
 ## Closure gate
 
-Every supported remaining behavior needs implementation and pinned differential
+Under the approved endpoint/method, streaming and consumer-behavior gate, every
+supported remaining behavior needs implementation and pinned differential
 or independent protocol evidence, including errors, extension checks, project/
 member selection, operation identities, credential redaction, bounded queues/
 deadlines/streams and cleanup. Possibly accepted mutations must never be replayed.
@@ -505,3 +515,41 @@ strict Credo, 981 library tests, passive embedded startup/restart and strict
 OpenSpec. SFTP failure values retain the original connection, verified host
 identity, session reference and native request ID for reconciliation. PostgreSQL
 and full standalone checks were not started. Task 3.9 remains unchecked.
+
+## Bounded noninteractive exec collection — 2026-10-13
+
+`Session.collect/4` consumes an already accepted creator-owned noninteractive
+live exec session. Both host sinks must acknowledge each binary chunk with `:ok`.
+The caller sends stdin explicitly before collection; the helper sends its native
+write barrier. At most one read per output channel is outstanding, so a blocked
+stdout cannot prevent stderr delivery. Aggregate stdout/stderr payload bytes,
+per-chunk connection limits and an absolute collection deadline bound work,
+including callbacks and authoritative operation completion. Final success retains
+the operation, native exit status and per-stream delivered byte counts. A nonzero
+guest exit remains data. Output EOF/barriers alone cannot establish completion.
+
+The unchanged native `ExecInstance` driver compares actual stdin, binary stdout/
+stderr, barriers, project/member POST paths/bodies and exit status over private
+Unix and verified mutual HTTPS. Comparisons explicitly supply all native exec
+default fields; the library's lossless model still does not materialize Go's
+omitted zero values. Independent fixtures verify exact aggregate limits, excess
+output, sink rejection/exception, exit-trapping callback deadlines, host
+cancellation, owner loss (including peer-observed closure), concurrent output,
+normal close versus malformed barrier/abrupt disconnect and operation failures.
+
+Scope stays bounded: live noninteractive sessions with `wait-for-websocket=true`,
+stdin/stdout/stderr channels and optional control; both sinks are mandatory.
+Only empty text barriers and normal stream EOF end output. Nonempty text rejects
+rather than reproducing native acceptance of any text as EOF. Frames exceeding
+the host chunk limit reject rather than splitting or buffering. Invalid options,
+foreign creators and recorded/interactive sessions reject before channel IO and
+leave the session usable by its creator. Collection closes all local channels
+after it starts; local expiry never cancels a shared host context or the backend.
+No replay, recorded-file retrieval/deletion, console collector or MCP tool is
+added. Sink side effects already acknowledged before failure remain host-owned.
+
+The user approved retaining this bounded subset with its larger fixture evidence
+after the size stop. The two ExecInstance declaration mappings gain partial
+evidence; the 31 missing Go types, other missing declarations and all previous
+gaps remain visible: 1239 partial, 41 missing, `complete_port=false`. Task 3.9
+stays open under the new endpoint/method, streaming and consumer-behavior gate.

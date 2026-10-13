@@ -1156,3 +1156,33 @@ after deadline + cleanup budget + 100 ms; the test now accepts it, checks its
 call identity and still requires worker termination and exactly one deadline
 cleanup. No library code changed. Full local `mise run check`: 981 tests, 0
 failures; both files passed 5 repeated runs.
+
+## Bounded noninteractive exec collection — 2026-10-13
+
+The endpoint/method, streaming/upgrade and consumer-required behavior completion
+gate was approved and strictly validated before implementation. The native
+declaration ledger remains a separate parity record; task 3.9 is still open.
+`Session.collect/4` adds the approved bounded live noninteractive output subset.
+
+The final local `mise run check` passes formatting, warnings-as-errors compile,
+strict Credo, all 991 database-free fixture tests and all three strict OpenSpec
+changes. `mise run check:reference` passes the Go inventory/schema checks and
+all 188 native constants. Coverage regeneration is byte-identical: 1239 partial,
+41 missing, `complete_port=false`. The pinned inventory, schemas, method/constant
+catalogues, reference revision and Go locks are unchanged.
+
+Ten new tests use unchanged native ExecInstance IO over private Unix and verified
+mutual HTTPS plus independent limits, sink/deadline/cancellation/owner cleanup,
+peer closure and concurrent-output fixtures. Self-review tightened the final
+post-poll deadline check and made abrupt disconnect causal after acceptance,
+without a normal output barrier. Disconnect errors can arise while a read is
+pending or after the channel process has ended; both retain accepted identity
+and fail visibly. Local collection expiry also leaves a shared host request
+context active and the operation available for reconciliation. No tight elapsed
+wall-clock success assertion was added.
+
+Own source review is complete. This single slice is left for the next significant
+batch Greptile review. Fresh pushed-revision consumer and ubuntu-24.04/macos-15
+CI results are separate publication gates recorded on the feature PR; local
+fixture success alone does not establish them. No real Incus, installed adapter,
+gateway, shared-tool, central-service or Macus hardware acceptance was attempted.

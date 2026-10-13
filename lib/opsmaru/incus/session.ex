@@ -2,18 +2,39 @@ defmodule Opsmaru.Incus.Session do
   @moduledoc "Native exec/console channels and controls, retaining accepted operation identity."
   alias Opsmaru.Incus
   alias Opsmaru.Incus.Error
+  alias Opsmaru.Incus.ExecOutput
   alias Opsmaru.Incus.Model
   alias Opsmaru.Incus.Operation
   alias Opsmaru.Incus.WebSocket
-  defstruct [:operation, channels: %{}]
+  defstruct [:operation, :owner, collectable?: false, channels: %{}]
 
   def exec(client, instance, body) do
+    body = Model.encode(body)
+
     with {:ok, response} <-
            Incus.call(client, "ExecInstance", %{"instanceName" => instance}, body: body),
-         {:ok, operation} <- Operation.from_response(client, response) do
-      channels(operation)
+         {:ok, operation} <- Operation.from_response(client, response),
+         {:ok, session} <- channels(operation) do
+      collectable? =
+        body["interactive"] in [nil, false] and body["record-output"] in [nil, false] and
+          body["wait-for-websocket"] == true
+
+      {:ok, %{session | collectable?: collectable?}}
     end
   end
+
+  @doc """
+  Collect creator-owned live noninteractive exec output through two binary sinks
+  returning `:ok`. Send stdin with `input/2` first; collection sends its write
+  barrier, closes local channels after collection starts and never cancels Incus.
+  `:timeout` covers collection, callbacks and final operation wait (at most the
+  connection's stream timeout); `:max_output_bytes` bounds stdout + stderr.
+  Returns final `:operation`, native `:exit_status` and per-stream byte counts.
+  A limit fails visibly rather than truncating. Recorded/interactive sessions
+  and foreign creators reject before IO. See `docs/incus-client.md` for scope.
+  """
+  def collect(session, stdout, stderr, opts \\ []),
+    do: ExecOutput.collect(session, stdout, stderr, opts)
 
   def console(client, instance, body) do
     body = Model.encode(body)
@@ -34,8 +55,9 @@ defmodule Opsmaru.Incus.Session do
            name in ["0", "1", "2", "control"] and is_binary(secret) and
              byte_size(secret) in 1..4096
          end) do
-      Enum.reduce_while(fds, {:ok, %__MODULE__{operation: operation}}, fn {name, secret},
-                                                                          {:ok, session} ->
+      initial = %__MODULE__{operation: operation, owner: self()}
+
+      Enum.reduce_while(fds, {:ok, initial}, fn {name, secret}, {:ok, session} ->
         case Operation.websocket(operation, secret) do
           {:ok, channel} ->
             {:cont, {:ok, %{session | channels: Map.put(session.channels, name, channel)}}}

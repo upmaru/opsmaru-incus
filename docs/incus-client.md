@@ -5,6 +5,11 @@ central service. Fixture-tested slices are listed below. This is **not a
 complete Incus client port**: `priv/incus/coverage.json` records every pinned
 reference declaration and keeps missing coverage visible (`complete_port=false`).
 
+Task 3.9 now closes on verified REST endpoint/method, streaming/upgrade and
+consumer-required client behavior, independently of Go declaration parity.
+That behavioral inventory is still incomplete; neither task completion nor a
+successful MCP tool would establish complete declaration coverage.
+
 | Public API | Contract |
 | --- | --- |
 | `Opsmaru.Context.new!/1` | Host-supplied owner, verified identity, local readiness and private state/capability references; no provisioning or token verification |
@@ -44,6 +49,7 @@ reference declaration and keeps missing coverage visible (`complete_port=false`)
 | `OCI.new!/4`, `resolve/3`, `image/2`, `image_file/4`, `unsupported/2` | Explicit host-owned OCI adapter; passive construction, bounded immutable cache, pinned alias/image/unsupported projections and acknowledged binary output; no bundled host runner or installed conversion acceptance |
 | `OCI.connection_info/1`, `http_client/1`, `http_request/4` | Native passive CA-configured metadata and bounded raw HTTP on an explicit verified HTTPS origin; no adapter/config origin inference, redirects or mutation replay |
 | `Session.exec/3`, `console/3`, `input/2`, `output/3`, `control/2`, `resize/3`, `signal/2`, `exit_status/1`, `close/1` | Native operation channels and control messages; local closure does not cancel Incus |
+| `Session.collect/4` | Creator-owned live noninteractive stdout/stderr sinks, aggregate output bounds, absolute collection deadline and authoritative operation/exit result; closes local channels without cancellation |
 | `DynamicConsole.open/4`, `attach/1`, `detach/2`, `control/2`, `resize/3`, `close/1` | One accepted console operation/control connection, repeated owner-bound data attachments; bounded capacity/lifetime and no POST replay |
 | `Copy.instance/4`, `snapshot/5`, `volume/6`, `move_volume/5` | Native writable configuration and explicit migration preparation; volume moves use one backend with destination `name`/`project`; accepted handles |
 | `Migration.negotiate/5`, `relay/2`, `target/1`, `wait_target/2`, `cancel_target/1` | Explicit requests/origin and both accepted handles; bounded relay; explicit target completion/cancellation with source identity retained |
@@ -575,3 +581,43 @@ before any further mutation; the helper never replays, unlinks a file or sends
 Incus cancellation. `unsupported/2` returns `:unsupported_sftp_operation` for
 other protocol operations. This remains a fixture-verified subset, not complete
 SFTP, directory/stat/attribute/extension-operation or installed-backend acceptance.
+
+## Live noninteractive exec output
+
+`Session.collect/4` consumes a creator-owned `Session.exec/3` session with
+`wait-for-websocket=true`, no interactive terminal and no recorded output.
+The caller sends stdin before collecting, then supplies both stdout/stderr
+binary sinks returning `:ok`; collection sends the native stdin write barrier.
+
+```elixir
+{:ok, session} = Session.exec(client, instance, %{
+  "command" => argv, "wait-for-websocket" => true, "interactive" => false
+})
+:ok = Session.input(session, stdin_bytes)
+{:ok, result} = Session.collect(session, stdout_sink, stderr_sink,
+  timeout: 10_000, max_output_bytes: 1_048_576)
+# result.operation, result.exit_status, result.stdout_bytes, result.stderr_bytes
+```
+
+Collection pulls both channels concurrently with one outstanding read each and
+serial acknowledged sinks. Output payload bytes share one limit (default
+`max_stream_bytes`); each received frame must also fit `max_chunk_bytes`.
+Excess output fails rather than truncating or buffering. Sinks run in a bounded
+worker, so they must explicitly send results to their host rather than depend on
+the creator's process dictionary. Do not assume ordering between stdout/stderr.
+
+The collection timeout defaults to `stream_timeout` and cannot exceed it. One
+absolute deadline includes callbacks and the authoritative operation wait;
+existing channel lifetime, request/idle-read timeout, frame and queue limits
+still apply. The timeout starts at collection, not command submission or stdin
+delivery. Use an explicit host request context to bound that entire sequence.
+Output EOF/empty text barriers precede final operation polling; success includes
+the native exit status (including nonzero exits). Other text frames reject.
+
+Every started collection closes its local channels, including on limits,
+sink rejection/exception, deadline, cancellation or owner loss, without Incus
+cancellation or replay. Errors retain accepted operation identity and bound
+response data for reconciliation; delivered sink side effects remain host-owned.
+Invalid options, foreign creators and unsupported sessions reject before channel
+IO and leave the session to its creator. Recorded-file output, interactive IO,
+full Go argument orchestration and tool policy remain outside this subset.

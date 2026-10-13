@@ -15,7 +15,7 @@ The separately proposed Opsmaru [add-embeddable-incus-gateway](https://github.co
 **Goals:**
 
 - A safely importable pure-library dependency, `:opsmaru_incus`, with a documented public client and host-supplied configuration.
-- Native Unix/HTTPS Incus behavior, transparent provenance and complete planned method/type coverage.
+- Native Unix/HTTPS Incus endpoint/method and streaming behavior, transparent declaration provenance and verified consumer-required client behavior.
 - Database-free fixture checks and a Macus-compatible external consumer that can pin an implemented revision.
 
 **Non-Goals:**
@@ -101,6 +101,45 @@ after negotiation or protocol failure. A possibly dispatched file mutation
 must retain its request identity and uncertainty without automatic replay or
 deleting backend file state. Unsupported/missing protocol scope and task 3.9's
 remaining closure gates stay explicit.
+
+### Approved task 3.9 completion gate (2026-10-13)
+
+Task 3.9 closes on Incus REST endpoints × methods, native streaming/upgrade
+types, and the public client behaviors required by `add-incus-operations`.
+The endpoint inventory must be verified against the unchanged reference, include
+queries/extensions/errors/ETags and asynchronous operation semantics, and expose
+unsupported scope and approved differences. The current JSON catalogue alone is
+not a complete REST inventory. Required behavior needs typed differential or
+independent protocol evidence; proxy/tool success is insufficient.
+
+Keep the 1,280-declaration inventory and every partial/missing mapping visible.
+Go interfaces, constants and transport abstractions are provenance rather than
+the task's completion unit. Do not promote mappings or `complete_port` merely
+because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
+and consumer-owned Macus hardware evidence remain separately recorded gates.
+
+#### Approved next slice: noninteractive exec collection
+
+Collect live stdout/stderr from an already accepted, creator-owned noninteractive
+`Session.exec/3` session with `wait-for-websocket=true` and no recorded output.
+The caller supplies both acknowledged binary sinks and sends any stdin explicitly
+before collection; collection sends the native stdin write barrier. Pull both
+output channels concurrently with at most one outstanding read each. Enforce an
+aggregate output byte limit and one absolute collection deadline covering sink
+callbacks and authoritative operation completion. Return final operation identity,
+native exit status and delivered byte counts only after both output barriers/EOF
+and successful operation completion; a nonzero guest exit is data, not a native
+operation failure. Stream EOF alone never establishes command completion.
+
+Sink rejection/exception, excess output, cancellation, deadline, channel failure
+or owner loss must stop local work and close session channels without backend
+cancellation or mutation replay. Errors retain the accepted operation and binding.
+Invalid options or sessions reject before channel IO. Recorded-file output,
+interactive console, tool policy, command selection and buffered/truncated MCP
+results are outside this slice. Compare actual unchanged native ExecInstance IO
+over Unix and verified HTTPS and independently verify budgets and cleanup. Stop
+and offer scope options if implementation grows beyond a few hundred lines,
+requires a handwritten parser or accumulates repeated corner-case/DoS fixes.
 
 ### 5. Delivery and subsequent work
 
