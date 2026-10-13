@@ -22,12 +22,17 @@ The shared client SHALL support explicitly configured Unix and authenticated HTT
 
 ### Requirement: Traceable client coverage
 
-The client SHALL maintain a pinned official-client method/type inventory, source notices and evidence for each implemented operation. Missing parity SHALL remain visible and prevent a complete-port claim. Raw proxy success MUST NOT substitute for typed-client evidence.
+The client SHALL maintain a pinned official-client method/type inventory, source notices and evidence for each implemented operation. Missing parity SHALL remain visible and prevent a complete-port claim. Task 3.9 completion SHALL instead require a verified Incus REST endpoint/method inventory, native streaming/upgrade contracts and public client behavior required by `add-incus-operations`, with explicit supported scope and approved differences. Go declaration parity MUST NOT be inferred from that completion. Raw proxy or tool success MUST NOT substitute for typed-client evidence.
 
 #### Scenario: Coverage review
 
 - **WHEN** a complete-port claim is evaluated
-- **THEN** every supported reference entry has corresponding implementation and verification evidence, and missing entries prevent acceptance
+- **THEN** every supported reference entry has corresponding implementation and verification evidence, and missing entries prevent a complete-port claim independently of task 3.9 completion
+
+#### Scenario: Task 3.9 completion
+
+- **WHEN** task 3.9 is evaluated for completion
+- **THEN** the verified endpoint/method, streaming/upgrade and consumer-required behavior inventory has implementation and evidence while the separate Go declaration ledger retains partial/missing entries and approved differences
 
 ### Requirement: Truthful backend compatibility
 
@@ -55,6 +60,11 @@ Exec, console, events, files, images, backups and migrations SHALL preserve nati
 
 - **WHEN** a consumer opens a native file transfer connection
 - **THEN** the client negotiates the required native protocol and preserves binary traffic without substituting WebSocket framing
+
+#### Scenario: Bounded noninteractive exec collection
+
+- **WHEN** a creator collects live noninteractive exec stdout/stderr through explicit acknowledged sinks
+- **THEN** both channels are pulled under aggregate byte and absolute deadline limits, native stdin/output barriers are respected, final results retain the authoritative operation and exit status, and failures close local channels without backend cancellation or replay
 
 ### Requirement: Bounded event subscriptions
 

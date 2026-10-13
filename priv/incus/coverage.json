@@ -1019,12 +1019,13 @@
     {
       "id": "client/interface_method/InstanceServer.ExecInstance",
       "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
+      "elixir": "lib/opsmaru/incus/session.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/session_test.exs"
+        "test/session_test.exs",
+        "test/exec_output_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Native request and channel slice plus creator-owned bounded live noninteractive stdout/stderr collection: unchanged ExecInstance IO, stdin/output barriers, bytes and authoritative exit status compared over Unix and verified mutual HTTPS. Independent aggregate limits, sink rejection/deadline/cancellation/owner-loss cleanup and concurrent output evidence. Recorded output, interactive IO, full argument orchestration and declaration parity remain unverified."
     },
     {
       "id": "client/interface_method/InstanceServer.GetCertificate",
@@ -4072,12 +4073,13 @@
     {
       "id": "client/method/ProtocolIncus.ExecInstance",
       "status": "partial",
-      "elixir": "lib/opsmaru/incus/api.ex",
+      "elixir": "lib/opsmaru/incus/session.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/session_test.exs"
+        "test/session_test.exs",
+        "test/exec_output_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Native request and channel slice plus creator-owned bounded live noninteractive stdout/stderr collection: unchanged ExecInstance IO, stdin/output barriers, bytes and authoritative exit status compared over Unix and verified mutual HTTPS. Independent aggregate limits, sink rejection/deadline/cancellation/owner-loss cleanup and concurrent output evidence. Recorded output, interactive IO, full argument orchestration and declaration parity remain unverified."
     },
     {
       "id": "client/method/ProtocolIncus.ExportImage",
