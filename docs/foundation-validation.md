@@ -1128,3 +1128,17 @@ Failure regressions retain original backend, identity, session and native reques
 ID after the process ends. PostgreSQL/full standalone `mise run check`, a new
 Linux/consumer build and significant-batch review were not run for this slice;
 those remain distinct gates. No service, real backend or Macus state was changed.
+
+## Extraction into opsmaru-incus — 2026-10-13
+
+Source `upmaru/opsmaru` `a00805d` was extracted with history; all 195 carried
+files were byte-identical to the source apart from `test/library/` becoming
+`test/`. At `3c5d6b1` (macOS, local): warning-free compile, format check,
+strict Credo (1865 mods/funs, no issues), 981 database-free fixture tests with
+0 failures, strict OpenSpec validation, Go inventory/schema verifier tests, 188
+generated constants verified and byte-identical `coverage.json` regeneration
+(1239 partial, 41 missing declarations; `complete_port=false`). The isolated
+consumer built and passed against pushed revision `3c5d6b1` over HTTPS with no
+sibling checkout or Opsmaru application. The consumer test moved out of the
+library suite (982 to 981 tests). Linux CI evidence for this repository is
+pending its first run. Task 3.9 remains open.
