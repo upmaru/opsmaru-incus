@@ -6,7 +6,7 @@ defmodule Opsmaru.Incus.Operation do
   issues at most one native DELETE. No application task/persistence is created.
   """
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Error, Model, RequestContext, Response, WebSocket}
+  alias Opsmaru.Incus.{Error, EventListener, Model, RequestContext, Response, WebSocket}
   @enforce_keys [:client, :url]
   defstruct [:client, :url, :response]
 
@@ -130,6 +130,59 @@ defmodule Opsmaru.Incus.Operation do
         {:error,
          %Error{kind: :operation_failed, response: current.response, operation: current.url}}
   end
+
+  @doc """
+  Native AddHandler on an explicit listener bound to the same backend and
+  identity. The operation is refreshed first: a successful final operation
+  returns `{:ok, nil}` and a failed one its native failure, as natively;
+  otherwise `callback` receives each decoded `Operation` event for this
+  operation's ID. The caller owns the listener's lifetime.
+  """
+  def add_handler(%__MODULE__{} = operation, %EventListener{} = listener, callback)
+      when is_function(callback, 1) do
+    with :ok <- bound(operation, listener),
+         {:ok, current} <- poll(operation) do
+      cond do
+        not completed?(current) ->
+          EventListener.add_handler(listener, ["operation"], wrap(id(current), callback))
+
+        successful?(current) ->
+          {:ok, nil}
+
+        true ->
+          completion_result(current)
+      end
+    end
+  end
+
+  def add_handler(operation, _listener, _callback),
+    do: {:error, %Error{kind: :invalid_event_handler, operation: operation_url(operation)}}
+
+  @doc "Native RemoveHandler for a target registered by `add_handler/3`."
+  def remove_handler(%__MODULE__{} = operation, %EventListener{} = listener, target) do
+    with :ok <- bound(operation, listener), do: EventListener.remove_handler(listener, target)
+  end
+
+  defp bound(operation, listener) do
+    if listener.binding == EventListener.backend_binding(operation.client),
+      do: :ok,
+      else: {:error, %Error{kind: :invalid_operation_binding, operation: operation.url}}
+  end
+
+  # Events whose metadata does not decode as an Operation for this ID are
+  # ignored, as the native wrapper does.
+  defp wrap(id, callback) do
+    fn %Model{data: event} ->
+      with %{} = metadata <- event["metadata"],
+           {:ok, %Model{data: %{"id" => ^id}} = current} <- Model.decode("Operation", metadata) do
+        callback.(current)
+      end
+    end
+  end
+
+  defp id(operation), do: data(operation)["id"] || Path.basename(operation.url)
+  defp operation_url(%__MODULE__{url: url}), do: url
+  defp operation_url(_operation), do: nil
 
   def cancel(operation) do
     with {:ok, current} <- poll(operation) do

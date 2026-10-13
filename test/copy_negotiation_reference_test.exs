@@ -2,7 +2,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
   use ExUnit.Case, async: false
   import ExUnit.CaptureLog
   alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Copy, Error, ImageInstances, Operation, Server}
+  alias Opsmaru.Incus.{Connection, Copy, Error, ImageInstances, Migration, Operation, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../../.integration/copy-negotiation-driver", __DIR__)
   @extensions ~w(storage_api_local_volume_handling storage_api_remote_volume_handling storage_api_project storage_volume_project_move storage_api_volume_snapshots custom_volume_refresh custom_volume_refresh_exclude_older_snapshots container_push container_push_target container_only_migration container_incremental_copy virtual-machines container_snapshot_stateful_migration dependent cluster_migration_inconsistent_copy instance_allow_inconsistent_copy)
@@ -24,6 +24,47 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
     File.mkdir!(root)
     on_exit(fn -> File.rm_rf!(root) end)
     %{root: root}
+  end
+
+  test "remote operation wait matches the pinned client for target success and failure", %{
+    root: root
+  } do
+    volume = %{"name" => "source", "type" => "custom", "content_type" => "block"}
+
+    for {name, outcome} <- [{"waitok", :accept}, {"waitfail", :fail}] do
+      {client, _fixture, endpoint} = fixture(root, name, :unix, outcome)
+
+      native =
+        reference(%{
+          action: "move",
+          target: endpoint,
+          pool: "new-pool",
+          source_pool: "old-pool",
+          body: volume,
+          options: %{Name: "renamed"}
+        })
+
+      assert native["accepted"], inspect(native)
+
+      assert {:ok, move} =
+               Copy.move_volume(client, "new-pool", "old-pool", volume, name: "renamed")
+
+      case outcome do
+        :accept ->
+          assert native["completed"]
+          assert {:ok, %Migration{target: target}} = Migration.wait_target(move, timeout: 1_000)
+          assert Operation.successful?(target)
+
+        :fail ->
+          assert native["error"] == "boom"
+
+          assert {:error, %Error{response: %{error: %Error{kind: :operation_failed} = error}}} =
+                   Migration.wait_target(move, timeout: 1_000)
+
+          assert Operation.data(%{move.target | response: error.response})["err"] ==
+                   native["error"]
+      end
+    end
   end
 
   test "native volume move preserves destination pool/project, target member and accepted identity",
@@ -737,7 +778,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
                    if barrier,
                      do: await_posts(barrier, System.monotonic_time(:millisecond) + 2_000)
 
-                   %{status: 200, body: %{type: "sync", metadata: %{id: name, status_code: 200}}}
+                   %{status: 200, body: %{type: "sync", metadata: final_operation(name, outcome)}}
 
                  true ->
                    %{
@@ -787,6 +828,11 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
     {client, fixture,
      Map.merge(endpoint, %{certificate: certificate, project: "fixture", member: "member"})}
   end
+
+  defp final_operation(name, :fail),
+    do: %{id: name, status_code: 400, status: "Failure", err: "boom"}
+
+  defp final_operation(name, _outcome), do: %{id: name, status_code: 200}
 
   defp fixture_extensions(topology) do
     extensions = ["instances_rebuild", "container_copy_project" | @extensions]

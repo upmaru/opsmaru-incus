@@ -164,9 +164,23 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
   def frame(opcode, bytes) when byte_size(bytes) <= 65_535,
     do: <<1::1, 0::3, opcode::4, 0::1, 126::7, byte_size(bytes)::16, bytes::binary>>
 
-  defp echo(socket, opts) do
+  # Masked client frames with 7-bit or 16-bit payload lengths.
+  defp recv_header(socket) do
     case :gen_tcp.recv(socket, 2, 5_000) do
+      {:ok, <<_fin::1, _::3, opcode::4, 1::1, 126::7>>} ->
+        with {:ok, <<length::16>>} <- :gen_tcp.recv(socket, 2, 5_000), do: {:ok, opcode, length}
+
       {:ok, <<_fin::1, _::3, opcode::4, 1::1, length::7>>} when length <= 125 ->
+        {:ok, opcode, length}
+
+      _ ->
+        :error
+    end
+  end
+
+  defp echo(socket, opts) do
+    case recv_header(socket) do
+      {:ok, opcode, length} ->
         {:ok, <<mask::binary-size(4), payload::binary-size(length)>>} =
           :gen_tcp.recv(socket, 4 + length, 5_000)
 

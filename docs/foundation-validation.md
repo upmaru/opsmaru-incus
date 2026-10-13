@@ -1061,3 +1061,16 @@ keys, and seeded randomized servers; recorded rejection categories are pinned
 as natively rendered, and invalid input is rejected as natively. Library compile
 with warnings as errors, strict Credo, 941 library tests, embedded startup and
 strict OpenSpec pass.
+
+
+## Task 3.9: operation handlers and remote-operation waits
+
+`test/library/operation_handler_test.exs` builds the fixture-only
+`test/reference/operationhandlers` driver (unchanged `operation.AddHandler` and
+`RemoveHandler` on a DELETE-created operation) and compares delivered decoded
+operations, removal results, already-successful (no target) and already-failed
+(native error) operations, then checks backend/identity binding rejection
+without I/O and Migration forwarding. `copy_negotiation_reference_test.exs`
+compares native `RemoteOperation.Wait` with `Migration.wait_target/2` for
+successful and failed targets. Library compile, strict Credo, the library suite,
+embedded startup and strict OpenSpec pass.

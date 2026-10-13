@@ -3051,10 +3051,12 @@
     },
     {
       "id": "client/interface_method/Operation.AddHandler",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/operation_handler_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/Operation.Cancel",
@@ -3098,10 +3100,12 @@
     },
     {
       "id": "client/interface_method/Operation.RemoveHandler",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/operation_handler_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/Operation.Wait",
@@ -3125,10 +3129,12 @@
     },
     {
       "id": "client/interface_method/RemoteOperation.AddHandler",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/migration.ex",
+      "evidence": [
+        "test/library/operation_handler_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/RemoteOperation.CancelTarget",
@@ -3152,10 +3158,13 @@
     },
     {
       "id": "client/interface_method/RemoteOperation.Wait",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/migration.ex",
+      "evidence": [
+        "test/library/copy_negotiation_reference_test.exs",
+        "test/library/migration_target_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/interface_method/Server.Disconnect",
@@ -6647,10 +6656,12 @@
     },
     {
       "id": "client/method/operation.AddHandler",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/operation_handler_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/operation.Cancel",
@@ -6692,10 +6703,12 @@
     },
     {
       "id": "client/method/operation.RemoveHandler",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/operation_handler_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/operation.Wait",
@@ -6718,10 +6731,12 @@
     },
     {
       "id": "client/method/remoteOperation.AddHandler",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/migration.ex",
+      "evidence": [
+        "test/library/operation_handler_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/remoteOperation.CancelTarget",
@@ -6745,10 +6760,13 @@
     },
     {
       "id": "client/method/remoteOperation.Wait",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/migration.ex",
+      "evidence": [
+        "test/library/copy_negotiation_reference_test.exs",
+        "test/library/migration_target_test.exs"
+      ],
+      "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
     {
       "id": "client/method/umociLogHandler.HandleLog",
@@ -6913,10 +6931,13 @@
     },
     {
       "id": "client/type/Operation",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/operation.ex",
+      "evidence": [
+        "test/library/operation_test.exs",
+        "test/library/operation_handler_test.exs"
+      ],
+      "note": "Immutable handle counterpart of the native interface; every interface method has bounded partial evidence. Native mutable listener lifetime and asynchronous handler attachment are not reproduced."
     },
     {
       "id": "client/type/ProtocolIncus",
@@ -6941,10 +6962,14 @@
     },
     {
       "id": "client/type/RemoteOperation",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/migration.ex",
+      "evidence": [
+        "test/library/migration_target_test.exs",
+        "test/library/operation_handler_test.exs",
+        "test/library/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Immutable handle counterpart of the native interface; every interface method has bounded partial evidence. Native mutable listener lifetime and asynchronous handler attachment are not reproduced."
     },
     {
       "id": "client/type/Server",

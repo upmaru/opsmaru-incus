@@ -72,6 +72,13 @@ helpers['GetPrivateImageFile']=('lib/opsmaru/incus/images.ex',['test/library/pri
 helpers['ConsoleInstanceDynamic']=('lib/opsmaru/incus/dynamic_console.ex',['test/library/dynamic_console_reference_test.exs'])
 for name in ['ConfigMap.UnmarshalJSON','DevicesMap.UnmarshalJSON']:
  helpers[name]=('lib/opsmaru/incus/native_config.ex',['test/library/native_config_reference_test.exs'])
+for name in ['Operation.AddHandler','Operation.RemoveHandler','operation.AddHandler','operation.RemoveHandler']:
+ helpers[name]=('lib/opsmaru/incus/operation.ex',['test/library/operation_handler_test.exs'])
+for name in ['RemoteOperation.AddHandler','remoteOperation.AddHandler']:
+ helpers[name]=('lib/opsmaru/incus/migration.ex',['test/library/operation_handler_test.exs'])
+for name in ['RemoteOperation.Wait','remoteOperation.Wait']:
+ helpers[name]=('lib/opsmaru/incus/migration.ex',['test/library/copy_negotiation_reference_test.exs','test/library/migration_target_test.exs'])
+client_interface_types = {'Operation': ('lib/opsmaru/incus/operation.ex',['test/library/operation_test.exs','test/library/operation_handler_test.exs']), 'RemoteOperation': ('lib/opsmaru/incus/migration.ex',['test/library/migration_target_test.exs','test/library/operation_handler_test.exs','test/library/copy_negotiation_reference_test.exs'])}
 helpers['ServerFiltered.MarshalYAML']=('lib/opsmaru/incus/server_yaml.ex',['test/library/server_yaml_reference_test.exs'])
 for name in ['ConfigMap.UnmarshalYAML','DevicesMap.UnmarshalYAML']:
  helpers[name]=('lib/opsmaru/incus/native_yaml.ex',['test/library/native_yaml_reference_test.exs'])
@@ -129,6 +136,8 @@ for entry in inv['entries']:
   row.update(status='partial',elixir='lib/opsmaru/incus/status_error.ex',evidence=['test/library/status_error_reference_test.exs'],note='Pure bounded native status/message value; zero value, status text and match helpers compared with unchanged reference. No Go fmt formatting or errors.As unwrapping.')
  elif entry['package']=='shared/api' and entry['kind']=='type' and name in ['ConfigMap','DevicesMap']:
   row.update(status='partial',elixir='lib/opsmaru/incus/native_config.ex',evidence=['test/library/native_config_reference_test.exs','test/library/native_yaml_reference_test.exs'],note='Explicit bounded native JSON coercion and a strict-subset YAML decoder that equals native go-yaml v4 or rejects; YAML outside the subset and full type parity remain open.')
+ elif entry['package']=='client' and entry['kind']=='type' and entry['name'] in client_interface_types:
+  impl,evidence=client_interface_types[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='Immutable handle counterpart of the native interface; every interface method has bounded partial evidence. Native mutable listener lifetime and asynchronous handler attachment are not reproduced.')
  elif entry['kind'] in ['method','interface_method'] and name in methods:
   row.update(status='partial',elixir='lib/opsmaru/incus/api.ex',evidence=['test/library/resource_slice_test.exs'] + (['test/library/session_test.exs'] if name in ['ExecInstance','ConsoleInstance'] else []) + (['test/library/migration_test.exs'] if name.startswith('Migrate') else []),note='Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate.')
  elif entry['kind'] in ['method','interface_method','function'] and (entry['name'] in helpers or name in helpers):

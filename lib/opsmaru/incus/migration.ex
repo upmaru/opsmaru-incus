@@ -30,6 +30,20 @@ defmodule Opsmaru.Incus.Migration do
     end
   end
 
+  @doc """
+  Native RemoteOperation AddHandler: forwards to the accepted target operation.
+  Without a target, native returns a placeholder that is never registered;
+  this returns `{:ok, nil}`.
+  """
+  def add_handler(%__MODULE__{target: %Operation{} = operation}, listener, callback),
+    do: Operation.add_handler(operation, listener, callback)
+
+  def add_handler(%__MODULE__{}, _listener, callback) when is_function(callback, 1),
+    do: {:ok, nil}
+
+  def add_handler(migration, _listener, _callback),
+    do: failure(migration, :invalid_event_handler, nil)
+
   @doc "Wait for authoritative target completion within its budget; source completion is separate."
   def wait_target(%__MODULE__{} = migration, opts \\ []) do
     with true <- Keyword.keyword?(opts) and Keyword.keys(opts) -- [:timeout, :poll_interval] == [],

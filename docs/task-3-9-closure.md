@@ -5,7 +5,7 @@ closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
-The declaration manifest currently has 1222 partial and 58 missing entries.
+The declaration manifest currently has 1232 partial and 48 missing entries.
 Declarations include Go methods, interfaces, types, constants and transport
 abstractions; these counts are not endpoint counts or complete parity evidence.
 No partial mapping is promoted to completion by this continuation.
@@ -397,3 +397,28 @@ subset decoder and ServerFiltered renderer 5/5 and confirmed the earlier
 findings resolved. Its one non-blocking finding (a struct passed as the existing
 map made `from_yaml/3` raise) is fixed: structs are rejected as existing values
 on both the JSON and YAML paths, with a regression test.
+
+
+## Operation handlers and remote-operation waits
+
+`Operation.add_handler/3` and `remove_handler/3` are the immutable counterparts
+of native operation AddHandler/RemoveHandler. The caller passes an explicit
+`EventListener`, which must be bound to the same backend (owner, transport,
+address, TLS, project, member) and identity; no listener is opened implicitly.
+As natively, the operation is refreshed first: a successful final operation
+returns no target, a failed one returns its native error, otherwise the
+callback receives each decoded Operation event for this ID while other IDs and
+undecodable metadata are ignored. A pinned differential drives the unchanged
+client and ours over the same echoed event sequence (another ID, running,
+malformed, final): both deliver the running and final events with identical
+decoded data; removal, repeated removal and nil-target removal agree.
+`Migration.add_handler/3` forwards to the accepted target (the native
+placeholder for a missing target becomes `{:ok, nil}`), and RemoteOperation
+Wait maps to `Migration.wait_target/2`, compared with native `rop.Wait()` for
+a successful and a failed (`err: "boom"`) target. Recorded differences: native
+disconnects its internal listener on the final event and attaches handlers to
+a later target asynchronously; here the caller owns listener lifetime and the
+target is fixed at negotiation. Native multi-address copies wrap target errors
+as "Failed ... creation"; with one approved origin the native operation `err`
+is retained. The test fixture now echoes 16-bit-length WebSocket frames.
+Ten declarations gain partial evidence: 1232 partial, 48 missing.

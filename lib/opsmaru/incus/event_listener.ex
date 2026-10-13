@@ -21,7 +21,7 @@ defmodule Opsmaru.Incus.EventListener do
     :channel_closed,
     :listener_failed
   ]
-  defstruct [:pid, :ref, :owner, :result]
+  defstruct [:pid, :ref, :owner, :result, :binding]
 
   def open(client, opts \\ []) do
     ref = make_ref()
@@ -31,10 +31,32 @@ defmodule Opsmaru.Incus.EventListener do
     case GenServer.start(__MODULE__, {client, opts, owner, ref, result},
            timeout: client.connection.timeout + 100
          ) do
-      {:ok, pid} -> {:ok, %__MODULE__{pid: pid, ref: ref, owner: owner, result: result}}
-      {:error, %Error{} = error} -> {:error, error}
-      _ -> {:error, %Error{kind: :listener_failed}}
+      {:ok, pid} ->
+        {:ok,
+         %__MODULE__{
+           pid: pid,
+           ref: ref,
+           owner: owner,
+           result: result,
+           binding: backend_binding(client)
+         }}
+
+      {:error, %Error{} = error} ->
+        {:error, error}
+
+      _ ->
+        {:error, %Error{kind: :listener_failed}}
     end
+  end
+
+  @doc false
+  # Backend/identity binding shared with operation handlers; per-request
+  # budgets and contexts are deliberately excluded.
+  def backend_binding(client) do
+    connection = client.connection
+
+    {connection.owner, connection.transport, connection.address, connection.tls,
+     connection.project, connection.member, client.context.identity}
   end
 
   def add_handler(listener, types, callback), do: call(listener, {:add, types, callback})
