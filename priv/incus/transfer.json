@@ -1,0 +1,104 @@
+{
+  "source_repository": "https://github.com/upmaru/macus",
+  "reference_revision": "13f3992766142d5087fff2e362cd2e1a75294fe8",
+  "files": [
+    {
+      "source": "priv/incus/reference.json",
+      "destination": "priv/incus/reference.json",
+      "source_sha256": "c05f725c5fc10b449de0898fee55167921f68b7b8e8e625bc3bf2c4aafcb6f8d",
+      "transferred_sha256": "c05f725c5fc10b449de0898fee55167921f68b7b8e8e625bc3bf2c4aafcb6f8d"
+    },
+    {
+      "source": "priv/incus/inventory.json",
+      "destination": "priv/incus/inventory.json",
+      "source_sha256": "0aff3b4c5570fa8566fd955f6bc874a965163e01b76d31885aa6677bbd23a907",
+      "transferred_sha256": "0aff3b4c5570fa8566fd955f6bc874a965163e01b76d31885aa6677bbd23a907"
+    },
+    {
+      "source": "priv/notices/incus-APACHE-2.0.txt",
+      "destination": "priv/notices/incus-APACHE-2.0.txt",
+      "source_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "transferred_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "source": "priv/notices/INCUS-NOTICE.md",
+      "destination": "priv/notices/INCUS-NOTICE.md",
+      "source_sha256": "c0f19758680623a78f54cfa1146c435779bd25182070cb92377f2df52619eb9a",
+      "transferred_sha256": "c0f19758680623a78f54cfa1146c435779bd25182070cb92377f2df52619eb9a"
+    },
+    {
+      "source": "scripts/incus-inventory.go",
+      "destination": "scripts/incus-inventory.go",
+      "source_sha256": "25e057d5aa7f83d7e1b978422b5f34ecd05b887bde4c94aaf90d26abd459a418",
+      "transferred_sha256": "25e057d5aa7f83d7e1b978422b5f34ecd05b887bde4c94aaf90d26abd459a418"
+    },
+    {
+      "source": "scripts/incus-inventory_test.go",
+      "destination": "scripts/incus-inventory_test.go",
+      "source_sha256": "2aecb0b0a509c4f4d38da933aac3cdc661d6faaa5d2508849c9c9b2c4afd9f40",
+      "transferred_sha256": "2aecb0b0a509c4f4d38da933aac3cdc661d6faaa5d2508849c9c9b2c4afd9f40"
+    },
+    {
+      "source": "test/reference/main.go",
+      "destination": "test/reference/main.go",
+      "source_sha256": "c32031a384693bbc7dd9f4a0270e2974ee4a9958eb28c22672dce68e1ea6386e",
+      "transferred_sha256": "c32031a384693bbc7dd9f4a0270e2974ee4a9958eb28c22672dce68e1ea6386e"
+    },
+    {
+      "source": "test/reference/go.mod",
+      "destination": "test/reference/go.mod",
+      "source_sha256": "dcf6ca71cee8d0856b47591ac1476168c5da5503c32780c8dadb4470b864d136",
+      "transferred_sha256": "dcf6ca71cee8d0856b47591ac1476168c5da5503c32780c8dadb4470b864d136"
+    },
+    {
+      "source": "test/reference/go.sum",
+      "destination": "test/reference/go.sum",
+      "source_sha256": "9aa459ce1e3c9dcc75844dae402e620ca314e46cd1fad02ea546ec7ee50a3416",
+      "transferred_sha256": "9aa459ce1e3c9dcc75844dae402e620ca314e46cd1fad02ea546ec7ee50a3416"
+    },
+    {
+      "source": "test/fixtures/incus/wire.json",
+      "destination": "test/fixtures/incus/wire.json",
+      "source_sha256": "b1bdd9083818988e2a58258451aa4d7714b3e6a817e296fb6c35b797762a8362",
+      "transferred_sha256": "b1bdd9083818988e2a58258451aa4d7714b3e6a817e296fb6c35b797762a8362"
+    },
+    {
+      "source": "test/support/http_fixture.ex",
+      "destination": "test/support/http_fixture.ex",
+      "source_sha256": "43a35bc6f9abcdf1dad37f068b759cee83795cd21380192ff7c3163c4be86ee1",
+      "transferred_sha256": "d8be2bcc84671f3be9a8191bc42f7f8b71f0c1b195d39ee83e30fda0831898b8"
+    },
+    {
+      "source": "test/support/wire_comparison.ex",
+      "destination": "test/support/wire_comparison.ex",
+      "source_sha256": "14e71e8111f705b5426bc0bcc7fc9310ecff7d17963af5aa60823264910a9b57",
+      "transferred_sha256": "56677e653411c66e3f1259912eec760444e007b697d6ffb26f1ba73f8610bcbd"
+    },
+    {
+      "source": "test/support/tls_identity.ex",
+      "destination": "test/support/tls_identity.ex",
+      "source_sha256": "277b1c17f48b726df93b98836a3b14c0790b63d959ed0546665d80fb2053de75",
+      "transferred_sha256": "2c2e6b24070e3d56136b109bcd3680fb126a95a90124b6bbc9c37b81c19ee5b3"
+    },
+    {
+      "source": "lib/macus/incus/inventory.ex",
+      "destination": "lib/opsmaru/incus/inventory.ex",
+      "source_sha256": "f65ebb87278a489cd92489fd09b984172dcbd6aed6ae3c31e52dc3b4b3e999a7",
+      "transferred_sha256": "26210e27e349af30c796089fe973f3799ed5c12605ce75da8fe51dc66e2ba40e"
+    },
+    {
+      "source": "lib/mix/tasks/macus.incus.inventory.ex",
+      "destination": "lib/mix/tasks/opsmaru.incus.inventory.ex",
+      "source_sha256": "cd5d1ac369a13aaa43abcd47f6fcd2efca65ca491fadbcaead3bfb5e5dfc044c",
+      "transferred_sha256": "60249d057333e9ff4cf64aa34c08dd79c4a066285c142babe82a2f0b2f2eb2ed"
+    },
+    {
+      "source": "test/macus/incus/inventory_test.exs",
+      "destination": "test/inventory_test.exs",
+      "source_sha256": "22e5cc172209cb95a9a04130378b41ed5288c7b58ba8d3206cd4a63d1de78e02",
+      "transferred_sha256": "0c6dba22d36e44fc590d3b7c381a789c00c97a8bb9351c75880f1feb34b85c76"
+    }
+  ],
+  "source_revision": "5e537145c244a6fb9d0f4d7b782043c1260e79c3",
+  "adaptation": "Transferred hashes describe initial namespace/path adaptation. Subsequent Opsmaru changes are tracked by Git."
+}

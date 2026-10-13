@@ -1,0 +1,4569 @@
+{
+  "reference_revision": "13f3992766142d5087fff2e362cd2e1a75294fe8",
+  "methods": [
+    {
+      "name": "GetProjectNames",
+      "verb": "GET",
+      "path": "/1.0/projects",
+      "params": [],
+      "query": {},
+      "extension": "projects",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": []
+    },
+    {
+      "name": "GetProjects",
+      "verb": "GET",
+      "path": "/1.0/projects",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": "projects",
+      "body": null,
+      "model": "Project",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetProjectsWithFilter",
+      "verb": "GET",
+      "path": "/1.0/projects",
+      "params": [
+        "filters"
+      ],
+      "query": {
+        "recursion": "1",
+        "filter": "{filters}"
+      },
+      "extension": "projects",
+      "body": null,
+      "model": "Project",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetProject",
+      "verb": "GET",
+      "path": "/1.0/projects/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "projects",
+      "body": null,
+      "model": "Project",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "CreateProject",
+      "verb": "POST",
+      "path": "/1.0/projects",
+      "params": [],
+      "query": {},
+      "extension": "projects",
+      "body": "ProjectsPost",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "UpdateProject",
+      "verb": "PUT",
+      "path": "/1.0/projects/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "projects",
+      "body": "ProjectPut",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "DeleteProject",
+      "verb": "DELETE",
+      "path": "/1.0/projects/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "projects",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "RenameProject",
+      "verb": "POST",
+      "path": "/1.0/projects/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "projects",
+      "body": "ProjectPost",
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "GetProfileNames",
+      "verb": "GET",
+      "path": "/1.0/profiles",
+      "params": [],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": []
+    },
+    {
+      "name": "GetProfiles",
+      "verb": "GET",
+      "path": "/1.0/profiles",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": null,
+      "body": null,
+      "model": "Profile",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetProfilesWithFilter",
+      "verb": "GET",
+      "path": "/1.0/profiles",
+      "params": [
+        "filters"
+      ],
+      "query": {
+        "recursion": "1",
+        "filter": "{filters}"
+      },
+      "extension": null,
+      "body": null,
+      "model": "Profile",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetProfile",
+      "verb": "GET",
+      "path": "/1.0/profiles/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": "Profile",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "CreateProfile",
+      "verb": "POST",
+      "path": "/1.0/profiles",
+      "params": [],
+      "query": {},
+      "extension": null,
+      "body": "ProfilesPost",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "UpdateProfile",
+      "verb": "PUT",
+      "path": "/1.0/profiles/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "ProfilePut",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "DeleteProfile",
+      "verb": "DELETE",
+      "path": "/1.0/profiles/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "RenameProfile",
+      "verb": "POST",
+      "path": "/1.0/profiles/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "ProfilePost",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "GetCertificateFingerprints",
+      "verb": "GET",
+      "path": "/1.0/certificates",
+      "params": [],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": []
+    },
+    {
+      "name": "GetCertificates",
+      "verb": "GET",
+      "path": "/1.0/certificates",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": null,
+      "body": null,
+      "model": "Certificate",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetCertificatesWithFilter",
+      "verb": "GET",
+      "path": "/1.0/certificates",
+      "params": [
+        "filters"
+      ],
+      "query": {
+        "recursion": "1",
+        "filter": "{filters}"
+      },
+      "extension": null,
+      "body": null,
+      "model": "Certificate",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetCertificate",
+      "verb": "GET",
+      "path": "/1.0/certificates/{fingerprint}",
+      "params": [
+        "fingerprint"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": "Certificate",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "CreateCertificate",
+      "verb": "POST",
+      "path": "/1.0/certificates",
+      "params": [],
+      "query": {},
+      "extension": null,
+      "body": "CertificatesPost",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "UpdateCertificate",
+      "verb": "PUT",
+      "path": "/1.0/certificates/{fingerprint}",
+      "params": [
+        "fingerprint"
+      ],
+      "query": {},
+      "extension": "certificate_update",
+      "body": "CertificatePut",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "DeleteCertificate",
+      "verb": "DELETE",
+      "path": "/1.0/certificates/{fingerprint}",
+      "params": [
+        "fingerprint"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "GetProjectState",
+      "verb": "GET",
+      "path": "/1.0/projects/{name}/state",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "project_usage",
+      "body": null,
+      "model": "ProjectState",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "GetProjectAccess",
+      "verb": "GET",
+      "path": "/1.0/projects/{name}/access",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "project_access",
+      "body": null,
+      "model": "Access",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "DeleteProjectForce",
+      "verb": "DELETE",
+      "path": "/1.0/projects/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {
+        "force": "1"
+      },
+      "extension": "projects_force_delete",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "GetProfilesAllProjects",
+      "verb": "GET",
+      "path": "/1.0/profiles",
+      "params": [],
+      "query": {
+        "recursion": "1",
+        "all-projects": "true"
+      },
+      "extension": "profiles_all_projects",
+      "body": null,
+      "model": "Profile",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetProfilesAllProjectsWithFilter",
+      "verb": "GET",
+      "path": "/1.0/profiles",
+      "params": [
+        "filters"
+      ],
+      "query": {
+        "recursion": "1",
+        "all-projects": "true",
+        "filter": "{filters}"
+      },
+      "extension": "profiles_all_projects",
+      "body": null,
+      "model": "Profile",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "CreateCertificateToken",
+      "verb": "POST",
+      "path": "/1.0/certificates",
+      "params": [],
+      "query": {},
+      "extension": "certificate_token",
+      "body": "CertificatesPost",
+      "model": null,
+      "result": "operation",
+      "guards": [
+        {
+          "field": "token",
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "GetInstanceNames",
+      "verb": "GET",
+      "path": "/1.0/instances",
+      "params": [
+        "instance_type"
+      ],
+      "query": {
+        "instance-type": "{instance_type}"
+      },
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": []
+    },
+    {
+      "name": "GetInstanceNamesAllProjects",
+      "verb": "GET",
+      "path": "/1.0/instances",
+      "params": [
+        "instance_type"
+      ],
+      "query": {
+        "instance-type": "{instance_type}",
+        "recursion": "1",
+        "all-projects": "true"
+      },
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "project_names",
+      "guards": []
+    },
+    {
+      "name": "GetInstances",
+      "verb": "GET",
+      "path": "/1.0/instances",
+      "params": [
+        "instance_type"
+      ],
+      "query": {
+        "instance-type": "{instance_type}",
+        "recursion": "1"
+      },
+      "extension": null,
+      "body": null,
+      "model": "Instance",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetInstancesWithFilter",
+      "verb": "GET",
+      "path": "/1.0/instances",
+      "params": [
+        "instance_type",
+        "filters"
+      ],
+      "query": {
+        "instance-type": "{instance_type}",
+        "recursion": "1",
+        "filter": "{filters}"
+      },
+      "extension": [
+        "api_filtering"
+      ],
+      "body": null,
+      "model": "Instance",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetInstancesAllProjects",
+      "verb": "GET",
+      "path": "/1.0/instances",
+      "params": [
+        "instance_type"
+      ],
+      "query": {
+        "instance-type": "{instance_type}",
+        "recursion": "1",
+        "all-projects": "true"
+      },
+      "extension": [
+        "instance_all_projects"
+      ],
+      "body": null,
+      "model": "Instance",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetInstancesAllProjectsWithFilter",
+      "verb": "GET",
+      "path": "/1.0/instances",
+      "params": [
+        "instance_type",
+        "filters"
+      ],
+      "query": {
+        "instance-type": "{instance_type}",
+        "recursion": "1",
+        "all-projects": "true",
+        "filter": "{filters}"
+      },
+      "extension": [
+        "instance_all_projects",
+        "api_filtering"
+      ],
+      "body": null,
+      "model": "Instance",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetInstancesFull",
+      "verb": "GET",
+      "path": "/1.0/instances",
+      "params": [
+        "instance_type"
+      ],
+      "query": {
+        "instance-type": "{instance_type}",
+        "recursion": "2"
+      },
+      "extension": [
+        "container_full"
+      ],
+      "body": null,
+      "model": "InstanceFull",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetInstancesFullWithFilter",
+      "verb": "GET",
+      "path": "/1.0/instances",
+      "params": [
+        "instance_type",
+        "filters"
+      ],
+      "query": {
+        "instance-type": "{instance_type}",
+        "recursion": "2",
+        "filter": "{filters}"
+      },
+      "extension": [
+        "container_full",
+        "api_filtering"
+      ],
+      "body": null,
+      "model": "InstanceFull",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetInstancesFullAllProjects",
+      "verb": "GET",
+      "path": "/1.0/instances",
+      "params": [
+        "instance_type"
+      ],
+      "query": {
+        "instance-type": "{instance_type}",
+        "recursion": "2",
+        "all-projects": "true"
+      },
+      "extension": [
+        "container_full",
+        "instance_all_projects"
+      ],
+      "body": null,
+      "model": "InstanceFull",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetInstancesFullAllProjectsWithFilter",
+      "verb": "GET",
+      "path": "/1.0/instances",
+      "params": [
+        "instance_type",
+        "filters"
+      ],
+      "query": {
+        "instance-type": "{instance_type}",
+        "recursion": "2",
+        "all-projects": "true",
+        "filter": "{filters}"
+      },
+      "extension": [
+        "container_full",
+        "instance_all_projects",
+        "api_filtering"
+      ],
+      "body": null,
+      "model": "InstanceFull",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetInstance",
+      "verb": "GET",
+      "path": "/1.0/instances/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": "Instance",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "GetInstanceFull",
+      "verb": "GET",
+      "path": "/1.0/instances/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": "instance_get_full",
+      "body": null,
+      "model": "InstanceFull",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "CreateInstance",
+      "verb": "POST",
+      "path": "/1.0/instances",
+      "params": [],
+      "query": {},
+      "extension": null,
+      "body": "InstancesPost",
+      "model": null,
+      "result": "operation",
+      "guards": [
+        {
+          "field": "source.instance_only",
+          "extension": "container_only_migration"
+        }
+      ]
+    },
+    {
+      "name": "UpdateInstance",
+      "verb": "PUT",
+      "path": "/1.0/instances/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "InstancePut",
+      "model": null,
+      "result": "operation",
+      "guards": [
+        {
+          "field": "disk_only",
+          "extension": "instance_snapshot_disk_only_restore"
+        }
+      ]
+    },
+    {
+      "name": "UpdateInstances",
+      "verb": "PUT",
+      "path": "/1.0/instances",
+      "params": [],
+      "query": {},
+      "extension": null,
+      "body": "InstancesPut",
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "RenameInstance",
+      "verb": "POST",
+      "path": "/1.0/instances/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "InstancePost",
+      "model": null,
+      "result": "operation",
+      "guards": [
+        {
+          "field": "migration",
+          "equals": false
+        }
+      ]
+    },
+    {
+      "name": "DeleteInstance",
+      "verb": "DELETE",
+      "path": "/1.0/instances/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "RebuildInstance",
+      "verb": "POST",
+      "path": "/1.0/instances/{name}/rebuild",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "instances_rebuild",
+      "body": "InstanceRebuildPost",
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "GetInstanceState",
+      "verb": "GET",
+      "path": "/1.0/instances/{name}/state",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": "InstanceState",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "UpdateInstanceState",
+      "verb": "PUT",
+      "path": "/1.0/instances/{name}/state",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "InstanceStatePut",
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "GetInstanceAccess",
+      "verb": "GET",
+      "path": "/1.0/instances/{name}/access",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "instance_access",
+      "body": null,
+      "model": "Access",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "GetInstanceSnapshotNames",
+      "verb": "GET",
+      "path": "/1.0/instances/{instance_name}/snapshots",
+      "params": [
+        "instance_name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": []
+    },
+    {
+      "name": "GetInstanceSnapshots",
+      "verb": "GET",
+      "path": "/1.0/instances/{instance_name}/snapshots",
+      "params": [
+        "instance_name"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": null,
+      "body": null,
+      "model": "InstanceSnapshot",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetInstanceSnapshot",
+      "verb": "GET",
+      "path": "/1.0/instances/{instance_name}/snapshots/{name}",
+      "params": [
+        "instance_name",
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": "InstanceSnapshot",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "CreateInstanceSnapshot",
+      "verb": "POST",
+      "path": "/1.0/instances/{instance_name}/snapshots",
+      "params": [
+        "instance_name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "InstanceSnapshotsPost",
+      "model": null,
+      "result": "operation",
+      "guards": [
+        {
+          "field": "expires_at",
+          "extension": "snapshot_expiry_creation"
+        }
+      ]
+    },
+    {
+      "name": "UpdateInstanceSnapshot",
+      "verb": "PUT",
+      "path": "/1.0/instances/{instance_name}/snapshots/{name}",
+      "params": [
+        "instance_name",
+        "name"
+      ],
+      "query": {},
+      "extension": "snapshot_expiry",
+      "body": "InstanceSnapshotPut",
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "RenameInstanceSnapshot",
+      "verb": "POST",
+      "path": "/1.0/instances/{instance_name}/snapshots/{name}",
+      "params": [
+        "instance_name",
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "InstanceSnapshotPost",
+      "model": null,
+      "result": "operation",
+      "guards": [
+        {
+          "field": "migration",
+          "equals": false
+        }
+      ]
+    },
+    {
+      "name": "DeleteInstanceSnapshot",
+      "verb": "DELETE",
+      "path": "/1.0/instances/{instance_name}/snapshots/{name}",
+      "params": [
+        "instance_name",
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "GetImages",
+      "verb": "GET",
+      "path": "/1.0/images",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": null,
+      "body": null,
+      "model": "Image",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetImagesWithFilter",
+      "verb": "GET",
+      "path": "/1.0/images",
+      "params": [
+        "filters"
+      ],
+      "query": {
+        "recursion": "1",
+        "filter": "{filters}"
+      },
+      "extension": "api_filtering",
+      "body": null,
+      "model": "Image",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetImagesAllProjects",
+      "verb": "GET",
+      "path": "/1.0/images",
+      "params": [],
+      "query": {
+        "recursion": "1",
+        "all-projects": "true"
+      },
+      "extension": "images_all_projects",
+      "body": null,
+      "model": "Image",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetImagesAllProjectsWithFilter",
+      "verb": "GET",
+      "path": "/1.0/images",
+      "params": [
+        "filters"
+      ],
+      "query": {
+        "recursion": "1",
+        "all-projects": "true",
+        "filter": "{filters}"
+      },
+      "extension": "images_all_projects",
+      "body": null,
+      "model": "Image",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetImageFingerprints",
+      "verb": "GET",
+      "path": "/1.0/images",
+      "params": [],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": []
+    },
+    {
+      "name": "GetImage",
+      "verb": "GET",
+      "path": "/1.0/images/{fingerprint}",
+      "params": [
+        "fingerprint"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": "Image",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "GetPrivateImage",
+      "verb": "GET",
+      "path": "/1.0/images/{fingerprint}",
+      "params": [
+        "fingerprint",
+        "secret"
+      ],
+      "query": {
+        "secret": "{secret}"
+      },
+      "extension": null,
+      "body": null,
+      "model": "Image",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "GetImageAliases",
+      "verb": "GET",
+      "path": "/1.0/images/aliases",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": null,
+      "body": null,
+      "model": "ImageAliasesEntry",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetImageAliasNames",
+      "verb": "GET",
+      "path": "/1.0/images/aliases",
+      "params": [],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": []
+    },
+    {
+      "name": "GetImageAlias",
+      "verb": "GET",
+      "path": "/1.0/images/aliases/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": "ImageAliasesEntry",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "CreateImage",
+      "verb": "POST",
+      "path": "/1.0/images",
+      "params": [],
+      "query": {},
+      "extension": null,
+      "body": "ImagesPost",
+      "model": null,
+      "result": "operation",
+      "guards": [
+        {
+          "field": "compression_algorithm",
+          "extension": "image_compression_algorithm"
+        }
+      ],
+      "oracle_trailing": [
+        null
+      ]
+    },
+    {
+      "name": "UpdateImage",
+      "verb": "PUT",
+      "path": "/1.0/images/{fingerprint}",
+      "params": [
+        "fingerprint"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "ImagePut",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "DeleteImage",
+      "verb": "DELETE",
+      "path": "/1.0/images/{fingerprint}",
+      "params": [
+        "fingerprint"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "RefreshImage",
+      "verb": "POST",
+      "path": "/1.0/images/{fingerprint}/refresh",
+      "params": [
+        "fingerprint"
+      ],
+      "query": {},
+      "extension": "image_force_refresh",
+      "body": null,
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "CreateImageSecret",
+      "verb": "POST",
+      "path": "/1.0/images/{fingerprint}/secret",
+      "params": [
+        "fingerprint"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "CreateImageAlias",
+      "verb": "POST",
+      "path": "/1.0/images/aliases",
+      "params": [],
+      "query": {},
+      "extension": null,
+      "body": "ImageAliasesPost",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "UpdateImageAlias",
+      "verb": "PUT",
+      "path": "/1.0/images/aliases/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "ImageAliasesEntryPut",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "RenameImageAlias",
+      "verb": "POST",
+      "path": "/1.0/images/aliases/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "ImageAliasesEntryPost",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "DeleteImageAlias",
+      "verb": "DELETE",
+      "path": "/1.0/images/aliases/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "ExportImage",
+      "verb": "POST",
+      "path": "/1.0/images/{fingerprint}/export",
+      "params": [
+        "fingerprint"
+      ],
+      "query": {},
+      "extension": "images_push_relay",
+      "body": "ImageExportPost",
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "GetNetworkNames",
+      "verb": "GET",
+      "path": "/1.0/networks",
+      "params": [],
+      "query": {},
+      "extension": "network",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": []
+    },
+    {
+      "name": "GetNetworks",
+      "verb": "GET",
+      "path": "/1.0/networks",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": "network",
+      "body": null,
+      "model": "Network",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetNetworksWithFilter",
+      "verb": "GET",
+      "path": "/1.0/networks",
+      "params": [
+        "filters"
+      ],
+      "query": {
+        "recursion": "1",
+        "filter": "{filters}"
+      },
+      "extension": "network",
+      "body": null,
+      "model": "Network",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetNetworksAllProjects",
+      "verb": "GET",
+      "path": "/1.0/networks",
+      "params": [],
+      "query": {
+        "recursion": "1",
+        "all-projects": "true"
+      },
+      "extension": "networks_all_projects",
+      "body": null,
+      "model": "Network",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetNetworksAllProjectsWithFilter",
+      "verb": "GET",
+      "path": "/1.0/networks",
+      "params": [
+        "filters"
+      ],
+      "query": {
+        "recursion": "1",
+        "all-projects": "true",
+        "filter": "{filters}"
+      },
+      "extension": "networks_all_projects",
+      "body": null,
+      "model": "Network",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetNetwork",
+      "verb": "GET",
+      "path": "/1.0/networks/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "network",
+      "body": null,
+      "model": "Network",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "GetNetworkLeases",
+      "verb": "GET",
+      "path": "/1.0/networks/{name}/leases",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "network_leases",
+      "body": null,
+      "model": "NetworkLease",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetNetworkState",
+      "verb": "GET",
+      "path": "/1.0/networks/{name}/state",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "network_state",
+      "body": null,
+      "model": "NetworkState",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "CreateNetwork",
+      "verb": "POST",
+      "path": "/1.0/networks",
+      "params": [],
+      "query": {},
+      "extension": "network",
+      "body": "NetworksPost",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "UpdateNetwork",
+      "verb": "PUT",
+      "path": "/1.0/networks/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "network",
+      "body": "NetworkPut",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "RenameNetwork",
+      "verb": "POST",
+      "path": "/1.0/networks/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "network",
+      "body": "NetworkPost",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "DeleteNetwork",
+      "verb": "DELETE",
+      "path": "/1.0/networks/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "network",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "GetCluster",
+      "verb": "GET",
+      "path": "/1.0/cluster",
+      "params": [],
+      "query": {},
+      "extension": "clustering",
+      "body": null,
+      "model": "Cluster",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "UpdateCluster",
+      "verb": "PUT",
+      "path": "/1.0/cluster",
+      "params": [],
+      "query": {},
+      "extension": "clustering",
+      "body": "ClusterPut",
+      "model": null,
+      "result": "operation",
+      "guards": [
+        {
+          "field": "server_address",
+          "extension": "clustering_join"
+        },
+        {
+          "field": "cluster_token",
+          "extension": "clustering_join"
+        },
+        {
+          "field": "member_config",
+          "extension": "clustering_join"
+        }
+      ]
+    },
+    {
+      "name": "DeleteClusterMember",
+      "verb": "DELETE",
+      "path": "/1.0/cluster/members/{name}",
+      "params": [
+        "name",
+        "force"
+      ],
+      "query": {
+        "force": "{force}"
+      },
+      "extension": "clustering",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "arg_types": {
+        "force": "bool"
+      },
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "DeletePendingClusterMember",
+      "verb": "DELETE",
+      "path": "/1.0/cluster/members/{name}",
+      "params": [
+        "name",
+        "force"
+      ],
+      "query": {
+        "pending": "1",
+        "force": "{force}"
+      },
+      "extension": "clustering",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "arg_types": {
+        "force": "bool"
+      },
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "GetClusterMemberNames",
+      "verb": "GET",
+      "path": "/1.0/cluster/members",
+      "params": [],
+      "query": {},
+      "extension": "clustering",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": []
+    },
+    {
+      "name": "GetClusterMembers",
+      "verb": "GET",
+      "path": "/1.0/cluster/members",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": "clustering",
+      "body": null,
+      "model": "ClusterMember",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetClusterMembersWithFilter",
+      "verb": "GET",
+      "path": "/1.0/cluster/members",
+      "params": [
+        "filters"
+      ],
+      "query": {
+        "recursion": "1",
+        "filter": "{filters}"
+      },
+      "extension": "clustering",
+      "body": null,
+      "model": "ClusterMember",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetClusterMember",
+      "verb": "GET",
+      "path": "/1.0/cluster/members/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "clustering",
+      "body": null,
+      "model": "ClusterMember",
+      "result": "model",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "UpdateClusterMember",
+      "verb": "PUT",
+      "path": "/1.0/cluster/members/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "clustering_edit_roles",
+      "body": "ClusterMemberPut",
+      "model": null,
+      "result": "sync",
+      "guards": [
+        {
+          "field": "failure_domain",
+          "extension": "clustering_failure_domains"
+        }
+      ],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "RenameClusterMember",
+      "verb": "POST",
+      "path": "/1.0/cluster/members/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "clustering",
+      "body": "ClusterMemberPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "CreateClusterMember",
+      "verb": "POST",
+      "path": "/1.0/cluster/members",
+      "params": [],
+      "query": {},
+      "extension": "clustering_join_token",
+      "body": "ClusterMembersPost",
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "UpdateClusterCertificate",
+      "verb": "PUT",
+      "path": "/1.0/cluster/certificate",
+      "params": [],
+      "query": {},
+      "extension": "clustering_update_cert",
+      "body": "ClusterCertificatePut",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "GetClusterMemberState",
+      "verb": "GET",
+      "path": "/1.0/cluster/members/{name}/state",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "cluster_member_state",
+      "body": null,
+      "model": "ClusterMemberState",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "UpdateClusterMemberState",
+      "verb": "POST",
+      "path": "/1.0/cluster/members/{name}/state",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "clustering_evacuation",
+      "body": "ClusterMemberStatePost",
+      "model": null,
+      "result": "operation",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "GetClusterGroups",
+      "verb": "GET",
+      "path": "/1.0/cluster/groups",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": "clustering_groups",
+      "body": null,
+      "model": "ClusterGroup",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetClusterGroupNames",
+      "verb": "GET",
+      "path": "/1.0/cluster/groups",
+      "params": [],
+      "query": {},
+      "extension": "clustering_groups",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": []
+    },
+    {
+      "name": "GetClusterGroup",
+      "verb": "GET",
+      "path": "/1.0/cluster/groups/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "clustering_groups",
+      "body": null,
+      "model": "ClusterGroup",
+      "result": "model",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "CreateClusterGroup",
+      "verb": "POST",
+      "path": "/1.0/cluster/groups",
+      "params": [],
+      "query": {},
+      "extension": "clustering_groups",
+      "body": "ClusterGroupsPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "RenameClusterGroup",
+      "verb": "POST",
+      "path": "/1.0/cluster/groups/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "clustering_groups",
+      "body": "ClusterGroupPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "UpdateClusterGroup",
+      "verb": "PUT",
+      "path": "/1.0/cluster/groups/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "clustering_groups",
+      "body": "ClusterGroupPut",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "DeleteClusterGroup",
+      "verb": "DELETE",
+      "path": "/1.0/cluster/groups/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "clustering_groups",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "GetNetworkPeers",
+      "verb": "GET",
+      "path": "/1.0/networks/{networkName}/peers",
+      "params": [
+        "networkName"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": [
+        "network_peer"
+      ],
+      "body": null,
+      "model": "NetworkPeer",
+      "result": "list",
+      "guards": [],
+      "legal_params": [
+        "networkName"
+      ]
+    },
+    {
+      "name": "GetNetworkPeer",
+      "verb": "GET",
+      "path": "/1.0/networks/{networkName}/peers/{peerName}",
+      "params": [
+        "networkName",
+        "peerName"
+      ],
+      "query": {},
+      "extension": [
+        "network_peer"
+      ],
+      "body": null,
+      "model": "NetworkPeer",
+      "result": "model",
+      "guards": [],
+      "legal_params": [
+        "networkName",
+        "peerName"
+      ]
+    },
+    {
+      "name": "UpdateNetworkPeer",
+      "verb": "PUT",
+      "path": "/1.0/networks/{networkName}/peers/{peerName}",
+      "params": [
+        "networkName",
+        "peerName"
+      ],
+      "query": {},
+      "extension": [
+        "network_peer"
+      ],
+      "body": "NetworkPeerPut",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "networkName",
+        "peerName"
+      ]
+    },
+    {
+      "name": "DeleteNetworkPeer",
+      "verb": "DELETE",
+      "path": "/1.0/networks/{networkName}/peers/{peerName}",
+      "params": [
+        "networkName",
+        "peerName"
+      ],
+      "query": {},
+      "extension": [
+        "network_peer"
+      ],
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "networkName",
+        "peerName"
+      ]
+    },
+    {
+      "name": "GetNetworkAddressSetNames",
+      "verb": "GET",
+      "path": "/1.0/network-address-sets",
+      "params": [],
+      "query": {},
+      "extension": [
+        "network_address_set"
+      ],
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetNetworkAddressSets",
+      "verb": "GET",
+      "path": "/1.0/network-address-sets",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": [
+        "network_address_set"
+      ],
+      "body": null,
+      "model": "NetworkAddressSet",
+      "result": "list",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetNetworkAddressSetsAllProjects",
+      "verb": "GET",
+      "path": "/1.0/network-address-sets",
+      "params": [],
+      "query": {
+        "recursion": "1",
+        "all-projects": "true"
+      },
+      "extension": [
+        "network_address_set"
+      ],
+      "body": null,
+      "model": "NetworkAddressSet",
+      "result": "list",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetNetworkAddressSet",
+      "verb": "GET",
+      "path": "/1.0/network-address-sets/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_address_set"
+      ],
+      "body": null,
+      "model": "NetworkAddressSet",
+      "result": "model",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "CreateNetworkAddressSet",
+      "verb": "POST",
+      "path": "/1.0/network-address-sets",
+      "params": [],
+      "query": {},
+      "extension": [
+        "network_address_set"
+      ],
+      "body": "NetworkAddressSetsPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "UpdateNetworkAddressSet",
+      "verb": "PUT",
+      "path": "/1.0/network-address-sets/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_address_set"
+      ],
+      "body": "NetworkAddressSetPut",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "RenameNetworkAddressSet",
+      "verb": "POST",
+      "path": "/1.0/network-address-sets/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_address_set"
+      ],
+      "body": "NetworkAddressSetPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "DeleteNetworkAddressSet",
+      "verb": "DELETE",
+      "path": "/1.0/network-address-sets/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_address_set"
+      ],
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "GetNetworkACLNames",
+      "verb": "GET",
+      "path": "/1.0/network-acls",
+      "params": [],
+      "query": {},
+      "extension": [
+        "network_acl"
+      ],
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetNetworkACLs",
+      "verb": "GET",
+      "path": "/1.0/network-acls",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": [
+        "network_acl"
+      ],
+      "body": null,
+      "model": "NetworkACL",
+      "result": "list",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetNetworkACLsAllProjects",
+      "verb": "GET",
+      "path": "/1.0/network-acls",
+      "params": [],
+      "query": {
+        "recursion": "1",
+        "all-projects": "true"
+      },
+      "extension": [
+        "network_acls_all_projects"
+      ],
+      "body": null,
+      "model": "NetworkACL",
+      "result": "list",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetNetworkACL",
+      "verb": "GET",
+      "path": "/1.0/network-acls/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_acl"
+      ],
+      "body": null,
+      "model": "NetworkACL",
+      "result": "model",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "CreateNetworkACL",
+      "verb": "POST",
+      "path": "/1.0/network-acls",
+      "params": [],
+      "query": {},
+      "extension": [
+        "network_acl"
+      ],
+      "body": "NetworkACLsPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "UpdateNetworkACL",
+      "verb": "PUT",
+      "path": "/1.0/network-acls/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_acl"
+      ],
+      "body": "NetworkACLPut",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "RenameNetworkACL",
+      "verb": "POST",
+      "path": "/1.0/network-acls/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_acl"
+      ],
+      "body": "NetworkACLPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "DeleteNetworkACL",
+      "verb": "DELETE",
+      "path": "/1.0/network-acls/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_acl"
+      ],
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "GetNetworkIntegrationNames",
+      "verb": "GET",
+      "path": "/1.0/network-integrations",
+      "params": [],
+      "query": {},
+      "extension": [
+        "network_integrations"
+      ],
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetNetworkIntegrations",
+      "verb": "GET",
+      "path": "/1.0/network-integrations",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": [
+        "network_integrations"
+      ],
+      "body": null,
+      "model": "NetworkIntegration",
+      "result": "list",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetNetworkIntegration",
+      "verb": "GET",
+      "path": "/1.0/network-integrations/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_integrations"
+      ],
+      "body": null,
+      "model": "NetworkIntegration",
+      "result": "model",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "CreateNetworkIntegration",
+      "verb": "POST",
+      "path": "/1.0/network-integrations",
+      "params": [],
+      "query": {},
+      "extension": [
+        "network_integrations"
+      ],
+      "body": "NetworkIntegrationsPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "UpdateNetworkIntegration",
+      "verb": "PUT",
+      "path": "/1.0/network-integrations/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_integrations"
+      ],
+      "body": "NetworkIntegrationPut",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "RenameNetworkIntegration",
+      "verb": "POST",
+      "path": "/1.0/network-integrations/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_integrations"
+      ],
+      "body": "NetworkIntegrationPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "DeleteNetworkIntegration",
+      "verb": "DELETE",
+      "path": "/1.0/network-integrations/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_integrations"
+      ],
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "GetNetworkAllocations",
+      "verb": "GET",
+      "path": "/1.0/network-allocations",
+      "params": [],
+      "query": {},
+      "extension": [
+        "network_allocations"
+      ],
+      "body": null,
+      "model": "NetworkAllocations",
+      "result": "list",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetNetworkAllocationsAllProjects",
+      "verb": "GET",
+      "path": "/1.0/network-allocations",
+      "params": [],
+      "query": {
+        "all-projects": "true"
+      },
+      "extension": [
+        "network_allocations"
+      ],
+      "body": null,
+      "model": "NetworkAllocations",
+      "result": "list",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetNetworkForwards",
+      "verb": "GET",
+      "path": "/1.0/networks/{networkName}/forwards",
+      "params": [
+        "networkName"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": [
+        "network_forward"
+      ],
+      "body": null,
+      "model": "NetworkForward",
+      "result": "list",
+      "guards": [],
+      "legal_params": [
+        "networkName"
+      ]
+    },
+    {
+      "name": "GetNetworkForward",
+      "verb": "GET",
+      "path": "/1.0/networks/{networkName}/forwards/{listenAddress}",
+      "params": [
+        "networkName",
+        "listenAddress"
+      ],
+      "query": {},
+      "extension": [
+        "network_forward"
+      ],
+      "body": null,
+      "model": "NetworkForward",
+      "result": "model",
+      "guards": [],
+      "legal_params": [
+        "networkName",
+        "listenAddress"
+      ]
+    },
+    {
+      "name": "CreateNetworkForward",
+      "verb": "POST",
+      "path": "/1.0/networks/{networkName}/forwards",
+      "params": [
+        "networkName"
+      ],
+      "query": {},
+      "extension": [
+        "network_forward"
+      ],
+      "body": "NetworkForwardsPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "networkName"
+      ]
+    },
+    {
+      "name": "UpdateNetworkForward",
+      "verb": "PUT",
+      "path": "/1.0/networks/{networkName}/forwards/{listenAddress}",
+      "params": [
+        "networkName",
+        "listenAddress"
+      ],
+      "query": {},
+      "extension": [
+        "network_forward"
+      ],
+      "body": "NetworkForwardPut",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "networkName",
+        "listenAddress"
+      ]
+    },
+    {
+      "name": "DeleteNetworkForward",
+      "verb": "DELETE",
+      "path": "/1.0/networks/{networkName}/forwards/{listenAddress}",
+      "params": [
+        "networkName",
+        "listenAddress"
+      ],
+      "query": {},
+      "extension": [
+        "network_forward"
+      ],
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "networkName",
+        "listenAddress"
+      ]
+    },
+    {
+      "name": "GetNetworkZoneNames",
+      "verb": "GET",
+      "path": "/1.0/network-zones",
+      "params": [],
+      "query": {},
+      "extension": [
+        "network_dns"
+      ],
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetNetworkZones",
+      "verb": "GET",
+      "path": "/1.0/network-zones",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": [
+        "network_dns"
+      ],
+      "body": null,
+      "model": "NetworkZone",
+      "result": "list",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetNetworkZonesAllProjects",
+      "verb": "GET",
+      "path": "/1.0/network-zones",
+      "params": [],
+      "query": {
+        "recursion": "1",
+        "all-projects": "true"
+      },
+      "extension": [
+        "network_zones_all_projects"
+      ],
+      "body": null,
+      "model": "NetworkZone",
+      "result": "list",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetNetworkZone",
+      "verb": "GET",
+      "path": "/1.0/network-zones/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_dns"
+      ],
+      "body": null,
+      "model": "NetworkZone",
+      "result": "model",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "CreateNetworkZone",
+      "verb": "POST",
+      "path": "/1.0/network-zones",
+      "params": [],
+      "query": {},
+      "extension": [
+        "network_dns"
+      ],
+      "body": "NetworkZonesPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "UpdateNetworkZone",
+      "verb": "PUT",
+      "path": "/1.0/network-zones/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_dns"
+      ],
+      "body": "NetworkZonePut",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "DeleteNetworkZone",
+      "verb": "DELETE",
+      "path": "/1.0/network-zones/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_dns"
+      ],
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "GetNetworkZoneRecords",
+      "verb": "GET",
+      "path": "/1.0/network-zones/{zone}/records",
+      "params": [
+        "zone"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": [
+        "network_dns_records"
+      ],
+      "body": null,
+      "model": "NetworkZoneRecord",
+      "result": "list",
+      "guards": [],
+      "legal_params": [
+        "zone"
+      ]
+    },
+    {
+      "name": "GetNetworkZoneRecord",
+      "verb": "GET",
+      "path": "/1.0/network-zones/{zone}/records/{name}",
+      "params": [
+        "zone",
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_dns_records"
+      ],
+      "body": null,
+      "model": "NetworkZoneRecord",
+      "result": "model",
+      "guards": [],
+      "legal_params": [
+        "zone",
+        "name"
+      ]
+    },
+    {
+      "name": "CreateNetworkZoneRecord",
+      "verb": "POST",
+      "path": "/1.0/network-zones/{zone}/records",
+      "params": [
+        "zone"
+      ],
+      "query": {},
+      "extension": [
+        "network_dns_records"
+      ],
+      "body": "NetworkZoneRecordsPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "zone"
+      ]
+    },
+    {
+      "name": "UpdateNetworkZoneRecord",
+      "verb": "PUT",
+      "path": "/1.0/network-zones/{zone}/records/{name}",
+      "params": [
+        "zone",
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_dns_records"
+      ],
+      "body": "NetworkZoneRecordPut",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "zone",
+        "name"
+      ]
+    },
+    {
+      "name": "DeleteNetworkZoneRecord",
+      "verb": "DELETE",
+      "path": "/1.0/network-zones/{zone}/records/{name}",
+      "params": [
+        "zone",
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_dns_records"
+      ],
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "zone",
+        "name"
+      ]
+    },
+    {
+      "name": "GetNetworkLoadBalancerAddresses",
+      "verb": "GET",
+      "path": "/1.0/networks/{networkName}/load-balancers",
+      "params": [
+        "networkName"
+      ],
+      "query": {},
+      "extension": "network_load_balancer",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": [
+        "networkName"
+      ]
+    },
+    {
+      "name": "GetNetworkLoadBalancers",
+      "verb": "GET",
+      "path": "/1.0/networks/{networkName}/load-balancers",
+      "params": [
+        "networkName"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": "network_load_balancer",
+      "body": null,
+      "model": "NetworkLoadBalancer",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetNetworkLoadBalancer",
+      "verb": "GET",
+      "path": "/1.0/networks/{networkName}/load-balancers/{listenAddress}",
+      "params": [
+        "networkName",
+        "listenAddress"
+      ],
+      "query": {},
+      "extension": "network_load_balancer",
+      "body": null,
+      "model": "NetworkLoadBalancer",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "CreateNetworkLoadBalancer",
+      "verb": "POST",
+      "path": "/1.0/networks/{networkName}/load-balancers",
+      "params": [
+        "networkName"
+      ],
+      "query": {},
+      "extension": "network_load_balancer",
+      "body": "NetworkLoadBalancersPost",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "UpdateNetworkLoadBalancer",
+      "verb": "PUT",
+      "path": "/1.0/networks/{networkName}/load-balancers/{listenAddress}",
+      "params": [
+        "networkName",
+        "listenAddress"
+      ],
+      "query": {},
+      "extension": "network_load_balancer",
+      "body": "NetworkLoadBalancerPut",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "DeleteNetworkLoadBalancer",
+      "verb": "DELETE",
+      "path": "/1.0/networks/{networkName}/load-balancers/{listenAddress}",
+      "params": [
+        "networkName",
+        "listenAddress"
+      ],
+      "query": {},
+      "extension": "network_load_balancer",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "GetNetworkLoadBalancerState",
+      "verb": "GET",
+      "path": "/1.0/networks/{networkName}/load-balancers/{listenAddress}/state",
+      "params": [
+        "networkName",
+        "listenAddress"
+      ],
+      "query": {},
+      "extension": "network_load_balancer_state",
+      "body": null,
+      "model": "NetworkLoadBalancerState",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "GetNetworkPeerNames",
+      "verb": "GET",
+      "path": "/1.0/networks/{networkName}/peers",
+      "params": [
+        "networkName"
+      ],
+      "query": {},
+      "extension": "network_peer",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": [
+        "networkName"
+      ]
+    },
+    {
+      "name": "CreateNetworkPeer",
+      "verb": "POST",
+      "path": "/1.0/networks/{networkName}/peers",
+      "params": [
+        "networkName"
+      ],
+      "query": {},
+      "extension": "network_peer",
+      "body": "NetworkPeersPost",
+      "model": null,
+      "result": "sync",
+      "guards": [
+        {
+          "field": "type",
+          "extension": "network_integrations",
+          "exclude": [
+            null,
+            "",
+            "local"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "GetNetworkForwardAddresses",
+      "verb": "GET",
+      "path": "/1.0/networks/{networkName}/forwards",
+      "params": [
+        "networkName"
+      ],
+      "query": {},
+      "extension": "network_forward",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": [
+        "networkName"
+      ]
+    },
+    {
+      "name": "GetNetworkZoneRecordNames",
+      "verb": "GET",
+      "path": "/1.0/network-zones/{zone}/records",
+      "params": [
+        "zone"
+      ],
+      "query": {},
+      "extension": "network_dns_records",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": [
+        "zone"
+      ]
+    },
+    {
+      "name": "GetStoragePoolNames",
+      "verb": "GET",
+      "path": "/1.0/storage-pools",
+      "params": [],
+      "query": {},
+      "extension": [
+        "storage"
+      ],
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetStoragePools",
+      "verb": "GET",
+      "path": "/1.0/storage-pools",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": [
+        "storage"
+      ],
+      "body": null,
+      "model": "StoragePool",
+      "result": "list",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetStoragePoolsWithFilter",
+      "verb": "GET",
+      "path": "/1.0/storage-pools",
+      "params": [
+        "filters"
+      ],
+      "query": {
+        "recursion": "1",
+        "filter": "{filters}"
+      },
+      "extension": [
+        "storage"
+      ],
+      "body": null,
+      "model": "StoragePool",
+      "result": "list",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetStoragePool",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "storage"
+      ],
+      "body": null,
+      "model": "StoragePool",
+      "result": "model",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "CreateStoragePool",
+      "verb": "POST",
+      "path": "/1.0/storage-pools",
+      "params": [],
+      "query": {},
+      "extension": [
+        "storage"
+      ],
+      "body": "StoragePoolsPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "UpdateStoragePool",
+      "verb": "PUT",
+      "path": "/1.0/storage-pools/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "storage"
+      ],
+      "body": "StoragePoolPut",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "DeleteStoragePool",
+      "verb": "DELETE",
+      "path": "/1.0/storage-pools/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "storage"
+      ],
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "GetStoragePoolResources",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{name}/resources",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "resources"
+      ],
+      "body": null,
+      "model": "ResourcesStoragePool",
+      "result": "model",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "CreateStoragePoolBucketBackup",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}/backups",
+      "params": [
+        "poolName",
+        "bucketName"
+      ],
+      "query": {},
+      "extension": [
+        "storage_bucket_backup"
+      ],
+      "body": "StorageBucketBackupsPost",
+      "model": null,
+      "result": "operation",
+      "guards": [],
+      "legal_params": [
+        "poolName",
+        "bucketName"
+      ]
+    },
+    {
+      "name": "DeleteStoragePoolBucketBackup",
+      "verb": "DELETE",
+      "path": "/1.0/storage-pools/{pool}/buckets/{bucketName}/backups/{name}",
+      "params": [
+        "pool",
+        "bucketName",
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "storage_bucket_backup"
+      ],
+      "body": null,
+      "model": null,
+      "result": "operation",
+      "guards": [],
+      "legal_params": [
+        "pool",
+        "bucketName",
+        "name"
+      ]
+    },
+    {
+      "name": "GetStoragePoolVolumes",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes",
+      "params": [
+        "pool"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": [
+        "storage"
+      ],
+      "body": null,
+      "model": "StorageVolume",
+      "result": "list",
+      "guards": [],
+      "legal_params": [
+        "pool"
+      ]
+    },
+    {
+      "name": "GetStoragePoolVolumesWithFilter",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes",
+      "params": [
+        "pool",
+        "filters"
+      ],
+      "query": {
+        "recursion": "1",
+        "filter": "{filters}"
+      },
+      "extension": [
+        "storage"
+      ],
+      "body": null,
+      "model": "StorageVolume",
+      "result": "list",
+      "guards": [],
+      "legal_params": [
+        "pool"
+      ]
+    },
+    {
+      "name": "GetStoragePoolVolumesFull",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes",
+      "params": [
+        "pool"
+      ],
+      "query": {
+        "recursion": "2"
+      },
+      "extension": [
+        "storage_volume_full"
+      ],
+      "body": null,
+      "model": "StorageVolumeFull",
+      "result": "list",
+      "guards": [],
+      "legal_params": [
+        "pool"
+      ]
+    },
+    {
+      "name": "GetStoragePoolVolumesFullWithFilter",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes",
+      "params": [
+        "pool",
+        "filters"
+      ],
+      "query": {
+        "recursion": "2",
+        "filter": "{filters}"
+      },
+      "extension": [
+        "storage_volume_full"
+      ],
+      "body": null,
+      "model": "StorageVolumeFull",
+      "result": "list",
+      "guards": [],
+      "legal_params": [
+        "pool"
+      ]
+    },
+    {
+      "name": "GetStorageVolumeBackups",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes/custom/{volName}/backups",
+      "params": [
+        "pool",
+        "volName"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": [
+        "custom_volume_backup"
+      ],
+      "body": null,
+      "model": "StorageVolumeBackup",
+      "result": "list",
+      "guards": [],
+      "legal_params": [
+        "pool",
+        "volName"
+      ]
+    },
+    {
+      "name": "GetStorageVolumeBackup",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes/custom/{volName}/backups/{name}",
+      "params": [
+        "pool",
+        "volName",
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "custom_volume_backup"
+      ],
+      "body": null,
+      "model": "StorageVolumeBackup",
+      "result": "model",
+      "guards": [],
+      "legal_params": [
+        "pool",
+        "volName",
+        "name"
+      ]
+    },
+    {
+      "name": "CreateStorageVolumeBackup",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{pool}/volumes/custom/{volName}/backups",
+      "params": [
+        "pool",
+        "volName"
+      ],
+      "query": {},
+      "extension": [
+        "custom_volume_backup"
+      ],
+      "body": "StorageVolumeBackupsPost",
+      "model": null,
+      "result": "operation",
+      "guards": [],
+      "legal_params": [
+        "pool",
+        "volName"
+      ]
+    },
+    {
+      "name": "RenameStorageVolumeBackup",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{pool}/volumes/custom/{volName}/backups/{name}",
+      "params": [
+        "pool",
+        "volName",
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "custom_volume_backup"
+      ],
+      "body": "StorageVolumeBackupPost",
+      "model": null,
+      "result": "operation",
+      "guards": [],
+      "legal_params": [
+        "pool",
+        "volName",
+        "name"
+      ]
+    },
+    {
+      "name": "DeleteStorageVolumeBackup",
+      "verb": "DELETE",
+      "path": "/1.0/storage-pools/{pool}/volumes/custom/{volName}/backups/{name}",
+      "params": [
+        "pool",
+        "volName",
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "custom_volume_backup"
+      ],
+      "body": null,
+      "model": null,
+      "result": "operation",
+      "guards": [],
+      "legal_params": [
+        "pool",
+        "volName",
+        "name"
+      ]
+    },
+    {
+      "name": "GetStoragePoolBucketNames",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets",
+      "params": [
+        "poolName"
+      ],
+      "query": {},
+      "extension": "storage_buckets",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": [
+        "poolName"
+      ]
+    },
+    {
+      "name": "GetStoragePoolBuckets",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets",
+      "params": [
+        "poolName"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": [
+        "storage_buckets"
+      ],
+      "body": null,
+      "model": "StorageBucket",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolBucketsWithFilter",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets",
+      "params": [
+        "poolName",
+        "filters"
+      ],
+      "query": {
+        "recursion": "1",
+        "filter": "{filters}"
+      },
+      "extension": [
+        "storage_buckets"
+      ],
+      "body": null,
+      "model": "StorageBucket",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolBucketsAllProjects",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets",
+      "params": [
+        "poolName"
+      ],
+      "query": {
+        "recursion": "1",
+        "all-projects": "true"
+      },
+      "extension": [
+        "storage_buckets_all_projects"
+      ],
+      "body": null,
+      "model": "StorageBucket",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolBucketsWithFilterAllProjects",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets",
+      "params": [
+        "poolName",
+        "filters"
+      ],
+      "query": {
+        "recursion": "1",
+        "all-projects": "true",
+        "filter": "{filters}"
+      },
+      "extension": [
+        "storage_buckets",
+        "storage_buckets_all_projects"
+      ],
+      "body": null,
+      "model": "StorageBucket",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolBucketsFull",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets",
+      "params": [
+        "poolName"
+      ],
+      "query": {
+        "recursion": "2"
+      },
+      "extension": [
+        "storage_bucket_full"
+      ],
+      "body": null,
+      "model": "StorageBucketFull",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolBucketsFullWithFilter",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets",
+      "params": [
+        "poolName",
+        "filters"
+      ],
+      "query": {
+        "recursion": "2",
+        "filter": "{filters}"
+      },
+      "extension": [
+        "storage_bucket_full"
+      ],
+      "body": null,
+      "model": "StorageBucketFull",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolBucketsFullAllProjects",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets",
+      "params": [
+        "poolName"
+      ],
+      "query": {
+        "recursion": "2",
+        "all-projects": "true"
+      },
+      "extension": [
+        "storage_bucket_full"
+      ],
+      "body": null,
+      "model": "StorageBucketFull",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolBucketsFullWithFilterAllProjects",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets",
+      "params": [
+        "poolName",
+        "filters"
+      ],
+      "query": {
+        "recursion": "2",
+        "all-projects": "true",
+        "filter": "{filters}"
+      },
+      "extension": [
+        "storage_bucket_full"
+      ],
+      "body": null,
+      "model": "StorageBucketFull",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolBucket",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}",
+      "params": [
+        "poolName",
+        "bucketName"
+      ],
+      "query": {},
+      "extension": "storage_buckets",
+      "body": null,
+      "model": "StorageBucket",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolBucketFull",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}",
+      "params": [
+        "poolName",
+        "bucketName"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": "storage_bucket_full",
+      "body": null,
+      "model": "StorageBucketFull",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "CreateStoragePoolBucket",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{poolName}/buckets",
+      "params": [
+        "poolName"
+      ],
+      "query": {},
+      "extension": "storage_buckets",
+      "body": "StorageBucketsPost",
+      "model": "StorageBucketKey",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "UpdateStoragePoolBucket",
+      "verb": "PUT",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}",
+      "params": [
+        "poolName",
+        "bucketName"
+      ],
+      "query": {},
+      "extension": "storage_buckets",
+      "body": "StorageBucketPut",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "DeleteStoragePoolBucket",
+      "verb": "DELETE",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}",
+      "params": [
+        "poolName",
+        "bucketName"
+      ],
+      "query": {},
+      "extension": "storage_buckets",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolBucketKeyNames",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}/keys",
+      "params": [
+        "poolName",
+        "bucketName"
+      ],
+      "query": {},
+      "extension": "storage_buckets",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": [
+        "poolName",
+        "bucketName"
+      ]
+    },
+    {
+      "name": "GetStoragePoolBucketKeys",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}/keys",
+      "params": [
+        "poolName",
+        "bucketName"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": "storage_buckets",
+      "body": null,
+      "model": "StorageBucketKey",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolBucketKey",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}/keys/{keyName}",
+      "params": [
+        "poolName",
+        "bucketName",
+        "keyName"
+      ],
+      "query": {},
+      "extension": "storage_buckets",
+      "body": null,
+      "model": "StorageBucketKey",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "CreateStoragePoolBucketKey",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}/keys",
+      "params": [
+        "poolName",
+        "bucketName"
+      ],
+      "query": {},
+      "extension": "storage_buckets",
+      "body": "StorageBucketKeysPost",
+      "model": "StorageBucketKey",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "UpdateStoragePoolBucketKey",
+      "verb": "PUT",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}/keys/{keyName}",
+      "params": [
+        "poolName",
+        "bucketName",
+        "keyName"
+      ],
+      "query": {},
+      "extension": "storage_buckets",
+      "body": "StorageBucketKeyPut",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "DeleteStoragePoolBucketKey",
+      "verb": "DELETE",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}/keys/{keyName}",
+      "params": [
+        "poolName",
+        "bucketName",
+        "keyName"
+      ],
+      "query": {},
+      "extension": "storage_buckets",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolVolumeNames",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes",
+      "params": [
+        "pool"
+      ],
+      "query": {},
+      "extension": "storage",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": [
+        "pool"
+      ]
+    },
+    {
+      "name": "GetStoragePoolVolumesAllProjects",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes",
+      "params": [
+        "pool"
+      ],
+      "query": {
+        "recursion": "1",
+        "all-projects": "true"
+      },
+      "extension": [
+        "storage",
+        "storage_volumes_all_projects"
+      ],
+      "body": null,
+      "model": "StorageVolume",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolVolumesWithFilterAllProjects",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes",
+      "params": [
+        "pool",
+        "filters"
+      ],
+      "query": {
+        "recursion": "1",
+        "all-projects": "true",
+        "filter": "{filters}"
+      },
+      "extension": [
+        "storage",
+        "storage_volumes_all_projects"
+      ],
+      "body": null,
+      "model": "StorageVolume",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolVolumesFullAllProjects",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes",
+      "params": [
+        "pool"
+      ],
+      "query": {
+        "recursion": "2",
+        "all-projects": "true"
+      },
+      "extension": "storage_volume_full",
+      "body": null,
+      "model": "StorageVolumeFull",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolVolumesFullWithFilterAllProjects",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes",
+      "params": [
+        "pool",
+        "filters"
+      ],
+      "query": {
+        "recursion": "2",
+        "all-projects": "true",
+        "filter": "{filters}"
+      },
+      "extension": "storage_volume_full",
+      "body": null,
+      "model": "StorageVolumeFull",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolVolume",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volType}/{name}",
+      "params": [
+        "pool",
+        "volType",
+        "name"
+      ],
+      "query": {},
+      "extension": "storage",
+      "body": null,
+      "model": "StorageVolume",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolVolumeFull",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volType}/{name}",
+      "params": [
+        "pool",
+        "volType",
+        "name"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": "storage_volume_full",
+      "body": null,
+      "model": "StorageVolumeFull",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolVolumeState",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volType}/{name}/state",
+      "params": [
+        "pool",
+        "volType",
+        "name"
+      ],
+      "query": {},
+      "extension": "storage_volume_state",
+      "body": null,
+      "model": "StorageVolumeState",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "CreateStoragePoolVolume",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{pool}/volumes/{body.type}",
+      "params": [
+        "pool"
+      ],
+      "query": {},
+      "extension": "storage",
+      "body": "StorageVolumesPost",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "UpdateStoragePoolVolume",
+      "verb": "PUT",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volType}/{name}",
+      "params": [
+        "pool",
+        "volType",
+        "name"
+      ],
+      "query": {},
+      "extension": "storage",
+      "body": "StorageVolumePut",
+      "model": null,
+      "result": "sync",
+      "guards": [
+        {
+          "field": "restore",
+          "extension": "storage_api_volume_snapshots"
+        }
+      ]
+    },
+    {
+      "name": "DeleteStoragePoolVolume",
+      "verb": "DELETE",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volType}/{name}",
+      "params": [
+        "pool",
+        "volType",
+        "name"
+      ],
+      "query": {},
+      "extension": "storage",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "RenameStoragePoolVolume",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volType}/{name}",
+      "params": [
+        "pool",
+        "volType",
+        "name"
+      ],
+      "query": {},
+      "extension": "storage_api_volume_rename",
+      "body": "StorageVolumePost",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "RebuildStoragePoolVolume",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volType}/{name}/rebuild",
+      "params": [
+        "pool",
+        "volType",
+        "name"
+      ],
+      "query": {},
+      "extension": "storage_volumes_rebuild",
+      "body": "StorageVolumeRebuildPost",
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolVolumeSnapshotNames",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volumeType}/{volumeName}/snapshots",
+      "params": [
+        "pool",
+        "volumeType",
+        "volumeName"
+      ],
+      "query": {},
+      "extension": "storage_api_volume_snapshots",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": [
+        "pool",
+        "volumeType",
+        "volumeName"
+      ]
+    },
+    {
+      "name": "GetStoragePoolVolumeSnapshots",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volumeType}/{volumeName}/snapshots",
+      "params": [
+        "pool",
+        "volumeType",
+        "volumeName"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": "storage_api_volume_snapshots",
+      "body": null,
+      "model": "StorageVolumeSnapshot",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetStoragePoolVolumeSnapshot",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volumeType}/{volumeName}/snapshots/{snapshotName}",
+      "params": [
+        "pool",
+        "volumeType",
+        "volumeName",
+        "snapshotName"
+      ],
+      "query": {},
+      "extension": "storage_api_volume_snapshots",
+      "body": null,
+      "model": "StorageVolumeSnapshot",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "CreateStoragePoolVolumeSnapshot",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volumeType}/{volumeName}/snapshots",
+      "params": [
+        "pool",
+        "volumeType",
+        "volumeName"
+      ],
+      "query": {},
+      "extension": "storage_api_volume_snapshots",
+      "body": "StorageVolumeSnapshotsPost",
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "RenameStoragePoolVolumeSnapshot",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volumeType}/{volumeName}/snapshots/{snapshotName}",
+      "params": [
+        "pool",
+        "volumeType",
+        "volumeName",
+        "snapshotName"
+      ],
+      "query": {},
+      "extension": "storage_api_volume_snapshots",
+      "body": "StorageVolumeSnapshotPost",
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "DeleteStoragePoolVolumeSnapshot",
+      "verb": "DELETE",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volumeType}/{volumeName}/snapshots/{snapshotName}",
+      "params": [
+        "pool",
+        "volumeType",
+        "volumeName",
+        "snapshotName"
+      ],
+      "query": {},
+      "extension": "storage_api_volume_snapshots",
+      "body": null,
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "UpdateStoragePoolVolumeSnapshot",
+      "verb": "PUT",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volumeType}/{volumeName}/snapshots/{snapshotName}",
+      "params": [
+        "pool",
+        "volumeType",
+        "volumeName",
+        "snapshotName"
+      ],
+      "query": {},
+      "extension": "storage_api_volume_snapshots",
+      "body": "StorageVolumeSnapshotPut",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "GetStorageVolumeBackupNames",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes/custom/{volName}/backups",
+      "params": [
+        "pool",
+        "volName"
+      ],
+      "query": {},
+      "extension": "custom_volume_backup",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": [
+        "pool",
+        "volName"
+      ]
+    },
+    {
+      "name": "GetOperationUUIDs",
+      "verb": "GET",
+      "path": "/1.0/operations",
+      "params": [],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": []
+    },
+    {
+      "name": "GetOperations",
+      "verb": "GET",
+      "path": "/1.0/operations",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": null,
+      "body": null,
+      "model": "Operation",
+      "result": "grouped_list",
+      "guards": []
+    },
+    {
+      "name": "GetOperationsAllProjects",
+      "verb": "GET",
+      "path": "/1.0/operations",
+      "params": [],
+      "query": {
+        "recursion": "1",
+        "all-projects": "true"
+      },
+      "extension": "operations_get_query_all_projects",
+      "body": null,
+      "model": "Operation",
+      "result": "grouped_list",
+      "guards": []
+    },
+    {
+      "name": "GetOperation",
+      "verb": "GET",
+      "path": "/1.0/operations/{uuid}",
+      "params": [
+        "uuid"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": "Operation",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "GetOperationWait",
+      "verb": "GET",
+      "path": "/1.0/operations/{uuid}/wait",
+      "params": [
+        "uuid",
+        "timeout"
+      ],
+      "query": {
+        "timeout": "{timeout}"
+      },
+      "extension": null,
+      "body": null,
+      "model": "Operation",
+      "result": "model",
+      "guards": [],
+      "arg_types": {
+        "timeout": "int"
+      }
+    },
+    {
+      "name": "GetOperationWaitSecret",
+      "verb": "GET",
+      "path": "/1.0/operations/{uuid}/wait",
+      "params": [
+        "uuid",
+        "secret",
+        "timeout"
+      ],
+      "query": {
+        "timeout": "{timeout}",
+        "secret": "{secret}"
+      },
+      "extension": null,
+      "body": null,
+      "model": "Operation",
+      "result": "model",
+      "guards": [],
+      "arg_types": {
+        "timeout": "int"
+      }
+    },
+    {
+      "name": "DeleteOperation",
+      "verb": "DELETE",
+      "path": "/1.0/operations/{uuid}",
+      "params": [
+        "uuid"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "GetInstanceBackupNames",
+      "verb": "GET",
+      "path": "/1.0/instances/{instanceName}/backups",
+      "params": [
+        "instanceName"
+      ],
+      "query": {},
+      "extension": "container_backup",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": [
+        "instanceName"
+      ]
+    },
+    {
+      "name": "GetInstanceBackups",
+      "verb": "GET",
+      "path": "/1.0/instances/{instanceName}/backups",
+      "params": [
+        "instanceName"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": "container_backup",
+      "body": null,
+      "model": "InstanceBackup",
+      "result": "list",
+      "guards": []
+    },
+    {
+      "name": "GetInstanceBackup",
+      "verb": "GET",
+      "path": "/1.0/instances/{instanceName}/backups/{name}",
+      "params": [
+        "instanceName",
+        "name"
+      ],
+      "query": {},
+      "extension": "container_backup",
+      "body": null,
+      "model": "InstanceBackup",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "CreateInstanceBackup",
+      "verb": "POST",
+      "path": "/1.0/instances/{instanceName}/backups",
+      "params": [
+        "instanceName"
+      ],
+      "query": {},
+      "extension": "container_backup",
+      "body": "InstanceBackupsPost",
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "RenameInstanceBackup",
+      "verb": "POST",
+      "path": "/1.0/instances/{instanceName}/backups/{name}",
+      "params": [
+        "instanceName",
+        "name"
+      ],
+      "query": {},
+      "extension": "container_backup",
+      "body": "InstanceBackupPost",
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "DeleteInstanceBackup",
+      "verb": "DELETE",
+      "path": "/1.0/instances/{instanceName}/backups/{name}",
+      "params": [
+        "instanceName",
+        "name"
+      ],
+      "query": {},
+      "extension": "container_backup",
+      "body": null,
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "DeleteInstanceFile",
+      "verb": "DELETE",
+      "path": "/1.0/instances/{instanceName}/files",
+      "params": [
+        "instanceName",
+        "filePath"
+      ],
+      "query": {
+        "path": "{filePath}"
+      },
+      "extension": "file_delete",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "GetInstanceLogfiles",
+      "verb": "GET",
+      "path": "/1.0/instances/{name}/logs",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": [
+        "name"
+      ]
+    },
+    {
+      "name": "DeleteInstanceLogfile",
+      "verb": "DELETE",
+      "path": "/1.0/instances/{name}/logs/{filename}",
+      "params": [
+        "name",
+        "filename"
+      ],
+      "query": {},
+      "extension": "container_log_delete",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "GetInstanceMetadata",
+      "verb": "GET",
+      "path": "/1.0/instances/{name}/metadata",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "container_edit_metadata",
+      "body": null,
+      "model": "ImageMetadata",
+      "result": "model",
+      "guards": []
+    },
+    {
+      "name": "UpdateInstanceMetadata",
+      "verb": "PUT",
+      "path": "/1.0/instances/{name}/metadata",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "container_edit_metadata",
+      "body": "ImageMetadata",
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "DeleteInstanceTemplateFile",
+      "verb": "DELETE",
+      "path": "/1.0/instances/{instanceName}/metadata/templates",
+      "params": [
+        "instanceName",
+        "templateName"
+      ],
+      "query": {
+        "path": "{templateName}"
+      },
+      "extension": "container_edit_metadata",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": []
+    },
+    {
+      "name": "ExecInstance",
+      "verb": "POST",
+      "path": "/1.0/instances/{instanceName}/exec",
+      "params": [
+        "instanceName"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "InstanceExecPost",
+      "model": null,
+      "result": "operation",
+      "guards": [
+        {
+          "field": "record-output",
+          "extension": "container_exec_recording"
+        },
+        {
+          "field": "user",
+          "extension": "container_exec_user_group_cwd"
+        },
+        {
+          "field": "group",
+          "extension": "container_exec_user_group_cwd"
+        },
+        {
+          "field": "cwd",
+          "extension": "container_exec_user_group_cwd"
+        }
+      ],
+      "oracle_trailing": [
+        null
+      ]
+    },
+    {
+      "name": "ConsoleInstance",
+      "verb": "POST",
+      "path": "/1.0/instances/{instanceName}/console",
+      "params": [
+        "instanceName"
+      ],
+      "query": {},
+      "extension": "console",
+      "body": "InstanceConsolePost",
+      "model": null,
+      "result": "operation",
+      "guards": [
+        {
+          "field": "type",
+          "extension": "console_vga_type",
+          "if_equals": "vga"
+        },
+        {
+          "field": "force",
+          "extension": "console_force"
+        }
+      ],
+      "oracle_trailing": [
+        null
+      ],
+      "defaults": {
+        "type": "console"
+      },
+      "oracle_expected_error": "A terminal must be set"
+    },
+    {
+      "name": "MigrateInstance",
+      "verb": "POST",
+      "path": "/1.0/instances/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "InstancePost",
+      "model": null,
+      "result": "operation",
+      "guards": [
+        {
+          "field": "migration",
+          "equals": true
+        },
+        {
+          "field": "instance_only",
+          "extension": "container_only_migration"
+        },
+        {
+          "field": "pool",
+          "extension": "instance_pool_move"
+        },
+        {
+          "field": "project",
+          "extension": "instance_project_move"
+        },
+        {
+          "field": "allow_inconsistent",
+          "extension": "cluster_migration_inconsistent_copy"
+        }
+      ]
+    },
+    {
+      "name": "MigrateInstanceSnapshot",
+      "verb": "POST",
+      "path": "/1.0/instances/{instance_name}/snapshots/{name}",
+      "params": [
+        "instance_name",
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "InstanceSnapshotPost",
+      "model": null,
+      "result": "operation",
+      "guards": [
+        {
+          "field": "migration",
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "MigrateStoragePoolVolume",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{pool}/volumes/custom/{name}",
+      "params": [
+        "pool"
+      ],
+      "query": {},
+      "extension": "storage_api_remote_volume_handling",
+      "body": "StorageVolumePost",
+      "model": null,
+      "result": "operation",
+      "guards": [
+        {
+          "field": "migration",
+          "equals": true
+        }
+      ],
+      "body_path": {
+        "name": "name"
+      }
+    },
+    {
+      "name": "GetStoragePoolVolumeNamesAllProjects",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes",
+      "params": [
+        "pool"
+      ],
+      "query": {
+        "all-projects": "true"
+      },
+      "extension": [
+        "storage",
+        "storage_volumes_all_projects"
+      ],
+      "body": null,
+      "model": null,
+      "result": "project_urls",
+      "guards": [],
+      "arg_types": {
+        "pool": "string"
+      }
+    },
+    {
+      "name": "CreateStoragePoolVolumeFromMigration",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{pool}/volumes/{body.type}",
+      "params": [
+        "pool"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "StorageVolumesPost",
+      "model": null,
+      "result": "operation",
+      "guards": []
+    },
+    {
+      "name": "GetServerResources",
+      "verb": "GET",
+      "path": "/1.0/resources",
+      "params": [],
+      "query": {},
+      "extension": [
+        "resources"
+      ],
+      "body": null,
+      "model": "Resources",
+      "result": "model",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetWarningUUIDs",
+      "verb": "GET",
+      "path": "/1.0/warnings",
+      "params": [],
+      "query": {},
+      "extension": [
+        "warnings"
+      ],
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetWarnings",
+      "verb": "GET",
+      "path": "/1.0/warnings",
+      "params": [],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": [
+        "warnings"
+      ],
+      "body": null,
+      "model": "Warning",
+      "result": "list",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "GetWarning",
+      "verb": "GET",
+      "path": "/1.0/warnings/{UUID}",
+      "params": [
+        "UUID"
+      ],
+      "query": {},
+      "extension": [
+        "warnings"
+      ],
+      "body": null,
+      "model": "Warning",
+      "result": "model",
+      "guards": [],
+      "legal_params": [
+        "UUID"
+      ]
+    },
+    {
+      "name": "UpdateWarning",
+      "verb": "PUT",
+      "path": "/1.0/warnings/{UUID}",
+      "params": [
+        "UUID"
+      ],
+      "query": {},
+      "extension": [
+        "warnings"
+      ],
+      "body": "WarningPut",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "UUID"
+      ]
+    },
+    {
+      "name": "DeleteWarning",
+      "verb": "DELETE",
+      "path": "/1.0/warnings/{UUID}",
+      "params": [
+        "UUID"
+      ],
+      "query": {},
+      "extension": [
+        "warnings"
+      ],
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "legal_params": [
+        "UUID"
+      ]
+    },
+    {
+      "name": "GetMetadataConfiguration",
+      "verb": "GET",
+      "path": "/1.0/metadata/configuration",
+      "params": [],
+      "query": {},
+      "extension": [
+        "metadata_configuration"
+      ],
+      "body": null,
+      "model": "MetadataConfiguration",
+      "result": "model",
+      "guards": [],
+      "legal_params": []
+    },
+    {
+      "name": "CreateInstanceBitmap",
+      "path": "/1.0/instances/{name}/bitmaps",
+      "params": [
+        "name"
+      ],
+      "verb": "POST",
+      "body": "StorageVolumeBitmapsPost",
+      "model": null,
+      "result": "sync",
+      "extension": "storage_volume_nbd",
+      "query": {},
+      "guards": []
+    },
+    {
+      "name": "CreateStorageVolumeBitmap",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volumeType}/{volumeName}/bitmaps",
+      "params": [
+        "pool",
+        "volumeType",
+        "volumeName"
+      ],
+      "verb": "POST",
+      "body": "StorageVolumeBitmapsPost",
+      "model": null,
+      "result": "sync",
+      "extension": "storage_volume_nbd",
+      "query": {},
+      "guards": []
+    },
+    {
+      "name": "GetStorageVolumeBitmaps",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volumeType}/{volumeName}/bitmaps",
+      "params": [
+        "pool",
+        "volumeType",
+        "volumeName"
+      ],
+      "verb": "GET",
+      "body": null,
+      "model": "StorageVolumeBitmap",
+      "result": "list",
+      "extension": "storage_volume_nbd",
+      "query": {
+        "recursion": "1"
+      },
+      "guards": []
+    },
+    {
+      "name": "GetStorageVolumeBitmapNames",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volumeType}/{volumeName}/bitmaps",
+      "params": [
+        "pool",
+        "volumeType",
+        "volumeName"
+      ],
+      "verb": "GET",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "extension": "storage_volume_nbd",
+      "query": {},
+      "guards": [],
+      "legal_params": [
+        "pool",
+        "volumeType",
+        "volumeName"
+      ]
+    },
+    {
+      "name": "DeleteStorageVolumeBitmap",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volumeType}/{volumeName}/bitmaps/{bitmapName}",
+      "params": [
+        "pool",
+        "volumeType",
+        "volumeName",
+        "bitmapName"
+      ],
+      "verb": "DELETE",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "extension": "storage_volume_nbd",
+      "query": {},
+      "guards": []
+    },
+    {
+      "name": "DeleteInstanceConsoleLog",
+      "path": "/1.0/instances/{name}/console",
+      "params": [
+        "name"
+      ],
+      "verb": "DELETE",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "extension": "console",
+      "query": {},
+      "guards": [],
+      "oracle_trailing": [
+        null
+      ]
+    },
+    {
+      "name": "UpdateServer",
+      "path": "/1.0",
+      "params": [],
+      "verb": "PUT",
+      "body": "ServerPut",
+      "model": null,
+      "result": "sync",
+      "extension": null,
+      "query": {},
+      "guards": []
+    },
+    {
+      "name": "GetInstanceTemplateFiles",
+      "path": "/1.0/instances/{instanceName}/metadata/templates",
+      "params": [
+        "instanceName"
+      ],
+      "verb": "GET",
+      "body": null,
+      "model": null,
+      "result": "strings",
+      "extension": "container_edit_metadata",
+      "query": {},
+      "guards": []
+    }
+  ]
+}

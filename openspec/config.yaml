@@ -1,0 +1,25 @@
+schema: spec-driven
+context: |
+  opsmaru-incus is a pure Elixir library, OTP application :opsmaru_incus,
+  exposing Opsmaru.Incus, Opsmaru.Context and Opsmaru.ClientSupervisor. It has
+  no application callback and never starts processes, listeners, state or
+  backend connections on load. It was extracted with history from
+  upmaru/opsmaru on 2026-10-13 (source a00805d) together with the
+  add-embedded-incus-foundation change, whose task 3.9 continues here.
+  Consumers: Macus embeds it in its headless Phoenix server over its private
+  incus.sock relay; central Opsmaru uses it for registered direct-HTTPS
+  targets and connectors. Both pin immutable revisions of this repository.
+  Incus is the canonical workload backend. The pinned reference is Incus
+  v7.0.1 at 13f3992766142d5087fff2e362cd2e1a75294fe8. Coverage is tracked per
+  Go client declaration in priv/incus/coverage.json; missing entries stay
+  visible and block a complete-port claim. Hosts supply connections, verified
+  identity, readiness, OCI/SimpleStreams delta adapters, credentials and
+  temporary state; the library never probes sockets, downgrades HTTPS,
+  discovers tools or runs commands. Preserve native operation identity and
+  never replay possibly accepted mutations. Fixture, isolated consumer,
+  real-Incus and Macus hardware evidence are distinct. MCP tools, durable
+  tasks, central registry, OIDC and connectors belong to upmaru/opsmaru;
+  Swift/VZ, the public gateway and packaging belong to upmaru/macus. Pin
+  dependencies as ranges here; consumers lock exact versions. Use Git Flow
+  feature branches from develop. Canonical checks are mise run check and
+  mise run check:reference.
