@@ -624,7 +624,8 @@ full Go argument orchestration and tool policy remain outside this subset.
 
 `Session.run/7` combines submission, negotiation, finite binary stdin and the same
 acknowledged output sinks. It drains both outputs while writing stdin in chunks
-of at most `max_chunk_bytes`, with one outstanding write and one read per output.
+of at most `min(max_chunk_bytes, max_response_bytes)`, with one outstanding write
+and one read per output.
 Its absolute lifetime starts before POST and includes callbacks and final wait:
 
 ```elixir

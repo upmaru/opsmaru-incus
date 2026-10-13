@@ -567,3 +567,9 @@ contexts, cancellation, sink failure and owner cleanup without elapsed-time boun
 ExecInstance remains partial; InstanceExecArgs and other declaration gaps remain
 visible. Task 3.9 stays open and `complete_port=false`. Interactive/recorded IO,
 arbitrary input producers and tool capture/truncation/policy are outside this slice.
+
+PR #5's Greptile finding reproduced valid 8192-byte stdin failing after acceptance
+when the independently configured WebSocket frame limit was 4096 bytes. The
+writer now chunks to the smaller frame/chunk limit. Permanent Unix and verified
+mutual-HTTPS regressions require two exact binary chunks, input closure, native
+completion and a single POST without DELETE. Declaration status is unchanged.

@@ -111,7 +111,8 @@ defmodule Opsmaru.Incus.ExecOutput do
   end
 
   defp write(session, bytes, requests) do
-    size = min(byte_size(bytes), session.operation.client.connection.max_chunk_bytes)
+    connection = session.operation.client.connection
+    size = min(byte_size(bytes), min(connection.max_chunk_bytes, connection.max_response_bytes))
     <<chunk::binary-size(size), remaining::binary>> = bytes
     frame = if size == 0, do: {:text, ""}, else: {:binary, chunk}
     label = {:stdin, if(size == 0, do: nil, else: remaining)}

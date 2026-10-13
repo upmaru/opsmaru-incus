@@ -118,6 +118,33 @@ defmodule Opsmaru.Incus.ExecOutputTest do
     end
   end
 
+  for transport <- [:gen_tcp, :ssl] do
+    test "run chunks stdin to the smaller response frame limit over #{transport}", %{root: root} do
+      {client, fixture, _} = fixture(root, unquote(transport))
+      client = %{client | connection: %{client.connection | max_response_bytes: 4096}}
+      assert client.connection.max_chunk_bytes == 65_536
+      chunk = :binary.copy(<<0, 255>>, 2048)
+      stdin = chunk <> chunk
+      sink = fn _ -> :ok end
+
+      assert {:ok, result} =
+               Session.run(client, "fixture", @body, stdin, sink, sink,
+                 max_input_bytes: byte_size(stdin),
+                 max_output_bytes: 7
+               )
+
+      assert result.exit_status == 7
+      assert result.stdout_bytes == 4 and result.stderr_bytes == 3
+      assert result.operation.client == client
+      assert_receive {:stdin, ^chunk}, 5_000
+      assert_receive {:stdin, ^chunk}, 5_000
+      assert_receive {:barrier, "0"}, 5_000
+      requests = HTTPFixture.requests(fixture)
+      assert Enum.count(requests, &(&1.method == "POST")) == 1
+      refute Enum.any?(requests, &(&1.method == "DELETE"))
+    end
+  end
+
   test "run preflight rejects mode, sinks, options and input limits without POST", %{root: root} do
     {client, fixture, _} = fixture(root, :gen_tcp)
     sink = fn _ -> :ok end

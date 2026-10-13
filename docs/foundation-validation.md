@@ -1216,3 +1216,12 @@ deadline isolation, cancellation and owner cleanup without elapsed-time bounds.
 The slice adds about 400 implementation/fixture lines; no parser or scope expansion.
 Pushed-revision consumer and both-platform CI acceptance remain publication gates
 recorded on the draft PR. No real backend or consumer hardware was accessed.
+
+PR #5's P2 review finding was reproduced as `:frame_limit` in both new Unix and
+verified mutual-HTTPS tests before the fix. Stdin chunks now respect the smaller
+of `max_chunk_bytes` and `max_response_bytes`; the regressions verify exact binary
+delivery, native input closure/completion and no mutation replay/cancellation.
+The focused 17-test exec suite and full canonical check (998 tests, strict
+Credo/OpenSpec, warning-free compile/format) pass. Reference checks and identical
+coverage regeneration pass; declaration counts/status and the native pin are
+unchanged. Latest pushed consumer/CI evidence is recorded on PR #5.

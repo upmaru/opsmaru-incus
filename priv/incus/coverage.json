@@ -1025,7 +1025,7 @@
         "test/session_test.exs",
         "test/exec_output_test.exs"
       ],
-      "note": "Native request and channel slice plus creator-owned bounded live noninteractive stdout/stderr collection: unchanged ExecInstance IO, stdin/output barriers, bytes and authoritative exit status compared over Unix and verified mutual HTTPS. Independent aggregate limits, sink rejection/deadline/cancellation/owner-loss cleanup and concurrent output evidence. Session.run adds preflight bounded binary stdin, full-duplex acknowledged IO and one submission-to-completion lifetime, with retained negotiation acceptance and original-client reconciliation. Recorded output, interactive IO, arbitrary producers, full Go argument orchestration and declaration parity remain unverified."
+      "note": "Native request and channel slice plus creator-owned bounded live noninteractive stdout/stderr collection: unchanged ExecInstance IO, stdin/output barriers, bytes and authoritative exit status compared over Unix and verified mutual HTTPS. Independent aggregate limits, sink rejection/deadline/cancellation/owner-loss cleanup and concurrent output evidence. Session.run adds preflight bounded binary stdin, full-duplex acknowledged IO and one submission-to-completion lifetime, with retained negotiation acceptance and original-client reconciliation. Stdin chunking respects both independently configured WebSocket frame and chunk limits, with Unix/mutual-HTTPS regressions. Recorded output, interactive IO, arbitrary producers, full Go argument orchestration and declaration parity remain unverified."
     },
     {
       "id": "client/interface_method/InstanceServer.GetCertificate",
@@ -4079,7 +4079,7 @@
         "test/session_test.exs",
         "test/exec_output_test.exs"
       ],
-      "note": "Native request and channel slice plus creator-owned bounded live noninteractive stdout/stderr collection: unchanged ExecInstance IO, stdin/output barriers, bytes and authoritative exit status compared over Unix and verified mutual HTTPS. Independent aggregate limits, sink rejection/deadline/cancellation/owner-loss cleanup and concurrent output evidence. Session.run adds preflight bounded binary stdin, full-duplex acknowledged IO and one submission-to-completion lifetime, with retained negotiation acceptance and original-client reconciliation. Recorded output, interactive IO, arbitrary producers, full Go argument orchestration and declaration parity remain unverified."
+      "note": "Native request and channel slice plus creator-owned bounded live noninteractive stdout/stderr collection: unchanged ExecInstance IO, stdin/output barriers, bytes and authoritative exit status compared over Unix and verified mutual HTTPS. Independent aggregate limits, sink rejection/deadline/cancellation/owner-loss cleanup and concurrent output evidence. Session.run adds preflight bounded binary stdin, full-duplex acknowledged IO and one submission-to-completion lifetime, with retained negotiation acceptance and original-client reconciliation. Stdin chunking respects both independently configured WebSocket frame and chunk limits, with Unix/mutual-HTTPS regressions. Recorded output, interactive IO, arbitrary producers, full Go argument orchestration and declaration parity remain unverified."
     },
     {
       "id": "client/method/ProtocolIncus.ExportImage",
