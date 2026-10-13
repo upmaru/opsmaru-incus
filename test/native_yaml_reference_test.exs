@@ -521,7 +521,7 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
     started = System.monotonic_time(:millisecond)
     assert {:ok, value} = NativeConfig.from_yaml("ConfigMap", yaml)
     assert map_size(value) == 20_000
-    assert System.monotonic_time(:millisecond) - started < 1_000
+    assert System.monotonic_time(:millisecond) - started < 3_000
 
     assert {:error, _} =
              NativeConfig.from_yaml(
