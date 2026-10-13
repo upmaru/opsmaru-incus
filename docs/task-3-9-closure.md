@@ -360,3 +360,11 @@ call only. A 310-row contract matrix, realistic Incus documents, a seeded
 randomized contract test and 17,600 reviewer-generated documents across eight
 seeds show no contract violation; about 83% of native-accepted random
 documents are accepted.
+
+Greptile batch review `a6e929ef-5592-42e4-91d1-01caf5d51dcc` (4/5) found that a
+long-mantissa float such as `99999999999999999999e300` overflowed float64 and
+crashed the linked worker (terminating callers that do not trap exits), and
+that a timed-out worker could still deliver a late result after cleanup. The
+float range check now uses the leading significant digit's decimal magnitude,
+worker failures return a rejection, and cleanup waits for the worker's
+termination before draining its messages. Both cases are regression tests.

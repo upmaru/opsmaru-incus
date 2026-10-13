@@ -80,16 +80,22 @@ defmodule Opsmaru.Incus.NativeYaml do
     ref = make_ref()
 
     {pid, monitor} =
-      :erlang.spawn_opt(fn -> send(caller, {ref, fun.()}) end, [
+      :erlang.spawn_opt(fn -> send(caller, {ref, contain(fun)}) end, [
         :link,
         :monitor,
         max_heap_size: %{size: @max_heap_words, kill: true, error_logger: false}
       ])
 
-    result = await(pid, monitor, ref, System.monotonic_time(:millisecond) + @max_millis)
+    {result, down?} = await(pid, monitor, ref, System.monotonic_time(:millisecond) + @max_millis)
     Process.unlink(pid)
     Process.exit(pid, :kill)
-    Process.demonitor(monitor, [:flush])
+
+    # Wait for termination so no result can arrive after we return.
+    unless down? do
+      receive do
+        {:DOWN, ^monitor, :process, ^pid, _reason} -> :ok
+      end
+    end
 
     receive do
       {:EXIT, ^pid, _reason} -> :ok
@@ -97,14 +103,34 @@ defmodule Opsmaru.Incus.NativeYaml do
       0 -> :ok
     end
 
-    _ = late_result(ref)
+    receive do
+      {^ref, _late} -> :ok
+    after
+      0 -> :ok
+    end
+
     result
+  end
+
+  # A crash in the worker becomes a rejection instead of an exit signal that
+  # would terminate a caller that does not trap exits.
+  defp contain(fun) do
+    fun.()
+  catch
+    _kind, _reason -> :error
   end
 
   defp await(pid, monitor, ref, deadline) do
     receive do
-      {^ref, result} -> result
-      {:DOWN, ^monitor, :process, ^pid, _reason} -> :error
+      {^ref, result} ->
+        {result, false}
+
+      {:DOWN, ^monitor, :process, ^pid, _reason} ->
+        receive do
+          {^ref, result} -> {result, true}
+        after
+          0 -> {:error, true}
+        end
     after
       @poll_millis ->
         with {:reductions, reductions} when reductions <= @max_reductions <-
@@ -112,16 +138,8 @@ defmodule Opsmaru.Incus.NativeYaml do
              true <- System.monotonic_time(:millisecond) < deadline do
           await(pid, monitor, ref, deadline)
         else
-          _ -> late_result(ref)
+          _ -> {:error, false}
         end
-    end
-  end
-
-  defp late_result(ref) do
-    receive do
-      {^ref, result} -> result
-    after
-      0 -> :error
     end
   end
 
@@ -522,14 +540,21 @@ defmodule Opsmaru.Incus.NativeYaml do
     frac = if frac == "", do: "0", else: frac
     exp = if exp == "", do: 0, else: String.to_integer(exp)
 
-    if abs(exp) <= 300 do
-      value = String.to_float("#{sign}#{int}.#{frac}e#{exp}")
+    case magnitude(int, frac, exp) do
+      :zero -> {:float, String.to_float("#{sign}0.0")}
+      m when m in -300..300 -> {:float, String.to_float("#{sign}#{int}.#{frac}e#{exp}")}
+      _ -> :reject
+    end
+  end
 
-      if value == 0.0 and String.match?(int <> frac, ~r/[1-9]/),
-        do: :reject,
-        else: {:float, value}
-    else
-      :reject
+  # Decimal exponent of the leading significant digit. Values whose magnitude
+  # leaves +/-1e300 are outside the subset, so float64 never overflows or
+  # silently underflows (native turns overflow into a string).
+  defp magnitude(int, frac, exp) do
+    case {String.trim_leading(int, "0"), String.trim_leading(frac, "0")} do
+      {"", ""} -> :zero
+      {"", significant} -> exp - (byte_size(frac) - byte_size(significant)) - 1
+      {significant, _} -> exp + byte_size(significant) - 1
     end
   end
 end

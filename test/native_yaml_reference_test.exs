@@ -11,6 +11,15 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
   # driver in test/reference/nativeyaml; many are deliberately outside the
   # supported subset and must simply not violate the contract.
   @contract_matrix [
+    # float64 range regressions (Greptile a6e929ef)
+    {"ConfigMap", "k: 99999999999999999999e300\n", nil},
+    {"ConfigMap", "k: !!float 99999999999999999999e300\n", nil},
+    {"ConfigMap", "k: 99999999999999999999e288\n", nil},
+    {"ConfigMap", "k: 1e300\n", nil},
+    {"ConfigMap", "k: 0.00000000000000000001e-290\n", nil},
+    {"ConfigMap", "k: 0.0000e-999\n", nil},
+    {"ConfigMap", "k: -0e5\n", nil},
+    {"ConfigMap", "k: .00001e-296\n", nil},
     # requested regression rows
     {"ConfigMap", "mode: \"2024-01-01\"", nil},
     {"ConfigMap", "k: '2024-01-01'", nil},
@@ -523,6 +532,16 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
     Process.sleep(50)
     assert length(Process.list()) <= before
     refute_received _
+  end
+
+  test "timed-out decodes leave no late result in the caller mailbox" do
+    yaml = "[" <> Enum.map_join(1..200_000, ", ", fn _ -> "x" end) <> "]: 1\n"
+
+    for _ <- 1..3 do
+      assert {:error, %Error{}} = NativeConfig.from_yaml("ConfigMap", yaml)
+      Process.sleep(100)
+      refute_received _
+    end
   end
 
   test "bounds, atoms, raising and yamerl state" do
