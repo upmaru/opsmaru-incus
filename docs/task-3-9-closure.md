@@ -573,3 +573,13 @@ when the independently configured WebSocket frame limit was 4096 bytes. The
 writer now chunks to the smaller frame/chunk limit. Permanent Unix and verified
 mutual-HTTPS regressions require two exact binary chunks, input closure, native
 completion and a single POST without DELETE. Declaration status is unchanged.
+
+## Blocked-stdin failure evidence — 2026-10-14
+
+Two independent Unix fixtures hold input unread and observe the owned channel
+waiting in the actual socket send before local deadline or host cancellation.
+Both outputs still progress; errors retain the original accepted identity/binding,
+all four channels terminate and peers observe closure without an input barrier,
+final-completion poll, DELETE or replay. Local expiry leaves the shared host
+context active and the original operation pollable. Production code and the
+native oracle are unchanged; this adds evidence to the existing partial scope.

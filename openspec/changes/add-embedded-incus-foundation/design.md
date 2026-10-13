@@ -141,7 +141,7 @@ over Unix and verified HTTPS and independently verify budgets and cleanup. Stop
 and offer scope options if implementation grows beyond a few hundred lines,
 requires a handwritten parser or accumulates repeated corner-case/DoS fixes.
 
-#### Approved next slice: bounded full-duplex noninteractive exec
+#### Verified slice: bounded full-duplex noninteractive exec
 
 Add a call-scoped client helper combining native exec submission, channel
 negotiation, finite binary stdin, acknowledged stdout/stderr sinks and final

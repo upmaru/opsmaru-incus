@@ -215,6 +215,108 @@ defmodule Opsmaru.Incus.ExecOutputTest do
     for name <- ["0", "1", "2"], do: assert_receive({:peer_closed, ^name}, 5_000)
   end
 
+  for mode <- [:deadline, :cancellation] do
+    test "run #{mode} interrupts a confirmed blocked stdin write", %{root: root} do
+      {client, fixture, _} = fixture(root, :gen_tcp, input_gate: true, control: true)
+      context = RequestContext.new!(timeout: 60_000)
+      client = Incus.with_context(client, context)
+
+      client = %{
+        client
+        | connection: %{client.connection | timeout: 30_000, max_chunk_bytes: 1_048_576}
+      }
+
+      parent = self()
+      stdin = :binary.copy(<<0, 255>>, 2_097_152)
+      timeout = if unquote(mode) == :deadline, do: 10_000, else: 30_000
+
+      runner =
+        Task.async(fn ->
+          receive do
+            :start -> :ok
+          end
+
+          Session.run(
+            client,
+            "fixture",
+            @body,
+            stdin,
+            &send_chunk(parent, :stdout, &1),
+            &send_chunk(parent, :stderr, &1),
+            timeout: timeout
+          )
+        end)
+
+      # Observe only this call's descendants; capture the real channel handles.
+      Code.ensure_loaded!(Session)
+      :erlang.trace(runner.pid, true, [:call, :set_on_spawn])
+
+      assert :erlang.trace_pattern({Session, :exec, 4}, [{:_, [], [{:return_trace}]}], [:local]) ==
+               1
+
+      try do
+        send(runner.pid, :start)
+        assert_receive {:input_gate, peer}, 5_000
+        assert_receive {:trace, _, :return_from, {Session, :exec, 4}, {:ok, session}}, 5_000
+        assert_receive {:stdout, @stdout}, 5_000
+        assert_receive {:stderr, @stderr}, 5_000
+
+        await_blocked_stdin(
+          session.channels["0"].pid,
+          System.monotonic_time(:millisecond) + 5_000
+        )
+
+        monitors = for {_, channel} <- session.channels, do: Process.monitor(channel.pid)
+        if unquote(mode) == :cancellation, do: RequestContext.cancel(context)
+        expected = if unquote(mode) == :deadline, do: :deadline, else: :canceled
+
+        assert {:error, %Error{kind: ^expected, operation: url, response: response}} =
+                 Task.await(runner, 20_000)
+
+        assert url == session.operation.url
+
+        assert response.connection == client.connection and
+                 response.identity == client.context.identity
+
+        for monitor <- monitors, do: assert_receive({:DOWN, ^monitor, :process, _, _}, 5_000)
+        assert_closed(session)
+        send(peer, :release_input)
+        for name <- ["0", "1", "2", "control"], do: assert_receive({:peer_closed, ^name}, 5_000)
+        refute_receive {:barrier, "0"}
+        requests = HTTPFixture.requests(fixture)
+        assert Enum.count(requests, &(&1.method == "POST")) == 1
+        refute Enum.any?(requests, &(&1.method == "DELETE"))
+        refute Enum.any?(requests, &(&1.method == "GET" and URI.parse(&1.target).path == url))
+
+        if unquote(mode) == :deadline do
+          assert RequestContext.status(context) == :active
+
+          assert {:ok, _} =
+                   Operation.poll(%Operation{client: client, url: url, response: response})
+        else
+          assert RequestContext.status(context) == :canceled
+        end
+      after
+        :erlang.trace_pattern({Session, :exec, 4}, false, [:local])
+        if Process.alive?(runner.pid), do: Task.shutdown(runner, :brutal_kill)
+      end
+    end
+  end
+
+  defp await_blocked_stdin(pid, deadline) do
+    state = Process.info(pid, [:current_stacktrace, :status])
+    stack = state[:current_stacktrace]
+
+    unless state[:status] == :waiting and
+             Enum.any?(stack, fn {module, function, _, _} ->
+               module == :prim_inet and function == :send
+             end) do
+      assert System.monotonic_time(:millisecond) < deadline, inspect(stack)
+      Process.sleep(10)
+      await_blocked_stdin(pid, deadline)
+    end
+  end
+
   test "run lifetime includes submission and negotiation with truthful retained acceptance", %{
     root: root
   } do
@@ -728,8 +830,10 @@ defmodule Opsmaru.Incus.ExecOutputTest do
 
       {type, frag, rsv, length, mask, rest} ->
         if byte_size(rest) < length do
-          {:ok, bytes} = t.recv(s, length - byte_size(rest), 5_000)
-          receive_frames(t, s, name, parent, buffer <> bytes)
+          case t.recv(s, length - byte_size(rest), 5_000) do
+            {:ok, bytes} -> receive_frames(t, s, name, parent, buffer <> bytes)
+            _ -> send(parent, {:peer_closed, name})
+          end
         else
           {:ok, payload, _, rest} =
             :cow_ws.parse_payload(rest, mask, 0, 0, type, length, frag, %{}, rsv)

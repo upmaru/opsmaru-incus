@@ -1225,3 +1225,24 @@ The focused 17-test exec suite and full canonical check (998 tests, strict
 Credo/OpenSpec, warning-free compile/format) pass. Reference checks and identical
 coverage regeneration pass; declaration counts/status and the native pin are
 unchanged. Latest pushed consumer/CI evidence is recorded on PR #5.
+
+## Blocked-stdin failure evidence — 2026-10-14
+
+Production revision `4e9102e` passed both platforms and immutable consumers in
+[CI run 38406496900](https://github.com/upmaru/opsmaru-incus/actions/runs/38406496900).
+[Greptile's second review](https://github.com/upmaru/opsmaru-incus/pull/5#issuecomment-6146661703)
+scored that revision 5/5 with no new actionable findings; its P2 thread is resolved.
+
+This fixture-only continuation confirms that stdin is blocked in the actual Unix
+socket send before local deadline or host cancellation. It verifies both output
+sinks still progress, all four channel processes and peers close, accepted binding
+survives, and no input barrier, final poll, DELETE or replay occurs. Local timeout
+leaves the shared host context active and the original operation pollable. The
+test observer explicitly loads its traced module before installing the pattern;
+partial-frame EOF is observed by the existing fixture rather than causing a match
+exception. No production code, parser, native oracle or timing limit changed.
+
+Own review and canonical checks pass: 1000 tests, formatting, warning-free compile,
+strict Credo and all three OpenSpec changes. Reference checks and byte-identical
+coverage regeneration pass: 1239 partial, 41 missing, `complete_port=false`.
+Latest pushed consumer/CI evidence is recorded on PR #5; task 3.9 remains open.
