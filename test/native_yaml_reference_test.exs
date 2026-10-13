@@ -1,7 +1,36 @@
+defmodule Opsmaru.Incus.NativeYamlFixtures do
+  # Nested flow mapping/sequence of the given depth, placed under a dropped
+  # key so deep flows (which the Incus shapes otherwise reject) can be
+  # probed at the scanner nesting boundary.
+  def deep_flow(depth) do
+    nest = Enum.reduce(depth..1, "x", fn i, acc -> "{a#{i}: #{acc}}" end)
+    "~:\n  k: " <> nest <> "\n"
+  end
+
+  def deep_seq(depth) do
+    nest = String.duplicate("[", depth) <> "x" <> String.duplicate("]", depth)
+    "~:\n  k: " <> nest <> "\n"
+  end
+
+  def devices_deep_flow(depth) do
+    nest = Enum.reduce(depth..1, "x", fn i, acc -> "{a#{i}: #{acc}}" end)
+    "~:\n  d: " <> nest <> "\n"
+  end
+
+  # A nested literal merge chain of the given depth: `depth` flow mappings,
+  # each carrying one entry and merging the next, ending in {z: x}.
+  # Placed under a device key so the chain is a valid DevicesMap shape.
+  def merge_chain(depth) do
+    nest = Enum.reduce(depth..1//-1, "{z: x}", fn i, acc -> "{a#{i}: x, <<: #{acc}}" end)
+    "d: " <> nest <> "\n"
+  end
+end
+
 defmodule Opsmaru.Incus.NativeYamlReferenceTest do
   use ExUnit.Case, async: true
   alias Opsmaru.Incus.Error
   alias Opsmaru.Incus.NativeConfig
+  alias Opsmaru.Incus.NativeYamlFixtures
   @moduletag timeout: 120_000
   @driver Path.expand("../../.integration/incus-yaml-driver", __DIR__)
 
@@ -325,7 +354,38 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
     {"ConfigMap", "- 1\n- 2", nil},
     {"ConfigMap", "k: 1\nextra: 2\ngarbage after doc", nil},
     {"ConfigMap", "a: [1, 2,}", nil},
-    {"ConfigMap", "a: \"unterminated", nil}
+    {"ConfigMap", "a: \"unterminated", nil},
+    # first-document selection: syntax beyond the two-token lookahead window
+    {"ConfigMap", "a: 1\n---\nb: [unterminated\n", nil},
+    {"ConfigMap", "a: 1\n---\nb: [\n", nil},
+    {"ConfigMap", "a: 1\n...\nb: [\n", nil},
+    {"ConfigMap", "a: 1\n---\n[\n", nil},
+    {"ConfigMap", "a: 1\n---\n{\n", nil},
+    {"ConfigMap", "---\na: 1\n---\nb: [\n", nil},
+    {"ConfigMap", "a: 1\n...\n...\n", nil},
+    {"ConfigMap", "a: 1\n---\n...\n", nil},
+    {"ConfigMap", "a: 1\n...\nb: 1\n---\nc: [\n", nil},
+    {"ConfigMap", "a: 1\n---\nc: 1\n... \nbad: [\n", nil},
+    {"ConfigMap", "a: 1\n---\n%YAML 1.1\nb: [\n", nil},
+    {"ConfigMap", "a: 1\n---\n# comment\nb: [\n", nil},
+    {"ConfigMap", "a: 1\n...\n# c\nb: [\n", nil},
+    {"ConfigMap", "a: 1\n---\n- 1\n", nil},
+    {"ConfigMap", "a: 1\n---\nk: v\n", nil},
+    {"ConfigMap", "a: 1\n---\nb: &x [1, 2]\n", nil},
+    {"DevicesMap", "d1: {a: 1}\n---\nd2: [bad\n", nil},
+    {"ConfigMap", "a: 1\n---\n\"unterminated\n", nil},
+    {"ConfigMap", "a: 1\n---\n'bad\n", nil},
+    # nesting beyond the native 10_000-level scanner limit (dropped values,
+    # which are the only place deep flows can be accepted at all)
+    {"ConfigMap", NativeYamlFixtures.deep_flow(50), nil},
+    {"ConfigMap", NativeYamlFixtures.deep_flow(1_000), nil},
+    {"ConfigMap", NativeYamlFixtures.deep_flow(10_001), nil},
+    {"ConfigMap", NativeYamlFixtures.deep_seq(1_000), nil},
+    {"ConfigMap", NativeYamlFixtures.deep_seq(10_001), nil},
+    {"DevicesMap", NativeYamlFixtures.devices_deep_flow(10_001), nil},
+    # nested literal merge chains within the flow nesting work bound
+    {"DevicesMap", NativeYamlFixtures.merge_chain(100), nil},
+    {"DevicesMap", NativeYamlFixtures.merge_chain(400), nil}
   ]
 
   setup_all do
@@ -507,18 +567,46 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
   end
 
   test "divergence: the native aliasing-ratio check is stricter than our expansion budget" do
-    # Six tail aliases expand to about 947k nodes, just under our 1M-node
-    # budget, so the parser accepts the input. go-yaml v4 rejects the same
-    # input with its alias/construct ratio check, which fires for any
-    # substantial expansion. The bound is demonstrated by the bomb test
-    # above, where the just-under variant is accepted on the parser side
-    # only.
-    just_under = merge_bomb(6)
+    # Four tail aliases charge about 983k expanded nodes, just under our
+    # 1M-node budget, so the parser accepts the input. go-yaml v4 rejects
+    # the same input with its alias/construct ratio check, which fires for
+    # any substantial alias fan-out (even the single-alias variant of the
+    # 9-fan-out bomb). The bound is demonstrated by the bomb test above,
+    # where the just-under variant is accepted on the parser side only.
+    just_under = merge_bomb(4)
     result = oracle("DevicesMap", just_under, nil)
     assert result["accepted"] == false
 
     assert {:ok, value} = NativeConfig.from_yaml("DevicesMap", just_under)
     assert value["d6"] == %{"k" => "v"}
+  end
+
+  test "divergence: native accepts flow nesting to 10_000 levels; ours bounds total nesting work" do
+    # A depth-10_000 nested flow mapping fits the native 10_000-level
+    # scanner limit, so the native oracle accepts it. Its flow nesting
+    # work (about 10^8 depth-units) exceeds the 10_000_000 bound in
+    # Opsmaru.Incus.NativeConfig (@max_flow_work): yamerl's scan of such a
+    # document takes seconds (its implicit-key index is walked once per
+    # token), so ours rejects it before scanning to keep worst-case
+    # decoding inside the reference bound. The depth-1_000 variant stays
+    # under the bound and matches native (matrix row).
+    for yaml <- [NativeYamlFixtures.deep_flow(10_000), NativeYamlFixtures.deep_seq(10_000)] do
+      result = oracle("ConfigMap", yaml, nil)
+      assert result["accepted"] == true
+
+      assert {:error, %Error{kind: :invalid_native_config}} =
+               NativeConfig.from_yaml("ConfigMap", yaml)
+    end
+
+    # The nested merge chain shape from the native decoder's perspective:
+    # a single depth-9999 chain is accepted natively but rejected here on
+    # the same bound.
+    chain = NativeYamlFixtures.merge_chain(9999)
+    result = oracle("DevicesMap", chain, nil)
+    assert result["accepted"] == true
+
+    assert {:error, %Error{kind: :invalid_native_config}} =
+             NativeConfig.from_yaml("DevicesMap", chain)
   end
 
   # --- Safety ---------------------------------------------------------------
@@ -567,6 +655,131 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
     assert elapsed < 1_000, "duplicate check took #{elapsed}ms"
   end
 
+  test "the deepest nesting that fits in the input bound rejects within the bound" do
+    # The native scanner rejects flow and block nesting beyond 10_000
+    # levels. yamerl has no such limit and its scan cost grows
+    # super-linearly in flow depth, so deeper input must be rejected before
+    # yamerl runs. Dropped values are the only place deep flows can be
+    # accepted, which is why the boundary rows use them.
+
+    # The deepest flow mapping that still fits in the 1 MiB input bound:
+    # the five-byte-per-level shape reaches about 200k levels.
+    deepest_map = Enum.reduce(1..199_990, "x", fn _i, acc -> "{a: #{acc}}" end)
+
+    deep_yaml = "~:\n  k: " <> deepest_map <> "\n"
+    assert byte_size(deep_yaml) < 1_048_576
+
+    started = System.monotonic_time(:millisecond)
+
+    assert {:error, %Error{kind: :invalid_native_config}} =
+             NativeConfig.from_yaml("ConfigMap", deep_yaml)
+
+    elapsed = System.monotonic_time(:millisecond) - started
+    assert elapsed < 1_000, "deep flow mapping took #{elapsed}ms"
+
+    # The deepest pure flow sequence that fits: a single byte per level.
+    seq_yaml = NativeYamlFixtures.deep_seq(524_000)
+    assert byte_size(seq_yaml) < 1_048_576
+
+    started = System.monotonic_time(:millisecond)
+
+    assert {:error, %Error{kind: :invalid_native_config}} =
+             NativeConfig.from_yaml("ConfigMap", seq_yaml)
+
+    elapsed = System.monotonic_time(:millisecond) - started
+    assert elapsed < 1_000, "deep flow sequence took #{elapsed}ms"
+
+    # Moderate nesting stays accepted and matches the native oracle.
+    assert_matches(
+      "ConfigMap",
+      NativeYamlFixtures.deep_flow(400),
+      nil,
+      oracle("ConfigMap", NativeYamlFixtures.deep_flow(400), nil)
+    )
+  end
+
+  test "high nesting work is rejected fast and realistic large configs decode within the bound" do
+    # A single depth-9999 nested merge chain: the native oracle accepts it
+    # (10_000-level scanner limit), but its flow nesting work exceeds
+    # @max_flow_work, so ours must reject it before yamerl runs.
+    chain = NativeYamlFixtures.merge_chain(9999)
+    assert byte_size(chain) < 1_048_576
+
+    started = System.monotonic_time(:millisecond)
+
+    assert {:error, %Error{kind: :invalid_native_config}} =
+             NativeConfig.from_yaml("DevicesMap", chain)
+
+    elapsed = System.monotonic_time(:millisecond) - started
+    assert elapsed < 1_000, "deep merge chain took #{elapsed}ms"
+
+    # Six such chains in one document (about 953 KB, under the input
+    # bound): the same bound must reject the whole document fast.
+    six_chains = Enum.map_join(1..6, "", fn k -> "d#{k}: " <> merge_chain_body() <> "\n" end)
+    assert byte_size(six_chains) < 1_048_576
+
+    started = System.monotonic_time(:millisecond)
+
+    assert {:error, %Error{kind: :invalid_native_config}} =
+             NativeConfig.from_yaml("DevicesMap", six_chains)
+
+    elapsed = System.monotonic_time(:millisecond) - started
+    assert elapsed < 1_000, "six merge chains took #{elapsed}ms"
+
+    # A moderate nested merge chain stays accepted and matches native.
+    shallow = NativeYamlFixtures.merge_chain(400)
+
+    started = System.monotonic_time(:millisecond)
+    assert {:ok, _} = NativeConfig.from_yaml("DevicesMap", shallow)
+    elapsed = System.monotonic_time(:millisecond) - started
+    assert elapsed < 1_000, "shallow merge chain took #{elapsed}ms"
+
+    assert_matches("DevicesMap", shallow, nil, oracle("DevicesMap", shallow, nil))
+
+    # A realistic large config: 2_000 devices with five properties each,
+    # merging one anchored template. This is the common production shape
+    # and must decode well inside the bound, matching native.
+    realistic = realistic_devices()
+    assert byte_size(realistic) < 1_048_576
+
+    started = System.monotonic_time(:millisecond)
+    assert {:ok, value} = NativeConfig.from_yaml("DevicesMap", realistic)
+    elapsed = System.monotonic_time(:millisecond) - started
+    # the template key plus 2_000 devices
+    assert map_size(value) == 2_001
+
+    assert value["d1"] == %{
+             "a" => "1",
+             "b" => "2",
+             "p1" => "v1",
+             "p2" => "v1",
+             "p3" => "v1",
+             "p4" => "v1",
+             "p5" => "v1"
+           }
+
+    assert elapsed < 1_000, "realistic devices took #{elapsed}ms"
+
+    assert_matches("DevicesMap", realistic, nil, oracle("DevicesMap", realistic, nil))
+  end
+
+  # The body of the depth-9999 merge chain without its device key, so the
+  # six-chain document can give each chain a distinct key.
+  defp merge_chain_body do
+    Enum.reduce(9999..1//-1, "{z: x}", fn i, acc -> "{a#{i}: x, <<: #{acc}}" end)
+  end
+
+  # 2_000 devices, five properties each, all merging an anchored two-
+  # property template through an alias.
+  defp realistic_devices do
+    body =
+      Enum.map_join(1..2_000, "", fn n ->
+        ~s(d#{n}: {<<: *t, p1: "v#{n}", p2: "v#{n}", p3: "v#{n}", p4: "v#{n}", p5: "v#{n}"}\n)
+      end)
+
+    ~s(t: &t {a: "1", b: "2"}\n) <> body
+  end
+
   test "oversized input and invalid types fail without exposing config" do
     for {type, yaml, existing} <- [
           {"ConfigMap", String.duplicate("k: v\n", 210_000), nil},
@@ -583,10 +796,10 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
   end
 
   # dN: &dN {<<: [*d(N-1) x9]} for N=1..6: every alias re-expands the whole
-  # anchored subtree, so the cost grows as 9**(N-1): about 149k cumulative
-  # through d5, and d6 alone expands to 9 x 132,860 nodes. The last level
-  # carries tail_aliases aliases: 6 land at about 947k nodes (just under
-  # the 1M-node budget), 7 at about 1.08M (just over).
+  # anchored subtree, so the cost grows as 9**(N-1). Expansion charges at
+  # parse time and construction re-charges the folded tree, so the last
+  # level's tail lands at: 4 aliases about 983k charged nodes (just under
+  # the 1M-node budget), 5 just over.
   defp merge_bomb(tail_aliases) do
     lines =
       Enum.map(1..6, fn n ->
@@ -626,17 +839,17 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
 
     assert elem(memory_after, 1) - elem(memory_before, 1) < 1_000_000
 
-    # (c) Six tail aliases charge about 947k expanded nodes, just under
+    # (c) Four tail aliases charge about 983k expanded nodes, just under
     # the 1M-node budget, so the rejection in (b) comes from the budget,
     # not a shape error. The native driver has no verdict to compare
     # against: its own aliasing-ratio check (named divergence below)
     # rejects this input too, strictly stricter than our bound.
-    assert {:ok, value} = NativeConfig.from_yaml("DevicesMap", merge_bomb(6))
+    assert {:ok, value} = NativeConfig.from_yaml("DevicesMap", merge_bomb(4))
     assert value["d6"] == %{"k" => "v"}
 
-    # Seven tail aliases cross the budget at about 1.08M nodes.
+    # Five tail aliases cross the budget just over the 1M-node limit.
     assert {:error, %Error{kind: :invalid_native_config}} =
-             NativeConfig.from_yaml("DevicesMap", merge_bomb(7))
+             NativeConfig.from_yaml("DevicesMap", merge_bomb(5))
   end
 
   test "unique input keys create no atoms and parsing never raises" do

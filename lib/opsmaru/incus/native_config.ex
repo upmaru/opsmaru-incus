@@ -15,8 +15,13 @@ defmodule Opsmaru.Incus.NativeConfig do
   merges keys; a null document resets the target while an absent document
   leaves it untouched. Device updates merge individual properties.
   Unsupported arrays/nested values fail visibly. Inputs and results are
-  bounded to 1 MiB and alias expansion is bounded in nodes and bytes; no
-  backend, filesystem state or global configuration is involved.
+  bounded to 1 MiB and alias expansion is bounded in nodes and bytes. Flow
+  nesting work is additionally bounded for latency: the native scanner
+  accepts flow nesting to 10_000 levels, but the yamerl scan of such
+  documents takes seconds, so documents whose first-document flow nesting
+  work exceeds @max_flow_work are rejected before scanning (named
+  divergence). No backend, filesystem state or global configuration is
+  involved.
   """
   alias Opsmaru.Incus.Error
 
@@ -78,9 +83,48 @@ defmodule Opsmaru.Incus.NativeConfig do
     Record.extract(:yamerl_tag, from_lib: "yamerl/include/yamerl_tokens.hrl")
   )
 
+  Record.defrecordp(
+    :yamerl_err,
+    Record.extract(:yamerl_parsing_error, from_lib: "yamerl/include/yamerl_errors.hrl")
+  )
+
   # Key under which the token_fun callback accumulates the stream for this
   # process; cleared again in the token_stream/1 after block.
   @token_key :"opsmaru.incus.native_config.tokens"
+
+  # Counter for the lookahead tokens scanned after the first document end;
+  # cleared in the token_stream/1 after block.
+  @lookahead_key :"opsmaru.incus.native_config.lookahead"
+
+  # Marker thrown by the token_fun callback once the lookahead is spent;
+  # it aborts yamerl's scan and stops it from rejecting the first document
+  # for syntax in documents it never reads.
+  @doc_stop :"opsmaru.incus.native_config.doc_stop"
+
+  # Keys for the token-level nesting backstop counters; cleared in the
+  # stream_tokens/1 after block.
+  @depth_flow_key :"opsmaru.incus.native_config.depth_flow"
+  @depth_block_key :"opsmaru.incus.native_config.depth_block"
+
+  # Marker thrown by the token_fun callback once the native nesting limit
+  # is exceeded in the token stream.
+  @depth_stop :"opsmaru.incus.native_config.depth_stop"
+
+  # go-yaml's scanner rejects flow and block nesting beyond this many
+  # levels (DefaultDepthCheck in internal/libyaml/options.go).
+  @max_nesting 10_000
+
+  # Total flow nesting work bound: the sum of the current flow depth at
+  # every flow structural point (open, entry, close) in the first
+  # document. yamerl's scan cost grows in proportion to this sum (its
+  # implicit-key index is walked once per token), so bounding it keeps
+  # worst-case decoding inside the reference bound. Chosen from
+  # measurements: realistic configs (depth <= 50, thousands of keys) sit
+  # at about 10^5 work units, a depth-400 nested merge chain at about
+  # 2.4 x 10^5, a single depth-9999 chain at about 1.5 x 10^8, and six
+  # such chains at about 9 x 10^8. The bound accepts the former three
+  # shapes' smaller variants and rejects the deep chains fast.
+  @max_flow_work 10_000_000
 
   def from_json(type, json, existing \\ nil) do
     with true <- type in ["ConfigMap", "DevicesMap"],
@@ -211,16 +255,30 @@ defmodule Opsmaru.Incus.NativeConfig do
 
   # Tokens are collected through yamerl's public token_fun option, which
   # calls the given 1-arity function for each token in stream order and
-  # keeps it running while it returns :ok. The tokenizer reports
-  # token-level syntax errors as a
+  # keeps it running while it returns :ok (or {ok, new_fun} to swap the
+  # callback). The tokenizer reports token-level syntax errors as a
   # {:yamerl_exception, [#yamerl_parsing_error, ...]} throw and nothing
   # else; no broad rescue is used in this path. The process-dictionary
   # list is bounded by the 1 MiB input limit and always cleared in the
   # after block.
+  #
+  # The native decoder stops consuming after the first document, but its
+  # scanner keeps a small token queue alive: it holds the document-end
+  # token plus two more tokens (the comment-association lookahead), so
+  # syntax errors inside that window still reject the whole input while
+  # everything beyond it is ignored. The token_fun callback reproduces
+  # the window: after the first doc_end token it collects exactly two
+  # more tokens and then throws @doc_stop to stop the scan.
   defp token_stream(yaml) do
     # NUL bytes make yamerl's scanner fail with a function clause instead of
     # its structured throw; the native scanner rejects them as invalid UTF-8.
-    if :binary.match(yaml, <<0>>) == :nomatch do
+    # The pre-checks run as separate statements; inlining them into one
+    # `and` expression changes the compiler's register allocation for the
+    # pre-pass's deep recursion and slows it from milliseconds to seconds.
+    a = :binary.match(yaml, <<0>>)
+    b = flow_nesting_ok?(yaml)
+
+    if a == :nomatch and b == :ok do
       stream_tokens(yaml)
     else
       :error
@@ -229,21 +287,484 @@ defmodule Opsmaru.Incus.NativeConfig do
 
   defp stream_tokens(yaml) do
     :erlang.put(@token_key, [])
+    :erlang.put(@lookahead_key, 0)
+    :erlang.put(@depth_flow_key, 0)
+    :erlang.put(@depth_block_key, 0)
 
     try do
       :yamerl_parser.string(yaml, [{:token_fun, &collect_token/1}])
       {:ok, :erlang.get(@token_key) |> Enum.reverse()}
     catch
-      :throw, {:yamerl_exception, errors} when is_list(errors) -> :error
+      :throw, @doc_stop ->
+        {:ok, :erlang.get(@token_key) |> Enum.reverse()}
+
+      :throw, @depth_stop ->
+        :error
+
+      :throw, {:yamerl_exception, errors} when is_list(errors) ->
+        if doc_seen?() and lookahead_errors_only?(errors) do
+          {:ok, :erlang.get(@token_key) |> Enum.reverse()}
+        else
+          :error
+        end
     after
       :erlang.erase(@token_key)
+      :erlang.erase(@lookahead_key)
+      :erlang.erase(@depth_flow_key)
+      :erlang.erase(@depth_block_key)
     end
   end
 
   defp collect_token(token) do
     :erlang.put(@token_key, [token | :erlang.get(@token_key)])
+
+    case elem(token, 0) do
+      :yamerl_collection_start ->
+        track_depth(token, true)
+
+      :yamerl_collection_end ->
+        track_depth(token, false)
+
+      :yamerl_doc_end ->
+        # First document end: go-yaml's scanner keeps two more tokens in
+        # its queue before the decoder stops reading.
+        {:ok, &lookahead_token/1}
+
+      _ ->
+        :ok
+    end
+  end
+
+  # Token-level nesting backstop: go-yaml's scanner rejects flow and block
+  # nesting beyond @max_nesting levels while yamerl has no limit, so the
+  # token stream is stopped as soon as either style exceeds it. This only
+  # fires for shapes the flow_nesting_ok?/1 pre-pass did not catch, where
+  # the verdict (reject) still matches the native scanner.
+  defp track_depth({:yamerl_collection_start, _line, _col, _tag, style, _kind}, opening) do
+    adjust_depth(style, opening)
     :ok
   end
+
+  defp track_depth({:yamerl_collection_end, _line, _col, style, _kind}, opening) do
+    adjust_depth(style, opening)
+    :ok
+  end
+
+  defp adjust_depth(style, true) do
+    key = depth_key(style)
+
+    if :erlang.get(key) + 1 > @max_nesting do
+      throw(@depth_stop)
+    else
+      :erlang.put(key, :erlang.get(key) + 1)
+    end
+  end
+
+  defp adjust_depth(style, false) do
+    key = depth_key(style)
+    :erlang.put(key, :erlang.get(key) - 1)
+  end
+
+  defp depth_key(:flow), do: @depth_flow_key
+  defp depth_key(_), do: @depth_block_key
+
+  defp lookahead_token(token) do
+    :erlang.put(@token_key, [token | :erlang.get(@token_key)])
+
+    if :erlang.get(@lookahead_key) == 0 do
+      :erlang.put(@lookahead_key, 1)
+      {:ok, &lookahead_token/1}
+    else
+      throw(@doc_stop)
+    end
+  end
+
+  # yamerl's scanner reports an unfinished flow collection (and the like) at
+  # the scanner level, while go-yaml defers it to its parser, which never
+  # runs on tokens past the first document. Such errors only matter while
+  # scanning the document itself; inside the two-token lookahead window
+  # they must not reject the first document. The window is only reached
+  # after a clean first document, so a throw at that point carries no
+  # earlier errors to lose.
+  defp lookahead_errors_only?(errors) do
+    Enum.all?(errors, &unfinished_lookahead_error?/1)
+  end
+
+  defp unfinished_lookahead_error?(error) do
+    yamerl_err(error, :name) in [:unfinished_flow_collection]
+  end
+
+  # True once the first document has been fully tokenized; only after that
+  # point can an unfinished-flow throw come from the lookahead window
+  # instead of the document itself.
+  defp doc_seen? do
+    Enum.any?(:erlang.get(@token_key), fn t -> elem(t, 0) == :yamerl_doc_end end)
+  end
+
+  # ---------------------------------------------------------------------
+  # Flow nesting pre-pass.
+  #
+  # go-yaml's scanner rejects flow and block nesting beyond @max_nesting
+  # levels, but yamerl has no such limit and its scan cost grows
+  # super-linearly in flow nesting depth (its implicit-key index is walked
+  # once per token, so a 10_000-deep flow takes seconds). The pre-pass
+  # therefore rejects, before yamerl runs, any document whose first-
+  # document flow nesting either exceeds the native level limit or whose
+  # total nesting work (the sum of the flow depth at every flow structural
+  # point) exceeds @max_flow_work. Block nesting beyond the limit cannot
+  # fit inside the 1 MiB input bound (each level needs its own
+  # more-indented line), so only flow is pre-checked here; the token-level
+  # backstop in track_depth/2 still guards both styles.
+  #
+  # The pre-pass mirrors just enough scanner state to know when a `{` or
+  # `[` is provably a flow open: a token start outside quotes, comments
+  # and block scalars in the block context, and any position in the flow
+  # context, where the scanner always treats a flow indicator as
+  # structural. It is deliberately conservative in the block context:
+  # every open it counts there is a real scanner open, so it can only
+  # undercount (falling back to the backstop). It also stops at the first
+  # document boundary, because the native scanner never reads nesting
+  # beyond the first document.
+  defp flow_nesting_ok?(yaml) do
+    # A document without flow openers cannot exceed either bound, so the
+    # character scan runs only when flow is present.
+    openers =
+      length(:binary.split(yaml, "[", [:global])) + length(:binary.split(yaml, "{", [:global])) -
+        2
+
+    if openers <= 0 do
+      :ok
+    else
+      scan_flow_lines(String.split(yaml, "\n"), %{
+        bal: 0,
+        work: 0,
+        dq: false,
+        sq: false,
+        bs: -1,
+        plain: -1,
+        struct: 0,
+        seen: false,
+        done: false
+      })
+    end
+  end
+
+  defp scan_flow_lines(_lines, %{done: true}), do: :ok
+  defp scan_flow_lines([], _state), do: :ok
+
+  defp scan_flow_lines([line | rest], state) do
+    case scan_flow_line(line, state) do
+      :error -> :error
+      state -> scan_flow_lines(rest, state)
+    end
+  end
+
+  defp scan_flow_line(line, state) do
+    state = flow_doc_indicator(line, state)
+
+    if state.done do
+      state
+    else
+      {state, content?} = flow_continuation(line, state)
+      if content?, do: state, else: flow_line_chars(line, state)
+    end
+  end
+
+  # A `---` or `...` at column 1 ends the pre-pass: it is either the first
+  # document's start (a `---` before any content) or its boundary. After
+  # the boundary the native scanner reads at most two more tokens, and the
+  # flow balance is zero there, so deeper nesting later cannot matter.
+  defp flow_doc_indicator(line, state) do
+    case line do
+      "..." -> %{state | done: true}
+      "... " <> _ -> %{state | done: true}
+      "...\t" <> _ -> %{state | done: true}
+      "---" -> if state.seen, do: %{state | done: true}, else: %{state | seen: true}
+      "--- " <> _ -> if state.seen, do: %{state | done: true}, else: %{state | seen: true}
+      "---\t" <> _ -> if state.seen, do: %{state | done: true}, else: %{state | seen: true}
+      _ -> state
+    end
+  end
+
+  # A line that continues a block scalar or a multi-line plain scalar is
+  # content: nothing on it can open a flow collection. A plain scalar
+  # continues while the line is more indented than the block that holds it
+  # (recorded in :plain); a block scalar likewise (:bs). Blank lines keep
+  # both open.
+  defp flow_continuation(line, state) do
+    indent = flow_indent(line)
+
+    cond do
+      state.bs >= 0 ->
+        if flow_blank?(line) or indent > state.bs,
+          do: {state, true},
+          else: {%{state | bs: -1}, false}
+
+      state.plain >= 0 ->
+        if flow_blank?(line) or indent > state.plain,
+          do: {state, true},
+          else: {%{state | plain: -1}, false}
+
+      true ->
+        {state, false}
+    end
+  end
+
+  defp flow_line_chars(line, state) do
+    indent = flow_indent(line)
+
+    st = %{
+      dq: state.dq,
+      sq: state.sq,
+      comment: false,
+      po: false,
+      at: not state.dq and not state.sq
+    }
+
+    flow_line_chunks(line, indent, st, state)
+  end
+
+  # The character scan is bounded-recursive: each call covers at most 4096
+  # bytes and the continuation is tail-recursive, so a single 1 MiB line
+  # cannot overflow the stack. flow_chars/4 always consumes its whole
+  # input, which is what makes the chunk boundary arbitrary. The scan
+  # yields the updated line state, or :error once a bound is exceeded.
+  defp flow_line_chunks(<<chunk::binary-size(4096), rest::binary>>, indent, st, state) do
+    case flow_chars(chunk, indent, st, state) do
+      :error -> :error
+      {st, state} -> flow_line_chunks(rest, indent, st, state)
+    end
+  end
+
+  defp flow_line_chunks(line, indent, st, state) do
+    case flow_chars(line, indent, st, state) do
+      :error -> :error
+      {_st, state} -> state
+    end
+  end
+
+  # Character scan. `at` means the scanner is at a token start (not
+  # inside a scalar); `po` means a plain scalar is open on this line. A
+  # flow open is counted only at a token start outside quotes, comments
+  # and block scalars, which is exactly where the go-yaml scanner calls
+  # fetchFlowCollectionStart.
+  defp flow_chars(<<>>, _indent, st, state) do
+    plain = if st.po and state.bal == 0, do: state.struct, else: -1
+    {st, %{state | plain: plain}}
+  end
+
+  # Double-quoted scalar: everything until the closing quote is content,
+  # backslash escapes the following character, and the quote may span
+  # lines.
+  defp flow_chars(<<92, _c, rest::binary>>, indent, %{dq: true} = st, state),
+    do: flow_chars(rest, indent, st, state)
+
+  defp flow_chars(<<92>>, indent, %{dq: true} = st, state),
+    do: flow_chars(<<>>, indent, st, state)
+
+  defp flow_chars(<<34, rest::binary>>, indent, %{dq: true} = st, state) do
+    flow_chars(rest, indent, %{st | dq: false, at: true, po: false}, state)
+  end
+
+  defp flow_chars(<<_c, rest::binary>>, indent, %{dq: true} = st, state),
+    do: flow_chars(rest, indent, st, state)
+
+  # Single-quoted scalar: '' is an escaped quote; the quote may span lines.
+  defp flow_chars(<<39, 39, rest::binary>>, indent, %{sq: true} = st, state),
+    do: flow_chars(rest, indent, st, state)
+
+  defp flow_chars(<<39, rest::binary>>, indent, %{sq: true} = st, state) do
+    flow_chars(rest, indent, %{st | sq: false, at: true, po: false}, state)
+  end
+
+  defp flow_chars(<<_c, rest::binary>>, indent, %{sq: true} = st, state),
+    do: flow_chars(rest, indent, st, state)
+
+  # Comment content runs to the end of the line.
+  defp flow_chars(<<_c, rest::binary>>, indent, %{comment: true} = st, state),
+    do: flow_chars(rest, indent, st, state)
+
+  # Whitespace: a token start resumes unless a plain scalar is open, in
+  # which case the spaces are part of it.
+  defp flow_chars(<<c, rest::binary>>, indent, %{po: po} = st, state) when c in [9, 32] do
+    flow_chars(rest, indent, %{st | at: not po}, state)
+  end
+
+  # `#` opens a comment only at a token start; mid-scalar it is content.
+  defp flow_chars(<<35, rest::binary>>, indent, %{at: true} = st, state) do
+    flow_chars(rest, indent, %{st | comment: true, at: false}, state)
+  end
+
+  # Quoted scalars open only at a token start.
+  defp flow_chars(<<34, rest::binary>>, indent, %{at: true, po: false} = st, state) do
+    flow_chars(rest, indent, %{st | dq: true, at: false}, state)
+  end
+
+  defp flow_chars(<<39, rest::binary>>, indent, %{at: true, po: false} = st, state) do
+    flow_chars(rest, indent, %{st | sq: true, at: false}, state)
+  end
+
+  # A flow open: always in the flow context, where a flow indicator breaks
+  # any plain scalar (the scanner's fetchFlowCollectionStart), and in the
+  # block context only at a token start, where mid-scalar openers are
+  # plain content. Every open adds its new depth to the nesting work.
+  defp flow_chars(<<c, rest::binary>>, indent, %{at: true, po: false} = st, state)
+       when c in [123, 91] do
+    flow_open(rest, indent, st, state)
+  end
+
+  defp flow_chars(<<c, rest::binary>>, indent, st, %{bal: bal} = state)
+       when c in [123, 91] and bal > 0 do
+    flow_open(rest, indent, st, state)
+  end
+
+  # In the flow context a closer always breaks the plain scalar, so it pops
+  # the flow at any position while a flow is open; in the block context it
+  # is plain content. A close adds the depth it leaves to the work.
+  defp flow_chars(<<c, rest::binary>>, indent, st, %{bal: bal} = state) when c in [125, 93] do
+    if bal > 0 do
+      flow_close(rest, indent, st, state)
+    else
+      flow_chars(rest, indent, flow_plain_char(st), state)
+    end
+  end
+
+  # A flow entry always breaks a plain scalar in the flow context; in the
+  # block context a comma is plain content. An entry adds the current
+  # depth to the work.
+  defp flow_chars(<<44, rest::binary>>, indent, st, %{bal: bal} = state) do
+    if bal > 0 do
+      flow_entry(rest, indent, st, state)
+    else
+      flow_chars(rest, indent, flow_plain_char(st), state)
+    end
+  end
+
+  # A block entry `-` followed by whitespace (or end of line) at a token
+  # start; otherwise the dash is plain content.
+  defp flow_chars(<<45, rest::binary>>, indent, %{at: true, po: false} = st, %{bal: 0} = state) do
+    case rest do
+      <<c, _::binary>> when c in [9, 32] ->
+        flow_chars(rest, indent, %{st | at: true}, %{state | struct: indent})
+
+      <<>> ->
+        flow_chars(<<>>, indent, st, %{state | struct: indent})
+
+      _ ->
+        flow_chars(rest, indent, flow_plain_char(st), state)
+    end
+  end
+
+  # An explicit key `?` followed by whitespace (or end of line) at a token
+  # start; otherwise plain content.
+  defp flow_chars(<<63, rest::binary>>, indent, %{at: true, po: false} = st, %{bal: 0} = state) do
+    case rest do
+      <<c, _::binary>> when c in [9, 32] ->
+        flow_chars(rest, indent, st, %{state | struct: indent})
+
+      <<>> ->
+        flow_chars(<<>>, indent, st, %{state | struct: indent})
+
+      _ ->
+        flow_chars(rest, indent, flow_plain_char(st), state)
+    end
+  end
+
+  # A `:` followed by whitespace or end of line is a value indicator (the
+  # open plain scalar, if any, ends there); otherwise it is plain content.
+  defp flow_chars(<<58, rest::binary>>, indent, st, state) do
+    case rest do
+      <<c, _::binary>> when c in [9, 32] ->
+        flow_chars(rest, indent, %{st | at: true, po: false}, %{state | struct: indent, plain: -1})
+
+      <<>> ->
+        flow_chars(<<>>, indent, %{st | at: true, po: false}, %{state | struct: indent, plain: -1})
+
+      _ ->
+        flow_chars(rest, indent, flow_plain_char(st), state)
+    end
+  end
+
+  # Anchors, aliases and tags are their own tokens: an open right after
+  # the indicator is still a token start.
+  defp flow_chars(<<c, rest::binary>>, indent, %{at: true, po: false} = st, state)
+       when c in [38, 42, 33] do
+    flow_chars(rest, indent, %{st | at: true}, state)
+  end
+
+  # A block scalar header `|`/`>` in the block context: the following
+  # lines are content until they dedent to the surrounding block. The
+  # indicator text on this line is plain content.
+  defp flow_chars(<<c, rest::binary>>, indent, %{at: true, po: false} = st, %{bal: 0} = state)
+       when c in [124, 62] do
+    if flow_block_scalar_head?(rest) do
+      flow_chars(rest, indent, st, %{state | bs: state.struct, plain: -1})
+    else
+      flow_chars(rest, indent, flow_plain_char(st), state)
+    end
+  end
+
+  # Everything else is plain scalar content.
+  defp flow_chars(<<_c, rest::binary>>, indent, st, state),
+    do: flow_chars(rest, indent, flow_plain_char(st), state)
+
+  defp flow_plain_char(st), do: %{st | at: false, po: true}
+
+  # A flow open adds its new depth to the nesting work; exceeding either
+  # the level limit or the work bound rejects the document.
+  defp flow_open(rest, indent, st, state) do
+    bal = state.bal + 1
+    work = state.work + bal
+
+    if bal > @max_nesting or work > @max_flow_work do
+      :error
+    else
+      flow_chars(rest, indent, %{st | at: true}, %{state | bal: bal, work: work})
+    end
+  end
+
+  # A flow close adds the depth it leaves to the nesting work.
+  defp flow_close(rest, indent, st, %{bal: bal} = state) do
+    work = state.work + bal
+
+    if work > @max_flow_work do
+      :error
+    else
+      flow_chars(rest, indent, %{st | at: true, po: false}, %{state | bal: bal - 1, work: work})
+    end
+  end
+
+  # A flow entry adds the current depth to the nesting work.
+  defp flow_entry(rest, indent, st, %{bal: bal} = state) do
+    work = state.work + bal
+
+    if work > @max_flow_work do
+      :error
+    else
+      flow_chars(rest, indent, %{st | at: true, po: false}, %{state | work: work})
+    end
+  end
+
+  # A block scalar header is a `|` or `>` followed only by chomping and
+  # indentation indicators (digits, +, -) and whitespace until end of line.
+  defp flow_block_scalar_head?(bin) do
+    case bin do
+      <<>> -> true
+      <<c, rest::binary>> when c in ?0..?9 or c in [43, 45] -> flow_block_scalar_head?(rest)
+      <<c, rest::binary>> when c in [9, 32] -> flow_block_scalar_head?(rest)
+      _ -> false
+    end
+  end
+
+  defp flow_indent(line), do: flow_indent_scan(line, 0)
+
+  defp flow_indent_scan(<<32, rest::binary>>, n), do: flow_indent_scan(rest, n + 1)
+  defp flow_indent_scan(_, n), do: n
+
+  defp flow_blank?(line), do: flow_blank_scan(line, 0) == byte_size(line)
+
+  defp flow_blank_scan(<<c, rest::binary>>, n) when c in [9, 32], do: flow_blank_scan(rest, n + 1)
+  defp flow_blank_scan(_, n), do: n
 
   defp native_document(type, [_stream_start | rest], existing) do
     ctx = %{
@@ -312,38 +833,41 @@ defmodule Opsmaru.Incus.NativeConfig do
   defp native_result(_ctx, :null, _existing), do: {:ok, nil}
   defp native_result(_ctx, {:scalar, :null, _raw}, _existing), do: {:ok, nil}
 
-  defp native_result(%{type: "ConfigMap"}, {:map, entries, merges}, existing) do
-    with {:ok, folded} <- fold_node({:map, entries, merges}, :stringify),
+  defp native_result(%{type: "ConfigMap"} = ctx, {:map, entries, merges}, existing) do
+    with {:ok, folded, _ctx} <- fold_node({:map, entries, merges}, :stringify, ctx),
          {:ok, value} <- native_values(folded) do
       {:ok, Map.merge(existing || %{}, value)}
     end
   end
 
-  defp native_result(%{type: "DevicesMap"}, {:map, entries, merges}, existing) do
-    with {:ok, folded} <- fold_node({:map, entries, merges}, :stringify) do
-      fold_devices(folded, existing || %{})
+  defp native_result(%{type: "DevicesMap"} = ctx, {:map, entries, merges}, existing) do
+    with {:ok, folded, _ctx} <- fold_node({:map, entries, merges}, :stringify, ctx) do
+      fold_devices(folded, existing || %{}, ctx)
     end
   end
 
   defp native_result(_ctx, _node, _existing), do: :error
 
-  defp fold_devices(entries, acc) do
-    Enum.reduce_while(entries, {:ok, acc}, fn {key, value}, {:ok, acc} ->
-      case fold_device(value, Map.get(acc, key, %{})) do
-        {:ok, device} -> {:cont, {:ok, Map.put(acc, key, device)}}
-        _ -> {:halt, :error}
-      end
-    end)
-  end
-
-  defp fold_device({:map, inner, inner_merges}, device) do
-    with {:ok, props_folded} <- fold_node({:map, inner, inner_merges}, :string_keys),
-         {:ok, props} <- native_values(props_folded) do
-      {:ok, Map.merge(device, props)}
+  defp fold_devices(devices, acc, ctx) do
+    case Enum.reduce_while(devices, {:ok, acc, ctx}, fn {key, value}, {:ok, acc, ctx} ->
+           case fold_device(value, Map.get(acc, key, %{}), ctx) do
+             {:ok, device, ctx} -> {:cont, {:ok, Map.put(acc, key, device), ctx}}
+             _ -> {:halt, :error}
+           end
+         end) do
+      {:ok, devices, _ctx} -> {:ok, devices}
+      :error -> :error
     end
   end
 
-  defp fold_device(_value, _device), do: :error
+  defp fold_device({:map, inner, inner_merges}, device, ctx) do
+    with {:ok, props_folded, ctx} <- fold_node({:map, inner, inner_merges}, :string_keys, ctx),
+         {:ok, props} <- native_values(props_folded) do
+      {:ok, Map.merge(device, props), ctx}
+    end
+  end
+
+  defp fold_device(_value, _device, _ctx), do: :error
 
   # Value construction at a result boundary: scalars stringify natively,
   # any other shape (map, sequence, timestamp, failed tag) fails.
@@ -498,16 +1022,23 @@ defmodule Opsmaru.Incus.NativeConfig do
   end
 
   # Folding a mapping node for construction: the explicit entries are
-  # constructed against the target policy, then the merge sources fill keys
-  # the explicit entries do not set (earlier source wins). Native applies
-  # the key and duplicate checks when the node is constructed, so anchored
-  # nodes keep their raw entries until this point and an alias or merge
-  # that never constructs the node stays accepted.
-  defp fold_node({:map, entries, nil}, policy), do: construct_entries(entries, policy)
+  # constructed against the target policy and charged to the node budget,
+  # then the merge sources fill keys the explicit entries do not set
+  # (earlier source wins). Native applies the key and duplicate checks
+  # when the node is constructed, so anchored nodes keep their raw entries
+  # until this point and an alias or merge that never constructs the node
+  # stays accepted.
+  defp fold_node({:map, entries, nil}, policy, ctx) do
+    with {:ok, explicit} <- construct_entries(entries, policy),
+         {:ok, ctx} <- charge(ctx, length(explicit), 0) do
+      {:ok, Map.new(explicit), ctx}
+    end
+  end
 
-  defp fold_node({:map, entries, source}, policy) do
-    with {:ok, explicit} <- construct_entries(entries, policy) do
-      fold_sources(merge_sources(source), explicit)
+  defp fold_node({:map, entries, source}, policy, ctx) do
+    with {:ok, explicit} <- construct_entries(entries, policy),
+         {:ok, ctx} <- charge(ctx, length(explicit), 0) do
+      fold_source_chain(merge_sources(source), Map.new(explicit), ctx)
     end
   end
 
@@ -516,29 +1047,63 @@ defmodule Opsmaru.Incus.NativeConfig do
 
   # Merge sources always construct into map[string]any, never the target
   # type, so their keys take the stringify policy regardless of where the
-  # merge lands (root, device, or nested in another source).
-  defp fold_sources(sources, explicit) do
-    keys = explicit |> Enum.map(&elem(&1, 0)) |> MapSet.new()
-
-    case Enum.reduce_while(sources, {keys, []}, fn source, {keys, acc} ->
-           with {:ok, src_entries} <- fold_node(source, :stringify),
-                {keys, extra} <- fold_source_entries(src_entries, keys, []) do
-             {:cont, {keys, extra ++ acc}}
-           else
-             _ -> {:halt, :error}
-           end
+  # merge lands (root, device, or nested in another source). A nested
+  # literal merge chain folds innermost-out exactly once per node: each
+  # level builds on the single keyed map passed down (insert_missing only
+  # walks the level's own entries, never the accumulated inner entries),
+  # and every folded entry is charged to the node budget. A node that is
+  # reachable several times through aliases is constructed once per
+  # occurrence, each time charged, so alias fan-out stays bounded by the
+  # expansion budget rather than by a memo registry.
+  defp fold_source_chain(sources, acc, ctx) do
+    case Enum.reduce_while(sources, {:ok, acc, ctx}, fn source, {:ok, acc, ctx} ->
+           fold_source_node(source, acc, ctx)
          end) do
-      {_keys, extra} -> {:ok, Enum.reverse(extra) ++ explicit}
+      {:ok, acc, ctx} -> {:ok, acc, ctx}
+      # A halted reduce returns the halted state directly.
       :error -> :error
     end
   end
 
-  defp fold_source_entries(entries, keys, acc) do
-    Enum.reduce_while(entries, {keys, acc}, fn {key, value}, {keys, acc} ->
-      if MapSet.member?(keys, key) do
-        {:cont, {keys, acc}}
+  defp fold_source_node({:map, entries, nil}, acc, ctx) do
+    # A failed with-clause falls through as a bare :error, which would
+    # become the enclosing reduce's state; halt explicitly instead.
+    with {:ok, es} <- construct_entries(entries, :stringify),
+         {:ok, ctx} <- charge(ctx, length(es), 0) do
+      {:cont, {:ok, insert_missing(es, acc), ctx}}
+    else
+      _ -> {:halt, :error}
+    end
+  end
+
+  defp fold_source_node({:map, entries, sub}, acc, ctx) do
+    with {:ok, es} <- construct_entries(entries, :stringify),
+         {:ok, ctx} <- charge(ctx, length(es), 0) do
+      chain_result(merge_sources(sub), insert_missing(es, acc), ctx)
+    else
+      _ -> {:halt, :error}
+    end
+  end
+
+  defp fold_source_node({:seq, items}, acc, ctx), do: chain_result(items, acc, ctx)
+
+  defp fold_source_node(_source, _acc, _ctx), do: {:halt, :error}
+
+  # reduce_while results from a nested source chain: the state must stay
+  # in reduce form for the enclosing reduce.
+  defp chain_result(sources, acc, ctx) do
+    case fold_source_chain(sources, acc, ctx) do
+      {:ok, acc, ctx} -> {:cont, {:ok, acc, ctx}}
+      :error -> {:halt, :error}
+    end
+  end
+
+  defp insert_missing(entries, acc) do
+    Enum.reduce(entries, acc, fn {key, value}, map ->
+      if Map.has_key?(map, key) do
+        map
       else
-        {:cont, {MapSet.put(keys, key), [{key, value} | acc]}}
+        Map.put(map, key, value)
       end
     end)
   end

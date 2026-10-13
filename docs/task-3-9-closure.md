@@ -283,14 +283,16 @@ untagged scalars; quoted and block scalars stay strings. Explicit tags, anchors,
 undefined/forward/self aliases, duplicate keys, merge keys (including anchored
 flow and block templates), null/dropped keys, null versus absent documents and
 first-document selection follow the unchanged native decoder. Alias expansion
-is charged against an explicit node/byte budget before construction. A 291-row
+is charged against an explicit node/byte budget before construction. A 318-row
 oracle matrix and 13,800 randomized reviewer-generated config/device documents
 across twelve seeds match the unchanged native decoder, including values under
 dropped null keys, anchored merge templates and leading-dot exponents. Three differences remain
 recorded side by side: yamerl accepts tab indentation that the native scanner
 rejects; native replaces invalid UTF-8 in `!!binary` with U+FFFD while ours
-rejects; and go-yaml's aliasing-ratio check rejects some expansions that remain
-within our bounded budget. `ServerFiltered.MarshalYAML` is still missing. Two
+rejects; go-yaml's aliasing-ratio check rejects some expansions that remain
+within our bounded budget; and native accepts flow nesting to 10,000 levels while
+ours bounds total flow-nesting work (10,000,000 depth-weighted structural points)
+before yamerl runs, so pathological deep documents are rejected quickly. `ServerFiltered.MarshalYAML` is still missing. Two
 declarations gain partial evidence: 1221 partial, 59 missing, complete_port=false.
 
 Batch Greptile review `bf9291d9-973d-46d3-b589-34ffff9d08e4` (1/5) found four
@@ -310,3 +312,16 @@ checks now run when a node is constructed, by any path; duplicate tracking is
 keyed; and underscore validation mirrors Go `strconv`. Decoding is linear in
 our code at roughly twice yamerl's own tokenizer time, about 1.4 s at the 1 MiB
 input bound in the worst measured shape.
+
+Greptile batch pass `64430408-5f07-4998-93d1-55b34a3e87fa` (3/5) confirmed those
+fixes and found two more: a syntax error in an unused later document rejected
+a valid first document, and literal nested merge chains did quadratic folding
+outside the work budget (six depth-9,999 chains in 953 KB took 91 s; yamerl
+alone needs 26.5 s to tokenize them). Decoding now stops where go-yaml's scanner
+stops after the first document, matches native's 10,000-level depth limit,
+folds merge chains innermost-out once with every folded entry charged to the
+node budget, and rejects documents whose total flow-nesting work exceeds the
+bound in a pre-pass before yamerl runs. The pathological documents are rejected
+in milliseconds; the slowest accepted reviewer-measured shapes (hundreds of
+moderately nested merge chains near the input bound) take about 1.7 s, linear in
+input size.

@@ -1027,7 +1027,7 @@ Focused runs, library compile with warnings as errors and strict Credo pass.
 
 `test/library/native_yaml_reference_test.exs` builds the fixture-only
 `test/reference/nativeyaml` driver (unchanged go-yaml v4 into api.ConfigMap and
-api.DevicesMap, optionally pre-populated) and compares a 291-row matrix covering
+api.DevicesMap, optionally pre-populated) and compares a 318-row matrix covering
 scalar resolution, tags, anchors/aliases, merge keys, duplicates, documents and
 existing-map merges. Safety cases bound input/result size, prove a shape-valid
 alias fan-out is rejected by the expansion budget in bounded time and memory
