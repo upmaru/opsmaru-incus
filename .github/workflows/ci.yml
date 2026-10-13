@@ -1,8 +1,11 @@
 name: CI
+# One run per commit: pull requests into the long-lived branches, and pushes
+# after merge. Feature branches get CI through their PR.
 on:
-  push:
-    branches: [main, develop, 'feature/**', 'release/**', 'hotfix/**']
   pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
   workflow_dispatch:
 permissions:
   contents: read
