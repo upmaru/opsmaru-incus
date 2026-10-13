@@ -552,6 +552,15 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
     assert {:error, _} = NativeConfig.from_yaml("Other", "a: 1")
     assert {:error, _} = NativeConfig.from_yaml("ConfigMap", "a: 1", %{"x" => 1})
 
+    for existing <- [
+          %Opsmaru.Incus.Model{type: "Server", data: %{}},
+          %{"d" => %Opsmaru.Incus.Model{type: "Server", data: %{}}}
+        ],
+        type <- ["ConfigMap", "DevicesMap"] do
+      assert {:error, %Error{}} = NativeConfig.from_yaml(type, "a: 1", existing)
+      assert {:error, %Error{}} = NativeConfig.from_json(type, ~s({"a": "1"}), existing)
+    end
+
     keys = for i <- 1..200, do: "opsmaru_yaml_atom_probe_#{i}"
     {:ok, _} = NativeConfig.from_yaml("ConfigMap", Enum.map_join(keys, "", &"#{&1}: #{&1}\n"))
     refute Enum.any?(keys, &atom_exists?/1)

@@ -61,14 +61,14 @@ defmodule Opsmaru.Incus.NativeConfig do
 
   defp existing_map(_, nil), do: :ok
 
-  defp existing_map("ConfigMap", value) when is_map(value) do
+  defp existing_map("ConfigMap", value) when is_map(value) and not is_struct(value) do
     if map_size(value) <= 4096 and
          Enum.all?(value, fn {key, item} -> is_binary(key) and is_binary(item) end),
        do: :ok,
        else: :error
   end
 
-  defp existing_map("DevicesMap", value) when is_map(value) do
+  defp existing_map("DevicesMap", value) when is_map(value) and not is_struct(value) do
     if map_size(value) <= 4096 and
          Enum.all?(value, fn {key, item} ->
            is_binary(key) and existing_map("ConfigMap", item) == :ok

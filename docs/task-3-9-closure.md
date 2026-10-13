@@ -391,3 +391,9 @@ servers; every one- and two-atom string (5,391) as a value and as a key with no
 mismatch (99.8% rendered); 6,400 randomized adversarial servers and 1,500
 typed-config servers with no mismatch. One declaration gains partial evidence:
 1222 partial, 58 missing, complete_port=false. Task 3.9 remains open.
+
+Greptile batch review `9f48556b-0bb4-4b8e-82e7-e6a5175d2350` scored the YAML
+subset decoder and ServerFiltered renderer 5/5 and confirmed the earlier
+findings resolved. Its one non-blocking finding (a struct passed as the existing
+map made `from_yaml/3` raise) is fixed: structs are rejected as existing values
+on both the JSON and YAML paths, with a regression test.
