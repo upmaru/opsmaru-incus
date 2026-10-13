@@ -66,6 +66,16 @@ Exec, console, events, files, images, backups and migrations SHALL preserve nati
 - **WHEN** a creator collects live noninteractive exec stdout/stderr through explicit acknowledged sinks
 - **THEN** both channels are pulled under aggregate byte and absolute deadline limits, native stdin/output barriers are respected, final results retain the authoritative operation and exit status, and failures close local channels without backend cancellation or replay
 
+#### Scenario: Bounded full-duplex noninteractive exec
+
+- **WHEN** a host submits live noninteractive exec with bounded binary stdin and acknowledged output sinks
+- **THEN** input and both outputs progress concurrently under one lifetime starting before submission, invalid mode/options or excess input reject before POST, and final results require acknowledged input closure, both output endings and authoritative native completion
+
+#### Scenario: Exec lifetime ends after acceptance
+
+- **WHEN** deadline, host cancellation or owner loss interrupts negotiation, input or output after exec acceptance
+- **THEN** local work and channels terminate, known operation identity and binding remain available for reconciliation, unknown acceptance is reported as uncertain, and the client neither cancels nor replays the native operation
+
 ### Requirement: Bounded event subscriptions
 
 Subscriptions SHALL have explicit lifetime and queue bounds. Overflow SHALL fail visibly and permit reconciliation against authoritative backend state. Cancellation and completion races SHALL release resources without disrupting unrelated operations.

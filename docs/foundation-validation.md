@@ -1201,3 +1201,18 @@ changes; final published CI remains required. The original failure is recorded
 in [push run 38394427391](https://github.com/upmaru/opsmaru-incus/actions/runs/38394427391);
 the unchanged runtime passed both platforms in
 [PR run 38394496006](https://github.com/upmaru/opsmaru-incus/actions/runs/38394496006).
+
+## Bounded full-duplex exec — 2026-10-13
+
+The revised plan passed strict validation before implementation. `Session.run/7`
+adds the approved finite-input/full-duplex/lifetime subset, reusing the existing
+unchanged native IO driver and collector. Own source review and local `mise run
+check` pass: 996 tests, formatting, warning-free compile, strict Credo/OpenSpec.
+`check:reference` passes inventory/schema checks and 188 constants. Coverage
+regeneration is byte-identical: 1239 partial, 41 missing, `complete_port=false`.
+Five new fixtures plus extended Unix/mutual-HTTPS differential and sink/limit
+cases cover blocked input, chunking, submission/negotiation lifetime, host/local
+deadline isolation, cancellation and owner cleanup without elapsed-time bounds.
+The slice adds about 400 implementation/fixture lines; no parser or scope expansion.
+Pushed-revision consumer and both-platform CI acceptance remain publication gates
+recorded on the draft PR. No real backend or consumer hardware was accessed.

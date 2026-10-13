@@ -90,13 +90,196 @@ defmodule Opsmaru.Incus.ExecOutputTest do
       assert result.exit_status == native["operation"]["metadata"]["return"]
       assert result.exit_status == 7
       assert_closed(session)
+
+      assert {:ok, run} =
+               Session.run(
+                 client,
+                 "fixture",
+                 @body,
+                 stdin,
+                 &send_chunk(parent, :stdout, &1),
+                 &send_chunk(parent, :stderr, &1)
+               )
+
+      assert_receive {:stdout, @stdout}, 5_000
+      assert_receive {:stderr, @stderr}, 5_000
+      assert_receive {:stdin, ^stdin}, 5_000
+      assert_receive {:barrier, "0"}, 5_000
+      assert run.exit_status == result.exit_status
+      assert run.stdout_bytes == result.stdout_bytes and run.stderr_bytes == result.stderr_bytes
+      assert run.operation.client == client
+      assert run.operation.response.connection == client.connection
       requests = HTTPFixture.requests(fixture)
       posts = Enum.filter(requests, &(&1.method == "POST"))
-      assert length(posts) == 2
+      assert length(posts) == 3
       assert Enum.all?(posts, &(&1.target == "/1.0/instances/fixture/exec?project=p1&target=m1"))
       assert Enum.map(posts, &Jason.decode!(&1.body)) |> Enum.uniq() == [@body]
       refute Enum.any?(requests, &(&1.method == "DELETE"))
     end
+  end
+
+  test "run preflight rejects mode, sinks, options and input limits without POST", %{root: root} do
+    {client, fixture, _} = fixture(root, :gen_tcp)
+    sink = fn _ -> :ok end
+
+    for {body, stdin, stdout, opts, kind} <- [
+          {Map.put(@body, "interactive", true), "", sink, [], :invalid_exec_run},
+          {Map.put(@body, "record-output", true), "", sink, [], :invalid_exec_run},
+          {Map.delete(@body, "wait-for-websocket"), "", sink, [], :invalid_exec_run},
+          {@body, [], sink, [], :invalid_exec_run},
+          {@body, "", nil, [], :invalid_exec_run},
+          {@body, "", sink, [timeout: 0], :invalid_exec_run},
+          {@body, "", sink, [timeout: 1, timeout: 2], :invalid_exec_run},
+          {@body, "", sink, [unknown: true], :invalid_exec_run},
+          {@body, "", sink, [max_output_bytes: 0], :invalid_exec_run},
+          {@body, "ab", sink, [max_input_bytes: 1], :exec_input_limit}
+        ] do
+      assert {:error, %Error{kind: ^kind, operation: nil}} =
+               Session.run(client, "fixture", body, stdin, stdout, sink, opts)
+    end
+
+    assert HTTPFixture.requests(fixture) == []
+  end
+
+  test "run drains both outputs while stdin is blocked and waits for the input barrier", %{
+    root: root
+  } do
+    {client, fixture, _} = fixture(root, :gen_tcp, input_gate: true)
+    client = %{client | connection: %{client.connection | max_chunk_bytes: 4096}}
+    parent = self()
+    stdin = :binary.copy(<<0, 255>>, 2_097_152)
+
+    runner =
+      Task.async(fn ->
+        Session.run(
+          client,
+          "fixture",
+          @body,
+          stdin,
+          &send_chunk(parent, :stdout, &1),
+          &send_chunk(parent, :stderr, &1),
+          max_input_bytes: byte_size(stdin),
+          max_output_bytes: 7,
+          timeout: 15_000
+        )
+      end)
+
+    assert_receive {:input_gate, peer}, 5_000
+    assert_receive {:stdout, @stdout}, 5_000
+    assert_receive {:stderr, @stderr}, 5_000
+
+    refute Enum.any?(
+             HTTPFixture.requests(fixture),
+             &(&1.method == "GET" and not String.contains?(&1.target, "websocket"))
+           )
+
+    send(peer, :release_input)
+    assert {:ok, %{stdout_bytes: 4, stderr_bytes: 3, exit_status: 7}} = Task.await(runner, 20_000)
+
+    received =
+      for _ <- 1..1024 do
+        assert_receive {:stdin, chunk}, 5_000
+        assert byte_size(chunk) == 4096
+        chunk
+      end
+
+    assert IO.iodata_to_binary(received) == stdin
+    assert_receive {:barrier, "0"}, 5_000
+    for name <- ["0", "1", "2"], do: assert_receive({:peer_closed, ^name}, 5_000)
+  end
+
+  test "run lifetime includes submission and negotiation with truthful retained acceptance", %{
+    root: root
+  } do
+    sink = fn _ -> :ok end
+
+    for {gate, kind, operation} <- [
+          {:post_gate, :uncertain, nil},
+          {:upgrade_gate, :deadline, "/1.0/operations/exec-id"}
+        ] do
+      {client, fixture, _} = fixture(root, :gen_tcp, [{gate, true}])
+
+      assert {:error, %Error{kind: ^kind, operation: ^operation, response: response}} =
+               Session.run(client, "fixture", @body, "", sink, sink, timeout: 1_000)
+
+      if operation do
+        assert response.connection == client.connection
+        assert response.identity == client.context.identity
+      end
+
+      assert_receive {:request_gate, peer}, 5_000
+      send(peer, :release_request)
+      assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
+      refute Enum.any?(HTTPFixture.requests(fixture), &(&1.method == "DELETE"))
+    end
+  end
+
+  test "run local timeout and host cancellation kill stalled sinks and retain a reusable handle",
+       %{root: root} do
+    for mode <- [:local_deadline, :host_deadline, :cancellation] do
+      {client, fixture, _} = fixture(root, :gen_tcp)
+      context = RequestContext.new!(timeout: if(mode == :host_deadline, do: 1_000, else: 15_000))
+      client = Incus.with_context(client, context)
+      parent = self()
+
+      sink = fn _ ->
+        Process.flag(:trap_exit, true)
+        send(parent, {:sink, self()})
+        if mode == :cancellation, do: RequestContext.cancel(context)
+
+        receive do
+          :never -> :ok
+        end
+      end
+
+      expected = if mode == :cancellation, do: :canceled, else: :deadline
+
+      assert {:error, %Error{kind: ^expected, operation: url, response: response}} =
+               Session.run(client, "fixture", @body, "", sink, sink,
+                 timeout: if(mode == :host_deadline, do: 10_000, else: 1_000)
+               )
+
+      assert url == "/1.0/operations/exec-id" and response.connection == client.connection
+      assert_receive {:sink, worker}, 5_000
+      monitor = Process.monitor(worker)
+      assert_receive {:DOWN, ^monitor, :process, ^worker, _}, 5_000
+      for name <- ["0", "1", "2"], do: assert_receive({:peer_closed, ^name}, 5_000)
+
+      if mode == :local_deadline do
+        assert RequestContext.status(context) == :active
+        assert {:ok, _} = Operation.poll(%Operation{client: client, url: url, response: response})
+      end
+
+      assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
+      refute Enum.any?(HTTPFixture.requests(fixture), &(&1.method == "DELETE"))
+    end
+  end
+
+  test "run owner loss terminates the sink and all peers without DELETE", %{root: root} do
+    {client, fixture, _} = fixture(root, :gen_tcp, control: true)
+    parent = self()
+
+    owner =
+      spawn(fn ->
+        sink = fn _ ->
+          Process.flag(:trap_exit, true)
+          send(parent, {:sink, self()})
+
+          receive do
+            :never -> :ok
+          end
+        end
+
+        Session.run(client, "fixture", @body, "", sink, sink)
+      end)
+
+    assert_receive {:sink, worker}, 5_000
+    monitor = Process.monitor(worker)
+    Process.exit(owner, :kill)
+    assert_receive {:DOWN, ^monitor, :process, ^worker, _}, 5_000
+    for name <- ["0", "1", "2", "control"], do: assert_receive({:peer_closed, ^name}, 5_000)
+    assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
+    refute Enum.any?(HTTPFixture.requests(fixture), &(&1.method == "DELETE"))
   end
 
   test "limits and rejected/raising sinks retain acceptance and close all channels", %{root: root} do
@@ -115,9 +298,14 @@ defmodule Opsmaru.Incus.ExecOutputTest do
       assert url == session.operation.url and response == session.operation.response
       refute inspect(error) =~ "private"
       assert_closed(session)
+
+      assert {:error, %Error{kind: ^kind, operation: ^url, response: accepted}} =
+               Session.run(client, "fixture", @body, "", sink, sink, opts)
+
+      assert accepted.connection == client.connection
     end
 
-    assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 3
+    assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 6
     refute Enum.any?(HTTPFixture.requests(fixture), &(&1.method == "DELETE"))
   end
 
@@ -343,6 +531,8 @@ defmodule Opsmaru.Incus.ExecOutputTest do
           }
 
         request.method == "POST" ->
+          request_gate(parent, opts[:post_gate])
+
           %{
             status: 202,
             body: %{
@@ -363,6 +553,7 @@ defmodule Opsmaru.Incus.ExecOutputTest do
           }
 
         request.headers["upgrade"] == "websocket" ->
+          request_gate(parent, opts[:upgrade_gate])
           name = URI.decode_query(URI.parse(request.target).query)["secret"]
           %{upgrade: fn t, s -> upgrade(t, s, request, name, parent, opts) end}
 
@@ -425,6 +616,8 @@ defmodule Opsmaru.Incus.ExecOutputTest do
   end
 
   defp upgrade(t, s, request, name, parent, opts) do
+    if name == "0" and opts[:input_gate], do: :inet.setopts(s, recbuf: 4096)
+
     accept =
       Base.encode64(
         :crypto.hash(
@@ -438,6 +631,16 @@ defmodule Opsmaru.Incus.ExecOutputTest do
         s,
         "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: #{accept}\r\n\r\n"
       )
+
+    if name == "0" and opts[:input_gate] do
+      send(parent, {:input_gate, self()})
+
+      receive do
+        :release_input -> :ok
+      after
+        20_000 -> raise "fixture input gate"
+      end
+    end
 
     if name in ["1", "2"] do
       if name == "1" and opts[:gate_stdout] do
@@ -475,6 +678,18 @@ defmodule Opsmaru.Incus.ExecOutputTest do
       receive_frames(t, s, name, parent, "")
     end
   end
+
+  defp request_gate(parent, true) do
+    send(parent, {:request_gate, self()})
+
+    receive do
+      :release_request -> :ok
+    after
+      10_000 -> raise "fixture request gate"
+    end
+  end
+
+  defp request_gate(_, _), do: :ok
 
   defp receive_frames(t, s, name, parent, buffer) do
     case :cow_ws.parse_header(buffer, %{}, :undefined) do

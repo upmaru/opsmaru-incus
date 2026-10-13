@@ -553,3 +553,17 @@ after the size stop. The two ExecInstance declaration mappings gain partial
 evidence; the 31 missing Go types, other missing declarations and all previous
 gaps remain visible: 1239 partial, 41 missing, `complete_port=false`. Task 3.9
 stays open under the new endpoint/method, streaming and consumer-behavior gate.
+
+## Bounded full-duplex exec continuation — 2026-10-13
+
+The approved `Session.run/7` slice combines native submission/negotiation,
+preflight bounded binary stdin, concurrent acknowledged input/output and final
+completion under one lifetime starting before POST. It reuses the collector,
+retains accepted identity before upgrades, restores original client bindings and
+never replays or cancels Incus. Existing Unix/mutual-HTTPS unchanged ExecInstance
+comparisons now cover the combined helper. Independent fixtures cover blocked
+stdin, chunk/input/output limits, submission/negotiation deadlines, shorter host
+contexts, cancellation, sink failure and owner cleanup without elapsed-time bounds.
+ExecInstance remains partial; InstanceExecArgs and other declaration gaps remain
+visible. Task 3.9 stays open and `complete_port=false`. Interactive/recorded IO,
+arbitrary input producers and tool capture/truncation/policy are outside this slice.

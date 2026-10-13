@@ -3,7 +3,16 @@ defmodule Opsmaru.Incus.ExecOutput do
   alias Opsmaru.Context
   alias Opsmaru.Incus.{Error, Operation, RequestContext, Session, Transport}
 
-  def collect(%Session{operation: %Operation{} = operation} = session, stdout, stderr, opts) do
+  def collect(%Session{operation: %Operation{}} = session, stdout, stderr, opts) do
+    collect(session, stdout, stderr, opts, nil)
+  end
+
+  def collect(_, _, _, _), do: {:error, %Error{kind: :invalid_exec_collection}}
+
+  @doc false
+  def collect(session, stdout, stderr, opts, stdin) do
+    operation = session.operation
+
     with :ok <- valid_session(session, stdout, stderr),
          {:ok, timeout, limit} <- options(opts, operation.client.connection),
          :ok <- Context.authorize(operation.client.context, operation.client.connection) do
@@ -14,7 +23,7 @@ defmodule Opsmaru.Incus.ExecOutput do
         Transport.bounded(
           timeout,
           "GET",
-          fn -> drain(session, %{"1" => stdout, "2" => stderr}, deadline, limit) end,
+          fn -> drain(session, %{"1" => stdout, "2" => stderr}, deadline, limit, stdin) end,
           connection.request_context
         )
         |> retain(operation)
@@ -26,8 +35,6 @@ defmodule Opsmaru.Incus.ExecOutput do
       {:error, kind} -> retain({:error, %Error{kind: kind}}, operation)
     end
   end
-
-  def collect(_, _, _, _), do: {:error, %Error{kind: :invalid_exec_collection}}
 
   defp valid_session(session, stdout, stderr) do
     if session.owner == self() and session.collectable? and is_function(stdout, 1) and
@@ -54,13 +61,14 @@ defmodule Opsmaru.Incus.ExecOutput do
     end
   end
 
-  defp drain(session, sinks, deadline, limit) do
-    with :ok <- Session.close_input(session) do
+  defp drain(session, sinks, deadline, limit, stdin) do
+    with :ok <- if(is_nil(stdin), do: Session.close_input(session), else: :ok) do
       requests =
         Enum.reduce(["1", "2"], :gen_server.reqids_new(), fn name, requests ->
           read(session, name, deadline, requests)
         end)
 
+      requests = if is_nil(stdin), do: requests, else: write(session, stdin, requests)
       receive_outputs(session, sinks, deadline, limit, requests, %{"1" => 0, "2" => 0})
     end
   end
@@ -70,6 +78,13 @@ defmodule Opsmaru.Incus.ExecOutput do
       finish(session.operation, deadline, counts)
     else
       case :gen_server.wait_response(requests, max(0, deadline - now()), true) do
+        {{:reply, :ok}, {:stdin, remaining}, requests} ->
+          requests = if is_nil(remaining), do: requests, else: write(session, remaining, requests)
+          receive_outputs(session, sinks, deadline, limit, requests, counts)
+
+        {{:reply, {:error, %Error{} = error}}, _, _} ->
+          {:error, error}
+
         {{:reply, {:ok, {:binary, bytes}}}, name, requests} ->
           with :ok <- chunk_budget(session, counts, bytes, limit),
                :ok <- acknowledge(sinks[name], bytes) do
@@ -86,9 +101,6 @@ defmodule Opsmaru.Incus.ExecOutput do
         {{:reply, eof}, _, requests} when eof in [:eof, {:ok, {:text, ""}}] ->
           receive_outputs(session, sinks, deadline, limit, requests, counts)
 
-        {{:reply, {:error, %Error{} = error}}, _, _} ->
-          {:error, error}
-
         :timeout ->
           {:error, %Error{kind: :deadline}}
 
@@ -96,6 +108,14 @@ defmodule Opsmaru.Incus.ExecOutput do
           {:error, %Error{kind: :exec_output_protocol}}
       end
     end
+  end
+
+  defp write(session, bytes, requests) do
+    size = min(byte_size(bytes), session.operation.client.connection.max_chunk_bytes)
+    <<chunk::binary-size(size), remaining::binary>> = bytes
+    frame = if size == 0, do: {:text, ""}, else: {:binary, chunk}
+    label = {:stdin, if(size == 0, do: nil, else: remaining)}
+    :gen_server.send_request(session.channels["0"].pid, {:send, frame}, label, requests)
   end
 
   defp chunk_budget(session, counts, bytes, limit) do
