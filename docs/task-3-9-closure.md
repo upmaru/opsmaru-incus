@@ -618,3 +618,25 @@ GetOperationWaitSecret mapping; regression checks reject both a removed variants
 field and an empty list. This strengthens inventory preservation only. All 21
 pairs remain partial, native long-poll/secret behavior gaps stay open, and coverage
 regeneration preserves every declaration and `complete_port=false` byte-for-byte.
+
+## Scheduler-tolerant cleanup evidence — 2026-10-14
+
+The macOS cleanup fixture repair separates observing termination from the
+unchanged runtime budget. Existing 500 ms elapsed/report assertions failed in
+controlled reproductions after all console actors had terminated or the event
+socket had closed, solely because observation/reporting was delayed by 600 ms.
+This establishes the assertion weakness; historical runner delays remain
+unmeasured. Real blocked-I/O tests now use a shared five-second process observation
+window and explicit closed-socket results against thirty-second I/O lifetimes.
+They retain native identity, pending-writer errors and no DELETE/replay checks.
+Controlled delayed-console-observer and delayed-event-peer cases are permanent.
+
+A direct call-trace test verifies close requests are batched before waiting and
+only the first blocked wait spends the existing shared allowance (at most 100 ms);
+remaining waits get zero. A fresh-per-channel 100 ms mutation fails this check.
+Removing the independent WebSocket owner guard fails actual blocked-control
+termination and stalled-attachment EOF checks before natural I/O expiry. Both
+mutations were restored; no library or native-oracle source changes are included.
+A live-process negative case verifies bounded observations still fail with owned
+process/status/stack diagnostics. Neither this repair nor CI success promotes
+endpoint/declaration coverage or closes task 3.9.

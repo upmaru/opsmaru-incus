@@ -2,7 +2,15 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
   use ExUnit.Case, async: false
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, DynamicConsole, Error, Server, WebSocket}
-  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture, WireComparison}
+
+  alias Opsmaru.TestSupport.{
+    CleanupAssertions,
+    HTTPFixture,
+    TLSIdentity,
+    WebSocketFixture,
+    WireComparison
+  }
+
   @driver Path.expand("../.integration/incus-dynamic-console-driver", __DIR__)
   @extensions ["instances", "console", "console_vga_type", "console_force"]
   @payload <<255, 0, 128, 42>>
@@ -324,8 +332,8 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
                    1000
   end
 
-  for cause <- [:owner_loss, :control_close] do
-    test "#{cause} releases multiple blocked attachments under one cleanup budget", %{
+  for {cause, observer_delay} <- [{:owner_loss, 0}, {:control_close, 0}, {:owner_loss, 600}] do
+    test "#{cause} releases blocked attachments (observer delay #{observer_delay} ms)", %{
       root: root,
       context: context
     } do
@@ -335,7 +343,7 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
       connection =
         Connection.unix!(HTTPFixture.endpoint(fixture).socket,
           owner: :fixture,
-          timeout: 5_000,
+          timeout: 30_000,
           stream_timeout: 30_000,
           max_response_bytes: 1_048_576,
           max_stream_bytes: 67_108_864
@@ -365,9 +373,9 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
         end)
 
       on_exit(fn -> if Process.alive?(owner), do: Process.exit(owner, :kill) end)
-      assert_receive {:blocked_console, console, channels}, 1_000
-      assert_receive {:blocked_peer, "private-control", control_peer}, 1_000
-      for _ <- channels, do: assert_receive({:blocked_peer, "private-data", _}, 1_000)
+      assert_receive {:blocked_console, console, channels}, 5_000
+      assert_receive {:blocked_peer, "private-control", control_peer}, 5_000
+      for _ <- channels, do: assert_receive({:blocked_peer, "private-data", _}, 5_000)
 
       on_exit(fn ->
         for pid <- [console.pid | Enum.map(channels, & &1.pid)] do
@@ -391,14 +399,17 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
         end)
 
       for channel <- channels do
-        await_blocked_write(channel.pid, System.monotonic_time(:millisecond) + 1_000)
+        await_blocked_write(channel.pid, System.monotonic_time(:millisecond) + 5_000)
       end
 
-      monitors = for pid <- [console.pid | Enum.map(channels, & &1.pid)], do: Process.monitor(pid)
-      before = System.monotonic_time(:millisecond)
+      control = :sys.get_state(console.pid).control
+
+      monitors =
+        CleanupAssertions.monitor([console.pid, control.pid | Enum.map(channels, & &1.pid)])
+
       end_blocked_console(unquote(cause), owner, control_peer)
-      for monitor <- monitors, do: assert_receive({:DOWN, ^monitor, :process, _, _}, 500)
-      assert System.monotonic_time(:millisecond) - before < 500
+      Process.sleep(unquote(observer_delay))
+      assert :ok = CleanupAssertions.assert_stopped(monitors)
       for writer <- writers, do: assert({:error, %Error{}} = Task.await(writer))
       assert console.operation.url == "/1.0/operations/console-id"
       assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
@@ -423,7 +434,7 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
       connection =
         Connection.unix!(HTTPFixture.endpoint(fixture).socket,
           owner: :fixture,
-          timeout: 5_000,
+          timeout: 30_000,
           stream_timeout: 30_000,
           max_stream_bytes: 67_108_864
         )
@@ -460,7 +471,7 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
         end)
 
       on_exit(fn -> if Process.alive?(owner), do: Process.exit(owner, :kill) end)
-      assert_receive {:console_call, console, channel}, 1_000
+      assert_receive {:console_call, console, channel}, 5_000
       control = :sys.get_state(console.pid).control
 
       on_exit(fn ->
@@ -474,33 +485,22 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
       send(owner, :block)
 
       case unquote(call) do
-        :attach -> assert_receive {:stalled_upgrade, _}, 1_000
-        :control -> await_blocked_write(control.pid, System.monotonic_time(:millisecond) + 1_000)
+        :attach -> assert_receive {:stalled_upgrade, _}, 5_000
+        :control -> await_blocked_write(control.pid, System.monotonic_time(:millisecond) + 5_000)
       end
 
       monitors =
-        for pid <- [console.pid, channel.pid, control.pid], do: {pid, Process.monitor(pid)}
+        CleanupAssertions.monitor([console.pid, channel.pid, control.pid])
 
       Process.exit(owner, :kill)
-      for {pid, monitor} <- monitors, do: assert_shutdown(pid, monitor)
+      assert :ok = CleanupAssertions.assert_stopped(monitors)
 
       if unquote(call) == :attach,
-        do: assert_receive({:stalled_peer_closed, {:error, :closed}}, 1_000)
+        do: assert_receive({:stalled_peer_closed, {:error, :closed}}, 5_000)
 
       assert console.operation.url == "/1.0/operations/console-id"
       assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
       refute Enum.any?(HTTPFixture.requests(fixture), &(&1.method == "DELETE"))
-    end
-  end
-
-  defp assert_shutdown(pid, monitor) do
-    receive do
-      {:DOWN, ^monitor, :process, ^pid, _} -> :ok
-    after
-      500 ->
-        flunk(
-          "owned console process exceeded 500 ms cleanup: #{inspect(Process.info(pid, [:current_stacktrace, :status]))}"
-        )
     end
   end
 
@@ -533,7 +533,7 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
                  {:attach, counter} when secret == "private-data" ->
                    if :atomics.add_get(counter, 1, 1) > 1 do
                      send(parent, {:stalled_upgrade, self()})
-                     send(parent, {:stalled_peer_closed, transport.recv(socket, 0, 1_000)})
+                     send(parent, {:stalled_peer_closed, transport.recv(socket, 0, 30_000)})
                    end
 
                  _ ->
@@ -560,7 +560,7 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
                receive do
                  :close_control -> transport.send(socket, WebSocketFixture.frame(8, <<1000::16>>))
                after
-                 10_000 -> :ok
+                 30_000 -> :ok
                end
              end
            }

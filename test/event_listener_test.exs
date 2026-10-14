@@ -3,7 +3,7 @@ defmodule Opsmaru.Incus.EventListenerTest do
   import ExUnit.CaptureLog
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Error, EventListener, Model, Server}
-  alias Opsmaru.TestSupport.{HTTPFixture, WebSocketFixture}
+  alias Opsmaru.TestSupport.{CleanupAssertions, HTTPFixture, WebSocketFixture}
   @driver Path.expand("../.integration/event-handlers-driver", __DIR__)
   @event %{"type" => "logging", "timestamp" => "2026-10-11T12:00:00Z", "metadata" => %{}}
 
@@ -26,8 +26,9 @@ defmodule Opsmaru.Incus.EventListenerTest do
     %{root: root}
   end
 
-  for phase <- [:upgrade, :write] do
-    test "caller loss closes an event listener blocked in #{phase} and its channel", %{root: root} do
+  for {phase, peer_delay} <- [{:upgrade, 0}, {:upgrade, 600}, {:write, 0}] do
+    test "caller loss closes an event listener blocked in #{phase} (peer delay #{peer_delay} ms)",
+         %{root: root} do
       parent = self()
 
       fixture =
@@ -40,7 +41,10 @@ defmodule Opsmaru.Incus.EventListenerTest do
                upgrade: fn transport, socket ->
                  if unquote(phase) == :upgrade do
                    send(parent, :listener_negotiating)
-                   send(parent, {:listener_peer_closed, transport.recv(socket, 0, 1_000)})
+                   result = transport.recv(socket, 0, 30_000)
+                   send(parent, {:listener_socket_closed, result})
+                   Process.sleep(unquote(peer_delay))
+                   send(parent, {:listener_peer_closed, result})
                  else
                    accept =
                      Base.encode64(
@@ -60,7 +64,7 @@ defmodule Opsmaru.Incus.EventListenerTest do
                    receive do
                      :never -> :ok
                    after
-                     10_000 -> :ok
+                     30_000 -> :ok
                    end
                  end
                end
@@ -71,7 +75,7 @@ defmodule Opsmaru.Incus.EventListenerTest do
       connection =
         Connection.unix!(HTTPFixture.endpoint(fixture).socket,
           owner: :fixture,
-          timeout: 5_000,
+          timeout: 30_000,
           stream_timeout: 30_000,
           max_stream_bytes: 67_108_864
         )
@@ -105,12 +109,13 @@ defmodule Opsmaru.Incus.EventListenerTest do
 
       case unquote(phase) do
         :upgrade ->
-          assert_receive :listener_negotiating, 1_000
+          assert_receive :listener_negotiating, 5_000
           Process.exit(caller, :kill)
-          assert_receive {:listener_peer_closed, {:error, :closed}}, 500
+          assert_receive {:listener_socket_closed, {:error, :closed}}, 5_000
+          assert_receive {:listener_peer_closed, {:error, :closed}}, 5_000
 
         :write ->
-          assert_receive {:blocked_listener, listener}, 1_000
+          assert_receive {:blocked_listener, listener}, 5_000
           channel = :sys.get_state(listener.pid).channel
 
           on_exit(fn ->
@@ -122,10 +127,10 @@ defmodule Opsmaru.Incus.EventListenerTest do
           socket = :sys.get_state(channel.pid).conn |> Mint.HTTP.get_socket()
           :ok = :inet.setopts(socket, sndbuf: 1024)
           send(caller, :write)
-          await_listener_write(channel.pid, System.monotonic_time(:millisecond) + 2_000)
-          monitors = for pid <- [listener.pid, channel.pid], do: Process.monitor(pid)
+          await_listener_write(channel.pid, System.monotonic_time(:millisecond) + 5_000)
+          monitors = CleanupAssertions.monitor([listener.pid, channel.pid])
           Process.exit(caller, :kill)
-          for monitor <- monitors, do: assert_receive({:DOWN, ^monitor, :process, _, _}, 500)
+          assert :ok = CleanupAssertions.assert_stopped(monitors)
       end
 
       assert [%{method: "GET"}] = HTTPFixture.requests(fixture)

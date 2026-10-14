@@ -2,7 +2,7 @@ defmodule Opsmaru.Incus.SessionTest do
   use ExUnit.Case, async: false
   alias Opsmaru.{Context, Incus}
   alias Opsmaru.Incus.{Connection, Error, Server, Session, WebSocket}
-  alias Opsmaru.TestSupport.{HTTPFixture, WebSocketFixture}
+  alias Opsmaru.TestSupport.{CleanupAssertions, HTTPFixture, WebSocketFixture}
 
   test "session close stops multiple blocked channels within a shared local budget" do
     root = Path.join(System.tmp_dir!(), "op-session-block-#{System.unique_integer([:positive])}")
@@ -35,7 +35,7 @@ defmodule Opsmaru.Incus.SessionTest do
                receive do
                  :never -> :ok
                after
-                 10_000 -> :ok
+                 30_000 -> :ok
                end
              end
            }
@@ -46,7 +46,7 @@ defmodule Opsmaru.Incus.SessionTest do
       connection:
         Connection.unix!(HTTPFixture.endpoint(fixture).socket,
           owner: :fixture,
-          timeout: 5_000,
+          timeout: 30_000,
           stream_timeout: 30_000,
           max_stream_bytes: 67_108_864
         ),
@@ -84,13 +84,11 @@ defmodule Opsmaru.Incus.SessionTest do
       end
 
     for {_, channel} <- channels,
-        do: await_session_write(channel.pid, System.monotonic_time(:millisecond) + 1_000)
+        do: await_session_write(channel.pid, System.monotonic_time(:millisecond) + 5_000)
 
-    monitors = for {_, channel} <- channels, do: Process.monitor(channel.pid)
-    before = System.monotonic_time(:millisecond)
+    monitors = CleanupAssertions.monitor(Enum.map(channels, fn {_, channel} -> channel.pid end))
     assert :ok = Session.close(session)
-    for monitor <- monitors, do: assert_receive({:DOWN, ^monitor, :process, _, _}, 500)
-    assert System.monotonic_time(:millisecond) - before < 500
+    assert :ok = CleanupAssertions.assert_stopped(monitors)
     for writer <- writers, do: assert({:error, %Error{}} = Task.await(writer))
     assert session.operation.url == "/1.0/operations/accepted-exec"
     assert Enum.all?(HTTPFixture.requests(fixture), &(&1.method == "GET"))

@@ -188,6 +188,25 @@ blocked input, simultaneous output, limits, deadlines, cancellation and owner
 cleanup without tight wall-clock assertions. Reuse existing fixtures and stop
 if this slice grows beyond a few hundred lines or needs scope expansion.
 
+#### macOS cleanup evidence repair (2026-10-14)
+
+Separate runtime cleanup budgets from scheduling of test observers and fixture
+peers. Reproduce the existing 500 ms elapsed/peer-report false failures with
+controlled observation delay after resources terminate or the socket closes.
+Replace those performance assertions with bounded monitor/real-EOF evidence
+and failure diagnostics. Use a shared 5-second observation allowance while
+stalled client/peer lifetimes remain 30 seconds, so natural I/O expiry cannot
+substitute for owner cleanup. A delayed observer is not a cleanup SLA.
+
+Independently verify the existing 100 ms shared WebSocket close budget through
+call traces: all close requests precede waits, the first wait consumes the
+remaining shared allowance and subsequent blocked waits get zero rather than
+fresh allowances. Retain blocked-write/negotiation preconditions, pending-writer
+failures, native identity and no DELETE/replay assertions. Library budgets,
+native oracle and declaration/endpoint classifications remain unchanged. Keep
+the repair within a few hundred lines and validate both CI platforms without
+retrying failures into a parity claim.
+
 ### 5. Delivery and subsequent work
 
 After implementation and fixture/consumer checks, publish an actual immutable revision of `upmaru/opsmaru-incus` that Macus and Opsmaru can lock, with source/reference provenance and documented direct Elixir usage. Do not invent a Hex release/version or require a sibling checkout for CI/installed consumers. Macus's local gateway/runtime/proxy/client work may proceed from this foundation; later tool/task integration explicitly waits for add-compute-substrate's corresponding milestone. Central enrollment/connectivity never gates standalone embedding/client progress.
