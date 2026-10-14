@@ -17,7 +17,7 @@ Macus and central Opsmaru both need the same portable native Incus client. It wa
 - Keep OCI in scope through an explicitly supplied host adapter: hosts own registry credentials, external conversion tools and temporary state; the portable library verifies native image projections and bounds adapter calls and binary handoff.
 - Keep SimpleStreams in scope over an explicitly supplied verified HTTPS origin, without automatic socket discovery or HTTP downgrade. Optional delta conversion uses a bounded host adapter that owns tools, credentials and temporary state; retain the unchanged Incus v7.0.1 reference and document these security/ownership differences.
 - Run database-free fixture checks with an ordinary `mix test`, plus an external Macus-compatible consumer fixture that imports a pinned revision of this repository without a sibling checkout. Installed Macus runtime packaging remains Macus-owned.
-- Repair macOS cleanup fixtures by separating bounded resource observations from direct shared-budget verification, with controlled delayed-observer evidence and unchanged runtime budgets.
+- Repair macOS cleanup fixtures by separating bounded resource observations from direct shared-budget verification, with controlled delayed-observer evidence and unchanged runtime budgets. Verify Unix/TLS WebSocket write timeouts against the actual remaining stream deadline rather than a test-observer elapsed threshold.
 - Keep MCP tools, durable tasks, central registry/SQL/OIDC and connectors in `upmaru/opsmaru`, and Swift/VZ, the public gateway and packaging in `upmaru/macus`. This change neither starts nor validates those services.
 
 ## Capabilities

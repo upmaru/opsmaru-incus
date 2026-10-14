@@ -655,3 +655,15 @@ startup and host ownership remain unchanged. Repository references and the
 isolated consumer adopt the new names. This compatibility change supplies no new
 native endpoint evidence: task 3.9, all 21 partial endpoint pairs and declaration
 gaps remain open with `complete_port=false`.
+
+## WebSocket write-lifetime observation repair — 2026-10-14
+
+Unix/TLS blocked-write fixtures now separate a delayed observer from write-budget
+evidence. Local channel clock returns and socket-option traces verify each actual
+timeout equals the remaining stream deadline capped by the request budget, with
+timeout-close enabled. Deadline errors, normal channel termination and one GET
+remain required; the permanent observer pause is 750 ms. Fixture streams last
+three seconds against thirty-second request/peer lifetimes, with bounded process
+observation. Enlarged-timeout and disabled-timeout-close mutations fail both
+transports; runtime source was restored after each probe. Native behavior/oracle,
+declaration statuses, endpoint gaps and the task 3.9 completion gate are unchanged.

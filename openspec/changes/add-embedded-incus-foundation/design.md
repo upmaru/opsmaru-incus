@@ -224,6 +224,23 @@ to raw-channel owner cleanup and stream expiry. Trace actual socket send-timeout
 options to verify they are capped by the configured test stream lifetime rather
 than the longer request budget; retain stalled peers and explicit deadline errors.
 
+#### WebSocket write-lifetime evidence repair (2026-10-14)
+
+Replace the remaining Unix/TLS blocked-write fixture's 700 ms elapsed assertion
+with bounded resource observation and direct evidence of the unchanged socket
+write budget. Trace clock return values and socket options on the explicit local
+channel process: every send timeout must equal the lesser of the request budget
+and the stream deadline's remainder at the actual budget calculation, with
+send-timeout-close enabled. No test-observer elapsed threshold is a runtime SLA.
+
+Use a 3-second fixture stream lifetime against 30-second request and stalled-peer
+budgets. Require a deadline error (including its notification when the local
+handle is already closed), normal channel termination and one native GET. Keep
+a permanent 750 ms delayed observer and a finite five-second monitor allowance.
+Prove enlarged send-timeout mutations fail the direct checks, restore runtime
+source after probes, and retain the unchanged native oracle and partial coverage.
+Keep this repair test-only and within a few hundred lines.
+
 ### 5. Delivery and subsequent work
 
 After implementation and fixture/consumer checks, publish an actual immutable revision of `upmaru/opsmaru-incus` that Macus and Opsmaru can lock, with source/reference provenance and documented direct Elixir usage. Do not invent a Hex release/version or require a sibling checkout for CI/installed consumers. Macus's local gateway/runtime/proxy/client work may proceed from this foundation; later tool/task integration explicitly waits for add-compute-substrate's corresponding milestone. Central enrollment/connectivity never gates standalone embedding/client progress.

@@ -1339,3 +1339,31 @@ pin and pushed both-platform results are recorded with the namespace cleanup PR.
 The isolated consumer builds warning-free and passes at pushed namespace revision
 465e901ad1d85796f6fc1e2941a04b92434ea8de using the new host context. Its default
 pin, resolved lockfile and embedding example now identify that exact revision.
+
+## WebSocket write-lifetime observation repair — 2026-10-14
+
+PR #8's first CI run 38548629921 exposed the existing Unix WebSocket elapsed
+assertion: 707 ms against 700 ms, seed 874080. Controlled temporary copies pause
+750 ms after confirmed normal channel DOWN and reproduce failures on Unix/TLS
+(852/854 ms), proving the assertion includes observer scheduling. The exact
+historical runner delay remains unknown; the unchanged retry was recorded.
+
+The strictly validated repair retains three-second fixture stream lifetimes
+against thirty-second request and stalled-peer lifetimes. Exact local clock
+returns and socket-option traces prove remaining-deadline timeouts and enabled
+timeout-close, independent of observer elapsed time. Both transports require
+deadline failure (including the notification for an already closed handle),
+normal termination within a bounded observation window, and one native GET.
+The permanent observer delay is 750 ms. Five-second send-timeout mutations fail
+both cases at the exact budget comparison; disabled timeout-close mutations fail
+both cases at the option check. Runtime source was restored after each probe.
+All 60 focused stress executions pass with CI seed 874080, three schedulers and
+max_cases=6. Native oracle and library sources are unchanged for this repair;
+coverage regeneration remains byte-identical: 1239 partial, 41 missing, false.
+Task 3.9 and all 21 partial endpoint pairs remain open. Final canonical and pushed
+both-platform/immutable-consumer results are recorded on PR #8.
+
+Final local canonical checks pass: 1011 tests, format, warning-free compilation,
+strict Credo and all three strict OpenSpec changes. Reference checks pass the
+inventory/schema verifiers and all 188 native constants. No elapsed success
+assertion, production/runtime change or new acceptance claim is introduced.
