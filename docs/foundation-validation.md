@@ -1273,3 +1273,12 @@ of the 1280 declaration rows is unchanged (1239 partial, 41 missing, false).
 The slice adds about 400 development/evidence/planning lines, with no runtime or
 oracle changes, handwritten parser, timing assertion or real-backend access.
 Pushed immutable consumer and both-platform CI results are recorded on the draft PR.
+
+PR #6's sole Greptile P2 finding was reproduced with the new removed-variant
+regression before the fix: validation incorrectly returned success. Requiring the
+expected native secret-wait variant makes both field-removal and empty-list cases
+fail explicitly. The seven focused checks and `mise run check` pass (1007 tests,
+format, warning-free compile, strict Credo/OpenSpec). Own review confirms the
+13-line validator/regression change leaves runtime, native oracle and manifest
+classifications unchanged. Coverage regeneration is byte-identical; current
+pushed-revision consumer/CI results are recorded on PR #6.

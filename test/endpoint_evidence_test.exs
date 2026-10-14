@@ -56,6 +56,18 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            }
   end
 
+  test "rejects removed native secret-wait variants", %{native: native} do
+    wait = Enum.find(@manifest["entries"], &(&1["method"] == "GetOperationWait"))
+
+    for removed <- [Map.delete(wait, "variants"), %{wait | "variants" => []}] do
+      entries = Enum.map(@manifest["entries"], &if(&1 == wait, do: removed, else: &1))
+
+      assert_raise ExUnit.AssertionError, ~r/missing native secret-wait variant/, fn ->
+        EndpointEvidence.validate!(%{@manifest | "entries" => entries}, native)
+      end
+    end
+  end
+
   for {field, value, message} <- [
         {"reference_revision", "stale", "stale reference"},
         {"source", %{}, "stale REST source"},

@@ -611,3 +611,10 @@ matrices, non-exec upgrade and public-secret variants remain unclassified/open.
 This manifest cannot authorize tool exports or close task 3.9. Coverage adds only
 a manifest pointer: 1239 partial, 41 missing, `complete_port=false`. No runtime,
 native oracle, tool/gateway implementation or real-backend acceptance changed.
+
+PR #6's Greptile P2 finding exposed an evidence-validator gap: omitting the native
+secret-wait variant still passed. The validator now requires exactly the expected
+GetOperationWaitSecret mapping; regression checks reject both a removed variants
+field and an empty list. This strengthens inventory preservation only. All 21
+pairs remain partial, native long-poll/secret behavior gaps stay open, and coverage
+regeneration preserves every declaration and `complete_port=false` byte-for-byte.

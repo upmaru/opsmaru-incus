@@ -41,6 +41,7 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
 
     wait = Enum.find(manifest["entries"], &String.ends_with?(&1["path"], "/wait"))
     assert wait["status"] == "partial" and wait["method"] == "GetOperationWait"
+    assert wait["variants"] == ["GetOperationWaitSecret"], "missing native secret-wait variant"
     :ok
   end
 
