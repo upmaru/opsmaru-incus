@@ -1282,3 +1282,42 @@ format, warning-free compile, strict Credo/OpenSpec). Own review confirms the
 13-line validator/regression change leaves runtime, native oracle and manifest
 classifications unchanged. Coverage regeneration is byte-identical; current
 pushed-revision consumer/CI results are recorded on PR #6.
+
+## Cleanup observation repair — 2026-10-14
+
+Controlled copies of the old fixtures reproduce three false failures: an event
+peer reports 600 ms after confirmed socket closure, and both console cleanup
+paths measure 703/803 ms after all DOWN messages when observation pauses 600 ms.
+This proves the timing assertions conflate cleanup with observation; it does not
+recover the exact historical runner scheduling. The validated plan separates
+finite resource observation from the unchanged library grace allocation.
+
+The repaired cases retain actual blocked socket sends/upgrades, native identity,
+pending-writer failures, explicit peer EOF and no DELETE/replay. Peers and client
+I/O remain stalled for 30 seconds; a shared five-second observation window cannot
+pass from natural expiry. Permanent delayed-peer/observer cases pass. The direct
+close-budget trace verifies request batching and one remaining 100 ms allowance;
+a fresh-per-channel mutation fails it. Removing the independent owner guard
+fails both blocked-control termination and stalled-attachment EOF within the
+observation window. Runtime source was restored after both probes.
+
+All 350 focused stress executions pass with CI seed 830551, three schedulers and
+max_cases=6; the final 35-case suite also passes seed 947235. Final `mise run check`
+passes 1011 tests, format, warning-free compile, strict Credo and all three
+OpenSpec changes. Reference checks pass all 188 constants and inventory/schema
+verifiers. Coverage regeneration is byte-identical: 1239 partial, 41 missing,
+false; all 21 endpoint pairs remain partial. Exact pushed CI/consumer results
+are recorded on the cleanup repair PR. No native oracle, runtime or backend/hardware acceptance
+changed; no tight elapsed-time success assertion was introduced.
+
+The first cleanup repair CI run, 38544091574, passed Ubuntu but macOS seed 521777
+exposed the old raw-channel blocked-write elapsed assertion (617 ms vs 500 ms).
+All previously repaired cases passed. A controlled 600 ms observer pause after
+confirmed channel DOWN reproduces that false failure. The raw fixtures now use
+the same bounded owner-cleanup observations and a permanent delayed observer.
+The blocked-write fixture uses a 1-second test stream lifetime against 30-second
+request/peer budgets; actual socket send-timeout traces must remain within that
+stream cap. A 5-second send-timeout mutation fails this check; runtime restored.
+All 120 raw-channel stress executions pass with seed 521777, three schedulers
+and max_cases=6. Final canonical checks pass again: 1011 tests, formatting,
+warning-free compilation, strict Credo and all three strict OpenSpec validations.

@@ -7,6 +7,7 @@ defmodule Opsmaru.Incus.RawChannelTest do
   alias Opsmaru.Incus.RawChannel
   alias Opsmaru.Incus.Server
   alias Opsmaru.Incus.Upgrade
+  alias Opsmaru.TestSupport.CleanupAssertions, as: Cleanup
   alias Opsmaru.TestSupport.HTTPFixture
   alias Opsmaru.TestSupport.TLSIdentity
 
@@ -35,14 +36,14 @@ defmodule Opsmaru.Incus.RawChannelTest do
              %{
                upgrade: fn transport, socket ->
                  send(parent, :negotiating)
-                 send(parent, {:peer_closed, transport.recv(socket, 0, 1_000)})
+                 send(parent, {:peer_closed, transport.recv(socket, 0, 30_000)})
                end
              }
            end}
         )
 
       connection =
-        Connection.unix!(HTTPFixture.endpoint(fixture).socket, owner: :fixture, timeout: 5_000)
+        Connection.unix!(HTTPFixture.endpoint(fixture).socket, owner: :fixture, timeout: 30_000)
 
       client = %Incus{
         connection: connection,
@@ -54,13 +55,13 @@ defmodule Opsmaru.Incus.RawChannelTest do
         spawn(fn -> RawChannel.open(client, "/1.0/instances/fixture/sftp", unquote(protocol)) end)
 
       on_exit(fn -> if Process.alive?(caller), do: Process.exit(caller, :kill) end)
-      assert_receive :negotiating, 1_000
+      assert_receive :negotiating, 5_000
       Process.exit(caller, :kill)
-      assert_receive {:peer_closed, {:error, :closed}}, 500
+      assert_receive {:peer_closed, {:error, :closed}}, 5_000
       assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
     end
 
-    test "#{protocol} caller loss stops a blocked raw write within the owner grace", %{
+    test "#{protocol} caller loss releases a blocked raw write", %{
       root: root,
       context: context
     } do
@@ -84,7 +85,7 @@ defmodule Opsmaru.Incus.RawChannelTest do
                  receive do
                    :never -> :ok
                  after
-                   10_000 -> :ok
+                   30_000 -> :ok
                  end
                end
              }
@@ -94,7 +95,7 @@ defmodule Opsmaru.Incus.RawChannelTest do
       connection =
         Connection.unix!(HTTPFixture.endpoint(fixture).socket,
           owner: :fixture,
-          timeout: 5_000,
+          timeout: 30_000,
           stream_timeout: 30_000,
           max_chunk_bytes: 1_048_576,
           max_stream_bytes: 67_108_864
@@ -124,14 +125,14 @@ defmodule Opsmaru.Incus.RawChannelTest do
         end)
 
       on_exit(fn -> if Process.alive?(caller), do: Process.exit(caller, :kill) end)
-      assert_receive {:raw_writer, channel}, 1_000
+      assert_receive {:raw_writer, channel}, 5_000
       on_exit(fn -> if Process.alive?(channel.pid), do: Process.exit(channel.pid, :kill) end)
       :ok = :inet.setopts(:sys.get_state(channel.pid).socket, sndbuf: 1024)
       send(caller, :write)
-      await_raw_write(channel.pid, System.monotonic_time(:millisecond) + 1_000)
-      monitor = Process.monitor(channel.pid)
+      await_raw_write(channel.pid, System.monotonic_time(:millisecond) + 5_000)
+      monitors = Cleanup.monitor([channel.pid])
       Process.exit(caller, :kill)
-      assert_receive {:DOWN, ^monitor, :process, _, :killed}, 500
+      assert :ok = Cleanup.assert_stopped(monitors)
       assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
     end
   end
@@ -336,7 +337,7 @@ defmodule Opsmaru.Incus.RawChannelTest do
     end
   end
 
-  test "blocked native writes respect the stream lifetime and release their socket", %{
+  test "blocked writes retain stream timeout caps despite delayed observation", %{
     root: root,
     context: context
   } do
@@ -350,7 +351,7 @@ defmodule Opsmaru.Incus.RawChannelTest do
              wire_chunks: [
                {0,
                 "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: sftp\r\n\r\n"},
-               {1000, ""}
+               {30_000, ""}
              ]
            }
          end}
@@ -359,19 +360,26 @@ defmodule Opsmaru.Incus.RawChannelTest do
     connection =
       Connection.unix!(HTTPFixture.endpoint(fixture).socket,
         owner: :fixture,
-        timeout: 1000,
-        stream_timeout: 80,
+        timeout: 30_000,
+        stream_timeout: 1_000,
         max_chunk_bytes: 1_048_576
       )
 
-    client = %Incus{connection: connection, context: context, server: %Server{api_extensions: []}}
+    client = %Incus{
+      connection: connection,
+      context: context,
+      server: %Server{api_extensions: []}
+    }
+
     assert {:ok, channel} = Incus.sftp(client, "fixture")
     # Constrain the disposable client socket so the fixture's unread peer
     # eventually reaches write pressure; no private state is logged.
     socket = :sys.get_state(channel.pid).socket
     assert :ok = :inet.setopts(socket, sndbuf: 1024)
-    monitor = Process.monitor(channel.pid)
-    before = System.monotonic_time(:millisecond)
+    monitors = Cleanup.monitor([channel.pid])
+    :erlang.trace_pattern({:inet, :setopts, 2}, true, [:local])
+    on_exit(fn -> :erlang.trace_pattern({:inet, :setopts, 2}, false, [:local]) end)
+    :erlang.trace(channel.pid, true, [:call])
 
     bytes = :binary.copy(<<7>>, 1_048_576)
 
@@ -388,11 +396,16 @@ defmodule Opsmaru.Incus.RawChannelTest do
 
     if kind == :channel_closed do
       ref = channel.ref
-      assert_receive {^ref, :error, %Error{kind: :deadline}}, 1000
+      assert_receive {^ref, :error, %Error{kind: :deadline}}, 5_000
     end
 
-    assert System.monotonic_time(:millisecond) - before < 500
-    assert_receive {:DOWN, ^monitor, :process, _, :normal}, 1000
+    Process.sleep(600)
+    assert :ok = Cleanup.assert_stopped(monitors)
+    barrier = :erlang.trace_delivered(:all)
+    assert_receive {:trace_delivered, :all, ^barrier}, 5_000
+    timeouts = send_timeout_traces(channel.pid)
+    assert timeouts != []
+    assert Enum.all?(timeouts, &(&1 in 0..connection.stream_timeout))
     assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
   end
 
@@ -401,6 +414,15 @@ defmodule Opsmaru.Incus.RawChannelTest do
 
     assert {:error, %Error{kind: :deadline}} =
              Upgrade.receive_response(nil, make_ref(), deadline, 128)
+  end
+
+  defp send_timeout_traces(pid) do
+    receive do
+      {:trace, ^pid, :call, {:inet, :setopts, [_, options]}} ->
+        Keyword.get_values(options, :send_timeout) ++ send_timeout_traces(pid)
+    after
+      0 -> []
+    end
   end
 
   defp fixture(root, context, protocol, initial, half_close) do
