@@ -1,6 +1,7 @@
 {
   "reference_revision": "13f3992766142d5087fff2e362cd2e1a75294fe8",
   "complete_port": false,
+  "endpoint_evidence": "priv/incus/endpoint-evidence.json",
   "entries": [
     {
       "id": "client/function/ConnectIncus",
