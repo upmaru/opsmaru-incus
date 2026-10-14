@@ -3,17 +3,22 @@ defmodule Opsmaru.Incus.Session do
   alias Opsmaru.Incus
   alias Opsmaru.Incus.Error
   alias Opsmaru.Incus.ExecOutput
+  alias Opsmaru.Incus.ExecRun
   alias Opsmaru.Incus.Model
   alias Opsmaru.Incus.Operation
   alias Opsmaru.Incus.WebSocket
   defstruct [:operation, :owner, collectable?: false, channels: %{}]
 
-  def exec(client, instance, body) do
+  def exec(client, instance, body), do: exec(client, instance, body, fn _ -> :ok end)
+
+  @doc false
+  def exec(client, instance, body, accepted) do
     body = Model.encode(body)
 
     with {:ok, response} <-
            Incus.call(client, "ExecInstance", %{"instanceName" => instance}, body: body),
          {:ok, operation} <- Operation.from_response(client, response),
+         :ok <- accepted.(operation),
          {:ok, session} <- channels(operation) do
       collectable? =
         body["interactive"] in [nil, false] and body["record-output"] in [nil, false] and
@@ -35,6 +40,16 @@ defmodule Opsmaru.Incus.Session do
   """
   def collect(session, stdout, stderr, opts \\ []),
     do: ExecOutput.collect(session, stdout, stderr, opts)
+
+  @doc """
+  Submit live noninteractive exec and exchange finite binary stdin with acknowledged
+  output sinks concurrently. Options are `:timeout`, `:max_input_bytes` and
+  `:max_output_bytes`, capped by connection limits. One lifetime covers submission
+  through completion. Local failures never cancel or replay Incus; known accepted
+  identity remains usable through the original client. See `docs/incus-client.md`.
+  """
+  def run(client, instance, body, stdin, stdout, stderr, opts \\ []),
+    do: ExecRun.run(client, instance, body, stdin, stdout, stderr, opts)
 
   def console(client, instance, body) do
     body = Model.encode(body)

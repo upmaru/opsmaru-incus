@@ -621,3 +621,27 @@ response data for reconciliation; delivered sink side effects remain host-owned.
 Invalid options, foreign creators and unsupported sessions reject before channel
 IO and leave the session to its creator. Recorded-file output, interactive IO,
 full Go argument orchestration and tool policy remain outside this subset.
+
+`Session.run/7` combines submission, negotiation, finite binary stdin and the same
+acknowledged output sinks. It drains both outputs while writing stdin in chunks
+of at most `min(max_chunk_bytes, max_response_bytes)`, with one outstanding write
+and one read per output.
+Its absolute lifetime starts before POST and includes callbacks and final wait:
+
+```elixir
+{:ok, result} = Session.run(client, instance, %{
+  "command" => argv, "wait-for-websocket" => true, "interactive" => false
+}, stdin_bytes, stdout_sink, stderr_sink,
+  timeout: 10_000, max_input_bytes: 65_536, max_output_bytes: 1_048_576)
+```
+
+All three options default to the corresponding connection stream limits and may
+only lower them. Unsupported mode, invalid options/sinks or excess stdin reject
+before POST; native command/environment fields retain typed request-byte bounds.
+Input closure must acknowledge before final polling. A shorter host context and
+host cancellation still apply; the private lifetime never cancels that context.
+Returned operation/response bindings use the original client for reconciliation.
+Loss of a possibly accepted POST response is uncertain; known accepted identity
+survives negotiation/callback failures. Local channels/workers close without
+DELETE or replay. Tool argument policy, captured/truncated results, interactive
+or recorded exec and arbitrary input producers remain outside this subset.

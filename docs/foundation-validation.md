@@ -1201,3 +1201,60 @@ changes; final published CI remains required. The original failure is recorded
 in [push run 38394427391](https://github.com/upmaru/opsmaru-incus/actions/runs/38394427391);
 the unchanged runtime passed both platforms in
 [PR run 38394496006](https://github.com/upmaru/opsmaru-incus/actions/runs/38394496006).
+
+## Bounded full-duplex exec — 2026-10-13
+
+The revised plan passed strict validation before implementation. `Session.run/7`
+adds the approved finite-input/full-duplex/lifetime subset, reusing the existing
+unchanged native IO driver and collector. Own source review and local `mise run
+check` pass: 996 tests, formatting, warning-free compile, strict Credo/OpenSpec.
+`check:reference` passes inventory/schema checks and 188 constants. Coverage
+regeneration is byte-identical: 1239 partial, 41 missing, `complete_port=false`.
+Five new fixtures plus extended Unix/mutual-HTTPS differential and sink/limit
+cases cover blocked input, chunking, submission/negotiation lifetime, host/local
+deadline isolation, cancellation and owner cleanup without elapsed-time bounds.
+The slice adds about 400 implementation/fixture lines; no parser or scope expansion.
+Pushed-revision consumer and both-platform CI acceptance remain publication gates
+recorded on the draft PR. No real backend or consumer hardware was accessed.
+
+PR #5's P2 review finding was reproduced as `:frame_limit` in both new Unix and
+verified mutual-HTTPS tests before the fix. Stdin chunks now respect the smaller
+of `max_chunk_bytes` and `max_response_bytes`; the regressions verify exact binary
+delivery, native input closure/completion and no mutation replay/cancellation.
+The focused 17-test exec suite and full canonical check (998 tests, strict
+Credo/OpenSpec, warning-free compile/format) pass. Reference checks and identical
+coverage regeneration pass; declaration counts/status and the native pin are
+unchanged. Latest pushed consumer/CI evidence is recorded on PR #5.
+
+## Blocked-stdin failure evidence — 2026-10-14
+
+Production revision `4e9102e` passed both platforms and immutable consumers in
+[CI run 38406496900](https://github.com/upmaru/opsmaru-incus/actions/runs/38406496900).
+[Greptile's second review](https://github.com/upmaru/opsmaru-incus/pull/5#issuecomment-6146661703)
+scored that revision 5/5 with no new actionable findings; its P2 thread is resolved.
+
+This fixture-only continuation confirms that stdin is blocked in the actual Unix
+socket send before local deadline or host cancellation. It verifies both output
+sinks still progress, all four channel processes and peers close, accepted binding
+survives, and no input barrier, final poll, DELETE or replay occurs. Local timeout
+leaves the shared host context active and the original operation pollable. The
+test observer explicitly loads its traced module before installing the pattern;
+partial-frame EOF is observed by the existing fixture rather than causing a match
+exception. Receive timeouts are reported as errors, not peer closure. These two
+cases give the fixture a 30-second receive window around the tested 10-second
+client deadline; other cases retain their 5-second fixture default. Production
+code and the native oracle are unchanged. No parser or elapsed-time performance
+assertion is added.
+
+Own review and canonical checks pass: 1000 tests, formatting, warning-free compile,
+strict Credo and all three OpenSpec changes. Reference checks and byte-identical
+coverage regeneration pass: 1239 partial, 41 missing, `complete_port=false`.
+Latest pushed consumer/CI evidence is recorded on PR #5; task 3.9 remains open.
+
+The first evidence commit `1227b10` passed Ubuntu but its macOS
+[run 38450333962](https://github.com/upmaru/opsmaru-incus/actions/runs/38450333962)
+failed the pre-existing console-control owner-loss test's 500 ms cleanup assertion;
+the diagnostic was `Process.info(...) == nil` (already dead), and both new exec
+cases passed. The console cases passed 10 local repetitions with CI seed 563238,
+three schedulers and max_cases=6. The log cannot distinguish delayed cleanup from
+monitor/timeout scheduling; no console code or its 500 ms bound was changed.

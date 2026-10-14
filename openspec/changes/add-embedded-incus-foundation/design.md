@@ -118,7 +118,7 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
-#### Approved next slice: noninteractive exec collection
+#### Verified slice: noninteractive exec collection
 
 Collect live stdout/stderr from an already accepted, creator-owned noninteractive
 `Session.exec/3` session with `wait-for-websocket=true` and no recorded output.
@@ -140,6 +140,30 @@ results are outside this slice. Compare actual unchanged native ExecInstance IO
 over Unix and verified HTTPS and independently verify budgets and cleanup. Stop
 and offer scope options if implementation grows beyond a few hundred lines,
 requires a handwritten parser or accumulates repeated corner-case/DoS fixes.
+
+#### Verified slice: bounded full-duplex noninteractive exec
+
+Add a call-scoped client helper combining native exec submission, channel
+negotiation, finite binary stdin, acknowledged stdout/stderr sinks and final
+operation completion. Validate live noninteractive mode, sink/options and stdin
+budget before submission. Native command/environment fields retain the existing
+typed request and request-byte bounds; tool-specific argument policy remains in
+`add-incus-operations`. Drain both outputs while sending stdin in bounded chunks,
+with one outstanding write and one read per output. Send the native input barrier
+only after all input writes acknowledge; completion requires that barrier and
+both output barriers/EOF plus authoritative operation completion.
+
+One absolute local lifetime starts before POST and covers negotiation, input,
+sink callbacks and final wait, respecting a shorter host context and its
+cancellation without cancelling unrelated host work. Retain any accepted operation
+and binding even when negotiation or a callback stalls. Unknown acceptance remains
+uncertain. Close local workers/channels on all terminal paths without backend
+DELETE or replay. Keep interactive/recorded output, arbitrary input sources,
+buffered/truncated tool results and MCP policy outside this slice. Compare actual
+unchanged native IO over Unix and verified mutual HTTPS; independently verify
+blocked input, simultaneous output, limits, deadlines, cancellation and owner
+cleanup without tight wall-clock assertions. Reuse existing fixtures and stop
+if this slice grows beyond a few hundred lines or needs scope expansion.
 
 ### 5. Delivery and subsequent work
 
