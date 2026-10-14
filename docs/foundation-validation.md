@@ -1335,3 +1335,7 @@ reference checks pass inventory/schema verification and 188 constants. Coverage
 regeneration is byte-identical: 1239 partial, 41 missing, `complete_port=false`;
 all 21 endpoint pairs remain partial and task 3.9 is open. The immutable consumer
 pin and pushed both-platform results are recorded with the namespace cleanup PR.
+
+The isolated consumer builds warning-free and passes at pushed namespace revision
+465e901ad1d85796f6fc1e2941a04b92434ea8de using the new host context. Its default
+pin, resolved lockfile and embedding example now identify that exact revision.
