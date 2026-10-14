@@ -118,6 +118,29 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: priority endpoint/method evidence (2026-10-14)
+
+Add a development-only, checked manifest for 21 priority verb/path pairs:
+server inspection (1), instances/state (7), snapshots (4), images (3),
+operations including wait/WebSocket (5), and exec submission (1). Verify each
+pair and source hash against the unchanged pinned REST specification using its
+existing YAML parser dependency. Normalize path parameter names for catalogue
+comparison and retain query variants separately. This is a selected inventory,
+not a complete REST inventory or an automatic tool-export decision.
+
+Link public client calls and specific existing differential/fixture tests;
+record queries, extensions, ETags, errors, acceptance/completion and streaming
+scope plus remaining gaps. Validate duplicate pairs, stale provenance, missing
+method/evidence links and unsupported-as-verified claims. The native operation
+wait endpoint already has typed GetOperationWait/GetOperationWaitSecret request
+and result evidence. Operation.wait uses GET polling, whose evidence belongs
+to operation GET; server-side long-poll/deadline/secret matrices remain partial.
+Keep all declaration mappings partial/missing,
+complete_port=false and task 3.9 open. Update the closure/validation ledger and
+coverage manifest pointer without adding runtime behavior or MCP definitions.
+Keep the slice within a few hundred lines and stop for renewed scope selection
+if it grows, needs a handwritten parser or produces repeated corner-case fixes.
+
 #### Verified slice: noninteractive exec collection
 
 Collect live stdout/stderr from an already accepted, creator-owned noninteractive

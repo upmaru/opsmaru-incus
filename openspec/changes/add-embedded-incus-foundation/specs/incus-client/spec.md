@@ -34,6 +34,11 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **WHEN** task 3.9 is evaluated for completion
 - **THEN** the verified endpoint/method, streaming/upgrade and consumer-required behavior inventory has implementation and evidence while the separate Go declaration ledger retains partial/missing entries and approved differences
 
+#### Scenario: Selected endpoint evidence inventory
+
+- **WHEN** the initial 21 priority endpoint/method pairs are checked
+- **THEN** each pair has unchanged pinned REST provenance and explicit supported scope, client/evidence links and gaps; native endpoint wait and polling wait evidence remain distinct with server-side blocking/deadline/secret gaps visible, and selected coverage cannot imply complete REST or declaration parity
+
 ### Requirement: Truthful backend compatibility
 
 Version, extension and live backend capability checks SHALL precede operations requiring those capabilities. Unsupported behavior SHALL return an explicit compatibility failure. Host limitations MUST NOT conceal missing client implementation.

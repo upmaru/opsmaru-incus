@@ -583,3 +583,31 @@ all four channels terminate and peers observe closure without an input barrier,
 final-completion poll, DELETE or replay. Local expiry leaves the shared host
 context active and the original operation pollable. Production code and the
 native oracle are unchanged; this adds evidence to the existing partial scope.
+
+## Selected endpoint/method evidence — 2026-10-14
+
+`priv/incus/endpoint-evidence.json` now selects 21 priority pairs for
+`add-incus-operations`: server (1), instances/state (7), snapshots (4), images (3),
+operations (5) and exec (1). All 21 are partial. Native `/wait` is already
+implemented through GetOperationWait/GetOperationWaitSecret with typed request/
+result evidence. Bounded `Operation.wait` separately polls operation GET; its
+local-cancellation fixtures do not prove native long-poll behavior. Server-side
+blocking/timeout/disconnect/cancellation and secret matrices remain open. Native
+timeout=-1 rejects; explicit native waits accept 0..3600 seconds under finite
+connection/context bounds. The initial proposal incorrectly called /wait missing;
+source review corrected that classification without adding runtime behavior.
+Restore is an instance PUT behavior, not a fabricated snapshot restore route.
+
+The development-only Go extractor uses the already pinned go-yaml dependency to
+read unchanged `doc/rest-api.yaml`; the validator checks its SHA-256, native
+verb/path pairs and selected recursion variants. Path placeholder names normalize
+for catalogue comparison. Query/body/model/result/extensions/guards resolve from
+`methods.json`; scope, ETag/error/acceptance/completion and stream evidence links
+are recorded per pair. The validator checks public function arities and test AST
+anchors, not correctness of those tests. Differential/fixture tests themselves
+run in the canonical suite. Shared uncertainty evidence is a transport fixture,
+not an exhaustive per-mutation matrix. All other REST pairs, option/error/transport
+matrices, non-exec upgrade and public-secret variants remain unclassified/open.
+This manifest cannot authorize tool exports or close task 3.9. Coverage adds only
+a manifest pointer: 1239 partial, 41 missing, `complete_port=false`. No runtime,
+native oracle, tool/gateway implementation or real-backend acceptance changed.

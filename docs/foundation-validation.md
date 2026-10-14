@@ -1258,3 +1258,18 @@ the diagnostic was `Process.info(...) == nil` (already dead), and both new exec
 cases passed. The console cases passed 10 local repetitions with CI seed 563238,
 three schedulers and max_cases=6. The log cannot distinguish delayed cleanup from
 monitor/timeout scheduling; no console code or its 500 ms bound was changed.
+
+## Selected endpoint/method evidence — 2026-10-14
+
+The updated 21-pair plan passed strict OpenSpec before implementation and after
+correcting native wait's classification: GetOperationWait/GetOperationWaitSecret
+already have typed evidence; Operation.wait separately polls. Own review and
+`mise run check` pass: 1006 tests, formatting, warnings-as-errors compile, strict
+Credo and all three OpenSpec changes. `check:reference` passes inventory/schema
+checks and 188 native constants. Six new manifest/provenance regression checks
+reject stale hashes, duplicates, missing/misplaced methods and variants, absent
+evidence anchors and completion claims. All 21 pairs remain partial; every one
+of the 1280 declaration rows is unchanged (1239 partial, 41 missing, false).
+The slice adds about 400 development/evidence/planning lines, with no runtime or
+oracle changes, handwritten parser, timing assertion or real-backend access.
+Pushed immutable consumer and both-platform CI results are recorded on the draft PR.

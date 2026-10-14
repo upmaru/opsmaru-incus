@@ -167,5 +167,5 @@ for entry in inv['entries']:
  entries.append(row)
 for row in entries:
  for path in row['evidence']: assert (root/path).is_file(), path
-(root/'priv/incus/coverage.json').write_text(json.dumps(dict(reference_revision=inv['reference']['revision'],complete_port=False,entries=entries),indent=2)+'\n')
+(root/'priv/incus/coverage.json').write_text(json.dumps(dict(reference_revision=inv['reference']['revision'],complete_port=False,endpoint_evidence='priv/incus/endpoint-evidence.json',entries=entries),indent=2)+'\n')
 print(f"{len(methods)} differential JSON methods; {sum(x['status']=='partial' for x in entries)} partial declaration mappings; {sum(x['status']=='missing' for x in entries)} missing declarations; complete_port=false")
