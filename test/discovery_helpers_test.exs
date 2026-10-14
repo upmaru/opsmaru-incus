@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.DiscoveryHelpersTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Discovery, Error, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Discovery, Error, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../.integration/discovery-driver", __DIR__)
   setup_all do

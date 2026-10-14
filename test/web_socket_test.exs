@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.WebSocketTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Events, Server, WebSocket}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Events, Server, WebSocket}
   alias Opsmaru.TestSupport.{HTTPFixture, WebSocketFixture}
   @driver Path.expand("../.integration/incus-ws-driver", __DIR__)
   setup_all do

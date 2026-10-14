@@ -1,7 +1,8 @@
 defmodule Opsmaru.EmbeddingTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{ClientSupervisor, Context}
+  alias Opsmaru.Incus.ClientSupervisor
   alias Opsmaru.Incus.Connection
+  alias Opsmaru.Incus.Context
 
   test "library startup/restart is passive under a hostile web environment" do
     System.put_env("PHX_SERVER", "true")

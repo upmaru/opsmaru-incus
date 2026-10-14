@@ -14,8 +14,8 @@ defmodule Opsmaru.Incus.DynamicConsole do
   Unknown channel references are ignored.
   """
   use GenServer
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, Model, Operation, Transport, WebSocket}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Context, Error, Model, Operation, Transport, WebSocket}
   defstruct [:pid, :operation]
 
   def open(client, instance, body, opts \\ []) do

@@ -646,3 +646,12 @@ blocked-write fixture. Raw owner-loss cases use bounded termination/EOF evidence
 the write-expiry case adds a delayed observer and traces socket send-timeout caps
 against its configured stream lifetime. Oversized send-timeout mutation evidence
 rejects a regression independently of scheduler timing; coverage stays partial.
+
+## Incus helper namespace cleanup — 2026-10-14
+
+The trusted host context and optional supervisor now live under `Opsmaru.Incus`.
+Runtime changes are limited to module names and aliases; call semantics, passive
+startup and host ownership remain unchanged. Repository references and the
+isolated consumer adopt the new names. This compatibility change supplies no new
+native endpoint evidence: task 3.9, all 21 partial endpoint pairs and declaration
+gaps remain open with `complete_port=false`.

@@ -1,8 +1,8 @@
-defmodule Opsmaru.ClientSupervisor do
+defmodule Opsmaru.Incus.ClientSupervisor do
   @moduledoc """
   Optional host-owned bounded concurrency, with no startup/recovery work.
 
-  Add `{Opsmaru.ClientSupervisor, name: MyHost.Clients, max_children: 8}` to
+  Add `{Opsmaru.Incus.ClientSupervisor, name: MyHost.Clients, max_children: 8}` to
   the host's tree. Calls at capacity fail immediately; no work queue is kept.
   Stopping/restarting it affects only local calls, never host/Incus lifecycle.
   Losing a local worker cannot establish backend cancellation or permit replay.

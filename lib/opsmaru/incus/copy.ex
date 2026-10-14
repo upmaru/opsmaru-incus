@@ -4,8 +4,8 @@ defmodule Opsmaru.Incus.Copy do
   Returns accepted local or paired migration handles, never completed workloads.
   No address fallback, automatic relay activation, cancellation or data deletion.
   """
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, Migration, Model, NativeInput, Operation}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Context, Error, Migration, Model, NativeInput, Operation}
 
   @doc "Move/rename a volume within one explicit backend; project is the destination project."
   def move_volume(client, pool, source_pool, volume, opts \\ []) do

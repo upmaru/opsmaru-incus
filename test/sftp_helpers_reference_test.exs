@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, RequestContext, Server, SFTP}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, RequestContext, Server, SFTP}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
 
   @driver Path.expand("../.integration/sftp-helpers-driver", __DIR__)

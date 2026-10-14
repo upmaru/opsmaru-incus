@@ -6,7 +6,8 @@ Macus and central Opsmaru both need the same portable native Incus client. It wa
 
 ## What Changes
 
-- Deliver the client as a pure OTP library `:opsmaru_incus` with no application callback. Loading or starting it creates no process, listener, Endpoint, Repo, state, credentials or backend contact, independent of PHX_SERVER/PORT or any deployment mode. Module names (`Opsmaru.Incus.*`, `Opsmaru.Context`, `Opsmaru.ClientSupervisor`) are unchanged, so consumer call sites do not change.
+- Deliver the client as a pure OTP library `:opsmaru_incus` with no application callback. Loading or starting it creates no process, listener, Endpoint, Repo, state, credentials or backend contact, independent of PHX_SERVER/PORT or any deployment mode. Expose the client and its host binding/supervision helpers under `Opsmaru.Incus.*`.
+- Move the host context and optional client supervisor to `Opsmaru.Incus.Context` and `Opsmaru.Incus.ClientSupervisor`. This approved namespace cleanup supersedes the extraction's name-preservation decision; consumers update aliases, struct references and child specifications when adopting the new revision. Behavior, ownership and passive startup remain unchanged; no legacy compatibility modules are supplied.
 - Define explicit host-supplied connection/context contracts and the public `Opsmaru.Incus` client over Unix sockets and authenticated native HTTPS with verified server identity and client certificate/private key.
 - Keep the pinned official Incus client inventory, notices and reusable reference fixtures in this repository, preserving Macus-specific transport evidence separately in Macus.
 - Implement the canonical client in verified slices: discovery/codecs/errors/extensions, projects/profiles/access, instances/snapshots/state, images, networks/clusters, storage, files/backups/native upgrades, operations/events, exec/console and migration.

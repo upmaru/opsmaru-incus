@@ -8,8 +8,8 @@ defmodule Opsmaru.Incus.RawChannel do
   never cancels an operation or owns host/Incus lifecycle.
   """
   use GenServer
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, Response, Transport, Upgrade}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Context, Error, Response, Transport, Upgrade}
   defstruct [:pid, :ref]
 
   def open(client, path, protocol) when protocol in ["sftp", "nbd"] do

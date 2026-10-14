@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.Images do
   @moduledoc "Native image transfers; host-owned sources/sinks and no mutation replay."
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Error, Model, Transfer}
+  alias Opsmaru.Incus.{Context, Error, Model, Transfer}
 
   def import(client, image, metadata_source, opts \\ []) do
     with {:ok, model} <- Model.decode("ImagesPost", Model.encode(image)),
@@ -122,8 +122,8 @@ defmodule Opsmaru.Incus.Images do
 
   @doc "Copy using one explicit approved connection per side; no address fallback or replay."
   def copy(target, source, image, opts \\ []) do
-    with :ok <- Opsmaru.Context.authorize(target.context, target.connection),
-         :ok <- Opsmaru.Context.authorize(source.context, source.connection),
+    with :ok <- Context.authorize(target.context, target.connection),
+         :ok <- Context.authorize(source.context, source.connection),
          false <- same_backend?(target, source),
          {:ok, image} <- Model.decode("Image", Model.encode(image)),
          :ok <- profile_override(target, opts) do

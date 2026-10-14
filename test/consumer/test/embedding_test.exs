@@ -1,6 +1,7 @@
 defmodule FoundationConsumer.EmbeddingTest do
   use ExUnit.Case
   alias Opsmaru.Incus.Connection
+  alias Opsmaru.Incus.Context
   alias Opsmaru.Incus.Discovery
   alias Opsmaru.Incus.DynamicConsole
   alias Opsmaru.Incus.EventListener
@@ -74,7 +75,7 @@ defmodule FoundationConsumer.EmbeddingTest do
     on_exit(fn -> if Process.alive?(worker), do: Process.exit(worker, :kill) end)
 
     context =
-      Opsmaru.Context.new!(
+      Context.new!(
         owner: :macus_fixture,
         identity: :host_verified,
         ready?: fn -> Agent.get(FoundationConsumer.Runtime, & &1) end,

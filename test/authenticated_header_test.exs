@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.AuthenticatedHeaderTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Events, RawChannel, Server, Transfer}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Events, RawChannel, Server, Transfer}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
 
   setup do

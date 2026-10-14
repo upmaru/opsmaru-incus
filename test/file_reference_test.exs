@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.FileReferenceTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Files, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Files, Server}
   alias Opsmaru.TestSupport.HTTPFixture
   @driver Path.expand("../.integration/incus-file-driver", __DIR__)
   setup_all do

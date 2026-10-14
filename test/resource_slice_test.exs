@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.ResourceSliceTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Model, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Model, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, WireComparison}
   @definitions Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
   @driver Path.expand("../.integration/incus-typed-driver", __DIR__)

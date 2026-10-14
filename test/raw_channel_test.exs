@@ -1,8 +1,8 @@
 defmodule Opsmaru.Incus.RawChannelTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.Context
   alias Opsmaru.Incus
   alias Opsmaru.Incus.Connection
+  alias Opsmaru.Incus.Context
   alias Opsmaru.Incus.Error
   alias Opsmaru.Incus.RawChannel
   alias Opsmaru.Incus.Server

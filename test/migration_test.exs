@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.MigrationTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Migration, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Migration, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture}
 
   setup do

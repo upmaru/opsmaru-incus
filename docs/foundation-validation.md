@@ -1321,3 +1321,17 @@ stream cap. A 5-second send-timeout mutation fails this check; runtime restored.
 All 120 raw-channel stress executions pass with seed 521777, three schedulers
 and max_cases=6. Final canonical checks pass again: 1011 tests, formatting,
 warning-free compilation, strict Credo and all three strict OpenSpec validations.
+
+## Incus helper namespace cleanup — 2026-10-14
+
+The namespace plan passed strict OpenSpec before implementation. Both helpers
+move under `Opsmaru.Incus`, including Inspect, aliases, direct calls, documentation,
+planned host contracts and the isolated consumer. Native Elixir AST comparison
+against develop confirms all 18 changed runtime sources differ only in module
+names/aliases. Existing embedding fixtures retain startup, readiness, ownership,
+redaction, capacity and worker-restart evidence. Canonical checks pass 1011 tests,
+format, warning-free compile, strict Credo and all three strict OpenSpec changes;
+reference checks pass inventory/schema verification and 188 constants. Coverage
+regeneration is byte-identical: 1239 partial, 41 missing, `complete_port=false`;
+all 21 endpoint pairs remain partial and task 3.9 is open. The immutable consumer
+pin and pushed both-platform results are recorded with the namespace cleanup PR.

@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.DirectWebSocketReferenceTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Server, WebSocket}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Server, WebSocket}
   alias Opsmaru.Incus.HTTP.Response
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture}
   @driver Path.expand("../.integration/incus-direct-websocket", __DIR__)

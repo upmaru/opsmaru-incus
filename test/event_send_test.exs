@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.EventSendTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Events, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Events, Server}
   alias Opsmaru.TestSupport.WebSocketFixture
   @driver Path.expand("../.integration/event-send-driver", __DIR__)
   @event %{"type" => "logging", "timestamp" => "2026-10-10T12:00:00Z", "metadata" => %{"x" => 1}}

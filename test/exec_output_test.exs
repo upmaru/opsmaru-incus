@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.ExecOutputTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Operation, RequestContext, Server, Session}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Operation, RequestContext, Server, Session}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture}
   @driver Path.expand("../.integration/exec-io-driver", __DIR__)
   @body %{

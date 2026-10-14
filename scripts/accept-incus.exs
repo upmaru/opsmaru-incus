@@ -1,8 +1,8 @@
 # Explicit opt-in only. This script never launches Macus/Incus or uses a default remote.
 # See docs/real-incus-acceptance.md before supplying OPSMARU_ACCEPTANCE_CONFIG.
 defmodule OpsmaruAcceptance do
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Events, Files, Model, Operation}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Events, Files, Model, Operation}
 
   def run do
     config = System.fetch_env!("OPSMARU_ACCEPTANCE_CONFIG") |> File.read!() |> Jason.decode!()

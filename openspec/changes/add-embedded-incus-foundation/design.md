@@ -28,7 +28,18 @@ The separately proposed [add-embeddable-incus-gateway](../add-embeddable-incus-g
 
 ### 1. A standalone pure library repository
 
-Deliver the client as OTP application `:opsmaru_incus` in `upmaru/opsmaru-incus`, with no application callback. A library without a supervision tree cannot start an Endpoint, Repo, PubSub, listener or worker on load, so passive embedding holds by construction rather than by a runtime `deployment_mode` switch, and ambient PHX_SERVER/PORT values have nothing to act on. Keep the existing `Opsmaru.Incus.*`, `Opsmaru.Context` and `Opsmaru.ClientSupervisor` module names so consumer call sites are unchanged. Hosts that want bounded concurrency add `Opsmaru.ClientSupervisor` to their own tree; restarting it cannot stop Swift/Incus.
+Deliver the client as OTP application `:opsmaru_incus` in `upmaru/opsmaru-incus`, with no application callback. A library without a supervision tree cannot start an Endpoint, Repo, PubSub, listener or worker on load, so passive embedding holds by construction rather than by a runtime `deployment_mode` switch, and ambient PHX_SERVER/PORT values have nothing to act on. Expose the client and its helpers under `Opsmaru.Incus.*`. Hosts that want bounded concurrency add `Opsmaru.Incus.ClientSupervisor` to their own tree; restarting it cannot stop Swift/Incus.
+
+The approved namespace cleanup (2026-10-14) moves the trusted host binding to
+`Opsmaru.Incus.Context` and optional supervision to `Opsmaru.Incus.ClientSupervisor`.
+This supersedes the extraction's decision to retain top-level helper names.
+Move the files, module declarations, Inspect implementation and every repository
+call site/documentation reference together, including the isolated consumer and
+planned shared-operation host contract. Preserve all function bodies, struct
+fields, readiness/owner checks, redaction, capacity/restart and startup behavior.
+Do not add compatibility modules or convert between two context structs. Consumers
+must update aliases, struct references and child specifications when pinning the
+new revision. This cleanup adds no native behavior or coverage-completion claim.
 
 Declare runtime dependencies as version ranges (Mint, MintWebSocket, Jason, cowlib for native multipart/content-type parsing, yamerl for the strict YAML subset) and let each consumer lock exact versions. Plug is test-only. No Phoenix, Ecto, Postgrex, LiveView, asset or OIDC dependency is permitted.
 

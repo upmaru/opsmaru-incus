@@ -1,7 +1,6 @@
 defmodule Opsmaru.Incus.ExecOutput do
   @moduledoc false
-  alias Opsmaru.Context
-  alias Opsmaru.Incus.{Error, Operation, RequestContext, Session, Transport}
+  alias Opsmaru.Incus.{Context, Error, Operation, RequestContext, Session, Transport}
 
   def collect(%Session{operation: %Operation{}} = session, stdout, stderr, opts) do
     collect(session, stdout, stderr, opts, nil)

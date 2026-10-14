@@ -1,7 +1,6 @@
 defmodule Opsmaru.Incus.SimpleStreamsTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.Context
-  alias Opsmaru.Incus.{Connection, Error, HTTP, Model, SimpleStreams}
+  alias Opsmaru.Incus.{Connection, Context, Error, HTTP, Model, SimpleStreams}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../.integration/simplestreams-driver", __DIR__)
   @http_driver Path.expand("../.integration/simplestreams-http-driver", __DIR__)

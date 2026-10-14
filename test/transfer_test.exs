@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.TransferTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Transfer}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Transfer}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
 
   setup do

@@ -1,9 +1,10 @@
 defmodule Opsmaru.Incus.RequestContextTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
+  alias Opsmaru.Incus
 
   alias Opsmaru.Incus.{
     Connection,
+    Context,
     Error,
     EventListener,
     Model,

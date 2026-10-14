@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.ImageTransferTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Images, Model}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Images, Model}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../.integration/incus-image-driver", __DIR__)
 

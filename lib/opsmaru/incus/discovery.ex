@@ -1,7 +1,6 @@
 defmodule Opsmaru.Incus.Discovery do
   @moduledoc "Native connection/discovery helpers. Advertised addresses are metadata and are never followed."
-  alias Opsmaru.Context
-  alias Opsmaru.Incus.{Error, Model}
+  alias Opsmaru.Incus.{Context, Error, Model}
   defstruct [:certificate, :protocol, :url, :socket_path, :project, :target, addresses: []]
 
   def connection_info(client) do

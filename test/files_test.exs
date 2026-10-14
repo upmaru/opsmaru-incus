@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.FilesTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Files, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Files, Server}
   alias Opsmaru.TestSupport.HTTPFixture
 
   test "native files preserve binary bytes/mode/identity and directories decode separately" do

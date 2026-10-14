@@ -9,8 +9,7 @@ defmodule Opsmaru.Incus.SimpleStreams do
   An optional host delta adapter owns conversion and temporary state; installed
   conversion remains a separate acceptance gate.
   """
-  alias Opsmaru.Context
-  alias Opsmaru.Incus.{Connection, Discovery, Error, HTTP, Transport}
+  alias Opsmaru.Incus.{Connection, Context, Discovery, Error, HTTP, Transport}
   alias Opsmaru.Incus.SimpleStreams.{Catalog, Download}
   @enforce_keys [:connection, :context, :architecture]
   defstruct [:connection, :context, :architecture, :catalog, :delta_adapter, :delta_config]

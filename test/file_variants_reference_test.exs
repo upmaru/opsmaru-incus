@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.FileVariantsReferenceTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Files, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Files, Server}
   alias Opsmaru.TestSupport.HTTPFixture
   @driver Path.expand("../.integration/file-variants-driver", __DIR__)
   @bytes :binary.copy(<<0, 255, 128, 13, 10>>, 100)

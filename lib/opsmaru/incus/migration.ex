@@ -10,8 +10,8 @@ defmodule Opsmaru.Incus.Migration do
   cancel or delete backend data. `relay/2` explicitly forwards bounded native
   WebSocket channels; reset/reconnection requires caller reconciliation.
   """
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, Model, Operation, WebSocket}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Context, Error, Model, Operation, WebSocket}
   defstruct [:source, :target, :mode]
 
   @doc "Read the accepted target handle; this performs no I/O or completion wait."
