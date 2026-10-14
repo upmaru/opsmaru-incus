@@ -207,6 +207,12 @@ native oracle and declaration/endpoint classifications remain unchanged. Keep
 the repair within a few hundred lines and validate both CI platforms without
 retrying failures into a parity claim.
 
+The first repair CI run also exposed the raw-channel blocked-write fixture's
+500 ms observation assertion. Apply the same bounded observation separation
+to raw-channel owner cleanup and stream expiry. Trace actual socket send-timeout
+options to verify they are capped by the configured test stream lifetime rather
+than the longer request budget; retain stalled peers and explicit deadline errors.
+
 ### 5. Delivery and subsequent work
 
 After implementation and fixture/consumer checks, publish an actual immutable revision of `upmaru/opsmaru-incus` that Macus and Opsmaru can lock, with source/reference provenance and documented direct Elixir usage. Do not invent a Hex release/version or require a sibling checkout for CI/installed consumers. Macus's local gateway/runtime/proxy/client work may proceed from this foundation; later tool/task integration explicitly waits for add-compute-substrate's corresponding milestone. Central enrollment/connectivity never gates standalone embedding/client progress.

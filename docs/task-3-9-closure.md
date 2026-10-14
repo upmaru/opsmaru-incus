@@ -640,3 +640,9 @@ mutations were restored; no library or native-oracle source changes are included
 A live-process negative case verifies bounded observations still fail with owned
 process/status/stack diagnostics. Neither this repair nor CI success promotes
 endpoint/declaration coverage or closes task 3.9.
+
+The first repair CI run exposed the same elapsed-observation weakness in the raw
+blocked-write fixture. Raw owner-loss cases use bounded termination/EOF evidence;
+the write-expiry case adds a delayed observer and traces socket send-timeout caps
+against its configured stream lifetime. Oversized send-timeout mutation evidence
+rejects a regression independently of scheduler timing; coverage stays partial.

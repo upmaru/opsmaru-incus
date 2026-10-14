@@ -1309,3 +1309,15 @@ verifiers. Coverage regeneration is byte-identical: 1239 partial, 41 missing,
 false; all 21 endpoint pairs remain partial. Exact pushed CI/consumer results
 are recorded on the cleanup repair PR. No native oracle, runtime or backend/hardware acceptance
 changed; no tight elapsed-time success assertion was introduced.
+
+The first cleanup repair CI run, 38544091574, passed Ubuntu but macOS seed 521777
+exposed the old raw-channel blocked-write elapsed assertion (617 ms vs 500 ms).
+All previously repaired cases passed. A controlled 600 ms observer pause after
+confirmed channel DOWN reproduces that false failure. The raw fixtures now use
+the same bounded owner-cleanup observations and a permanent delayed observer.
+The blocked-write fixture uses a 1-second test stream lifetime against 30-second
+request/peer budgets; actual socket send-timeout traces must remain within that
+stream cap. A 5-second send-timeout mutation fails this check; runtime restored.
+All 120 raw-channel stress executions pass with seed 521777, three schedulers
+and max_cases=6. Final canonical checks pass again: 1011 tests, formatting,
+warning-free compilation, strict Credo and all three strict OpenSpec validations.
