@@ -152,6 +152,29 @@ coverage manifest pointer without adding runtime behavior or MCP definitions.
 Keep the slice within a few hundred lines and stop for renewed scope selection
 if it grows, needs a handwritten parser or produces repeated corner-case fixes.
 
+#### Approved slice: native operation-wait evidence (2026-10-15)
+
+Exercise GetOperationWait and GetOperationWaitSecret through the existing typed
+call API, separately from polling Operation.wait. Reuse the unchanged pinned Go
+reflection driver and disposable Unix/verified mutual-HTTPS fixtures. The pinned
+server flushes HTTP 200 headers before waiting, so gate the response body after
+headers and require explicit fixture release before a successful result. Compare
+finite timeout queries, scoped routing, operation identity, ETags, running
+snapshots at server timeout, terminal success/failure snapshots and native HTTP
+errors. A failed operation in a successful wait response remains typed data.
+
+Independently hold the response body open and verify finite local deadline,
+explicit context cancellation and caller loss close the peer socket with one
+wait GET and no replay or remote DELETE. Verify premature EOF and pre-dispatch
+rejection of native timeout=-1 without changing the finite 0..3600 bound. Use
+acknowledged fixture gates and socket closure, never tight elapsed-time success
+assertions. Check secret redaction on the explicit hex-secret variant. Arbitrary
+secret encoding/empty-secret variants, cluster forwarding, full timeout/error
+matrices and real-daemon acceptance remain gaps. Keep both the selected endpoint
+and declaration mappings partial; no runtime or polling-strategy changes are
+planned. Stop if this evidence slice exceeds a few hundred lines or requires
+new parser/runtime machinery.
+
 #### Verified slice: noninteractive exec collection
 
 Collect live stdout/stderr from an already accepted, creator-owned noninteractive

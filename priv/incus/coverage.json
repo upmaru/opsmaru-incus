@@ -1870,18 +1870,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Direct typed native wait, separate from polling Operation.wait: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/terminal snapshots, HTTP 403 and premature EOF compared with unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight timeout=-1 rejection and hex-secret Inspect redaction. Arbitrary/empty-secret encoding, cluster forwarding, full timeout/error matrices and real-daemon acceptance remain unverified; native timeout=-1 is intentionally rejected for finite local bounds."
     },
     {
       "id": "client/interface_method/InstanceServer.GetOperationWaitSecret",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Direct typed native wait, separate from polling Operation.wait: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/terminal snapshots, HTTP 403 and premature EOF compared with unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight timeout=-1 rejection and hex-secret Inspect redaction. Arbitrary/empty-secret encoding, cluster forwarding, full timeout/error matrices and real-daemon acceptance remain unverified; native timeout=-1 is intentionally rejected for finite local bounds."
     },
     {
       "id": "client/interface_method/InstanceServer.GetOperationWebsocket",
@@ -5076,18 +5078,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Direct typed native wait, separate from polling Operation.wait: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/terminal snapshots, HTTP 403 and premature EOF compared with unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight timeout=-1 rejection and hex-secret Inspect redaction. Arbitrary/empty-secret encoding, cluster forwarding, full timeout/error matrices and real-daemon acceptance remain unverified; native timeout=-1 is intentionally rejected for finite local bounds."
     },
     {
       "id": "client/method/ProtocolIncus.GetOperationWaitSecret",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Direct typed native wait, separate from polling Operation.wait: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/terminal snapshots, HTTP 403 and premature EOF compared with unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight timeout=-1 rejection and hex-secret Inspect redaction. Arbitrary/empty-secret encoding, cluster forwarding, full timeout/error matrices and real-daemon acceptance remain unverified; native timeout=-1 is intentionally rejected for finite local bounds."
     },
     {
       "id": "client/method/ProtocolIncus.GetOperationWebsocket",

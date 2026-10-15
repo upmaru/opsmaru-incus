@@ -667,3 +667,26 @@ three seconds against thirty-second request/peer lifetimes, with bounded process
 observation. Enlarged-timeout and disabled-timeout-close mutations fail both
 transports; runtime source was restored after each probe. Native behavior/oracle,
 declaration statuses, endpoint gaps and the task 3.9 completion gate are unchanged.
+
+## Native operation-wait evidence — 2026-10-15
+
+`test/native_wait_reference_test.exs` extends both GetOperationWait and
+GetOperationWaitSecret without changing the typed API or polling Operation.wait.
+Twenty differential comparisons reuse the unchanged pinned Go driver over Unix
+and verified mutual HTTPS: finite timeout 0/1, project/member queries, ETags,
+operation identity, running/success/failure snapshots, HTTP 403 and premature EOF.
+The fixture gates the body after headers, matching the pinned server's header
+flush before op.Wait. Release is explicit; running snapshots model the response
+at server timeout rather than prove a live daemon's waiting implementation.
+
+Twelve independent stalled-body cases verify local deadline, explicit context
+cancellation and caller loss with actual peer EOF, one wait GET and no replay or
+DELETE. Pre-dispatch checks reject timeout=-1 and canceled contexts without I/O;
+hex-secret error Inspect output is redacted. Finite observation windows are
+separate from local request deadlines; no elapsed success threshold is asserted.
+Arbitrary/empty-secret encoding, cluster forwarding, exhaustive timeout/error
+matrices and real-daemon acceptance remain open. This supersedes the selected
+manifest's earlier blanket blocking/lifetime evidence gap only within that
+fixture scope. Both wait methods and their interface mappings, plus the endpoint
+pair, stay partial: 1239 partial declarations, 41 missing, 21 partial pairs,
+`inventory_complete=false`, `complete_port=false`; task 3.9 remains open.

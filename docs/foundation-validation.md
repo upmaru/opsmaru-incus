@@ -1367,3 +1367,29 @@ Final local canonical checks pass: 1011 tests, format, warning-free compilation,
 strict Credo and all three strict OpenSpec changes. Reference checks pass the
 inventory/schema verifiers and all 188 native constants. No elapsed success
 assertion, production/runtime change or new acceptance claim is introduced.
+
+## Native operation-wait evidence — 2026-10-15
+
+Strict OpenSpec validation preceded implementation of the approved fixture-only
+slice. Six generated tests cover twenty unchanged pinned-client comparisons,
+twelve independent local lifetime cases and pre-dispatch rejection on Unix and
+verified mutual HTTPS. The scripted server sends headers then gates the body;
+comparisons cover running/terminal operation snapshots, finite timeout queries,
+scoped routing, ETags, HTTP 403 and premature EOF. Local deadline, context
+cancellation and caller loss require peer EOF and exactly one GET, with no
+replay or DELETE. Error Inspect redaction uses disposable hex secrets. The first
+focused run caught test expectations using the wrong existing error categories;
+correcting them to invalid_arguments and response required no runtime changes.
+
+The focused six tests and seven endpoint-evidence validator tests pass. The
+coverage generator links the new evidence to both wait methods and interfaces
+without promoting status: 1239 partial, 41 missing, all 21 selected pairs partial.
+Polling/runtime code and the Go oracle are unchanged. Arbitrary/empty secrets,
+cluster forwarding, exhaustive matrices and real-backend acceptance remain gaps;
+fixture success does not establish daemon timeout behavior or declaration parity.
+
+Final local canonical checks pass: 1017 tests, formatting, warning-free compile,
+strict Credo and all three strict OpenSpec changes. Reference checks pass the
+inventory/schema verifier and 188 native constants. Coverage regeneration is
+deterministic and retains all 1280 declarations. Both-platform CI and immutable
+consumer results are recorded at the pushed PR head.
