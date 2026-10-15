@@ -37,7 +37,7 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 #### Scenario: Selected endpoint evidence inventory
 
 - **WHEN** the initial 21 priority endpoint/method pairs are checked
-- **THEN** each pair has unchanged pinned REST provenance and explicit supported scope, client/evidence links and gaps; native endpoint wait and polling wait evidence remain distinct with server-side blocking/deadline/secret gaps visible, and selected coverage cannot imply complete REST or declaration parity
+- **THEN** each pair has unchanged pinned REST provenance and explicit supported scope, client/evidence links and gaps; native endpoint wait and polling wait evidence remain distinct with scoped gated-body/lifetime evidence and remaining secret/cluster/backend gaps visible, and selected coverage cannot imply complete REST or declaration parity
 
 ### Requirement: Truthful backend compatibility
 
@@ -56,6 +56,11 @@ Accepted operations SHALL remain distinguishable from completed operations. Wait
 
 - **WHEN** the connection fails after a mutation might have reached Incus
 - **THEN** the client reports the known operation identity or uncertain outcome without issuing the mutation again
+
+#### Scenario: Direct native operation wait evidence
+
+- **WHEN** either typed native wait method receives a gated response body after flushed headers over Unix or verified HTTPS
+- **THEN** fixture evidence compares finite wait queries, operation snapshots, ETags and native errors with the unchanged pinned client, while independent deadline/cancellation/caller-loss checks prove local socket cleanup without replay or remote cancellation; polling behavior and partial declaration status remain unchanged
 
 ### Requirement: Native streaming fidelity
 
