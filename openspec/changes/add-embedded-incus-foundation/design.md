@@ -173,6 +173,41 @@ the closure checklist and recommend the next implementation batch without
 implementing it. Keep new verifier logic bounded; large mechanical ledger data
 is audit output, not authorization for runtime/parser expansion.
 
+#### Approved slice: B01 mutation lifecycle evidence (2026-10-16)
+
+Verify the eight existing B01 endpoint/method pairs: CreateInstance,
+UpdateInstance (configuration update and snapshot restore as distinct bodies),
+UpdateInstanceState, DeleteInstance, CreateInstanceSnapshot,
+DeleteInstanceSnapshot, DeleteImage and DeleteOperation. No new tool descriptors,
+MCP binding, migration/copy behavior or general mutation orchestration is planned.
+Use bounded fixture bodies with populated writable maps and explicit ETags for
+instance update/restore and state preconditions where supported by the pin.
+
+Compose the seven asynchronous mutation pairs with Operation.from_response and
+the existing typed GetOperationWait native `/wait` endpoint. Verify native accepted
+identity and host project/member/connection binding, then running, completed and
+failed snapshots, retaining native status/error/metadata and wait ETags. A native
+finite wait returning running is not completion; local timeout/cancellation is
+not remote cancellation. Reuse existing wait cleanup/lifetime evidence and add
+bounded composition evidence without changing polling or callback ordering.
+
+Compare named unchanged Go methods and independent fixtures on Unix and mutual
+HTTPS for supported bodies/preconditions, native 403/404/409/412 rejections, lost
+or malformed mutation responses and no replay or invented operation identity.
+Cancellation is distinct: Operation.cancel performs authoritative inspection,
+rejects may_cancel=false without DELETE, sends at most one synchronous native
+DELETE when permitted, preserves completion races/native rejection and known
+identity on response loss. A successful DELETE acknowledges the request, not a
+new asynchronous operation or proven cancellation completion.
+
+Record a finite `initial_mutation_lifecycle_v1` fixture scope on exactly these
+eight selected rows. Validate exact methods, transports, cases and source anchors,
+and reject missing/misplaced scope claims. Whole endpoints, B01's broader body/
+cluster/error variants, task 3.9 and every declaration remain partial; no backend
+acceptance or tool export follows. Update the closure checklist and generated
+coverage evidence. Reuse existing fixture/oracle support, target a few hundred
+handwritten lines, and stop if new infrastructure or repair rounds expand scope.
+
 #### Approved slice: four conditional resource PATCH methods (2026-10-15)
 
 Implement PatchProject, PatchProfile, PatchImage and PatchInstanceSnapshot through

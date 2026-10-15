@@ -196,6 +196,32 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
+  test "rejects incomplete or overclaimed mutation lifecycle contracts", %{native: native} do
+    path = ["fixture_contracts", "initial_mutation_lifecycle_v1"]
+
+    for field <-
+          ~w(methods cases async_cases cancel_cases evidence transports bodies queries status) do
+      changed = put_in(@manifest, path ++ [field], nil)
+
+      assert_raise ExUnit.AssertionError, ~r/mutation contract/, fn ->
+        EndpointEvidence.validate!(changed, native)
+      end
+    end
+
+    for row <- Enum.filter(@manifest["entries"], &(&1["backlog"] == "B01")) do
+      entries =
+        Enum.map(@manifest["entries"], fn entry ->
+          if entry == row,
+            do: %{entry | "evidence" => entry["evidence"] -- ["mutation_lifecycle"]},
+            else: entry
+        end)
+
+      assert_raise ExUnit.AssertionError, ~r/mutation contract/, fn ->
+        EndpointEvidence.validate!(%{@manifest | "entries" => entries}, native)
+      end
+    end
+  end
+
   test "rejects removed native secret-wait variants", %{native: native} do
     wait = Enum.find(@manifest["entries"], &(&1["method"] == "GetOperationWait"))
 

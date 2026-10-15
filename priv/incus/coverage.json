@@ -376,9 +376,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateInstanceBackup",
@@ -440,9 +442,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateInstanceTemplateFile",
@@ -725,9 +729,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteImageAlias",
@@ -743,9 +749,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteInstanceBackup",
@@ -788,9 +796,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteInstanceTemplateFile",
@@ -887,9 +897,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/interface_method/InstanceServer.DeletePendingClusterMember",
@@ -1874,7 +1886,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/native_wait_reference_test.exs"
+        "test/native_wait_reference_test.exs",
+        "test/mutation_lifecycle_test.exs"
       ],
       "note": "Direct typed native wait, separate from polling Operation.wait: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/terminal snapshots, HTTP 403 and premature EOF compared with unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight timeout=-1 rejection and hex-secret Inspect redaction. Arbitrary/empty-secret encoding, cluster forwarding, full timeout/error matrices and real-daemon acceptance remain unverified; native timeout=-1 is intentionally rejected for finite local bounds."
     },
@@ -2849,9 +2862,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateInstanceMetadata",
@@ -2876,9 +2891,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateInstances",
@@ -3084,7 +3101,8 @@
       "elixir": "lib/opsmaru/incus/operation.ex",
       "evidence": [
         "test/request_context_test.exs",
-        "test/operation_test.exs"
+        "test/operation_test.exs",
+        "test/mutation_lifecycle_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3414,9 +3432,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/method/ProtocolIncus.CreateInstanceBackup",
@@ -3478,9 +3498,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/method/ProtocolIncus.CreateInstanceTemplateFile",
@@ -3763,9 +3785,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteImageAlias",
@@ -3781,9 +3805,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteInstanceBackup",
@@ -3826,9 +3852,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteInstanceTemplateFile",
@@ -3925,9 +3953,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/method/ProtocolIncus.DeletePendingClusterMember",
@@ -5093,7 +5123,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/native_wait_reference_test.exs"
+        "test/native_wait_reference_test.exs",
+        "test/mutation_lifecycle_test.exs"
       ],
       "note": "Direct typed native wait, separate from polling Operation.wait: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/terminal snapshots, HTTP 403 and premature EOF compared with unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight timeout=-1 rejection and hex-secret Inspect redaction. Arbitrary/empty-secret encoding, cluster forwarding, full timeout/error matrices and real-daemon acceptance remain unverified; native timeout=-1 is intentionally rejected for finite local bounds."
     },
@@ -6096,9 +6127,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateInstanceMetadata",
@@ -6123,9 +6156,11 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/mutation_lifecycle_test.exs",
+        "test/native_wait_reference_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateInstances",
@@ -6706,7 +6741,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/operation.ex",
       "evidence": [
-        "test/operation_test.exs"
+        "test/operation_test.exs",
+        "test/mutation_lifecycle_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },

@@ -72,6 +72,12 @@ Accepted operations SHALL remain distinguishable from completed operations. Wait
 - **WHEN** the connection fails after a mutation might have reached Incus
 - **THEN** the client reports the known operation identity or uncertain outcome without issuing the mutation again
 
+#### Scenario: Initial mutation lifecycle contracts
+
+- **WHEN** the eight B01 mutation pairs are exercised through bounded Unix and mutual-HTTPS fixtures
+- **THEN** seven asynchronous pairs preserve native acceptance and identity through direct finite `/wait` running/completed/failed snapshots, update/restore bodies and applicable preconditions remain faithful, native rejection and response-loss uncertainty never replay mutations, and synchronous operation cancellation retains authoritative permission/race semantics without claiming completion
+- **AND** a checked fixture scope records exactly the evidenced methods/cases while whole endpoints, declaration parity, broader variants and real-backend acceptance remain separate
+
 #### Scenario: Direct native operation wait evidence
 
 - **WHEN** either typed native wait method receives a gated response body after flushed headers over Unix or verified HTTPS
