@@ -4578,6 +4578,76 @@
       "guards": [],
       "reference_kind": "rest",
       "operation_id": "instance_patch"
+    },
+    {
+      "name": "PatchProject",
+      "verb": "PATCH",
+      "path": "/1.0/projects/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "projects",
+      "body": "ProjectPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "project_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchProfile",
+      "verb": "PATCH",
+      "path": "/1.0/profiles/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "ProfilePut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "profile_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchImage",
+      "verb": "PATCH",
+      "path": "/1.0/images/{fingerprint}",
+      "params": [
+        "fingerprint"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "ImagePut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "image_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchInstanceSnapshot",
+      "verb": "PATCH",
+      "path": "/1.0/instances/{name}/snapshots/{snapshot}",
+      "params": [
+        "name",
+        "snapshot"
+      ],
+      "query": {},
+      "extension": "snapshot_expiry",
+      "body": "InstanceSnapshotPut",
+      "model": null,
+      "result": "operation",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "instance_snapshot_patch",
+      "conditional": true,
+      "response_status": 202
     }
   ]
 }

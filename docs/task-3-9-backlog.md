@@ -1,24 +1,24 @@
 # Task 3.9 finite closure backlog
 
 Audited at Incus v7.0.1 `13f3992766142d5087fff2e362cd2e1a75294fe8`
-after merged PR #11 (`7658fea`). The authoritative classified rows are in
+after merged PR #12 (`a710340`), with the four conditional resource PATCH methods added. The authoritative classified rows are in
 [`endpoint-inventory.json`](../priv/incus/endpoint-inventory.json). This is an
-inventory classification, not new endpoint support or behavioral completion.
+classified backlog, updated with bounded implementation evidence; it does not claim behavioral completion.
 
 ## Inventory result
 
 All **247 documented endpoint/method pairs** and **293 operation views** are
 classified: 46 views are additional query/access variants, including ten public
 access views. `?public` documents untrusted/public behavior; it is not an invented
-wire selector. All **269 catalogue descriptors** map to these rows. No documented
+wire selector. All **273 catalogue descriptors** map to these rows. No documented
 pair or view is left unclassified.
 
 | Classification | Pairs | What still needs closing |
 | --- | ---: | --- |
-| Exact JSON catalogue mapping | 183 | Certify a finite supported contract, reusing existing native fixtures. |
+| Exact JSON catalogue mapping | 187 | Certify a finite supported contract, reusing existing native fixtures. |
 | Custom-volume-only catalogue mapping | 5 | Certify native custom-only backup scope; the server rejects other backup subtypes. |
 | Explicit discovery/binary/upgrade helper | 22 | Certify the helper's finite options, streams, errors and cleanup. |
-| Missing typed implementation | 35 | Implement and verify, or obtain an explicit user-approved exclusion. |
+| Missing typed implementation | 31 | Implement and verify, or obtain an explicit user-approved exclusion. |
 | Equivalent volume collection POST | 1 | Same native handler as typed-volume POST; certify supported route/body behavior or resolve scope. |
 | Incorrect documented GET repair | 1 | Retain the source discrepancy; actual mutation is POST, below. |
 | **Documented total** | **247** | No classification is a completion claim. |
@@ -28,17 +28,19 @@ including image suffix actions. Root discovery is a separately checked source
 anchor in `cmd/incusd/api.go:restServer`. All documented routes reconcile except
 `GET /1.0/instances/{name}/debug/repair`: `instances.go:instanceDebugRepairCmd`
 registers **POST**. One supplemental server row tracks that missing typed mutation.
-Thus there are **36 confirmed typed implementation gaps**, plus the equivalent
+Thus there are **32 confirmed typed implementation gaps**, plus the equivalent
 collection-route decision. These are not a count of missing Go declarations. Raw HTTP support does not implement those typed contracts.
 No source file in the pinned module was modified.
 
 ## Exact implementation backlog
 
-- **24 PATCH pairs (B05):** server; certificate; cluster group/member; image/alias;
-  instance metadata/snapshot; network, forward, load balancer, peer, ACL,
-  address set, integration, zone and zone record; profile; project; storage pool,
+- **20 PATCH pairs still lack typed methods (B05):** server; certificate; cluster group/member; image alias;
+  instance metadata; network, forward, load balancer, peer, ACL,
+  address set, integration, zone and zone record; storage pool,
   bucket, volume and volume snapshot; warning. The conditional instance PATCH is
   already implemented and is B04 contract certification, not one of these gaps.
+  Project/profile/image/instance-snapshot conditional PATCH now have typed methods
+  and bounded fixtures under B05; their remaining contract scope stays partial.
 - **2 HEAD pairs (B06):** instance files and storage-volume files.
 - **3 recorded exec output pairs (B07):** list, binary download and explicit delete.
 - **5 storage pairs (B08):** volume list by type, bitmap download, bucket backup
@@ -85,7 +87,7 @@ establish public access or body semantics. Copied verified scopes must exactly
 match the selected evidence entries, including absence on unrelated rows.
 
 No new exclusions are approved. Existing bounded implementations still need
-contract certification; this count must not imply that only 36 tests or changes
+contract certification; this count must not imply that only 32 tests or changes
 remain, nor that every remaining method requires a new implementation.
 
 ## Endpoint batches and finite exits
@@ -100,7 +102,7 @@ estimates of lines or commits. Split a batch into bounded slices before coding.
 | B02: Initial inspection certification | 20 | Reuse ten verified inspection scopes; certify ten other selected JSON/discovery read contracts. Enumerate catalogue selectors/fields, populated/empty/native rejection, routing/ETag and transport/bound/lifetime evidence; no exhaustive field cross-product. |
 | B03: Exec and operation channel/wait scope | 4 | Attach existing live exec/native wait/channel and events-listener (S03) evidence to finite supported contracts; resolve secret/public-access views and forwarding scope explicitly. Recorded output belongs to B07. |
 | B04: Instance PATCH contract certification | 1 | Retain the verified conditional InstancePut contract; resolve unconditional/restore/field scope explicitly without inferring daemon merge acceptance. |
-| B05: Remaining typed PATCH implementations | 24 | 24 pairs need dedicated typed request/result contracts, conditional semantics and representative native errors; implement and verify or obtain explicit exclusions. PUT/raw-query success cannot close these rows. |
+| B05: Conditional PATCH and remaining PATCH contracts | 24 | Four conditional methods are implemented with bounded fixture evidence and remain partial; 20 other pairs still need typed PATCH implementation. Certify the four scopes and remaining native behavior or obtain explicit exclusions. PUT/raw-query success cannot close these rows. |
 | B06: File metadata HEAD | 2 | Implement instance and volume metadata-only typed helpers with header fidelity, empty body, rejection and bounded cleanup evidence on both transports. |
 | B07: Recorded exec output | 3 | Implement typed list, acknowledged binary download and explicit delete. Verify identity/path isolation, missing output, bounds and uncertain deletion; never imply automatic deletion. |
 | B08: Storage endpoint contracts | 49 | Certify the exact catalogue/helpers for each assigned row; implement by-type volume list, bitmap download and bucket backup list/get/rename. Reconcile equivalent collection POST, custom restrictions and recursion views; add evidence for declared fields/errors/lifetimes only. |
@@ -166,22 +168,28 @@ and consumer-owned Macus hardware remain separate acceptance records. No automat
 acceptance run is authorized by this audit. Go declaration parity remains a
 separate claim; no declaration status is promoted.
 
-## Recommended next implementation batch
+## Four-method progress and next priority
 
-Implement **four conditional typed PATCH methods** under B05: project, profile,
-image and instance snapshot. They share existing PUT models and the bounded
-conditional instance PATCH approach: caller ETag, lossless field presence, native
-result/errors, no local merge and no replay. Inspect each server handler's result
-shape rather than copying PUT's asynchronous classification. Use unchanged Go
-RawQuery only for transport comparison plus independent endpoint fixtures, on
-Unix/mutual HTTPS. This would remove four actual typed implementation gaps while
-keeping broader unsupported scope explicit; it does not certify daemon merges.
+- [x] Add conditional PatchProject, PatchProfile, PatchImage and
+  PatchInstanceSnapshot, with explicit nonempty caller ETag and existing Put models.
+- [x] Preserve native empty synchronous success for project/profile/image and
+  HTTP 202 asynchronous operation acceptance for snapshot expiry updates.
+- [x] Parameterize Unix/mutual-HTTPS transport comparisons and independent
+  preflight/rejection/uncertainty/deadline/cancellation cleanup evidence.
+- [x] Reclassify four missing typed pairs (36 -> 32 actual implementation gaps),
+  expand the selected partial evidence rows (32 -> 36) and retain declaration gaps.
+- [ ] Certify remaining B05 scope: unconditional variants, further fields/errors/
+  cluster behavior and separately owned daemon merge/expiry acceptance.
 
-Then prioritize B01's eight mutation lifecycle contracts for the initial
-`add-incus-operations` surface. Those methods already exist: this is composition
-and evidence work, not eight absent implementations. This audit implements neither
-batch. Stop and re-scope before parsers, unrelated runtime changes or fixture
-expansion exceed a bounded slice.
+The fixture compares unchanged Go RawQuery, not named Go PATCH methods or daemon
+merges. It keeps valid field presence without local read/merge/defaults. Image
+PATCH evidence covers auto_update/public/properties only. Snapshot success is an
+accepted handle, not completion. No endpoint or declaration is promoted to parity.
+
+Next prioritize B01's eight mutation lifecycle contracts for the initial
+`add-incus-operations` surface. Those methods already exist: the work is composition
+and evidence, not eight absent implementations. No other backlog item was added
+to this batch. Stop and re-scope before parser/runtime expansion or repeated fixes.
 
 The ledger is curated audit data. `test/endpoint_evidence_test.exs` independently
 extracts the unchanged REST document and server AST, checks hashes, exhaustiveness,

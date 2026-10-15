@@ -156,7 +156,7 @@ for entry in inv['entries']:
  elif entry['package']=='shared/api' and entry['kind']=='type' and name in models:
   evidence = ['test/resource_slice_test.exs'] if name in {m[key] for m in methods.values() for key in ['body','model'] if m[key]} else []
   if name in writable_types or name.removesuffix('Put') in writable_types or name == 'StatusCode': evidence.append('test/model_helpers_reference_test.exs')
-  if name == 'InstancePut': evidence.append('test/instance_patch_test.exs')
+  if name in ['InstancePut','ProjectPut','ProfilePut','ImagePut','InstanceSnapshotPut']: evidence.append('test/instance_patch_test.exs')
   if name == 'ServerEnvironment': evidence.append('test/discovery_helpers_test.exs')
   if name == 'Event': evidence.append('test/event_send_test.exs')
   if name in preseed_types: evidence.append('test/preseed_reference_test.exs')

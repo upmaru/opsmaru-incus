@@ -9836,7 +9836,8 @@
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/model_helpers_reference_test.exs"
+        "test/model_helpers_reference_test.exs",
+        "test/instance_patch_test.exs"
       ],
       "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
@@ -10075,7 +10076,8 @@
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/model_helpers_reference_test.exs"
+        "test/model_helpers_reference_test.exs",
+        "test/instance_patch_test.exs"
       ],
       "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
@@ -10748,7 +10750,8 @@
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/model_helpers_reference_test.exs"
+        "test/model_helpers_reference_test.exs",
+        "test/instance_patch_test.exs"
       ],
       "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
@@ -10786,7 +10789,8 @@
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/model_helpers_reference_test.exs"
+        "test/model_helpers_reference_test.exs",
+        "test/instance_patch_test.exs"
       ],
       "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },

@@ -278,7 +278,7 @@ the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
 close/error/EOF semantics apply. This does not expose an arbitrary dialer or
 an OIDC adapter.
 
-The checked manifest currently has 269 JSON descriptors (268 named-Go methods and one REST-specific PATCH), 1239 partial
+The checked manifest currently has 273 JSON descriptors (268 named-Go methods and five REST-specific PATCH methods), 1239 partial
 reference mappings and 41 missing declarations out of 1,280. Native Incus
 method evidence is scoped to that implementation; OCI and SimpleStreams each
 have 20 partial concrete method mappings and none missing; full protocol/option
@@ -313,7 +313,7 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query variants; 32 pairs are currently in the checked evidence
+pairs plus 46 query/access variants; 36 pairs are currently in the checked evidence
 manifest, all partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
@@ -660,8 +660,25 @@ full field/cluster behavior and real-daemon merge acceptance remain unverified.
 The initial-tool inspection profile now fixture-verifies ten existing list/get
 methods across projects, profiles, networks, storage pools and custom-volume
 samples. See `fixture_contracts.initial_inspection_v1` in the endpoint manifest
-for required cases and scope. All 32 selected whole endpoints remain partial;
+for required cases and scope. All 36 selected whole endpoints remain partial;
 only these ten method contracts have this explicit profile. Catalogue queries,
 Unix/mutual HTTPS, DTO results, 403/404/type rejection, declared extension checks,
 byte bounds and deadline/cancellation peer cleanup have evidence. Other selectors,
 volume types, fields, tool policy and backend acceptance remain separate.
+
+Conditional project/profile/image/snapshot updates use `PatchProject`,
+`PatchProfile`, `PatchImage` and `PatchInstanceSnapshot` through `Incus.call/4`.
+Supply `name`, `fingerprint`, or snapshot `name` plus `snapshot` path arguments,
+an existing Put-model body map, and an explicit nonempty caller ETag (1..1024 bytes).
+All resource path arguments must be nonempty. No local read, merge or default
+materialization occurs. Projects require `projects`; snapshot updates require
+`snapshot_expiry`. Field absence/null/false/empty are retained where model-valid.
+
+Project/profile/image return HTTP 200 empty sync success. Snapshot PATCH returns
+HTTP 202 native asynchronous acceptance; `Operation.from_response/2` creates a
+bound handle, and completion needs a separate explicit wait/poll. Image PATCH
+fixtures cover auto_update/public/properties; effects of other ImagePut fields
+are not inferred. Native errors and uncertain dispatch retain known identity
+without replay. The shared five-method Unix/mutual-HTTPS fixtures compare unchanged
+Go RawQuery transport and independent endpoint shapes, not named Go PATCH methods
+or real-daemon merges. All five PATCH contracts and task 3.9 remain partial.
