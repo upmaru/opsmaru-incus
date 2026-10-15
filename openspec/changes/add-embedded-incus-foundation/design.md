@@ -173,6 +173,44 @@ the closure checklist and recommend the next implementation batch without
 implementing it. Keep new verifier logic bounded; large mechanical ledger data
 is audit output, not authorization for runtime/parser expansion.
 
+#### Approved slice: four conditional resource PATCH methods (2026-10-15)
+
+Implement PatchProject, PatchProfile, PatchImage and PatchInstanceSnapshot through
+the existing typed catalogue and ProjectPut/ProfilePut/ImagePut/InstanceSnapshotPut
+models. Require a nonempty caller ETag bounded to 1024 bytes, unique allowed
+options and nonempty bounded resource path arguments. Preserve omitted, null,
+false and empty values where valid for the model, with no local GET/merge,
+defaults or mutation replay. Retain host project/member selection, native ETags,
+errors and response identity. Keep existing PatchInstance behavior unchanged.
+
+Pinned projectPatch/profilePatch/imagePatch return HTTP 200 empty sync success.
+Pinned snapshotPatch delegates to snapshotPut and returns HTTP 202 asynchronous
+operation acceptance, even when no expires_at change was supplied. Require that
+native status and preserve the real accepted handle; do not report acceptance as
+completion or manufacture an operation for synchronous methods. Snapshot expiry
+and projects use their existing extension preflights. Image PATCH's evidenced
+fields are auto_update, public and properties; no effect on other ImagePut fields
+is inferred. Native Incus owns merge and expiry semantics.
+
+Reuse and parameterize the bounded instance PATCH fixtures across the five methods
+and Unix/mutual HTTPS. Compare unchanged Go RawQuery requests/results (not a named
+Go PATCH method) and independent native-shaped fixtures for field presence,
+400/403/404/412, accepted snapshot identity, unexpected/malformed/disconnected
+responses, request/ETag/path/body/extension/readiness preflight, deadline and
+cancellation peer cleanup with one PATCH and no replay. Preserve the existing
+instance restore rejection fixture. These fixtures do not establish daemon merge
+or installed-backend acceptance. No oracle changes or live backend are planned.
+
+Add four REST descriptors and four partial selected evidence rows (32 -> 36).
+Reclassify those full-inventory rows from missing_typed to catalogue while keeping
+behavior_complete=false and bounded scope/gaps explicit. Confirmed missing typed
+pairs decrease 36 -> 32, with 20 other missing PATCH pairs and 28 existing-route
+selector gaps still open. Retain B05 membership for the four partial contracts;
+adding typed methods is not endpoint completion. Update coverage evidence without
+inventing Go declarations or promoting their status; complete_port stays false.
+Keep this data-driven batch within a few hundred handwritten lines. Stop before
+parser/runtime expansion or repeated corner-case repair rounds require re-scoping.
+
 #### Approved slice: priority endpoint/method evidence (2026-10-14)
 
 Add a development-only, checked manifest for 21 priority verb/path pairs:

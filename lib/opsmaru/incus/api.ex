@@ -65,9 +65,13 @@ defmodule Opsmaru.Incus.API do
        else: {:error, :invalid_arguments}
   end
 
+  defp conditional?(%{"conditional" => true}, args, opts),
+    do: conditional?(%{"result" => "empty_sync"}, args, opts)
+
   defp conditional?(%{"result" => "empty_sync"}, args, opts),
     do:
-      args["name"] != "" and is_binary(opts[:etag]) and byte_size(opts[:etag]) in 1..1024 and
+      Enum.all?(args, fn {_, value} -> value != "" end) and is_binary(opts[:etag]) and
+        byte_size(opts[:etag]) in 1..1024 and
         length(opts) == length(Enum.uniq(Keyword.keys(opts)))
 
   defp conditional?(_, _, _), do: true
@@ -206,6 +210,10 @@ defmodule Opsmaru.Incus.API do
     end)
     |> Enum.join(" and ")
   end
+
+  defp decode(%{"response_status" => expected}, %{http_status: actual}, _)
+       when actual != expected,
+       do: {:error, :invalid_response}
 
   defp decode(%{"result" => "empty_sync"}, response, _) do
     if response.http_status == 200 and response.type == "sync" and

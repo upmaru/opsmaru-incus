@@ -1515,3 +1515,64 @@ Corrected local canonical checks pass: 1049 tests, zero failures, format,
 warning-free compile, strict Credo and all three strict OpenSpec changes.
 Reference checks pass, and coverage regeneration is byte-identical. Hosted
 both-platform/immutable-consumer and fresh Greptile results are recorded on PR #12.
+
+
+## Four conditional resource PATCH methods — 2026-10-15
+
+After PR #12 merged at `a710340`, synchronized develop, removed its merged feature
+branch and created `feature/incus-client-conditional-patches`. Strict OpenSpec
+validation preceded implementation. The bounded batch adds PatchProject,
+PatchProfile, PatchImage and PatchInstanceSnapshot using existing Put models,
+explicit caller ETags and host routing/context. No read/merge/defaults or replay
+is added. Empty path arguments and invalid/duplicate/unbounded ETags reject
+before I/O; existing request/body/readiness/extension bounds apply.
+
+Pinned projectPatch/profilePatch/imagePatch return HTTP 200 empty sync success;
+snapshotPatch delegates to snapshotPut and returns HTTP 202 operation acceptance,
+even for an omitted expiry change. Independent fixture shapes follow these
+unchanged server handlers. Snapshot handles retain native identity and require a
+separate wait/poll; fixtures do not claim completion or daemon merge/expiry proof.
+Image field evidence covers auto_update/public/properties only.
+
+The existing conditional instance PATCH fixture is parameterized across all five
+methods on Unix and verified mutual HTTPS. Forty tests include 80 unchanged Go
+RawQuery transport comparisons (64 new comparisons), field presence, native
+400/403/404/412, malformed/disconnected/unexpected success responses and known
+identity retention. Independent preflight, deadline/cancellation and actual peer
+EOF checks verify one PATCH without replay. The focused 40-test PATCH run and
+287-test endpoint/catalogue run pass. No named Go PATCH parity is asserted and no
+oracle or Go driver changed.
+
+The catalogue grows from 269 to 273 descriptors; selected partial endpoint pairs
+from 32 to 36. Four full-inventory rows move from missing_typed to catalogue:
+confirmed missing typed methods decrease from 36 to 32, including 20 other PATCH
+pairs. B05 retains all 24 assigned pairs and the four partial contracts. The 28
+selector gaps and ten fixture-verified inspection scopes remain unchanged.
+Coverage adds the actual fixture evidence to four Put-model mappings without
+promoting declaration statuses; complete_port=false and task 3.9 remains open.
+No tool export, live backend or hardware acceptance follows from these fixtures.
+
+Final canonical checks pass: 1081 tests, zero failures, formatting, warning-free
+compile, strict Credo and all three strict OpenSpec changes. Reference checks
+pass the inventory/schema tooling and 188 native constants. Coverage regeneration
+is deterministic; declaration IDs/statuses are identical to merged develop.
+Pushed both-platform and immutable-consumer results are recorded on the draft PR.
+
+## PR #13 populated-map fixture correction — 2026-10-16
+
+Greptile's 4/5 review identified a valid regression in fixture parameterization:
+the former nonempty instance config body had become an empty-map body plus an
+unknown field. Restore populated config for instance/project/profile, populated
+nested devices for instance/profile and populated image properties, retaining
+the independent omitted/empty/null cases and unknown-field preservation. Snapshot
+keeps its existing populated expiry scalar; no map field is invented for it.
+The existing exact body and wire comparisons detect lost populated entries over
+Unix and mutual HTTPS. Runtime, catalogue, oracle and accepted contract scope
+remain unchanged. Coverage regeneration is byte-identical; every existing
+partial/missing declaration status and task 3.9's open gate remain visible.
+
+Corrected focused fixtures pass all 40 tests (80 transport comparisons). Canonical
+checks pass all 1081 tests, format, warnings-as-errors compile, strict Credo and
+all three strict OpenSpec changes. Reference checks pass, including 188 constants.
+Fresh hosted review and both-platform/immutable-consumer results are recorded on
+PR #13; these checks do not promote any endpoint or declaration to complete.

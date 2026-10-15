@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.InstancePatchTest do
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Connection, Context, Error, Operation, RequestContext, Server}
+  alias Opsmaru.Incus.{Connection, Context, Error, Model, Operation, RequestContext, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
   @driver Path.expand("../.integration/instance-patch-driver", __DIR__)
   @body %{
@@ -12,6 +12,79 @@ defmodule Opsmaru.Incus.InstancePatchTest do
     "devices" => %{}
   }
 
+  @patches [
+    %{
+      method: "PatchInstance",
+      args: %{"name" => "guest"},
+      path: "/1.0/instances/guest",
+      body: @body,
+      populated: %{
+        "config" => %{"user.note" => "fixture"},
+        "devices" => %{"data" => %{"type" => "disk", "path" => "/data", "pool" => "fixture"}}
+      },
+      null: %{"description" => nil, "config" => nil},
+      invalid: %{"ephemeral" => "false"},
+      rejection: %{"restore" => "snap"},
+      extension: nil,
+      accepted: false
+    },
+    %{
+      method: "PatchProject",
+      args: %{"name" => "project /one"},
+      path: "/1.0/projects/project%20%2Fone",
+      body: %{"description" => "", "config" => %{}},
+      populated: %{"config" => %{"features.images" => "true", "user.note" => "fixture"}},
+      null: %{"description" => nil, "config" => nil},
+      invalid: %{"description" => false},
+      rejection: %{},
+      extension: "projects",
+      accepted: false
+    },
+    %{
+      method: "PatchProfile",
+      args: %{"name" => "profile /one"},
+      path: "/1.0/profiles/profile%20%2Fone",
+      body: %{"description" => "", "config" => %{}, "devices" => %{}},
+      populated: %{
+        "config" => %{"user.note" => "fixture"},
+        "devices" => %{"data" => %{"type" => "disk", "path" => "/data", "pool" => "fixture"}}
+      },
+      null: %{"config" => nil, "devices" => nil},
+      invalid: %{"devices" => false},
+      rejection: %{},
+      extension: nil,
+      accepted: false
+    },
+    %{
+      method: "PatchImage",
+      args: %{"fingerprint" => "image /one"},
+      path: "/1.0/images/image%20%2Fone",
+      body: %{"public" => false, "auto_update" => false, "properties" => %{}},
+      populated: %{
+        "public" => false,
+        "auto_update" => false,
+        "properties" => %{"os" => "Linux", "description" => "fixture"}
+      },
+      null: %{"properties" => nil},
+      invalid: %{"public" => "false"},
+      rejection: %{},
+      extension: nil,
+      accepted: false
+    },
+    %{
+      method: "PatchInstanceSnapshot",
+      args: %{"name" => "guest /one", "snapshot" => "snap /one"},
+      path: "/1.0/instances/guest%20%2Fone/snapshots/snap%20%2Fone",
+      body: %{"expires_at" => "2030-01-02T03:04:05Z"},
+      populated: %{"expires_at" => "2030-01-02T03:04:05Z"},
+      null: %{"expires_at" => nil},
+      invalid: %{"expires_at" => false},
+      rejection: %{},
+      extension: "snapshot_expiry",
+      accepted: true
+    }
+  ]
+
   setup_all do
     {out, status} =
       System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "."],
@@ -21,6 +94,13 @@ defmodule Opsmaru.Incus.InstancePatchTest do
       )
 
     assert status == 0, out
+
+    rest =
+      Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
+      |> Enum.filter(&(&1["reference_kind"] == "rest" and &1["verb"] == "PATCH"))
+      |> Enum.map(& &1["name"])
+
+    assert Enum.sort(rest) == Enum.sort(Enum.map(@patches, & &1.method))
     :ok
   end
 
@@ -32,24 +112,21 @@ defmodule Opsmaru.Incus.InstancePatchTest do
     %{root: root}
   end
 
-  for transport <- [:unix, :https] do
-    test "#{transport} typed PATCH preserves field presence, routing, If-Match and native errors",
+  for spec <- @patches, transport <- [:unix, :https] do
+    test "#{transport} #{spec.method} typed PATCH preserves field presence, routing, If-Match and native errors",
          %{root: root} do
+      spec = unquote(Macro.escape(spec))
       identity = identity(root, unquote(transport))
 
-      for body <- [
-            %{},
-            @body,
-            %{"description" => nil, "config" => nil},
-            %{"config" => %{"user.note" => "fixture"}, "future_field" => false}
-          ],
-          do: compare(root, identity, body, 200)
+      for body <- [%{}, spec.body, spec.null, Map.put(spec.populated, "future_field", false)],
+          do: compare(root, identity, spec, body, 200)
 
-      for code <- [400, 403, 404, 412], do: compare(root, identity, %{"restore" => "snap"}, code)
+      for code <- [400, 403, 404, 412], do: compare(root, identity, spec, spec.rejection, code)
     end
 
-    test "#{transport} dispatched PATCH failures stay uncertain without replay or invented identity",
+    test "#{transport} #{spec.method} dispatched PATCH failures stay uncertain without replay or invented identity",
          %{root: root} do
+      spec = unquote(Macro.escape(spec))
       identity = identity(root, unquote(transport))
 
       for reply <- [
@@ -57,7 +134,7 @@ defmodule Opsmaru.Incus.InstancePatchTest do
             %{status: 200, body: "malformed"},
             %{status: 200, body: %{type: "sync", status_code: 200, metadata: nil}},
             %{
-              status: 202,
+              status: if(spec.accepted, do: 200, else: 202),
               body: %{
                 type: "async",
                 status_code: 100,
@@ -69,9 +146,9 @@ defmodule Opsmaru.Incus.InstancePatchTest do
         fixture = backend(root, identity, fn _ -> reply end)
 
         assert {:error, %Error{kind: :uncertain} = error} =
-                 patch(client(fixture, identity), @body)
+                 patch(client(fixture, identity), spec, spec.body)
 
-        if reply[:status] == 202 do
+        if is_map(reply[:body]) and reply.body[:type] == "async" do
           assert error.operation == "/1.0/operations/received"
           assert error.response.type == "async"
         else
@@ -82,8 +159,9 @@ defmodule Opsmaru.Incus.InstancePatchTest do
       end
     end
 
-    test "#{transport} dispatched PATCH deadline and cancellation close the peer and remain uncertain",
+    test "#{transport} #{spec.method} dispatched PATCH deadline and cancellation close the peer and remain uncertain",
          %{root: root} do
+      spec = unquote(Macro.escape(spec))
       identity = identity(root, unquote(transport))
 
       for mode <- [:deadline, :cancel] do
@@ -103,7 +181,7 @@ defmodule Opsmaru.Incus.InstancePatchTest do
         original = client(fixture, identity)
         scope = RequestContext.new!(timeout: if(mode == :deadline, do: 3_000, else: 30_000))
         scoped = Incus.with_context(original, scope)
-        task = Task.async(fn -> patch(scoped, @body) end)
+        task = Task.async(fn -> patch(scoped, spec, spec.body) end)
         assert_receive {^tag, :entered}, 10_000
         if mode == :cancel, do: RequestContext.cancel(scope)
         assert {:error, %Error{kind: :uncertain, operation: nil}} = Task.await(task, 10_000)
@@ -113,36 +191,49 @@ defmodule Opsmaru.Incus.InstancePatchTest do
       end
     end
 
-    test "#{transport} conditional PATCH preflight rejects invalid input without I/O", %{
-      root: root
-    } do
+    test "#{transport} #{spec.method} conditional PATCH preflight rejects invalid input without I/O",
+         %{
+           root: root
+         } do
+      spec = unquote(Macro.escape(spec))
       identity = identity(root, unquote(transport))
       fixture = backend(root, identity, fn _ -> response(200) end)
       client = client(fixture, identity)
 
-      for {args, opts} <- [
-            {%{"name" => "guest"}, [body: @body]},
-            {%{"name" => "guest"}, [body: @body, etag: ""]},
-            {%{"name" => "guest"}, [body: @body, etag: String.duplicate("e", 1025)]},
-            {%{"name" => "guest"}, [body: @body, etag: "first", etag: "second"]},
-            {%{"name" => ""}, [body: @body, etag: "before"]},
-            {%{"name" => "guest"}, [body: %{"ephemeral" => "false"}, etag: "before"]},
-            {%{"name" => "guest"}, [body: @body, etag: "before\r\nInjected: true"]}
-          ] do
-        assert {:error, %Error{kind: kind}} = Incus.call(client, "PatchInstance", args, opts)
+      for {args, opts} <-
+            [
+              {spec.args, [body: spec.body]},
+              {spec.args, [body: spec.body, etag: ""]},
+              {spec.args, [body: spec.body, etag: String.duplicate("e", 1025)]},
+              {spec.args, [body: spec.body, etag: "first", etag: "second"]},
+              {spec.args, [body: spec.invalid, etag: "before"]},
+              {spec.args, [body: spec.body, etag: "before\r\nInjected: true"]}
+            ] ++
+              Enum.map(spec.args, fn {key, _} ->
+                {Map.put(spec.args, key, ""), [body: spec.body, etag: "before"]}
+              end) do
+        assert {:error, %Error{kind: kind}} = Incus.call(client, spec.method, args, opts)
         refute kind == :uncertain
       end
 
       small = %{client | connection: %{client.connection | max_request_bytes: 16}}
-      assert {:error, %Error{kind: :invalid_body}} = patch(small, @body)
+      assert {:error, %Error{kind: :invalid_body}} = patch(small, spec, spec.body)
       unready = %{client | context: %{client.context | ready?: fn -> false end}}
-      assert {:error, %Error{kind: :host_not_ready}} = patch(unready, @body)
+      assert {:error, %Error{kind: :host_not_ready}} = patch(unready, spec, spec.body)
+
+      if spec.extension do
+        unsupported = %{client | server: %Server{api_extensions: []}}
+
+        assert {:error, %Error{kind: :unsupported_extension}} =
+                 patch(unsupported, spec, spec.body)
+      end
+
       assert HTTPFixture.requests(fixture) == []
     end
   end
 
-  defp compare(root, identity, body, code) do
-    fixture = backend(root, identity, fn _ -> response(code) end)
+  defp compare(root, identity, spec, body, code) do
+    fixture = backend(root, identity, fn _ -> response(code, spec) end)
     client = client(fixture, identity)
 
     input =
@@ -150,7 +241,7 @@ defmodule Opsmaru.Incus.InstancePatchTest do
         action: "RawQuery",
         args: [
           "PATCH",
-          "/1.0/instances/guest?project=fixture+scope&target=member%2Fa",
+          spec.path <> "?project=fixture+scope&target=member%2Fa",
           body,
           "\"before\""
         ]
@@ -161,7 +252,7 @@ defmodule Opsmaru.Incus.InstancePatchTest do
     {out, status} = System.cmd(@driver, [file], stderr_to_stdout: true)
     assert status == 0, out
     expected = Jason.decode!(out)
-    actual = patch(client, body)
+    actual = patch(client, spec, body)
     assert [%{method: "GET"}, native, local] = HTTPFixture.requests(fixture)
     assert native.method == "PATCH"
     assert Jason.decode!(local.body) == body
@@ -177,14 +268,23 @@ defmodule Opsmaru.Incus.InstancePatchTest do
     if code == 200 do
       refute expected["error"]
       assert {:ok, reply} = actual
-      assert reply.http_status == 200 and reply.type == "sync" and reply.metadata == %{}
-      assert reply.operation == ""
       assert reply.etag == Enum.at(expected["outputs"], 1)
-      assert hd(expected["outputs"])["metadata"] == reply.metadata
+      assert hd(expected["outputs"])["metadata"] == Model.encode(reply.metadata)
       assert reply.connection == client.connection and reply.identity == :verified
 
-      assert {:error, %Error{kind: :invalid_operation_binding}} =
-               Operation.from_response(client, reply)
+      if spec.accepted do
+        assert reply.http_status == 202 and reply.type == "async"
+        assert reply.operation == "/1.0/operations/received"
+        assert {:ok, operation} = Operation.from_response(client, reply)
+        assert operation.url == reply.operation and operation.client == client
+        assert reply.metadata.data["status_code"] == 100
+      else
+        assert reply.http_status == 200 and reply.type == "sync" and reply.metadata == %{}
+        assert reply.operation == ""
+
+        assert {:error, %Error{kind: :invalid_operation_binding}} =
+                 Operation.from_response(client, reply)
+      end
     else
       assert {:error,
               %Error{kind: :native, http_status: ^code, error_code: ^code, message: message}} =
@@ -194,8 +294,26 @@ defmodule Opsmaru.Incus.InstancePatchTest do
     end
   end
 
-  defp patch(client, body),
-    do: Incus.call(client, "PatchInstance", %{"name" => "guest"}, body: body, etag: "\"before\"")
+  defp patch(client, spec, body),
+    do: Incus.call(client, spec.method, spec.args, body: body, etag: "\"before\"")
+
+  defp response(200, %{accepted: true}),
+    do: %{
+      status: 202,
+      headers: %{"ETag" => "\"after\""},
+      body: %{
+        type: "async",
+        status_code: 100,
+        operation: "/1.0/operations/received",
+        metadata: %{id: "received", status: "Running", status_code: 100}
+      }
+    }
+
+  defp response(code, %{method: "PatchInstance"}), do: response(code)
+  defp response(200, _), do: response(200)
+
+  defp response(code, _),
+    do: %{status: code, body: %{type: "error", error_code: code, error: "native rejection"}}
 
   defp response(200),
     do: %{
@@ -244,7 +362,11 @@ defmodule Opsmaru.Incus.InstancePatchTest do
                  status: 200,
                  body: %{
                    type: "sync",
-                   metadata: %{api_version: "1.0", api_extensions: [], environment: %{}}
+                   metadata: %{
+                     api_version: "1.0",
+                     api_extensions: ["projects", "snapshot_expiry"],
+                     environment: %{}
+                   }
                  }
                },
                else: handler.(request)
@@ -277,7 +399,7 @@ defmodule Opsmaru.Incus.InstancePatchTest do
     %Incus{
       connection: connection,
       context: Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end),
-      server: %Server{api_extensions: []}
+      server: %Server{api_extensions: ["projects", "snapshot_expiry"]}
     }
   end
 

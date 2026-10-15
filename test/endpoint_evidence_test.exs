@@ -122,7 +122,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "32 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "36 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -134,11 +134,12 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                GetInstanceSnapshot DeleteInstanceSnapshot GetImages GetImage DeleteImage
                GetOperations GetOperation DeleteOperation GetOperationWait ExecInstance
                GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork
-               GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume)
+               GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume
+               PatchProject PatchProfile PatchImage PatchInstanceSnapshot)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
-             "partial" => 32
+             "partial" => 36
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))

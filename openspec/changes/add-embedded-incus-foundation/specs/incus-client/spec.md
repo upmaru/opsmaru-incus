@@ -91,6 +91,21 @@ uncertain without replay or manufacturing an operation identity.
 - **WHEN** a ready authorized host supplies bounded partial configuration and If-Match
 - **THEN** one PATCH preserves field presence and native synchronous result, while unchanged RawQuery transport comparison and independent endpoint fixtures are recorded separately from real-daemon merge acceptance
 
+### Requirement: Bounded conditional resource partial updates
+
+PatchProject, PatchProfile, PatchImage and PatchInstanceSnapshot SHALL use their
+native PATCH routes and existing Put models with an explicit bounded caller ETag.
+They SHALL preserve model-valid field presence without local GET/merge/defaults,
+retain host routing, native errors and identity, reject invalid preflight input
+without I/O and never replay possibly accepted mutations. The first three SHALL
+require HTTP 200 empty synchronous success. Snapshot PATCH SHALL require HTTP 202
+asynchronous acceptance and return the actual operation, distinct from completion.
+
+#### Scenario: Conditional resource update evidence
+
+- **WHEN** a ready host submits one of the four conditional partial updates
+- **THEN** Unix and mutual-HTTPS fixtures preserve exact body, If-Match, routing, native result and rejection; unchanged RawQuery comparison remains transport evidence, while supported scope, response-loss uncertainty and local cleanup have independent evidence and daemon merge acceptance remains separate
+
 ### Requirement: Native streaming fidelity
 
 Exec, console, events, files, images, backups and migrations SHALL preserve native streaming and control semantics, including applicable WebSocket and non-WebSocket upgrades. Binary transfers, half-close, backpressure and disconnect cleanup SHALL be bounded and independently verifiable.
