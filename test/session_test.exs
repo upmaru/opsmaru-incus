@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.SessionTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Server, Session, WebSocket}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Server, Session, WebSocket}
   alias Opsmaru.TestSupport.{CleanupAssertions, HTTPFixture, WebSocketFixture}
 
   test "session close stops multiple blocked channels within a shared local budget" do

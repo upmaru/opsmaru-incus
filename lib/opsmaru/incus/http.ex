@@ -9,8 +9,8 @@ defmodule Opsmaru.Incus.HTTP do
   completion. Redirects and 305 responses are returned without replay; streaming
   native transfers use the separate Transfer/Files/Images interfaces.
   """
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, OCI, SimpleStreams, Transport}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Context, Error, OCI, SimpleStreams, Transport}
   @enforce_keys [:client]
   defstruct [:client]
 

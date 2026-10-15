@@ -1,9 +1,9 @@
 defmodule Opsmaru.Incus.ExecRun do
   @moduledoc false
-  alias Opsmaru.Context
   alias Opsmaru.Incus
 
   alias Opsmaru.Incus.{
+    Context,
     Error,
     ExecOutput,
     Model,

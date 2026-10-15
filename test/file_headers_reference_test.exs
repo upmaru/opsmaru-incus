@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.FileHeadersReferenceTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, FileHeaders, Files, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, FileHeaders, Files, Server}
   alias Opsmaru.TestSupport.HTTPFixture
   @driver Path.expand("../.integration/file-headers-driver", __DIR__)
 

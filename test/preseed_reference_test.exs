@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.PreseedReferenceTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Preseed}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Preseed}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
   @driver Path.expand("../.integration/incus-preseed-driver", __DIR__)
   @extensions ~w(network projects storage clustering clustering_groups clustering_join certificate_update)

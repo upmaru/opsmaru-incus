@@ -19,6 +19,15 @@ The library SHALL have no application callback or supervision tree of its own. L
 
 Library calls SHALL accept the host's backend connection, private state location, identity integration and host capabilities explicitly. Client operations MUST NOT require Macus, Swift, a fixed state directory, a database, Phoenix or a separately running Opsmaru process.
 
+The trusted host context SHALL be exposed as `Opsmaru.Incus.Context`, and optional
+host-owned bounded supervision SHALL be exposed as `Opsmaru.Incus.ClientSupervisor`.
+Both helpers MUST retain their existing behavior and require explicit host use.
+
+#### Scenario: Consumer adopts the namespace cleanup
+
+- **WHEN** a consumer pins the namespace-cleanup revision and updates its context aliases, struct references and supervisor child specifications
+- **THEN** the Incus-scoped helpers preserve readiness, owner isolation, redaction, bounded supervision and passive dependency startup without legacy compatibility modules
+
 #### Scenario: Macus embedding
 
 - **WHEN** Macus supplies its native socket backend and host context

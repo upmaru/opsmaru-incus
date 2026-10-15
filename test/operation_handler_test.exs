@@ -1,7 +1,18 @@
 defmodule Opsmaru.Incus.OperationHandlerTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, EventListener, Migration, Model, Operation, Server}
+  alias Opsmaru.Incus
+
+  alias Opsmaru.Incus.{
+    Connection,
+    Context,
+    Error,
+    EventListener,
+    Migration,
+    Model,
+    Operation,
+    Server
+  }
+
   alias Opsmaru.TestSupport.WebSocketFixture
   @driver Path.expand("../.integration/operation-handlers-driver", __DIR__)
   @time "2026-01-01T00:00:00Z"

@@ -104,6 +104,11 @@ Differential wire fixtures, shared-library platform checks and real-backend acce
 - **WHEN** test or fixture scheduling delays observation after local resource cleanup
 - **THEN** bounded process/socket observations and independent shared-budget checks preserve cleanup evidence without treating observer latency as native cleanup duration or changing library budgets
 
+#### Scenario: WebSocket write lifetime observed late
+
+- **WHEN** observer scheduling delays an already terminated Unix/TLS WebSocket write-lifetime fixture
+- **THEN** bounded normal termination and direct clock/socket-option traces verify the actual remaining write deadline and timeout-close behavior without changing library budgets or asserting observer elapsed performance
+
 ### Requirement: Host-supplied OCI conversion
 
 OCI support SHALL use an explicitly supplied host adapter for privileged conversion, registry credential use and temporary state. Construction MUST NOT probe tools, run commands, create state or contact a registry. The client SHALL preserve pinned native alias/image semantics and unsupported-method errors, bound inspection and binary delivery, and invoke per-call idempotent cleanup on completion, failure, timeout or owner loss. Adapter calls MUST NOT be replayed automatically. Hosts SHALL verify registry identity and keep credentials and conversion resources isolated by call identity.

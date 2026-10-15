@@ -1,9 +1,10 @@
 defmodule Opsmaru.Incus.WebSocketFailureTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
+  alias Opsmaru.Incus
 
   alias Opsmaru.Incus.{
     Connection,
+    Context,
     Error,
     EventListener,
     Migration,
@@ -24,15 +25,20 @@ defmodule Opsmaru.Incus.WebSocketFailureTest do
   end
 
   for transport <- [:gen_tcp, :ssl] do
-    test "#{transport} blocked writes obey stream lifetime rather than handshake budget", %{
+    test "#{transport} blocked writes retain deadline budgets despite delayed observation", %{
       root: root
     } do
       {client, fixture, _tag} =
-        peer(root, unquote(transport),
-          timeout: 1_500,
-          stream_timeout: 100,
-          max_response_bytes: 1_048_576,
-          max_stream_bytes: 67_108_864
+        peer(
+          root,
+          unquote(transport),
+          [
+            timeout: 30_000,
+            stream_timeout: 3_000,
+            max_response_bytes: 1_048_576,
+            max_stream_bytes: 67_108_864
+          ],
+          30_000
         )
 
       assert {:ok, channel} = WebSocket.open(client, "/1.0/events")
@@ -41,7 +47,7 @@ defmodule Opsmaru.Incus.WebSocketFailureTest do
       assert :ok = small_socket_buffer(unquote(transport), socket)
 
       monitor = Process.monitor(channel.pid)
-      started = System.monotonic_time(:millisecond)
+      trace_write_budgets(channel.pid)
       bytes = :binary.copy(<<7>>, 1_048_576)
 
       result =
@@ -53,9 +59,26 @@ defmodule Opsmaru.Incus.WebSocketFailureTest do
         end)
 
       assert {:error, %Error{kind: kind}} = result
-      assert System.monotonic_time(:millisecond) - started < 700
       assert kind in [:deadline, :channel_closed]
-      assert_receive {:DOWN, ^monitor, :process, _, :normal}, 1_000
+
+      if kind == :channel_closed do
+        ref = channel.ref
+        assert_receive {^ref, :error, %Error{kind: :deadline}}, 5_000
+      end
+
+      Process.sleep(750)
+      assert_receive {:DOWN, ^monitor, :process, _, :normal}, 5_000
+      barrier = :erlang.trace_delivered(:all)
+      assert_receive {:trace_delivered, :all, ^barrier}, 5_000
+      budgets = write_budgets(channel.pid, state.deadline, client.connection.timeout)
+      assert budgets != []
+
+      for {actual, expected, close?} <- budgets do
+        assert actual == expected
+        assert actual in 1..client.connection.stream_timeout
+        assert close?
+      end
+
       assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
     end
 
@@ -142,7 +165,46 @@ defmodule Opsmaru.Incus.WebSocketFailureTest do
   defp small_socket_buffer(:ssl, socket), do: :ssl.setopts(socket, sndbuf: 1024)
   defp small_socket_buffer(:gen_tcp, socket), do: :inet.setopts(socket, sndbuf: 1024)
 
-  defp peer(root, transport, budgets \\ []) do
+  defp trace_write_budgets(pid) do
+    patterns = [{WebSocket, :now, 0}, {:inet, :setopts, 2}, {:ssl, :setopts, 2}]
+
+    on_exit(fn ->
+      for pattern <- patterns, do: :erlang.trace_pattern(pattern, false, [:local])
+    end)
+
+    :erlang.trace_pattern({WebSocket, :now, 0}, [{:_, [], [{:return_trace}]}], [:local])
+
+    for transport <- [:inet, :ssl],
+        do: :erlang.trace_pattern({transport, :setopts, 2}, true, [:local])
+
+    :erlang.trace(pid, true, [:call])
+  end
+
+  defp write_budgets(pid, deadline, maximum, clock \\ nil) do
+    receive do
+      {:trace, ^pid, :return_from, {WebSocket, :now, 0}, tick} ->
+        write_budgets(pid, deadline, maximum, tick)
+
+      {:trace, ^pid, :call, {transport, :setopts, [_, options]}}
+      when transport in [:inet, :ssl] ->
+        case Keyword.fetch(options, :send_timeout) do
+          {:ok, timeout} ->
+            assert is_integer(clock), "missing channel clock trace"
+
+            [
+              {timeout, min(maximum, deadline - clock), options[:send_timeout_close]}
+              | write_budgets(pid, deadline, maximum, clock)
+            ]
+
+          :error ->
+            write_budgets(pid, deadline, maximum, clock)
+        end
+    after
+      0 -> []
+    end
+  end
+
+  defp peer(root, transport, budgets \\ [], peer_timeout \\ 2_000) do
     identity =
       if transport == :ssl,
         do: TLSIdentity.generate(root, "tls-#{System.unique_integer([:positive])}", "localhost")
@@ -183,7 +245,7 @@ defmodule Opsmaru.Incus.WebSocketFailureTest do
                  receive do
                    :drop -> :ok
                  after
-                   2_000 -> :ok
+                   peer_timeout -> :ok
                  end
                end
              }

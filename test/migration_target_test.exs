@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.MigrationTargetTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Migration, Operation, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Migration, Operation, Server}
   alias Opsmaru.TestSupport.HTTPFixture
 
   setup do

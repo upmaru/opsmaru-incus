@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.CopyGuardsTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Copy, Error, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Copy, Error, Server}
   alias Opsmaru.TestSupport.HTTPFixture
   @driver Path.expand("../.integration/incus-copy-guards", __DIR__)
 

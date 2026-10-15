@@ -28,7 +28,18 @@ The separately proposed [add-embeddable-incus-gateway](../add-embeddable-incus-g
 
 ### 1. A standalone pure library repository
 
-Deliver the client as OTP application `:opsmaru_incus` in `upmaru/opsmaru-incus`, with no application callback. A library without a supervision tree cannot start an Endpoint, Repo, PubSub, listener or worker on load, so passive embedding holds by construction rather than by a runtime `deployment_mode` switch, and ambient PHX_SERVER/PORT values have nothing to act on. Keep the existing `Opsmaru.Incus.*`, `Opsmaru.Context` and `Opsmaru.ClientSupervisor` module names so consumer call sites are unchanged. Hosts that want bounded concurrency add `Opsmaru.ClientSupervisor` to their own tree; restarting it cannot stop Swift/Incus.
+Deliver the client as OTP application `:opsmaru_incus` in `upmaru/opsmaru-incus`, with no application callback. A library without a supervision tree cannot start an Endpoint, Repo, PubSub, listener or worker on load, so passive embedding holds by construction rather than by a runtime `deployment_mode` switch, and ambient PHX_SERVER/PORT values have nothing to act on. Expose the client and its helpers under `Opsmaru.Incus.*`. Hosts that want bounded concurrency add `Opsmaru.Incus.ClientSupervisor` to their own tree; restarting it cannot stop Swift/Incus.
+
+The approved namespace cleanup (2026-10-14) moves the trusted host binding to
+`Opsmaru.Incus.Context` and optional supervision to `Opsmaru.Incus.ClientSupervisor`.
+This supersedes the extraction's decision to retain top-level helper names.
+Move the files, module declarations, Inspect implementation and every repository
+call site/documentation reference together, including the isolated consumer and
+planned shared-operation host contract. Preserve all function bodies, struct
+fields, readiness/owner checks, redaction, capacity/restart and startup behavior.
+Do not add compatibility modules or convert between two context structs. Consumers
+must update aliases, struct references and child specifications when pinning the
+new revision. This cleanup adds no native behavior or coverage-completion claim.
 
 Declare runtime dependencies as version ranges (Mint, MintWebSocket, Jason, cowlib for native multipart/content-type parsing, yamerl for the strict YAML subset) and let each consumer lock exact versions. Plug is test-only. No Phoenix, Ecto, Postgrex, LiveView, asset or OIDC dependency is permitted.
 
@@ -212,6 +223,23 @@ The first repair CI run also exposed the raw-channel blocked-write fixture's
 to raw-channel owner cleanup and stream expiry. Trace actual socket send-timeout
 options to verify they are capped by the configured test stream lifetime rather
 than the longer request budget; retain stalled peers and explicit deadline errors.
+
+#### WebSocket write-lifetime evidence repair (2026-10-14)
+
+Replace the remaining Unix/TLS blocked-write fixture's 700 ms elapsed assertion
+with bounded resource observation and direct evidence of the unchanged socket
+write budget. Trace clock return values and socket options on the explicit local
+channel process: every send timeout must equal the lesser of the request budget
+and the stream deadline's remainder at the actual budget calculation, with
+send-timeout-close enabled. No test-observer elapsed threshold is a runtime SLA.
+
+Use a 3-second fixture stream lifetime against 30-second request and stalled-peer
+budgets. Require a deadline error (including its notification when the local
+handle is already closed), normal channel termination and one native GET. Keep
+a permanent 750 ms delayed observer and a finite five-second monitor allowance.
+Prove enlarged send-timeout mutations fail the direct checks, restore runtime
+source after probes, and retain the unchanged native oracle and partial coverage.
+Keep this repair test-only and within a few hundred lines.
 
 ### 5. Delivery and subsequent work
 

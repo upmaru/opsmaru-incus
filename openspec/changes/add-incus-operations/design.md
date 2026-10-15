@@ -33,7 +33,7 @@ Alternative: write tools directly against TamaMCP. That would tie a future REST 
 
 ### 2. Host binding owns trust
 
-A host implements `Opsmaru.Incus.Operations.Host` callbacks that, for an authenticated caller from the protocol context, return the trusted `Opsmaru.Incus.Connection` and `Opsmaru.Context` to use, and authorize the operation and input. The host decides which project(s) a caller may use; operations pass native project selection from input only after host authorization. Input fields can never select a socket, URL, credential, owner or host path. Missing or failing host callbacks deny before any backend access.
+A host implements `Opsmaru.Incus.Operations.Host` callbacks that, for an authenticated caller from the protocol context, return the trusted `Opsmaru.Incus.Connection` and `Opsmaru.Incus.Context` to use, and authorize the operation and input. The host decides which project(s) a caller may use; operations pass native project selection from input only after host authorization. Input fields can never select a socket, URL, credential, owner or host path. Missing or failing host callbacks deny before any backend access.
 
 Scopes follow the planned Macus/Opsmaru split: `incus.read` for inspection, `incus.write` for instance/state/image/snapshot mutation, `incus.exec` for guest exec, `incus.delete` for deletion and destructive restore. Destructive operations additionally require an explicit confirmation input that names the affected resource; inferred consent is never accepted.
 

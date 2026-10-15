@@ -8,8 +8,7 @@ defmodule Opsmaru.Incus.OCI do
   `image_file/3` delivers converted binary metadata/rootfs to acknowledged sinks.
   Registry authentication and installed conversion remain host acceptance gates.
   """
-  alias Opsmaru.Context
-  alias Opsmaru.Incus.{Connection, Discovery, Error, HTTP, Model, NativeInput, Response}
+  alias Opsmaru.Incus.{Connection, Context, Discovery, Error, HTTP, Model, NativeInput, Response}
   alias Opsmaru.Incus.OCI.AdapterCall
   @enforce_keys [:connection, :context, :adapter, :config]
   defstruct [:connection, :context, :adapter, :config, cache: %{}]

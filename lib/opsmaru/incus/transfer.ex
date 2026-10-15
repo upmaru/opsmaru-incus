@@ -8,8 +8,8 @@ defmodule Opsmaru.Incus.Transfer do
   replayed. All sockets belong to a temporary local worker and close on error,
   deadline, completion or caller exit. Source/destination files stay host-owned.
   """
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, Response, SimpleStreams, Transport}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Context, Error, Response, SimpleStreams, Transport}
   defstruct [:http_status, :headers, :bytes, :result]
 
   def download(client, path, sink, headers \\ []) when is_function(sink, 1),

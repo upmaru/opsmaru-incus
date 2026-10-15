@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.PrivateImageReferenceTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Images, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Images, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
   @driver Path.expand("../.integration/incus-private-image-driver", __DIR__)
   @secret "private+/token? é&="

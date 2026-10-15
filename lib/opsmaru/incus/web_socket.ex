@@ -5,8 +5,8 @@ defmodule Opsmaru.Incus.WebSocket do
   are visible; local closure never implies backend cancellation.
   """
   use GenServer
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, HTTP, Response, Transport, Upgrade}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Context, Error, HTTP, Response, Transport, Upgrade}
   alias Opsmaru.Incus.HTTP.Response, as: HTTPResponse
   defstruct [:pid, :ref]
 

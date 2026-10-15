@@ -8,8 +8,9 @@ defmodule Opsmaru.Incus.StreamsTest do
   """
   use ExUnit.Case, async: false
 
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Response, Server, Streams}
+  alias Opsmaru.Incus
+
+  alias Opsmaru.Incus.{Connection, Context, Error, Response, Server, Streams}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
 
   @reference_dir Path.expand("reference", __DIR__)

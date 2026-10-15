@@ -5,7 +5,7 @@ used by [Macus](https://github.com/upmaru/macus) and central
 [Opsmaru](https://github.com/upmaru/opsmaru).
 
 - **Pure library.** OTP application `:opsmaru_incus`, modules `Opsmaru.Incus.*`,
-  `Opsmaru.Context` and `Opsmaru.ClientSupervisor`. There is no application
+  `Opsmaru.Incus.Context` and `Opsmaru.Incus.ClientSupervisor`. There is no application
   callback: depending on it starts no process, listener, state or backend
   connection.
 - **Explicit connections.** Hosts pass immutable Unix-socket or verified HTTPS

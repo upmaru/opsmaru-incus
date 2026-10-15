@@ -1,4 +1,4 @@
-defmodule Opsmaru.Context do
+defmodule Opsmaru.Incus.Context do
   @moduledoc """
   Trusted host binding for a direct library call. This is not authentication.
 
@@ -48,6 +48,6 @@ defmodule Opsmaru.Context do
   def authorize(_, _), do: {:error, :owner_mismatch}
 end
 
-defimpl Inspect, for: Opsmaru.Context do
-  def inspect(_, _), do: "#Opsmaru.Context<host binding redacted>"
+defimpl Inspect, for: Opsmaru.Incus.Context do
+  def inspect(_, _), do: "#Opsmaru.Incus.Context<host binding redacted>"
 end

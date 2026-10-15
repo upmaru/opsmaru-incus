@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.VolumeUpgradeReferenceTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, RawChannel, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, RawChannel, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
   @driver Path.expand("../.integration/incus-volume-upgrade-driver", __DIR__)
   @initial <<0, 255, 128>>

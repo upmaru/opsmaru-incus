@@ -4,8 +4,8 @@ defmodule Opsmaru.Incus.ImageInstances do
   require the host to approve the exact verified HTTPS source origin. No
   advertised address fallback, mutation replay or automatic operation wait.
   """
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, Images, Model, NativeInput, Operation}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Context, Error, Images, Model, NativeInput, Operation}
 
   def create(target, source, image, request, opts \\ []),
     do: issue(target, source, image, "CreateInstance", %{}, "InstancesPost", request, opts)

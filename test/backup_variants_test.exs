@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.BackupVariantsTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Files, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Files, Server}
   alias Opsmaru.TestSupport.HTTPFixture
 
   test "native volume/bucket archive handoffs and direct backup POST remain binary and bounded" do

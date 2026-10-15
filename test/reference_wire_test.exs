@@ -2,6 +2,7 @@ defmodule Opsmaru.Incus.ReferenceWireTest do
   use ExUnit.Case, async: false
 
   alias Opsmaru.Incus.Connection
+  alias Opsmaru.Incus.Context
   alias Opsmaru.TestSupport.HTTPFixture
   alias Opsmaru.TestSupport.TLSIdentity
   alias Opsmaru.TestSupport.WireComparison
@@ -134,7 +135,9 @@ defmodule Opsmaru.Incus.ReferenceWireTest do
         )
 
       endpoint = HTTPFixture.endpoint(pid)
-      context = Opsmaru.Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end)
+
+      context =
+        Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end)
 
       connection =
         if transport == :gen_tcp do

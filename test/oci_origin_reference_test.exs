@@ -1,7 +1,6 @@
 defmodule Opsmaru.Incus.OCIOriginReferenceTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.Context
-  alias Opsmaru.Incus.{Connection, Error, HTTP, OCI, RequestContext}
+  alias Opsmaru.Incus.{Connection, Context, Error, HTTP, OCI, RequestContext}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @info_driver Path.expand("../.integration/oci-origin-info-driver", __DIR__)
   @http_driver Path.expand("../.integration/oci-origin-http-driver", __DIR__)

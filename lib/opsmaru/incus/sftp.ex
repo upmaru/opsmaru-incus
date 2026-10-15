@@ -15,8 +15,8 @@ defmodule Opsmaru.Incus.SFTP do
   session releases its channel without deleting backend files or canceling Incus.
   """
   use GenServer
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Error, RawChannel, RequestContext, Transport}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Context, Error, RawChannel, RequestContext, Transport}
   alias Opsmaru.Incus.SFTP.{Handle, Packet}
   defstruct [:pid, :ref, :owner, :timeout, :lifetime, :request_context, :connection, :identity]
   @modes %{read: 1, write: 2, read_write: 3, append: 6, create: 27}

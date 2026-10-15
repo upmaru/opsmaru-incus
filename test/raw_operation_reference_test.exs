@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.RawOperationReferenceTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, Operation, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, Operation, Server}
   alias Opsmaru.TestSupport.HTTPFixture
   @driver Path.expand("../.integration/raw-operation-driver", __DIR__)
 

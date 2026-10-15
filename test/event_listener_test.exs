@@ -1,8 +1,8 @@
 defmodule Opsmaru.Incus.EventListenerTest do
   use ExUnit.Case, async: false
   import ExUnit.CaptureLog
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, EventListener, Model, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, EventListener, Model, Server}
   alias Opsmaru.TestSupport.{CleanupAssertions, HTTPFixture, WebSocketFixture}
   @driver Path.expand("../.integration/event-handlers-driver", __DIR__)
   @event %{"type" => "logging", "timestamp" => "2026-10-11T12:00:00Z", "metadata" => %{}}

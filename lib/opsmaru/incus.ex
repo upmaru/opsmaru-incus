@@ -7,9 +7,9 @@ defmodule Opsmaru.Incus do
   envelope metadata, error values and ETags; it is an explicit low-level call,
   not evidence of typed method parity. No mutations are automatically retried.
   """
-  alias Opsmaru.Context
   alias Opsmaru.Incus.API
   alias Opsmaru.Incus.Connection
+  alias Opsmaru.Incus.Context
   alias Opsmaru.Incus.Error
   alias Opsmaru.Incus.Images
   alias Opsmaru.Incus.RawChannel

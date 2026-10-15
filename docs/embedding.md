@@ -12,7 +12,7 @@ No Opsmaru code invokes host capabilities or owns Swift/Incus lifecycle.
 Configuration is per call, not a mutable global current remote:
 
 ```elixir
-context = Opsmaru.Context.new!(
+context = Opsmaru.Incus.Context.new!(
   owner: :macus,
   identity: verified_host_identity,
   ready?: fn -> MyHost.Identity.ready?() end,
@@ -43,12 +43,19 @@ failure prevents backend contact. Authorization belongs to the host; this
 context does not validate tokens. File references and identities are redacted
 from Inspect; keep raw configuration maps out of logs.
 
-Optionally add `{Opsmaru.ClientSupervisor, name: MyHost.Clients,
+Optionally add `{Opsmaru.Incus.ClientSupervisor, name: MyHost.Clients,
 max_children: 8}` to your host tree and explicitly call
-`Opsmaru.ClientSupervisor.async(MyHost.Clients, fn -> ... end)`. Capacity is
+`Opsmaru.Incus.ClientSupervisor.async(MyHost.Clients, fn -> ... end)`. Capacity is
 immediate failure, with no work queue or replay/recovery. A worker loss says
 nothing about backend cancellation. Your existing endpoint and runtime remain
 host-owned.
+
+The namespace-cleanup revision exposes both helpers under `Opsmaru.Incus`.
+Consumers adopting it update their context aliases and struct references to
+`Opsmaru.Incus.Context`, and supervisor child specifications/calls to
+`Opsmaru.Incus.ClientSupervisor`. Earlier revisions used top-level helpers under
+`Opsmaru`; the new revision supplies no legacy compatibility modules. Construction,
+readiness, owner isolation, redaction and explicit host supervision are unchanged.
 
 `mise run check` formats, compiles warning-free, runs strict Credo, the
 database-free fixture suite and strict OpenSpec validation. No database,
@@ -63,7 +70,7 @@ Pin an implemented immutable revision of this repository:
 
 ```elixir
 {:opsmaru_incus, git: "https://github.com/upmaru/opsmaru-incus.git",
- ref: "3c5d6b1f6a72a6dc73d999032eec6ae49be46a9c"}
+ ref: "465e901ad1d85796f6fc1e2941a04b92434ea8de"}
 ```
 
 `test/consumer/revision.txt` records the independently verified revision; its

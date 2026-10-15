@@ -12,7 +12,7 @@ successful MCP tool would establish complete declaration coverage.
 
 | Public API | Contract |
 | --- | --- |
-| `Opsmaru.Context.new!/1` | Host-supplied owner, verified identity, local readiness and private state/capability references; no provisioning or token verification |
+| `Opsmaru.Incus.Context.new!/1` | Host-supplied owner, verified identity, local readiness and private state/capability references; no provisioning or token verification |
 | `Connection.unix!/2`, `https!/2` | Passive immutable connection values; explicit project/member and resource budgets |
 | `Incus.connect/2` | Explicit authorized discovery; native version and extensions, bound connection/context |
 | `Discovery.connection_info/1`, `clustered?/1`, `agent?/1`, `require_authenticated/2` | Authorized passive discovery helpers and immutable native authenticated requirement; advertised addresses remain metadata |

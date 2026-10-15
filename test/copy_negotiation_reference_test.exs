@@ -1,8 +1,19 @@
 defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
   use ExUnit.Case, async: false
   import ExUnit.CaptureLog
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Copy, Error, ImageInstances, Migration, Operation, Server}
+  alias Opsmaru.Incus
+
+  alias Opsmaru.Incus.{
+    Connection,
+    Context,
+    Copy,
+    Error,
+    ImageInstances,
+    Migration,
+    Operation,
+    Server
+  }
+
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../.integration/copy-negotiation-driver", __DIR__)
   @extensions ~w(storage_api_local_volume_handling storage_api_remote_volume_handling storage_api_project storage_volume_project_move storage_api_volume_snapshots custom_volume_refresh custom_volume_refresh_exclude_older_snapshots container_push container_push_target container_only_migration container_incremental_copy virtual-machines container_snapshot_stateful_migration dependent cluster_migration_inconsistent_copy instance_allow_inconsistent_copy)

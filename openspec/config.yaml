@@ -1,7 +1,7 @@
 schema: spec-driven
 context: |
   opsmaru-incus is a pure Elixir library, OTP application :opsmaru_incus,
-  exposing Opsmaru.Incus, Opsmaru.Context and Opsmaru.ClientSupervisor. It has
+  exposing Opsmaru.Incus, Opsmaru.Incus.Context and Opsmaru.Incus.ClientSupervisor. It has
   no application callback and never starts processes, listeners, state or
   backend connections on load. It was extracted with history from
   upmaru/opsmaru on 2026-10-13 (source a00805d) together with the

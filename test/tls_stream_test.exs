@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.TLSStreamTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, RawChannel, Server, WebSocket}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, RawChannel, Server, WebSocket}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture}
 
   test "verified HTTPS upgrades preserve coalesced raw and WebSocket binary bytes" do

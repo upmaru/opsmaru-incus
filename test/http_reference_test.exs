@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.HTTPReferenceTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.{Context, Incus}
-  alias Opsmaru.Incus.{Connection, Error, HTTP, Server}
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, HTTP, Server}
   alias Opsmaru.Incus.HTTP.Response
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   alias Plug.Conn.Status
