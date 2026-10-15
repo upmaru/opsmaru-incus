@@ -1501,9 +1501,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkACL",
@@ -1816,9 +1817,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworksAllProjects",
@@ -1918,9 +1920,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/interface_method/InstanceServer.GetProfileNames",
@@ -1936,9 +1939,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/interface_method/InstanceServer.GetProfilesAllProjects",
@@ -1972,9 +1976,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/interface_method/InstanceServer.GetProjectAccess",
@@ -2008,9 +2013,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/interface_method/InstanceServer.GetProjectsWithFilter",
@@ -2044,9 +2050,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucket",
@@ -2207,9 +2214,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumeBlockNBDConn",
@@ -2306,9 +2314,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumesAllProjects",
@@ -2378,9 +2387,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolsWithFilter",
@@ -4703,9 +4713,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkACL",
@@ -5018,9 +5029,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworksAllProjects",
@@ -5145,9 +5157,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/method/ProtocolIncus.GetProfileNames",
@@ -5163,9 +5176,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/method/ProtocolIncus.GetProfilesAllProjects",
@@ -5199,9 +5213,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/method/ProtocolIncus.GetProjectAccess",
@@ -5235,9 +5250,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/method/ProtocolIncus.GetProjectsWithFilter",
@@ -5271,9 +5287,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucket",
@@ -5434,9 +5451,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumeBlockNBDConn",
@@ -5533,9 +5551,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumesAllProjects",
@@ -5605,9 +5624,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolsWithFilter",

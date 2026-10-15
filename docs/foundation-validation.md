@@ -1424,3 +1424,30 @@ results are recorded with this slice's draft PR.
 Local final canonical checks pass: 1025 tests, formatting, warning-free compile,
 strict Credo and all three strict OpenSpec changes. Reference checks pass the
 inventory/schema verifier and 188 native constants; coverage regenerates identically.
+
+
+## Initial-tool inspection contracts — 2026-10-15
+
+Strictly validated OpenSpec precedes this ten-pair batch. Twenty generated tests
+exercise list/get projects, profiles, networks, storage pools and custom-volume
+samples on Unix and verified mutual HTTPS. One hundred unchanged named-Go calls
+compare populated/empty DTOs, malformed known fields and native 403/404, routing
+and binding. The first fixture run incorrectly expected native list helpers to
+return an ETag; getters compare ETags directly, while list-header retention is
+checked independently, as is lossless unknown-field retention. No oracle changed.
+
+Every method independently verifies response-byte limits, declared extension
+rejection where applicable, local deadline/cancellation and actual peer EOF with
+one local GET. All 20 focused matrix tests pass. The manifest adds ten partial
+rows (22 -> 32) and one finite initial_inspection_v1 profile applied to ten verified
+method contracts, with required cases and anti-overclaim validator regressions.
+Coverage retains 1239 partial / 41 missing declarations, complete_port=false.
+Runtime and Go drivers remain unchanged; tools and backend acceptance are separate.
+Other query/type/field/error variants remain explicit gaps; task 3.9 is open.
+
+Final local canonical checks pass: 1046 tests, format, warning-free compile,
+strict Credo and all three strict OpenSpec changes. Post-review distinct pool/
+resource arguments pass all 28 focused matrix/validator tests. Reference checks
+pass the inventory/schema verifier and 188 constants. Coverage regeneration is
+identical; runtime, Go drivers and declaration IDs are unchanged. Pushed platform
+and immutable consumer results are recorded with the draft PR.
