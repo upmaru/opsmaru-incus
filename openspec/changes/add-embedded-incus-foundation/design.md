@@ -175,6 +175,28 @@ and declaration mappings partial; no runtime or polling-strategy changes are
 planned. Stop if this evidence slice exceeds a few hundred lines or requires
 new parser/runtime machinery.
 
+#### Multi-item slice: initial-tool inspection contracts (2026-10-15)
+
+Verify list/get projects, profiles, networks, storage pools and volumes as one
+coherent ten-pair batch. Reuse existing typed methods and unchanged Go driver;
+no runtime rewrite or operation/tool implementation is planned. Compare populated
+and empty results, known-field corruption, 403/404, host project/member and ETag
+on Unix and verified mutual HTTPS. Independently verify response-byte bounds,
+unavailable extensions, finite deadline, cancellation and peer cleanup without
+replay. Native typed DTO projections and lossless unknown fields are distinct.
+
+Expand the selected manifest 22 -> 32 partial pairs. Add an explicitly scoped
+fixture_verified inspection contract: ten named methods, catalogued queries,
+custom volume sample, both transports, required cases and evidence anchors.
+The validator must reject removed methods/cases/anchors, wrong scope attachment
+or any whole-endpoint/declaration completion claim. This is fixture evidence,
+not an exhaustive query/field/error matrix, real backend acceptance or automatic
+tool export. Keep filters/all-projects/other volume-type variants and all Go
+declaration gaps visible. Update the current checklist to count ten verified
+scoped contracts separately from 32 partial endpoints. Keep the batch data-driven
+within a few hundred new lines; stop if it requires a parser, runtime expansion
+or repeated corner-case/DoS repair rounds.
+
 #### Approved slice: conditional instance PATCH (2026-10-15)
 
 Add PatchInstance to the typed call catalogue for PATCH /1.0/instances/{name}.

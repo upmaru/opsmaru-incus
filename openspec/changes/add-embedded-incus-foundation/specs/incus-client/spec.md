@@ -39,6 +39,11 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **WHEN** the initial 21 priority endpoint/method pairs are checked
 - **THEN** each pair has unchanged pinned REST provenance and explicit supported scope, client/evidence links and gaps; native endpoint wait and polling wait evidence remain distinct with scoped gated-body/lifetime evidence and remaining secret/cluster/backend gaps visible, and selected coverage cannot imply complete REST or declaration parity
 
+#### Scenario: Bounded inspection contracts
+
+- **WHEN** the ten initial-tool list/get methods have typed Unix and mutual-HTTPS comparisons plus independent bound/lifetime evidence
+- **THEN** the manifest may record their explicit fixture-verified scope and required cases while whole endpoint and declaration statuses remain partial, unsupported variants and backend acceptance remain visible, and removed methods/cases/evidence fail validation
+
 ### Requirement: Truthful backend compatibility
 
 Version, extension and live backend capability checks SHALL precede operations requiring those capabilities. Unsupported behavior SHALL return an explicit compatibility failure. Host limitations MUST NOT conceal missing client implementation.

@@ -2,6 +2,8 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
   @moduledoc false
   import ExUnit.Assertions
 
+  @inspection ~w(GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume)
+
   # This validates evidence links and provenance, not protocol correctness.
   def validate!(manifest, native) do
     pin = Jason.decode!(File.read!("priv/incus/reference.json"))
@@ -17,7 +19,7 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     assert manifest["inventory_complete"] == false
     assert manifest["complete_port"] == false
     assert manifest["catalogue_contracts"] == ~w(query extension guards body model result)
-    assert length(manifest["entries"]) == 22
+    assert length(manifest["entries"]) == 32
     pairs = Enum.map(manifest["entries"], &pair/1)
     assert length(Enum.uniq(pairs)) == length(pairs), "duplicate endpoint pair"
     native_pairs = MapSet.new(native["pairs"], &normalize/1)
@@ -39,10 +41,46 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
       end
     end
 
+    inspection!(manifest)
+
     wait = Enum.find(manifest["entries"], &String.ends_with?(&1["path"], "/wait"))
     assert wait["status"] == "partial" and wait["method"] == "GetOperationWait"
     assert wait["variants"] == ["GetOperationWaitSecret"], "missing native secret-wait variant"
     :ok
+  end
+
+  defp inspection!(manifest) do
+    contract = get_in(manifest, ["fixture_contracts", "initial_inspection_v1"])
+    assert is_map(contract), "missing inspection contract"
+
+    assert Map.keys(manifest["fixture_contracts"]) == ["initial_inspection_v1"],
+           "unknown inspection contract"
+
+    assert contract["status"] == "fixture_verified", "invalid inspection contract status"
+
+    assert Enum.sort(contract["methods"] || []) == Enum.sort(@inspection),
+           "missing inspection contract methods"
+
+    assert contract["queries"] == "catalogue_only" and contract["volume_types"] == ["custom"],
+           "invalid inspection contract scope"
+
+    assert contract["transports"] == ["unix", "mutual_https"],
+           "missing inspection contract transport"
+
+    assert contract["cases"] ==
+             ~w(populated empty metadata_type_rejection native_403 native_404 response_bound extensions_when_required deadline cancellation),
+           "missing inspection contract cases"
+
+    assert contract["evidence"] == ["inspection_contract"], "missing inspection contract evidence"
+
+    for row <- manifest["entries"] do
+      expected = if row["method"] in @inspection, do: "initial_inspection_v1"
+      assert row["verified_scope"] == expected, "invalid inspection contract attachment"
+
+      if expected,
+        do:
+          assert("inspection_contract" in row["evidence"], "missing inspection contract evidence")
+    end
   end
 
   defp clients!(manifest, row) do

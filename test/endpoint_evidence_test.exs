@@ -31,7 +31,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     %{native: Jason.decode!(out)}
   end
 
-  test "22 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "32 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -41,11 +41,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                ~w(GetInstances CreateInstance GetInstance UpdateInstance PatchInstance DeleteInstance
                GetInstanceState UpdateInstanceState GetInstanceSnapshots CreateInstanceSnapshot
                GetInstanceSnapshot DeleteInstanceSnapshot GetImages GetImage DeleteImage
-               GetOperations GetOperation DeleteOperation GetOperationWait ExecInstance)
+               GetOperations GetOperation DeleteOperation GetOperationWait ExecInstance
+               GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork
+               GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
-             "partial" => 22
+             "partial" => 32
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -56,6 +58,50 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              "partial" => 1239,
              "missing" => 41
            }
+  end
+
+  test "rejects incomplete or overclaimed inspection contracts", %{native: native} do
+    path = ["fixture_contracts", "initial_inspection_v1"]
+
+    for {field, value} <- [
+          {"methods", ["GetProject"]},
+          {"cases", ["populated"]},
+          {"transports", ["unix"]},
+          {"evidence", []},
+          {"status", "complete"},
+          {"queries", "all"},
+          {"volume_types", ["all"]}
+        ] do
+      changed = put_in(@manifest, path ++ [field], value)
+
+      assert_raise ExUnit.AssertionError, ~r/inspection contract/, fn ->
+        EndpointEvidence.validate!(changed, native)
+      end
+    end
+
+    [first | rest] = @manifest["entries"]
+
+    for changed <- [
+          put_in(@manifest, ["fixture_contracts", "unsupported"], %{"status" => "complete"}),
+          %{
+            @manifest
+            | "entries" => [Map.put(first, "verified_scope", "initial_inspection_v1") | rest]
+          }
+        ] do
+      assert_raise ExUnit.AssertionError, ~r/inspection contract/, fn ->
+        EndpointEvidence.validate!(changed, native)
+      end
+    end
+
+    entries = Enum.map(@manifest["entries"], &Map.delete(&1, "verified_scope"))
+
+    assert_raise ExUnit.AssertionError, ~r/inspection contract/, fn ->
+      EndpointEvidence.validate!(%{@manifest | "entries" => entries}, native)
+    end
+
+    assert_raise ExUnit.AssertionError, ~r/inspection contract/, fn ->
+      EndpointEvidence.validate!(Map.delete(@manifest, "fixture_contracts"), native)
+    end
   end
 
   test "rejects removed native secret-wait variants", %{native: native} do

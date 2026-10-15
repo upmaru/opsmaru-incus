@@ -313,7 +313,7 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query variants; 22 pairs are currently in the checked evidence
+pairs plus 46 query variants; 32 pairs are currently in the checked evidence
 manifest, all partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
@@ -655,3 +655,13 @@ omission/null/false/empty values are preserved, Incus owns merging, and success
 is an empty synchronous response rather than an operation. Dispatched failures
 remain uncertain without replay. The endpoint is partial: unconditional PATCH,
 full field/cluster behavior and real-daemon merge acceptance remain unverified.
+
+
+The initial-tool inspection profile now fixture-verifies ten existing list/get
+methods across projects, profiles, networks, storage pools and custom-volume
+samples. See `fixture_contracts.initial_inspection_v1` in the endpoint manifest
+for required cases and scope. All 32 selected whole endpoints remain partial;
+only these ten method contracts have this explicit profile. Catalogue queries,
+Unix/mutual HTTPS, DTO results, 403/404/type rejection, declared extension checks,
+byte bounds and deadline/cancellation peer cleanup have evidence. Other selectors,
+volume types, fields, tool policy and backend acceptance remain separate.
