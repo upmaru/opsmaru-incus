@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.EndpointEvidenceTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.TestSupport.EndpointEvidence
+  alias Opsmaru.TestSupport.{EndpointEvidence, EndpointInventory}
   @manifest Jason.decode!(File.read!("priv/incus/endpoint-evidence.json"))
 
   setup_all do
@@ -29,6 +29,39 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     assert status == 0, out
     {out, 0} = System.cmd(driver, [module["Dir"]])
     %{native: Jason.decode!(out)}
+  end
+
+  test "full inventory classifies every REST view and reconciles server registrations", %{
+    native: native
+  } do
+    audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
+    assert :ok = EndpointInventory.validate!(audit, native)
+
+    [first | rest] = audit["entries"]
+    [view | other_views] = first["documented_views"]
+    views = [%{view | "selectors" => %{"recursion" => "99"}} | other_views]
+    wrong_parameters = [%{view | "query_parameters" => ["absent"]} | other_views]
+
+    for changed <- [
+          %{audit | "entries" => rest},
+          %{audit | "entries" => [%{first | "documented_views" => wrong_parameters} | rest]},
+          %{audit | "entries" => [%{first | "documented_views" => views} | rest]},
+          put_in(audit, ["helpers", "connect", "client"], ["Opsmaru.Incus", "absent", 2]),
+          put_in(audit, ["baseline_evidence"], ["test/resource_slice_test.exs", "absent anchor"]),
+          %{audit | "entries" => [first, first | rest]},
+          put_in(audit, ["entries"], [Map.put(first, "methods", ["AbsentMethod"]) | rest]),
+          put_in(audit, ["entries"], [Map.put(first, "backlog", "absent") | rest]),
+          put_in(audit, ["entries"], [Map.put(first, "behavior_complete", true) | rest]),
+          put_in(audit, ["entries"], [Map.put(first, "documented_views", []) | rest]),
+          %{audit | "server_sources" => %{}},
+          %{audit | "supplemental_server_entries" => []},
+          %{audit | "behavior_complete" => true},
+          %{audit | "stream_contracts" => []}
+        ] do
+      assert_raise ExUnit.AssertionError, fn ->
+        EndpointInventory.validate!(changed, native)
+      end
+    end
   end
 
   test "32 selected pairs have pinned REST provenance and specific existing evidence", %{

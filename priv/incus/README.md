@@ -40,3 +40,13 @@ unchanged official typed method. The coverage manifest accounts for all 1,280
 entries, including missing declarations and partial interface/model/helper
 mappings. Transferred fixture hashes describe the initial transfer; subsequent
 Opsmaru adaptations are tracked in Git, not claimed identical to Macus.
+
+`endpoint-inventory.json` is the full audit ledger: all 247 documented pairs,
+293 query/access views, explicit helper/custom mappings, public server registration
+hashes/differences, missing typed implementations and finite B01–B12/S01–S12
+obligations. `classification_complete=true` means no unclassified source rows,
+not verified behavior. `endpoint-evidence.json` remains the selected 32-pair
+evidence ledger with ten verified inspection scopes. See
+[`task-3-9-backlog.md`](../../docs/task-3-9-backlog.md) for counts and exits.
+The canonical endpoint test uses Go's standard AST parser and the existing YAML
+parser against the unchanged pin; Go is development-only and never a sidecar.

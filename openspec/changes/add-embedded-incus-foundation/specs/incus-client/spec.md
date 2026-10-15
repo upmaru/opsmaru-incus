@@ -44,6 +44,11 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **WHEN** the ten initial-tool list/get methods have typed Unix and mutual-HTTPS comparisons plus independent bound/lifetime evidence
 - **THEN** the manifest may record their explicit fixture-verified scope and required cases while whole endpoint and declaration statuses remain partial, unsupported variants and backend acceptance remain visible, and removed methods/cases/evidence fail validation
 
+#### Scenario: Full endpoint inventory classification
+
+- **WHEN** the full classification audit is validated
+- **THEN** every pinned documented verb/path, query/access view and declared query parameter is represented, public server registration differences and helper/subtype mappings remain explicit, and every unresolved contract has a named finite backlog assignment; classification completeness does not certify behavior, approve exclusions, change tool exports or complete task 3.9
+
 ### Requirement: Truthful backend compatibility
 
 Version, extension and live backend capability checks SHALL precede operations requiring those capabilities. Unsupported behavior SHALL return an explicit compatibility failure. Host limitations MUST NOT conceal missing client implementation.

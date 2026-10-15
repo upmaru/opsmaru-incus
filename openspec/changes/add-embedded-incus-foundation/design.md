@@ -129,6 +129,44 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: complete endpoint classification audit (2026-10-15)
+
+Create a separate full classification ledger alongside the selected endpoint
+evidence manifest. Account for all 247 documented verb/path pairs and all 293
+documented operation views (46 additional variants), preserving their literal
+source keys. Compare public v1.0 server registrations using Go's standard AST
+parser, not a handwritten source parser. Retain documentation/server differences
+and supplemental server-only pairs explicitly; do not patch the pinned source.
+Public-access documentation views are not automatically literal query parameters.
+
+For every pair record exact catalogue methods or explicit helper mappings,
+subtype limitations, existing fixture evidence, missing typed implementation or
+source discrepancies, and one named backlog batch with finite exit criteria.
+Record each documented query/access view and its declared query parameters
+separately, including nine unmapped selectors on otherwise implemented routes;
+a route match never proves a query, body, error or streaming contract. Preserve
+the selected 32-pair evidence manifest and its ten verified inspection scopes.
+Validate exhaustive source coverage, duplicates, stale mappings, missing anchors,
+backlog assignments and accidental completion claims in the canonical checks.
+
+The backlog must distinguish missing implementation, evidence/contract work,
+source reconciliation and scope decisions. No new exclusion is approved by this
+audit: missing methods and unsupported variants remain closure blockers unless
+implemented and verified or explicitly approved by the user. Existing approved
+host-adapter, finite-lifetime, SFTP subset and caller-owned NBD boundaries remain.
+List non-REST streaming/helper contracts separately with finite obligations;
+installed adapters, real backend and Macus hardware remain separate acceptance.
+
+Use finite per-contract evidence criteria: declared supported selectors/fields,
+extension/routing/ETag behavior, native success and representative rejection,
+mutation acceptance/uncertainty/no replay and applicable stream/lifetime cleanup.
+Reuse existing evidence; do not demand every possible field/error cross-product.
+Only inventory classification may become complete in this slice. Behavioral
+completion, declaration parity, task 3.9 and tool export remain unchanged. Update
+the closure checklist and recommend the next implementation batch without
+implementing it. Keep new verifier logic bounded; large mechanical ledger data
+is audit output, not authorization for runtime/parser expansion.
+
 #### Approved slice: priority endpoint/method evidence (2026-10-14)
 
 Add a development-only, checked manifest for 21 priority verb/path pairs:

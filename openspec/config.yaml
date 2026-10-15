@@ -13,7 +13,9 @@ context: |
   v7.0.1 at 13f3992766142d5087fff2e362cd2e1a75294fe8. Coverage is tracked per
   Go client declaration in priv/incus/coverage.json; missing entries stay
   visible and block a complete-port claim. Task 3.9 instead closes against a
-  verified REST endpoint/method inventory, native streaming/upgrade contracts
+  verified REST endpoint/method inventory (classified exhaustively in
+  priv/incus/endpoint-inventory.json with finite backlog batches), native
+  streaming/upgrade contracts
   and client behavior required by add-incus-operations; task completion never
   implies Go declaration parity. Hosts supply connections, verified
   identity, readiness, OCI/SimpleStreams delta adapters, credentials and
