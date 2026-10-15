@@ -30,23 +30,41 @@ func run() error {
 		return err
 	}
 	var spec struct {
-		Paths map[string]map[string]any `yaml:"paths"`
+		Paths map[string]map[string]yaml.Node `yaml:"paths"`
 	}
 	if err := yaml.Unmarshal(data, &spec); err != nil {
 		return err
 	}
 	pairs := []string{}
+	queries := map[string][]string{}
 	for path, actions := range spec.Paths {
-		for verb := range actions {
+		for verb, node := range actions {
 			switch verb {
 			case "get", "post", "put", "patch", "delete", "head", "options":
-				pairs = append(pairs, strings.ToUpper(verb)+" "+path)
+				key := strings.ToUpper(verb) + " " + path
+				pairs = append(pairs, key)
+				var action struct{ Parameters []struct{ In, Name string } }
+				if err := node.Decode(&action); err != nil {
+					return err
+				}
+				queries[key] = []string{}
+				for _, parameter := range action.Parameters {
+					if parameter.In == "query" {
+						queries[key] = append(queries[key], parameter.Name)
+					}
+				}
+				sort.Strings(queries[key])
 			}
 		}
 	}
 	sort.Strings(pairs)
+	routes, hashes, err := serverRoutes(os.Args[1])
+	if err != nil {
+		return err
+	}
 	digest := sha256.Sum256(data)
 	return json.NewEncoder(os.Stdout).Encode(map[string]any{
 		"source": "doc/rest-api.yaml", "sha256": hex.EncodeToString(digest[:]), "pairs": pairs,
+		"server_routes": routes, "server_sources": hashes, "query_parameters": queries,
 	})
 }

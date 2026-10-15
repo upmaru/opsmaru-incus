@@ -1451,3 +1451,67 @@ resource arguments pass all 28 focused matrix/validator tests. Reference checks
 pass the inventory/schema verifier and 188 constants. Coverage regeneration is
 identical; runtime, Go drivers and declaration IDs are unchanged. Pushed platform
 and immutable consumer results are recorded with the draft PR.
+
+## Full endpoint classification audit — 2026-10-15
+
+After PR #11 merged at `7658fea`, synchronized develop and created
+`feature/incus-client-endpoint-inventory`. Strict OpenSpec validation precedes
+this audit's verifier work. The new full ledger accounts for all 247 documented
+pairs, 293 query/access views and all 269 catalogue descriptors. The unchanged
+reference REST hash is retained. A development-only standard Go AST extraction
+reconciles 246 public v1.0 registrations, including image suffix actions, with
+root discovery independently source-anchored. Internal/OS/UI/OIDC/gateway surfaces
+are outside this workload REST inventory.
+
+Classification: 183 exact catalogue pairs, five custom-only catalogue pairs,
+22 explicit helpers, 35 missing typed implementations, one equivalent volume
+collection POST and one documented repair-verb discrepancy. Native backup handlers
+reject non-custom types; literal custom method paths are not missing general
+backup implementations. The server actually registers POST repair, tracked as a
+supplemental missing typed mutation. The 36 confirmed implementation gaps and the
+additional equivalent-route decision are distinct from declaration counters.
+
+B01–B12 partition the documented pairs; S01–S12 record overlapping stream/helper
+obligations and approved host/protocol boundaries. Every documented view retains
+selector/access mapping, all declared query parameters and unresolved evidence.
+Eight network filter selectors and console-log type are explicit option gaps
+on existing routes; two HEAD path gaps overlap the missing HEAD implementations. Public documentation views do
+not invent a public wire query flag. Finite certification criteria replace broad
+matrix boilerplate; no exclusion, endpoint support or completion is approved.
+The selected 32-pair manifest and its ten fixture-verified inspection scopes remain
+separate. Coverage adds a full-inventory pointer with every declaration entry
+unchanged. No library runtime, oracle source, tools or real backend changed.
+
+Focused inventory tests pass, including removed/duplicated rows/views, stale
+method/server sources, missing helper/test/backlog links and completion overclaims.
+Strict Credo passes after splitting the audit checks into bounded functions.
+
+Local canonical checks pass: 1047 tests, formatting, warnings-as-errors compile,
+strict Credo and all three strict OpenSpec changes. The final parameter audit
+passes all nine focused endpoint tests; reference checks verify the inventory/
+schema tooling and 188 constants. Coverage regeneration changes only the added
+inventory pointer, with declaration entries identical to the merged baseline.
+Pushed platform and immutable-consumer results are recorded on this slice's draft PR.
+
+
+## PR #12 Greptile audit corrections — 2026-10-15
+
+Greptile's 4/5 review identified two actionable integrity bugs. Permanent
+regressions reproduced route-wide selector borrowing and missing copied-scope
+validation before either fix. Parameter classification now uses only methods
+matched to the current operation view. Twenty-one query classifications change,
+exposing 19 additional distinct endpoint/selector gaps: 28 across 20 implemented
+routes (38 documented view/selector obligations), plus two HEAD path obligations
+already included in the 36 missing typed implementations. The prior nine-gap
+summary above is superseded by the corrected backlog and checklist.
+
+Each full-ledger verified_scope now equals its selected evidence entry. Removing
+or altering an inspection scope, or assigning it to an unrelated row, fails the
+new mutation regressions. Eleven focused endpoint tests pass. OpenSpec is updated
+and strictly validated; runtime, catalogue, reference sources and declaration
+statuses remain unchanged. Both fixes stay within audit/evidence bookkeeping.
+
+Corrected local canonical checks pass: 1049 tests, zero failures, format,
+warning-free compile, strict Credo and all three strict OpenSpec changes.
+Reference checks pass, and coverage regeneration is byte-identical. Hosted
+both-platform/immutable-consumer and fresh Greptile results are recorded on PR #12.

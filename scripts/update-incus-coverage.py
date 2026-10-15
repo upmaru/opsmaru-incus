@@ -172,5 +172,5 @@ for entry in inv['entries']:
  entries.append(row)
 for row in entries:
  for path in row['evidence']: assert (root/path).is_file(), path
-(root/'priv/incus/coverage.json').write_text(json.dumps(dict(reference_revision=inv['reference']['revision'],complete_port=False,endpoint_evidence='priv/incus/endpoint-evidence.json',entries=entries),indent=2)+'\n')
+(root/'priv/incus/coverage.json').write_text(json.dumps(dict(reference_revision=inv['reference']['revision'],complete_port=False,endpoint_evidence='priv/incus/endpoint-evidence.json',endpoint_inventory='priv/incus/endpoint-inventory.json',entries=entries),indent=2)+'\n')
 print(f"{len(methods)} JSON method descriptors (named Go methods plus explicit REST slices); {sum(x['status']=='partial' for x in entries)} partial declaration mappings; {sum(x['status']=='missing' for x in entries)} missing declarations; complete_port=false")

@@ -5,24 +5,24 @@ closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
-The declaration manifest currently has 1239 partial and 41 missing entries.
-Declarations include Go methods, interfaces, types, constants and transport
-abstractions; these counts are not endpoint counts or complete parity evidence.
-No partial mapping is promoted to completion by this continuation.
+The finite behavioral backlog is in [task-3-9-backlog.md](task-3-9-backlog.md),
+backed by the exhaustive [endpoint classification](../priv/incus/endpoint-inventory.json).
+Go declarations remain separately tracked in `priv/incus/coverage.json`; their
+status is not a measure of endpoint completion and is unchanged by this audit.
 
 On 2026-10-13 the user approved task 3.9 completion against a verified Incus
 REST endpoint/method inventory, native streaming/upgrade contracts and the public
 client behavior required by `add-incus-operations`. Literal Go declaration parity
 is a separate claim: keep this declaration ledger and `complete_port=false`
-truthful even when the task's behavioral gate is eventually satisfied. The 268
-JSON method descriptors currently cover 188 distinct verb/path pairs; these are
-not yet a verified complete REST inventory. Required protocol/option/error
-behavior and explicit supported scope still need evidence.
+truthful even when the task's behavioral gate is eventually satisfied. The 269
+JSON method descriptors map to 189 distinct catalogue routes. The full classified
+REST inventory now includes all 247 documented pairs and one supplemental server
+POST repair row; mapping a route does not certify its supported contract.
 
 ## Current behavioral checklist — audited 2026-10-15
 
 This checklist started at `47b1918` (PR #9) and now includes the approved
-conditional instance PATCH and ten-method inspection slices. Sections below it are chronological evidence and may describe gaps since superseded.
+conditional instance PATCH, ten-method inspection and full classification slices. Sections below it are chronological evidence and may describe gaps since superseded.
 A checked item means the stated bounded behavior has evidence, not that its
 entire endpoint, protocol or Go declaration is complete. The audit itself changed no support status; the new bounded PATCH
 implementation adds one partial endpoint without changing declaration parity or tool exports.
@@ -65,9 +65,9 @@ No percentage of task completion can be derived from either counter.
 
 Read-only extraction of the unchanged pinned `doc/rest-api.yaml` through
 `test/reference/endpoints/main.go` gives **293 documented operations**, including
-**46 additional query-qualified variants**, or **247 distinct verb/path pairs**.
+**46 additional query/access views**, or **247 distinct verb/path pairs**.
 Normalize parameter names and separate the query string before counting pairs;
-retain the query variants as separate behavior obligations. REST SHA-256 is
+retain query/access views as separate behavior obligations. REST SHA-256 is
 `7b4e07375da92f30e7eadf766f1bbdf40bf9968ee305a16be1afe5998e72e91f`.
 This is the pinned document's inventory, not a claim that every server route is
 fully documented or that matching a route establishes behavior parity.
@@ -101,34 +101,42 @@ volume-type parameter. They require subtype-aware mapping; they are not six
 missing implementations. Some routes absent from the JSON catalogue are handled
 by explicit helpers, including discovery, events, operation WebSocket, binary
 transfers and raw SFTP/NBD. Consequently the **64 pairs without an exact JSON
-catalogue match are classification work, not 64 proven missing implementations**.
+catalogue match are not 64 missing implementations**: the completed classification
+resolves them as five custom-only catalogue mappings, 22 explicit helpers, 35
+missing typed implementations, one equivalent POST route and one repair mismatch.
 
-- [ ] Expand the checked inventory to all 247 documented pairs and retain all
-  46 query variants. Classify catalogue methods, explicit helpers, subtype
-  restrictions, missing behavior and proposed unsupported scope individually.
-  Reconcile document/server/helper differences against unchanged pinned sources.
+- [x] Classify all 247 documented pairs and retain all 293 query/access views,
+  accounting for 46 additional variants. The full ledger separately records
+  catalogue/helper/custom mappings, 35 documented missing typed implementations,
+  the actual server POST repair gap, source differences and finite B01–B12 exits.
+- [x] Reconcile all public v1.0 registrations, including image suffix actions;
+  retain root discovery and incorrect documented GET repair explicitly. Public
+  access views are not automatically wire query flags.
 - [x] Add and fixture-verify the ten initial-tool inspection contracts: list/get
   projects, profiles, networks, storage pools and custom-volume samples. The
   `initial_inspection_v1` profile records exact methods, catalogue-only queries,
   both transports, required cases and evidence. No methods were reimplemented.
 - [x] Implement and fixture-verify conditional instance PATCH: field presence,
   explicit ETag and sync result, native rejection, uncertainty and local cleanup.
-- [ ] Classify the other **24 PATCH pairs** and remaining instance PATCH scope.
-  Generic raw HTTP acceptance is not typed endpoint evidence.
-- [ ] Classify file HEAD for instances and storage volumes: neither has a typed
-  metadata-only helper. Existing file GET and generic HEAD transport checks do
-  not establish these two endpoint contracts.
-- [ ] Classify recorded exec output list/download/delete, root discovery `GET /`,
-  instance debug repair, volume listing by type, bitmap export, and bucket
-  backup list/get/rename. No dedicated public typed wrappers were found for these
-  documented paths. They need implementation or an explicit supported-scope
-  decision; this audit does not approve dropping them.
-- [ ] Define and validate a finite endpoint completion contract: supported query
-  and body variants, omission/empty/null semantics, extensions, routing, ETags,
-  success/result shape, representative native rejection, uncertain dispatch and
-  applicable local cleanup. Record excluded behavior and its approval. The current
-  validator accepts only partial/missing, so endpoint completion needs a separate
-  reviewed representation; declaration statuses must not be promoted with it.
+- [x] Classify the other **24 PATCH pairs** (B05), file HEAD (B06), recorded
+  exec output (B07), five storage methods (B08), root discovery (B10) and actual
+  POST repair (B12). These require implementation/evidence or explicit approval;
+  the audit approves no exclusions. Conditional instance PATCH remains B04.
+- [x] Classify every query parameter declared inside the REST operations. Track
+  **28 distinct endpoint/selector gaps across 20 existing routes** separately,
+  using only each view's matched methods. The previous nine-gap count hid 19
+  obligations by borrowing other recursion views. Exact view assignments are in
+  the finite backlog; two HEAD path selectors overlap B06.
+- [x] Guard copied verified_scope values against selected evidence entries;
+  removed, altered or unrelated fixture-scope claims fail validation.
+- [x] Define finite certification criteria and assign all endpoint/stream
+  obligations in [task-3-9-backlog.md](task-3-9-backlog.md).
+- [ ] Complete required B01–B12 contracts and S01–S12 streaming obligations;
+  classification is complete, behavioral certification remains open. Preserve
+  already fixture-verified scopes and do not infer completion from source links.
+- [ ] Add reviewed completion records for finite supported contracts. The selected
+  evidence validator continues to accept only partial/missing endpoint status;
+  no endpoint/declaration is promoted by this audit.
 
 ### The selected 32 pairs: verified scope and next closure obligation
 
@@ -183,11 +191,11 @@ file/image transfers. They remain foundation classification obligations.
 | OCI host-adapter handoff | `OCI`; `test/oci_test.exs`, `test/oci_origin_reference_test.exs` | All 20 concrete methods have partial mappings. Explicit adapter/native projections/bounds/cleanup have evidence; installed conversion/authentication and unclassified cache/options remain separate. |
 | SimpleStreams HTTPS and host delta | `SimpleStreams`; `test/simple_streams_test.exs` | All 20 concrete methods have partial mappings. Catalog/architecture/formats/checksums/full-file/delta/bounds/cleanup have evidence; refresh/cache/fallback variants and installed converter acceptance remain separate. |
 
-- [ ] Add these helper contracts and their exact routes/options to the checked
-  endpoint/stream inventory; source anchors alone must not certify completion.
-- [ ] Separate missing implementation, missing evidence, approved restrictions and
-  separately owned acceptance for every open row. No blanket “full matrix” item
-  may silently demand literal Go types or an unbounded protocol port.
+- [x] Map explicit helpers to all documented routes and assign S01–S12 finite
+  streaming obligations in the full inventory; source anchors do not certify completion.
+- [x] Separate missing implementation, contract/evidence work, source differences
+  and separately owned acceptance for every row. New scope exclusions still need
+  explicit approval; existing boundaries are retained. No blanket “full matrix” gate.
 - [ ] Finish independent review and canonical/both-platform/immutable-consumer
   checks for each implemented slice. Real Incus acceptance requires fresh explicit
   opt-in and isolated state; historical 4.3 and Macus hardware are separate gates.
@@ -214,7 +222,7 @@ remain recorded. Tool authorization, list/output limits and truncation are separ
 Progress: selected pairs 22 -> 32; fixture-verified inspection method contracts
 0 -> 10 across projects/profiles/networks/storage pools/volumes. Catalogue routes
 and descriptors are unchanged. Next prioritize bounded mutation-lifecycle closure
-and remaining streaming/endpoint classification; retain the 41 declaration gaps.
+and the finite endpoint/stream backlog; declaration status is separate.
 
 ### Conditional instance PATCH — approved and fixture-verified
 
@@ -236,7 +244,7 @@ selected partial pairs 21 -> 22, uncatalogued PATCH pairs 25 -> 24. Go declarati
 remain 1239 partial / 41 missing, complete_port=false, and task 3.9 remains open.
 Unconditional PATCH, other PATCH routes and full field/error/cluster/backend
 matrices remain gaps. The inspection batch is recorded above; next prioritize bounded mutation-lifecycle
-closure and remaining stream classification.
+closure and the finite stream contracts.
 No tools, installed converter or real-backend acceptance is added.
 
 ## Historical evidence (chronological)
