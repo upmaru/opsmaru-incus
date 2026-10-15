@@ -32,7 +32,9 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
            "stale documented query parameters"
 
     server = Map.new(native["server_routes"], &{normalize(&1["pair"]), &1})
-    selected_keys = Enum.map(selected["entries"], &normalize(&1["verb"] <> " " <> &1["path"]))
+
+    selected_rows =
+      Map.new(selected["entries"], &{normalize(&1["verb"] <> " " <> &1["path"]), &1})
 
     assert Enum.frequencies_by(rows, & &1["backlog"]) == %{
              "B01" => 8,
@@ -51,13 +53,13 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
            "stale backlog partition"
 
     anchor!(audit["baseline_evidence"])
-    for row <- rows, do: row!(row, methods, audit, server, selected_keys)
+    for row <- rows, do: row!(row, methods, audit, server, selected_rows)
     extras!(audit, server, keys)
     links!(audit)
     :ok
   end
 
-  defp row!(row, methods, audit, server, selected_keys) do
+  defp row!(row, methods, audit, server, selected_rows) do
     key = row["pair"]
     exact = Enum.filter(methods, &(normalize(&1["verb"] <> " " <> &1["path"]) == key))
     custom = Enum.filter(methods, &(custom_pair(&1) == key and &1 not in exact))
@@ -82,8 +84,11 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     if custom != [],
       do: assert(row["restriction"] not in [nil, ""], "missing subtype restriction")
 
-    selected? = key in selected_keys
+    selected? = Map.has_key?(selected_rows, key)
     assert row["selected_evidence_pair"] == key == selected?
+
+    assert row["verified_scope"] == get_in(selected_rows, [key, "verified_scope"]),
+           "stale fixture scope"
 
     for view <- row["documented_views"],
         do: view!(view, key, linked, helper_ids, expected, audit["helpers"])
@@ -112,7 +117,7 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
           do: method["name"]
 
     assert view["methods"] == matching, "stale query mapping"
-    parameters!(view, linked, helper_ids, helpers)
+    parameters!(view, Enum.filter(linked, &(&1["name"] in matching)), helper_ids, helpers)
 
     obligation =
       cond do
@@ -126,7 +131,7 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     assert view["obligation"] == obligation, "misleading view obligation"
   end
 
-  defp parameters!(view, linked, helper_ids, helpers) do
+  defp parameters!(view, matched_methods, helper_ids, helpers) do
     bindings =
       Map.new(view["query_parameters"], fn query ->
         kind =
@@ -135,7 +140,7 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
               "host_routing"
 
             Map.has_key?(view["selectors"], query) or
-                Enum.any?(linked, &Map.has_key?(&1["query"], query)) ->
+                Enum.any?(matched_methods, &Map.has_key?(&1["query"], query)) ->
               "catalogue_contract"
 
             Enum.any?(helper_ids, &(query in helpers[&1]["supported_queries"])) ->

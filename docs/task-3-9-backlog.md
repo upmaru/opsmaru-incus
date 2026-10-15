@@ -46,15 +46,43 @@ No source file in the pinned module was modified.
 - **1 discovery pair (B10):** `GET /`.
 - **1 actual repair mutation (B12):** `POST /1.0/instances/{name}/debug/repair`.
 
-The parameter audit also identifies **nine selector gaps on implemented routes**:
-`filter` on network ACLs, address sets, integrations, zones, zone records,
-forwards, load balancers and peers (B09), plus console-log `type` (B11/S07).
-They are recorded as `unmapped_selector`, not hidden under route matches.
-The two file HEAD `path` selectors are also unmapped but already included in B06.
-Each view retains every query parameter declared inside its REST operation,
-classified as host routing, catalogue, explicit helper query or unmapped selector.
-Selector-compatible method candidates do not establish public access or body
-semantics; those remain certification obligations.
+The corrected per-view parameter audit identifies **28 distinct endpoint/selector
+gaps across 20 implemented routes**. The original route-wide check reported nine:
+it incorrectly borrowed filter/all-projects support from other recursion views.
+There are 38 affected documented operation/selector views on these routes; public
+and recursion views can repeat an endpoint/selector obligation. The two file HEAD
+`path` selectors add two more views but already overlap B06's missing methods.
+
+| Implemented endpoint | Unmapped selector in at least one documented view | Backlog |
+| --- | --- | --- |
+| `GET /1.0/certificates` | `filter` | B10 |
+| `GET /1.0/cluster/members` | `filter` | B10 |
+| `GET /1.0/images` | `all-projects`, `filter` | B02 |
+| `GET /1.0/instances` | `all-projects`, `filter` | B02 |
+| `GET /1.0/instances/{}/console` | `type` | B11 |
+| `GET /1.0/network-acls` | `all-projects`, `filter` | B09 |
+| `GET /1.0/network-address-sets` | `all-projects`, `filter` | B09 |
+| `GET /1.0/network-integrations` | `filter` | B09 |
+| `GET /1.0/network-zones` | `all-projects`, `filter` | B09 |
+| `GET /1.0/network-zones/{}/records` | `filter` | B09 |
+| `GET /1.0/networks` | `all-projects`, `filter` | B02 |
+| `GET /1.0/networks/{}/forwards` | `filter` | B09 |
+| `GET /1.0/networks/{}/load-balancers` | `filter` | B09 |
+| `GET /1.0/networks/{}/peers` | `filter` | B09 |
+| `GET /1.0/operations` | `all-projects` | B02 |
+| `GET /1.0/profiles` | `all-projects`, `filter` | B02 |
+| `GET /1.0/projects` | `filter` | B02 |
+| `GET /1.0/storage-pools` | `filter` | B02 |
+| `GET /1.0/storage-pools/{}/buckets` | `all-projects`, `filter` | B08 |
+| `GET /1.0/storage-pools/{}/volumes` | `filter` | B02 |
+
+Every operation view retains its exact methods and parameter classifications in
+the full ledger. For example, names-only `GET /1.0/instances` lacks typed filter/
+all-projects options; its recursion=1 methods support them. Implementing an option
+on one view cannot close the other view's obligation. Host routing and explicit
+helper queries are classified separately. Selector-compatible candidates do not
+establish public access or body semantics. Copied verified scopes must exactly
+match the selected evidence entries, including absence on unrelated rows.
 
 No new exclusions are approved. Existing bounded implementations still need
 contract certification; this count must not imply that only 36 tests or changes

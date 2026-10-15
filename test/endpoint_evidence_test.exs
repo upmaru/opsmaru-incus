@@ -64,6 +64,64 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
+  test "query parameters cannot borrow support from another recursion view", %{native: native} do
+    audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
+
+    gaps =
+      for row <- audit["entries"],
+          not String.starts_with?(row["pair"], "HEAD "),
+          view <- row["documented_views"],
+          {query, "unmapped_selector"} <- view["query_classification"],
+          do: {row["pair"], query}
+
+    assert gaps |> Enum.uniq() |> length() == 28
+    assert length(gaps) == 38
+    row = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/instances"))
+    names = Enum.find(row["documented_views"], &(&1["operation"] == "GET /1.0/instances"))
+    assert names["methods"] == ["GetInstanceNames"]
+    assert names["query_classification"]["filter"] == "unmapped_selector"
+    assert names["query_classification"]["all-projects"] == "unmapped_selector"
+
+    full = Enum.find(row["documented_views"], &String.ends_with?(&1["operation"], "?recursion=1"))
+    assert full["query_classification"]["filter"] == "catalogue_contract"
+    assert full["query_classification"]["all-projects"] == "catalogue_contract"
+
+    views =
+      Enum.map(row["documented_views"], fn view ->
+        if view == names,
+          do: put_in(view, ["query_classification", "filter"], "catalogue_contract"),
+          else: view
+      end)
+
+    entries =
+      Enum.map(
+        audit["entries"],
+        &if(&1 == row, do: %{row | "documented_views" => views}, else: &1)
+      )
+
+    assert_raise ExUnit.AssertionError, ~r/stale parameter classification/, fn ->
+      EndpointInventory.validate!(%{audit | "entries" => entries}, native)
+    end
+  end
+
+  test "full inventory fixture claims must match the selected evidence scope", %{native: native} do
+    audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
+    verified = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/projects"))
+    unrelated = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/certificates"))
+
+    for {row, replacement} <- [
+          {verified, Map.delete(verified, "verified_scope")},
+          {verified, Map.put(verified, "verified_scope", "invented_scope")},
+          {unrelated, Map.put(unrelated, "verified_scope", "initial_inspection_v1")}
+        ] do
+      entries = Enum.map(audit["entries"], &if(&1 == row, do: replacement, else: &1))
+
+      assert_raise ExUnit.AssertionError, ~r/fixture scope/, fn ->
+        EndpointInventory.validate!(%{audit | "entries" => entries}, native)
+      end
+    end
+  end
+
   test "32 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do

@@ -49,6 +49,11 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **WHEN** the full classification audit is validated
 - **THEN** every pinned documented verb/path, query/access view and declared query parameter is represented, public server registration differences and helper/subtype mappings remain explicit, and every unresolved contract has a named finite backlog assignment; classification completeness does not certify behavior, approve exclusions, change tool exports or complete task 3.9
 
+#### Scenario: Classification cannot borrow evidence from another scope
+
+- **WHEN** query parameters and copied fixture-verification scopes are checked
+- **THEN** parameter support comes only from methods matching that documented view and each copied verified_scope equals its selected evidence entry, so unrelated recursion views or endpoint rows cannot conceal gaps or claim verification
+
 ### Requirement: Truthful backend compatibility
 
 Version, extension and live backend capability checks SHALL precede operations requiring those capabilities. Unsupported behavior SHALL return an explicit compatibility failure. Host limitations MUST NOT conceal missing client implementation.

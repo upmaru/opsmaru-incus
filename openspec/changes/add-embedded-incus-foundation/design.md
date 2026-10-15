@@ -143,7 +143,7 @@ For every pair record exact catalogue methods or explicit helper mappings,
 subtype limitations, existing fixture evidence, missing typed implementation or
 source discrepancies, and one named backlog batch with finite exit criteria.
 Record each documented query/access view and its declared query parameters
-separately, including nine unmapped selectors on otherwise implemented routes;
+separately, including unmapped selectors on otherwise implemented routes;
 a route match never proves a query, body, error or streaming contract. Preserve
 the selected 32-pair evidence manifest and its ten verified inspection scopes.
 Validate exhaustive source coverage, duplicates, stale mappings, missing anchors,
@@ -161,6 +161,12 @@ Use finite per-contract evidence criteria: declared supported selectors/fields,
 extension/routing/ETag behavior, native success and representative rejection,
 mutation acceptance/uncertainty/no replay and applicable stream/lifetime cleanup.
 Reuse existing evidence; do not demand every possible field/error cross-product.
+Parameter classification must use only methods matching the current documented
+view, so names-only views cannot borrow filter/all-projects support from another
+recursion view. Copied verified_scope values must equal the matching selected
+evidence entry, including absence on unrelated rows. Add focused mutation
+regressions and correct the finite backlog counts without changing support.
+
 Only inventory classification may become complete in this slice. Behavioral
 completion, declaration parity, task 3.9 and tool export remain unchanged. Update
 the closure checklist and recommend the next implementation batch without

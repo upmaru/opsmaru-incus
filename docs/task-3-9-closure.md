@@ -123,8 +123,12 @@ missing typed implementations, one equivalent POST route and one repair mismatch
   POST repair (B12). These require implementation/evidence or explicit approval;
   the audit approves no exclusions. Conditional instance PATCH remains B04.
 - [x] Classify every query parameter declared inside the REST operations. Track
-  nine selector gaps on existing routes separately: eight network filters (B09)
-  and console-log type (B11/S07). HEAD path selectors overlap B06.
+  **28 distinct endpoint/selector gaps across 20 existing routes** separately,
+  using only each view's matched methods. The previous nine-gap count hid 19
+  obligations by borrowing other recursion views. Exact view assignments are in
+  the finite backlog; two HEAD path selectors overlap B06.
+- [x] Guard copied verified_scope values against selected evidence entries;
+  removed, altered or unrelated fixture-scope claims fail validation.
 - [x] Define finite certification criteria and assign all endpoint/stream
   obligations in [task-3-9-backlog.md](task-3-9-backlog.md).
 - [ ] Complete required B01–B12 contracts and S01–S12 streaming obligations;
