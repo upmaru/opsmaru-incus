@@ -21,20 +21,20 @@ behavior and explicit supported scope still need evidence.
 
 ## Current behavioral checklist — audited 2026-10-15
 
-This section is the current closure checklist at `47b1918` (PR #9). Sections
-below it are chronological evidence and may describe gaps since superseded.
+This checklist started at `47b1918` (PR #9) and now includes the approved
+conditional instance PATCH slice. Sections below it are chronological evidence and may describe gaps since superseded.
 A checked item means the stated bounded behavior has evidence, not that its
-entire endpoint, protocol or Go declaration is complete. This audit changes no
-support status, approved boundary, tool export or task checkbox.
+entire endpoint, protocol or Go declaration is complete. The audit itself changed no support status; the new bounded PATCH
+implementation adds one partial endpoint without changing declaration parity or tool exports.
 
 ### Progress that the declaration counters cannot show
 
 - [x] Completion gate selected: documented REST verb/path inventory, native
   streams/upgrades and client behavior needed by `add-incus-operations`.
-- [x] 268 JSON method descriptors have native request/result, extension and
-  native-error comparisons (`test/resource_slice_test.exs`). Their 188 distinct
-  catalogue routes are implementation candidates, not 188 completed endpoints.
-- [x] 21 priority pairs have checked REST provenance, method/evidence anchors,
+- [x] 268 named-Go JSON methods retain their native fixture baseline; one REST-specific
+  PatchInstance descriptor adds dedicated evidence (`test/instance_patch_test.exs`).
+  The 269 descriptors map to 189 routes, not 189 completed endpoints.
+- [x] 22 selected pairs have checked REST provenance, method/evidence anchors,
   supported scope and gaps (`priv/incus/endpoint-evidence.json`).
 - [x] Bounded live noninteractive exec has full-duplex finite stdin, acknowledged
   stdout/stderr, native barriers, exit status, one submission-to-completion
@@ -55,8 +55,8 @@ support status, approved boundary, tool export or task checkbox.
 - [x] PR #9 passed canonical/reference checks and immutable consumers on both
   ubuntu-24.04 and macos-15, first attempt: CI run 38691372898.
 
-These are completed behavior slices. No whole endpoint is newly certified by
-this audit: the checked manifest still has 21 partial pairs. The separate Go
+These are completed behavior slices. The conditional PATCH behavior is fixture-verified; its broader endpoint scope
+remains partial. The checked manifest now has 22 partial pairs. The separate Go
 ledger still has 1239 partial / 41 missing declarations, `complete_port=false`.
 No percentage of task completion can be derived from either counter.
 
@@ -74,7 +74,7 @@ fully documented or that matching a route establishes behavior parity.
 | Documented family | Verb/path pairs | Exact normalized JSON-catalogue matches | Selected evidence pairs |
 | --- | ---: | ---: | ---: |
 | Root (`/`, `/1.0`) | 4 | 1 | 1 |
-| Instances, state, snapshots, files and upgrades | 50 | 33 | 12 |
+| Instances, state, snapshots, files and upgrades | 50 | 34 | 13 |
 | Images and aliases | 17 | 14 | 3 |
 | Operations and operation WebSocket | 5 | 4 | 5 |
 | Projects | 9 | 8 | 0 |
@@ -93,14 +93,14 @@ fully documented or that matching a route establishes behavior parity.
 | Events | 1 | 0 | 0 |
 | Metrics | 1 | 0 | 0 |
 | Warnings | 5 | 4 | 0 |
-| **Total** | **247** | **182** | **21** |
+| **Total** | **247** | **183** | **22** |
 
-Six of the 188 catalogue routes use literal `volumes/custom` where REST uses a
+Six of the 189 catalogue routes use literal `volumes/custom` where REST uses a
 volume-type parameter. They require subtype-aware mapping; they are not six
 missing implementations. Some routes absent from the JSON catalogue are handled
 by explicit helpers, including discovery, events, operation WebSocket, binary
-transfers and raw SFTP/NBD. Consequently the **65 pairs without an exact JSON
-catalogue match are classification work, not 65 proven missing implementations**.
+transfers and raw SFTP/NBD. Consequently the **64 pairs without an exact JSON
+catalogue match are classification work, not 64 proven missing implementations**.
 
 - [ ] Expand the checked inventory to all 247 documented pairs and retain all
   46 query variants. Classify catalogue methods, explicit helpers, subtype
@@ -111,9 +111,10 @@ catalogue match are classification work, not 65 proven missing implementations**
   Their existing typed methods already have generic native evidence; classify
   query/result/extension scope and add missing transport/failure evidence before
   closing a bounded contract. Do not reimplement those methods.
-- [ ] Classify all **25 PATCH pairs**. There are no typed PATCH descriptors.
-  Generic raw HTTP acceptance is not typed endpoint evidence. Prioritize
-  `PATCH /1.0/instances/{name}`; other configuration resources remain open.
+- [x] Implement and fixture-verify conditional instance PATCH: field presence,
+  explicit ETag and sync result, native rejection, uncertainty and local cleanup.
+- [ ] Classify the other **24 PATCH pairs** and remaining instance PATCH scope.
+  Generic raw HTTP acceptance is not typed endpoint evidence.
 - [ ] Classify file HEAD for instances and storage volumes: neither has a typed
   metadata-only helper. Existing file GET and generic HEAD transport checks do
   not establish these two endpoint contracts.
@@ -129,7 +130,7 @@ catalogue match are classification work, not 65 proven missing implementations**
   validator accepts only partial/missing, so endpoint completion needs a separate
   reviewed representation; declaration statuses must not be promoted with it.
 
-### The selected 21 pairs: verified scope and next closure obligation
+### The selected 22 pairs: verified scope and next closure obligation
 
 `resource_slice_test.exs` provides the shared **Unix** official typed-method
 request/result, project/member, extension and native-error baseline. Shared TLS
@@ -140,6 +141,7 @@ additional scoped evidence, not a repetition of that baseline.
 | --- | ---: | --- | --- |
 | GET server discovery | 1 | Explicit connection, readiness, discovery fields, trust/identity helpers | Define bounded discovery fields/options and native rejection/transport cases to certify; classify PUT/PATCH/root discovery separately. |
 | GET instances, instance and state | 3 | Catalogue list/full/filter methods have generic fixtures | Link supported recursion/filter/type variants; verify populated/empty results and representative Unix/TLS rejection cases for that scope. |
+| PATCH instance | 1 | Conditional typed InstancePut, explicit ETag, native empty sync result, Unix/mutual-HTTPS transport and independent failure/lifetime fixtures | Unconditional updates, full field/cluster behavior and real-daemon merge acceptance remain unverified. |
 | POST instance; PUT instance/state; DELETE instance | 4 | Accepted operation identity; restore guard/body checks; shared uncertainty/no-replay fixtures | Per-flow ETag/precondition where applicable, accepted-to-completed/failed/still-running composition and response-loss reconciliation, on both transports. GET polling fixtures alone do not establish every mutation flow. |
 | GET snapshots and snapshot | 2 | Native catalogue request/result | Define names/recursion/type/result scope and representative absence/permission/transport evidence. |
 | POST/DELETE snapshot | 2 | Acceptance; expiry extension and native body/error baseline | Complete bounded lifecycle/uncertainty and restore-source linkage; restore itself is instance PUT. |
@@ -189,37 +191,28 @@ file/image transfers. They remain foundation classification obligations.
   checks for each implemented slice. Real Incus acceptance requires fresh explicit
   opt-in and isolated state; historical 4.3 and Macus hardware are separate gates.
 
-### Recommended next substantive slice — pending user approval
+### Conditional instance PATCH — approved and fixture-verified
 
-**Typed conditional partial instance update: `PATCH /1.0/instances/{name}`.**
-It adds one currently uncatalogued public typed endpoint useful to shared
-instance-update operations. The pinned REST `instance_patch` and unchanged
-`cmd/incusd/instance_patch.go` return synchronous empty success, check ETags and
-reject restore mode. The existing `UpdateInstance` is PUT with an asynchronous
-operation; it is not a PATCH implementation. The raw-operation PATCH fixture
-uses a synthetic async response to test generic RawOperation mechanics and
-must not be counted as evidence of the real PATCH endpoint's success shape.
+`Incus.call(client, "PatchInstance", %{"name" => name}, body: partial, etag: etag)`
+adds one typed endpoint with a nonempty ETag capped at 1024 bytes. It preserves
+field presence without client read/merge, expects HTTP 200 native empty sync
+metadata `{}`, retains native rejection and reports dispatched failure as
+uncertain without replay. Any actual unexpected operation identity is retained.
 
-Proposed scope, to be planned and validated only after approval:
+`test/instance_patch_test.exs` covers Unix/mutual HTTPS. The unchanged RawQuery
+oracle takes the complete path/query explicitly; it does not supply automatic
+API-prefix or project/member selection. Comparisons establish request/result
+transport projection; endpoint-specific fixtures and pinned server-source review
+establish the expected contract. They do not prove real-daemon merge behavior.
+The original raw-operation PATCH fixture remains synthetic async-helper evidence.
 
-1. Add one typed call with bounded InstancePut input, exact omission/false/empty
-   field preservation, explicit project/member and If-Match, and a synchronous
-   result. Incus owns config merging; no client-side merge or parser is added.
-2. Compare requests/results with unchanged native RawQuery on Unix and verified
-   mutual HTTPS. There is no native named PatchInstance method; record REST and
-   pinned server source provenance, plus independent endpoint-specific fixtures.
-   RawQuery comparison is transport evidence, not proof of server merge behavior.
-3. Cover 400/403/404/412 rejection, restore rejection, ambiguous dispatched response
-   loss, local deadline/cancellation and zero replay. Do not manufacture an
-   operation identity for synchronous success or unknown acceptance.
-4. Add the pair and evidence to the inventory and check off the bounded behavior
-   only when implemented/verified. Keep Go declaration gaps and complete_port=false.
-
-Target a few hundred lines total. Stop for scope selection if that grows; do not
-expand into all 25 PATCH routes, recorded exec, tool definitions or a parser.
-Afterward prioritize the ten already implemented initial-tool inspection pairs
-and bounded mutation-lifecycle closure, then stream/helper classification.
-**No implementation or new support claim is authorized by this audit.**
+Progress: catalogue descriptors 268 -> 269, catalogue routes 188 -> 189,
+selected partial pairs 21 -> 22, uncatalogued PATCH pairs 25 -> 24. Go declarations
+remain 1239 partial / 41 missing, complete_port=false, and task 3.9 remains open.
+Unconditional PATCH, other PATCH routes and full field/error/cluster/backend
+matrices remain gaps. Next prioritize the ten already implemented initial-tool
+inspection pairs and bounded mutation-lifecycle closure, then stream classification.
+No tools, installed converter or real-backend acceptance is added.
 
 ## Historical evidence (chronological)
 

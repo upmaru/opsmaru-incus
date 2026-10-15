@@ -31,19 +31,21 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     %{native: Jason.decode!(out)}
   end
 
-  test "21 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "22 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
 
     assert Enum.sort(Enum.flat_map(@manifest["entries"], &List.wrap(&1["method"]))) ==
-             Enum.sort(~w(GetInstances CreateInstance GetInstance UpdateInstance DeleteInstance
+             Enum.sort(
+               ~w(GetInstances CreateInstance GetInstance UpdateInstance PatchInstance DeleteInstance
                GetInstanceState UpdateInstanceState GetInstanceSnapshots CreateInstanceSnapshot
                GetInstanceSnapshot DeleteInstanceSnapshot GetImages GetImage DeleteImage
-               GetOperations GetOperation DeleteOperation GetOperationWait ExecInstance))
+               GetOperations GetOperation DeleteOperation GetOperationWait ExecInstance)
+             )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
-             "partial" => 21
+             "partial" => 22
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))

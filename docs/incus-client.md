@@ -278,7 +278,7 @@ the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
 close/error/EOF semantics apply. This does not expose an arbitrary dialer or
 an OIDC adapter.
 
-The checked manifest currently has 268 differential JSON methods, 1239 partial
+The checked manifest currently has 269 JSON descriptors (268 named-Go methods and one REST-specific PATCH), 1239 partial
 reference mappings and 41 missing declarations out of 1,280. Native Incus
 method evidence is scoped to that implementation; OCI and SimpleStreams each
 have 20 partial concrete method mappings and none missing; full protocol/option
@@ -313,7 +313,7 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query variants; only 21 pairs are currently in the checked evidence
+pairs plus 46 query variants; 22 pairs are currently in the checked evidence
 manifest, all partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
@@ -646,3 +646,12 @@ Loss of a possibly accepted POST response is uncertain; known accepted identity
 survives negotiation/callback failures. Local channels/workers close without
 DELETE or replay. Tool argument policy, captured/truncated results, interactive
 or recorded exec and arbitrary input producers remain outside this subset.
+
+
+Conditional partial instance updates use `Incus.call(client, "PatchInstance",
+%{"name" => "guest"}, body: %{"description" => ""}, etag: prior_response.etag)`.
+Supply the exact nonempty ETag from the prior read (maximum 1024 bytes). Field
+omission/null/false/empty values are preserved, Incus owns merging, and success
+is an empty synchronous response rather than an operation. Dispatched failures
+remain uncertain without replay. The endpoint is partial: unconditional PATCH,
+full field/cluster behavior and real-daemon merge acceptance remain unverified.

@@ -8,7 +8,7 @@ methods = {m['name']: m for m in load('priv/incus/methods.json')['methods']}
 models = {m[key] for m in methods.values() for key in ['body','model'] if m[key]}
 constants = load('priv/incus/constants.json')['values']
 helpers = {
- 'RawQuery': ('lib/opsmaru/incus.ex', ['test/client_test.exs','test/reference_wire_test.exs']),
+ 'RawQuery': ('lib/opsmaru/incus.ex', ['test/client_test.exs','test/reference_wire_test.exs','test/instance_patch_test.exs']),
  'UseProject': ('lib/opsmaru/incus.ex',['test/resource_slice_test.exs']),
  'UseTarget': ('lib/opsmaru/incus.ex',['test/resource_slice_test.exs']),
  'HasExtension': ('lib/opsmaru/incus.ex',['test/client_test.exs']),
@@ -154,6 +154,7 @@ for entry in inv['entries']:
  elif entry['package']=='shared/api' and entry['kind']=='type' and name in models:
   evidence = ['test/resource_slice_test.exs'] if name in {m[key] for m in methods.values() for key in ['body','model'] if m[key]} else []
   if name in writable_types or name.removesuffix('Put') in writable_types or name == 'StatusCode': evidence.append('test/model_helpers_reference_test.exs')
+  if name == 'InstancePut': evidence.append('test/instance_patch_test.exs')
   if name == 'ServerEnvironment': evidence.append('test/discovery_helpers_test.exs')
   if name == 'Event': evidence.append('test/event_send_test.exs')
   if name in preseed_types: evidence.append('test/preseed_reference_test.exs')
@@ -170,4 +171,4 @@ for entry in inv['entries']:
 for row in entries:
  for path in row['evidence']: assert (root/path).is_file(), path
 (root/'priv/incus/coverage.json').write_text(json.dumps(dict(reference_revision=inv['reference']['revision'],complete_port=False,endpoint_evidence='priv/incus/endpoint-evidence.json',entries=entries),indent=2)+'\n')
-print(f"{len(methods)} differential JSON methods; {sum(x['status']=='partial' for x in entries)} partial declaration mappings; {sum(x['status']=='missing' for x in entries)} missing declarations; complete_port=false")
+print(f"{len(methods)} JSON method descriptors (named Go methods plus explicit REST slices); {sum(x['status']=='partial' for x in entries)} partial declaration mappings; {sum(x['status']=='missing' for x in entries)} missing declarations; complete_port=false")

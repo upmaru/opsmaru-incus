@@ -3,7 +3,8 @@ defmodule Opsmaru.Incus.ResourceSliceTest do
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Model, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, WireComparison}
-  @definitions Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
+  @catalogue Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
+  @definitions Enum.reject(@catalogue, &(&1["reference_kind"] == "rest"))
   @driver Path.expand("../.integration/incus-typed-driver", __DIR__)
 
   setup_all do
@@ -262,7 +263,7 @@ defmodule Opsmaru.Incus.ResourceSliceTest do
       server: %Opsmaru.Incus.Server{api_extensions: []}
     }
 
-    for method <- @definitions, method["extension"] do
+    for method <- @catalogue, method["extension"] do
       assert {:error, %Error{kind: :unsupported_extension}} =
                Incus.call(client, method["name"], %{})
     end
@@ -293,7 +294,7 @@ defmodule Opsmaru.Incus.ResourceSliceTest do
     connection = Connection.unix!(HTTPFixture.endpoint(fixture).socket, owner: :fixture)
     {:ok, client} = Incus.connect(connection, context)
 
-    for method <- @definitions do
+    for method <- @catalogue do
       args =
         Map.new(method["params"], fn name ->
           {name,
@@ -306,13 +307,14 @@ defmodule Opsmaru.Incus.ResourceSliceTest do
         end)
 
       opts = if method["body"], do: [body: initial_body(method)], else: []
+      opts = if method["verb"] == "PATCH", do: Keyword.put(opts, :etag, "before"), else: opts
 
       assert {:error,
               %Error{kind: :native, http_status: 412, error_code: 777, message: "native failure"}} =
                Incus.call(client, method["name"], args, opts)
     end
 
-    assert length(HTTPFixture.requests(fixture)) == 1 + length(@definitions)
+    assert length(HTTPFixture.requests(fixture)) == 1 + length(@catalogue)
   end
 
   test "snapshot restore retains acceptance and conditional extensions stop incompatible mutations",
