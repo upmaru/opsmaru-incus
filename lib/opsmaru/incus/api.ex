@@ -59,10 +59,18 @@ defmodule Opsmaru.Incus.API do
   defp arguments(method, args, opts) do
     if is_map(args) and Enum.sort(Map.keys(args)) == Enum.sort(method["params"]) and
          Keyword.keys(opts) -- [:body, :etag] == [] and
-         Enum.all?(args, fn {name, value} -> valid_argument?(name, value) end),
+         Enum.all?(args, fn {name, value} -> valid_argument?(name, value) end) and
+         conditional?(method, args, opts),
        do: :ok,
        else: {:error, :invalid_arguments}
   end
+
+  defp conditional?(%{"result" => "empty_sync"}, args, opts),
+    do:
+      args["name"] != "" and is_binary(opts[:etag]) and byte_size(opts[:etag]) in 1..1024 and
+        length(opts) == length(Enum.uniq(Keyword.keys(opts)))
+
+  defp conditional?(_, _, _), do: true
 
   defp valid_argument?("force", value), do: is_boolean(value)
   defp valid_argument?("timeout", value), do: is_integer(value) and value in 0..3600
@@ -197,6 +205,13 @@ defmodule Opsmaru.Incus.API do
       end
     end)
     |> Enum.join(" and ")
+  end
+
+  defp decode(%{"result" => "empty_sync"}, response, _) do
+    if response.http_status == 200 and response.type == "sync" and
+         response.status_code == 200 and response.metadata == %{} and response.operation == "",
+       do: {:ok, response},
+       else: {:error, :invalid_response}
   end
 
   defp decode(%{"result" => "sync"}, response, _), do: {:ok, response}

@@ -62,6 +62,20 @@ Accepted operations SHALL remain distinguishable from completed operations. Wait
 - **WHEN** either typed native wait method receives a gated response body after flushed headers over Unix or verified HTTPS
 - **THEN** fixture evidence compares finite wait queries, operation snapshots, ETags and native errors with the unchanged pinned client, while independent deadline/cancellation/caller-loss checks prove local socket cleanup without replay or remote cancellation; polling behavior and partial declaration status remain unchanged
 
+### Requirement: Bounded conditional instance partial updates
+
+PatchInstance SHALL send the native instance PATCH with a validated InstancePut
+map and an explicit nonempty caller ETag. It SHALL preserve omitted, null, false
+and empty field values without local read/merge/default materialization, retain
+host routing and response binding, and require empty synchronous success. Native
+rejections SHALL retain HTTP/native errors; dispatched failures SHALL remain
+uncertain without replay or manufacturing an operation identity.
+
+#### Scenario: Conditional partial update
+
+- **WHEN** a ready authorized host supplies bounded partial configuration and If-Match
+- **THEN** one PATCH preserves field presence and native synchronous result, while unchanged RawQuery transport comparison and independent endpoint fixtures are recorded separately from real-daemon merge acceptance
+
 ### Requirement: Native streaming fidelity
 
 Exec, console, events, files, images, backups and migrations SHALL preserve native streaming and control semantics, including applicable WebSocket and non-WebSocket upgrades. Binary transfers, half-close, backpressure and disconnect cleanup SHALL be bounded and independently verifiable.

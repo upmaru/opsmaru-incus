@@ -1393,3 +1393,34 @@ strict Credo and all three strict OpenSpec changes. Reference checks pass the
 inventory/schema verifier and 188 native constants. Coverage regeneration is
 deterministic and retains all 1280 declarations. Both-platform CI and immutable
 consumer results are recorded at the pushed PR head.
+
+
+## Conditional typed instance PATCH — 2026-10-15
+
+The approved OpenSpec plan passed strict validation before implementation. One
+REST-specific PatchInstance descriptor uses bounded InstancePut input with an
+explicit nonempty ETag (at most 1024 bytes) and native empty synchronous success.
+Omission/null/false/empty fields are preserved; no local GET/merge or default
+materialization is added. Unexpected success envelopes remain uncertain and
+retain any actual operation identity. The unchanged native RawQuery requires a
+fully explicit API path/query; it is request/transport evidence, not proof of
+server merge semantics or a named Go PatchInstance method.
+
+Eight focused Unix/mutual-HTTPS tests cover sixteen native comparisons, field
+presence, 400/403/404/412 and restore rejection, malformed/disconnected/async
+responses, local deadline/cancellation peer closure, request/ETag/input/readiness
+bounds and no replay. Initial fixture failures corrected the raw oracle's path
+and existing readiness error name; the shared error matrix now supplies PATCH's
+required ETag. No oracle patch or backend acceptance was used.
+
+The checked endpoint manifest grows 21 -> 22 partial pairs; catalogue descriptors
+268 -> 269 and routes 188 -> 189. Coverage stays 1239 partial / 41 missing with
+all 1280 declarations and complete_port=false. The prior endpoint/stream audit
+is carried as a separate documentation commit. Unconditional PATCH, other PATCH
+routes, full field/error/cluster matrices and real-daemon merge acceptance remain
+open; task 3.9 is unchecked. Canonical/reference and pushed both-platform consumer
+results are recorded with this slice's draft PR.
+
+Local final canonical checks pass: 1025 tests, formatting, warning-free compile,
+strict Credo and all three strict OpenSpec changes. Reference checks pass the
+inventory/schema verifier and 188 native constants; coverage regenerates identically.

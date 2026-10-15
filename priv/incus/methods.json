@@ -4564,6 +4564,20 @@
       "extension": "container_edit_metadata",
       "query": {},
       "guards": []
+    },
+    {
+      "name": "PatchInstance",
+      "verb": "PATCH",
+      "path": "/1.0/instances/{name}",
+      "params": ["name"],
+      "query": {},
+      "extension": null,
+      "body": "InstancePut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "instance_patch"
     }
   ]
 }

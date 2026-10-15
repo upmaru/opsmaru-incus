@@ -175,6 +175,30 @@ and declaration mappings partial; no runtime or polling-strategy changes are
 planned. Stop if this evidence slice exceeds a few hundred lines or requires
 new parser/runtime machinery.
 
+#### Approved slice: conditional instance PATCH (2026-10-15)
+
+Add PatchInstance to the typed call catalogue for PATCH /1.0/instances/{name}.
+Require an explicit nonempty ETag for this conditional subset; other input,
+request-byte and response bounds remain the existing library bounds. Pass a
+validated InstancePut map without defaults or a local read/merge; omission,
+false, empty collections and null values remain distinct on the wire. Native
+Incus owns merge and restore rejection semantics. Preserve host project/member,
+If-Match, returned ETag, native HTTP/error codes and connection/identity binding.
+Accept only the native empty synchronous success shape; a dispatched response
+loss, malformed/unexpected success or interrupted lifetime remains uncertain,
+with any received native identity preserved and no replay or invented operation.
+
+There is no named Go PatchInstance declaration. Reuse unchanged RawQuery through
+the existing reflection driver over Unix and verified mutual HTTPS, plus
+endpoint-specific fixtures for 200 sync, 400/403/404/412, restore rejection,
+preflight bounds/readiness, local deadline/cancellation and ambiguous response
+loss. RawQuery comparison proves request/transport projection, not daemon merges.
+Add one partial endpoint row (22 selected), retain the 1280-declaration ledger
+and complete_port=false, and link evidence without inventing a Go declaration.
+The prior audit is documentation carried forward separately. Keep this new
+runtime/test slice within a few hundred lines; stop if a parser, other PATCH
+routes or repeated corner-case repairs become necessary. Do not implement tools.
+
 #### Verified slice: noninteractive exec collection
 
 Collect live stdout/stderr from an already accepted, creator-owned noninteractive
