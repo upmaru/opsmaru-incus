@@ -19,6 +19,210 @@ JSON method descriptors currently cover 188 distinct verb/path pairs; these are
 not yet a verified complete REST inventory. Required protocol/option/error
 behavior and explicit supported scope still need evidence.
 
+## Current behavioral checklist — audited 2026-10-15
+
+This section is the current closure checklist at `47b1918` (PR #9). Sections
+below it are chronological evidence and may describe gaps since superseded.
+A checked item means the stated bounded behavior has evidence, not that its
+entire endpoint, protocol or Go declaration is complete. This audit changes no
+support status, approved boundary, tool export or task checkbox.
+
+### Progress that the declaration counters cannot show
+
+- [x] Completion gate selected: documented REST verb/path inventory, native
+  streams/upgrades and client behavior needed by `add-incus-operations`.
+- [x] 268 JSON method descriptors have native request/result, extension and
+  native-error comparisons (`test/resource_slice_test.exs`). Their 188 distinct
+  catalogue routes are implementation candidates, not 188 completed endpoints.
+- [x] 21 priority pairs have checked REST provenance, method/evidence anchors,
+  supported scope and gaps (`priv/incus/endpoint-evidence.json`).
+- [x] Bounded live noninteractive exec has full-duplex finite stdin, acknowledged
+  stdout/stderr, native barriers, exit status, one submission-to-completion
+  lifetime, retained acceptance and blocked-stdin cleanup evidence
+  (`test/exec_output_test.exs`).
+- [x] Both direct native wait methods have gated-body snapshots/errors/EOF
+  comparisons on Unix/mutual HTTPS and local deadline/cancellation/caller-loss
+  cleanup (`test/native_wait_reference_test.exs`, added by PR #9).
+- [x] Polling, supported cancellation, event handlers and remote-operation waits
+  have separate identity/lifetime evidence (`test/operation_test.exs`,
+  `test/operation_handler_test.exs`, `test/request_context_test.exs`,
+  `test/copy_negotiation_reference_test.exs`).
+- [x] Copy negotiation covers the recorded boolean/locality/project/member
+  combinations and relay failure cleanup; it is no longer wholly unevidenced
+  (`test/copy_negotiation_reference_test.exs`, `test/migration_test.exs`).
+- [x] File/image/archive handoff, raw upgrades, bounded SFTP subset, events,
+  dynamic console, OCI and SimpleStreams have the scoped evidence below.
+- [x] PR #9 passed canonical/reference checks and immutable consumers on both
+  ubuntu-24.04 and macos-15, first attempt: CI run 38691372898.
+
+These are completed behavior slices. No whole endpoint is newly certified by
+this audit: the checked manifest still has 21 partial pairs. The separate Go
+ledger still has 1239 partial / 41 missing declarations, `complete_port=false`.
+No percentage of task completion can be derived from either counter.
+
+### Inventory denominator and classification work
+
+Read-only extraction of the unchanged pinned `doc/rest-api.yaml` through
+`test/reference/endpoints/main.go` gives **293 documented operations**, including
+**46 additional query-qualified variants**, or **247 distinct verb/path pairs**.
+Normalize parameter names and separate the query string before counting pairs;
+retain the query variants as separate behavior obligations. REST SHA-256 is
+`7b4e07375da92f30e7eadf766f1bbdf40bf9968ee305a16be1afe5998e72e91f`.
+This is the pinned document's inventory, not a claim that every server route is
+fully documented or that matching a route establishes behavior parity.
+
+| Documented family | Verb/path pairs | Exact normalized JSON-catalogue matches | Selected evidence pairs |
+| --- | ---: | ---: | ---: |
+| Root (`/`, `/1.0`) | 4 | 1 | 1 |
+| Instances, state, snapshots, files and upgrades | 50 | 33 | 12 |
+| Images and aliases | 17 | 14 | 3 |
+| Operations and operation WebSocket | 5 | 4 | 5 |
+| Projects | 9 | 8 | 0 |
+| Profiles | 7 | 6 | 0 |
+| Networks | 28 | 24 | 0 |
+| Storage pools, volumes, buckets and streams | 58 | 35 | 0 |
+| Certificates | 6 | 5 | 0 |
+| Cluster | 19 | 17 | 0 |
+| Network ACLs | 8 | 6 | 0 |
+| Network address sets | 7 | 6 | 0 |
+| Network integrations | 7 | 6 | 0 |
+| Network zones | 12 | 10 | 0 |
+| Network allocations | 1 | 1 | 0 |
+| Metadata | 1 | 1 | 0 |
+| Resources | 1 | 1 | 0 |
+| Events | 1 | 0 | 0 |
+| Metrics | 1 | 0 | 0 |
+| Warnings | 5 | 4 | 0 |
+| **Total** | **247** | **182** | **21** |
+
+Six of the 188 catalogue routes use literal `volumes/custom` where REST uses a
+volume-type parameter. They require subtype-aware mapping; they are not six
+missing implementations. Some routes absent from the JSON catalogue are handled
+by explicit helpers, including discovery, events, operation WebSocket, binary
+transfers and raw SFTP/NBD. Consequently the **65 pairs without an exact JSON
+catalogue match are classification work, not 65 proven missing implementations**.
+
+- [ ] Expand the checked inventory to all 247 documented pairs and retain all
+  46 query variants. Classify catalogue methods, explicit helpers, subtype
+  restrictions, missing behavior and proposed unsupported scope individually.
+  Reconcile document/server/helper differences against unchanged pinned sources.
+- [ ] Add the ten initial-tool inspection pairs currently absent from the selected
+  manifest: list/get projects, profiles, networks, storage pools and volumes.
+  Their existing typed methods already have generic native evidence; classify
+  query/result/extension scope and add missing transport/failure evidence before
+  closing a bounded contract. Do not reimplement those methods.
+- [ ] Classify all **25 PATCH pairs**. There are no typed PATCH descriptors.
+  Generic raw HTTP acceptance is not typed endpoint evidence. Prioritize
+  `PATCH /1.0/instances/{name}`; other configuration resources remain open.
+- [ ] Classify file HEAD for instances and storage volumes: neither has a typed
+  metadata-only helper. Existing file GET and generic HEAD transport checks do
+  not establish these two endpoint contracts.
+- [ ] Classify recorded exec output list/download/delete, root discovery `GET /`,
+  instance debug repair, volume listing by type, bitmap export, and bucket
+  backup list/get/rename. No dedicated public typed wrappers were found for these
+  documented paths. They need implementation or an explicit supported-scope
+  decision; this audit does not approve dropping them.
+- [ ] Define and validate a finite endpoint completion contract: supported query
+  and body variants, omission/empty/null semantics, extensions, routing, ETags,
+  success/result shape, representative native rejection, uncertain dispatch and
+  applicable local cleanup. Record excluded behavior and its approval. The current
+  validator accepts only partial/missing, so endpoint completion needs a separate
+  reviewed representation; declaration statuses must not be promoted with it.
+
+### The selected 21 pairs: verified scope and next closure obligation
+
+`resource_slice_test.exs` provides the shared **Unix** official typed-method
+request/result, project/member, extension and native-error baseline. Shared TLS
+transport tests do not establish a per-endpoint TLS matrix. Evidence below is
+additional scoped evidence, not a repetition of that baseline.
+
+| Selected pairs | Count | Additional behavior already evidenced | Remaining concrete closure obligation |
+| --- | ---: | --- | --- |
+| GET server discovery | 1 | Explicit connection, readiness, discovery fields, trust/identity helpers | Define bounded discovery fields/options and native rejection/transport cases to certify; classify PUT/PATCH/root discovery separately. |
+| GET instances, instance and state | 3 | Catalogue list/full/filter methods have generic fixtures | Link supported recursion/filter/type variants; verify populated/empty results and representative Unix/TLS rejection cases for that scope. |
+| POST instance; PUT instance/state; DELETE instance | 4 | Accepted operation identity; restore guard/body checks; shared uncertainty/no-replay fixtures | Per-flow ETag/precondition where applicable, accepted-to-completed/failed/still-running composition and response-loss reconciliation, on both transports. GET polling fixtures alone do not establish every mutation flow. |
+| GET snapshots and snapshot | 2 | Native catalogue request/result | Define names/recursion/type/result scope and representative absence/permission/transport evidence. |
+| POST/DELETE snapshot | 2 | Acceptance; expiry extension and native body/error baseline | Complete bounded lifecycle/uncertainty and restore-source linkage; restore itself is instance PUT. |
+| GET images and image | 2 | Native catalogue variants; image export has separate binary fixtures | Link public/filter/recursion/metadata scope and representative errors; classify alias/export/token behavior separately. |
+| DELETE image | 1 | Native acceptance/error baseline | Verify defined completion/rejection/uncertainty flow and both transports; no implicit file or alias deletion. |
+| GET operations and operation | 2 | Poll/wait, decoded event callbacks, final success/failure and binding isolation | Define list/filter/query and terminal-status scope; link exact direct/poll evidence and remaining error cases. |
+| DELETE operation | 1 | may_cancel preflight, one DELETE and completion race | Add explicit non-cancelable/native rejection and lost cancellation response outcomes to the bounded contract across transports. |
+| GET native operation wait | 1 | PR #9: finite timeout queries, gated bodies, ETags, snapshots, 403, EOF, local lifetime cleanup on Unix/mutual HTTPS | Arbitrary/empty-secret encoding and cluster forwarding remain unverified; timeout=-1 rejection is an intentional finite-bound difference. Real-daemon timeout behavior is separate acceptance. |
+| POST exec | 1 | Full-duplex bounded noninteractive run/collect, negotiation, authoritative exit and cleanup | Confirm bounded live subset as the endpoint contract; recorded/interactive orchestration and arbitrary producers remain visibly separate. Tool capture/truncation/policy belongs to add-incus-operations. |
+| GET operation WebSocket | 1 | Exec channels, barriers, bounded queues/frames, control and write-lifetime cleanup | Classify non-exec channel contracts and secret/query scope separately; exec evidence does not close console/events/migration. |
+
+Primary evidence: `test/client_test.exs`, `test/discovery_helpers_test.exs`,
+`test/resource_slice_test.exs`, `test/operation_test.exs`,
+`test/operation_handler_test.exs`, `test/request_context_test.exs`,
+`test/native_wait_reference_test.exs`, `test/exec_output_test.exs`,
+`test/session_test.exs`, `test/web_socket_test.exs`,
+`test/web_socket_failure_test.exs`. The machine manifest contains
+specific test anchors; this table adds human closure obligations.
+
+### Streaming and upgrade checklist
+
+Each row has fixture evidence; none is an unrestricted protocol-parity claim.
+The initial operations catalogue excludes event subscriptions, console and binary
+file/image transfers. They remain foundation classification obligations.
+
+| Contract | Existing bounded implementation/evidence | Remaining scope or evidence decision |
+| --- | --- | --- |
+| Live noninteractive exec | `Session.run/collect`; `test/exec_output_test.exs`, `test/session_test.exs` | Live subset is implemented; classify recorded output and interactive orchestration separately. Tools own capture/truncation/schema policy. |
+| Static and dynamic console WebSocket | `Session.console`, `DynamicConsole`; `test/dynamic_console_reference_test.exs` includes native frames, repeated attachments, TLS, bounds and peer cleanup | Full native callback/reader/writer orchestration and all console types/options remain partial. Earlier blanket “dynamic console missing” notes are superseded. |
+| Events and operation callbacks | `EventListener`, `Events`; `test/event_listener_test.exs`, `test/event_send_test.exs`, `test/operation_handler_test.exs` | Explicit listener ownership is a recorded difference; classify filters/all-projects/target/lifecycle scope. Never assert Go callback order. |
+| Instance/volume file GET/POST/DELETE | `Files`, `FileHeaders`; `test/file_reference_test.exs`, `test/file_variants_reference_test.exs`, `test/file_headers_reference_test.exs` | HEAD is absent; reconcile link/type/mode/query variants and both-transport failure matrix. Directory metadata and binary sinks already have separate evidence. |
+| Image import/export/private token | `Images`; `test/image_transfer_test.exs`, `test/private_image_reference_test.exs` | Unified/split bytes, private token encoding, aliases and copy uncertainty have evidence; remaining compression/header/options and multipart failure cases need bounded classification. |
+| Instance/volume/bucket archives | `Files`; `test/file_variants_reference_test.exs`, `test/backup_variants_test.exs` | Export/import/direct POST are implemented; classify each archive/name/pool/config/device/ISO variant and TLS/failure evidence rather than treating backups as absent. |
+| Metrics, logs, console log, templates, debug memory | `Streams`; `test/streams_test.exs` | Typed byte/header/error and TLS evidence exists. Recorded exec log paths and debug repair are separate missing wrappers; define the remaining per-helper option contracts. |
+| Raw instance/volume SFTP and NBD | `RawChannel`, explicit Incus helpers; `test/native_upgrade_reference_test.exs`, `test/volume_upgrade_reference_test.exs`, `test/raw_channel_test.exs`, `test/tls_stream_test.exs` | Raw transport/half-close/coalesced-byte/bounds evidence exists. NBD protocol implementation stays caller-owned; record all request options and the approved coalesced-byte oracle difference. |
+| Typed SFTP v3 subset | `SFTP`; `test/sftp_helpers_reference_test.exs` | Approved init/extensions/open/read/write/close subset is implemented on Unix/HTTPS; classify unsupported operations explicitly. Full pkg/sftp parity is not the gate for this approved subset. |
+| Copy/migration negotiation and relay | `Migration`, `Copy`, `ImageInstances`; `test/copy_negotiation_reference_test.exs`, `test/copy_guards_test.exs`, `test/migration_test.exs` | Recorded boolean/locality/cluster/project/member combinations, identities and relay cleanup have evidence. Enumerate remaining channel/option/remote-wait cases and single-origin differences; do not restart an already implemented copy port. |
+| OCI host-adapter handoff | `OCI`; `test/oci_test.exs`, `test/oci_origin_reference_test.exs` | All 20 concrete methods have partial mappings. Explicit adapter/native projections/bounds/cleanup have evidence; installed conversion/authentication and unclassified cache/options remain separate. |
+| SimpleStreams HTTPS and host delta | `SimpleStreams`; `test/simple_streams_test.exs` | All 20 concrete methods have partial mappings. Catalog/architecture/formats/checksums/full-file/delta/bounds/cleanup have evidence; refresh/cache/fallback variants and installed converter acceptance remain separate. |
+
+- [ ] Add these helper contracts and their exact routes/options to the checked
+  endpoint/stream inventory; source anchors alone must not certify completion.
+- [ ] Separate missing implementation, missing evidence, approved restrictions and
+  separately owned acceptance for every open row. No blanket “full matrix” item
+  may silently demand literal Go types or an unbounded protocol port.
+- [ ] Finish independent review and canonical/both-platform/immutable-consumer
+  checks for each implemented slice. Real Incus acceptance requires fresh explicit
+  opt-in and isolated state; historical 4.3 and Macus hardware are separate gates.
+
+### Recommended next substantive slice — pending user approval
+
+**Typed conditional partial instance update: `PATCH /1.0/instances/{name}`.**
+It adds one currently uncatalogued public typed endpoint useful to shared
+instance-update operations. The pinned REST `instance_patch` and unchanged
+`cmd/incusd/instance_patch.go` return synchronous empty success, check ETags and
+reject restore mode. The existing `UpdateInstance` is PUT with an asynchronous
+operation; it is not a PATCH implementation. The raw-operation PATCH fixture
+uses a synthetic async response to test generic RawOperation mechanics and
+must not be counted as evidence of the real PATCH endpoint's success shape.
+
+Proposed scope, to be planned and validated only after approval:
+
+1. Add one typed call with bounded InstancePut input, exact omission/false/empty
+   field preservation, explicit project/member and If-Match, and a synchronous
+   result. Incus owns config merging; no client-side merge or parser is added.
+2. Compare requests/results with unchanged native RawQuery on Unix and verified
+   mutual HTTPS. There is no native named PatchInstance method; record REST and
+   pinned server source provenance, plus independent endpoint-specific fixtures.
+   RawQuery comparison is transport evidence, not proof of server merge behavior.
+3. Cover 400/403/404/412 rejection, restore rejection, ambiguous dispatched response
+   loss, local deadline/cancellation and zero replay. Do not manufacture an
+   operation identity for synchronous success or unknown acceptance.
+4. Add the pair and evidence to the inventory and check off the bounded behavior
+   only when implemented/verified. Keep Go declaration gaps and complete_port=false.
+
+Target a few hundred lines total. Stop for scope selection if that grows; do not
+expand into all 25 PATCH routes, recorded exec, tool definitions or a parser.
+Afterward prioritize the ten already implemented initial-tool inspection pairs
+and bounded mutation-lifecycle closure, then stream/helper classification.
+**No implementation or new support claim is authorized by this audit.**
+
+## Historical evidence (chronological)
+
 Earlier verified slices include the four response metadata extraction helpers,
 operation-to-certificate/cluster token conversion and both token String helpers,
 and the five EventListener lifecycle helpers. Permanent unchanged-native
@@ -33,17 +237,10 @@ deadlines, cleanup failure, caller loss and credential/config isolation use fake
 adapters. OCI connection-info/HTTP helpers still have no OCI-specific evidence;
 alias-architecture and no-op disconnect now have pinned differential evidence. No installed host converter is provided or accepted.
 
-Remaining groups:
-
-- Full copy/cross-cluster option matrices, negotiation and relay failure cleanup.
-- SFTP behavior outside the approved v3 file-I/O subset and its remaining
-  supported-scope/acceptance gates; full pkg/sftp.Client parity is not claimed.
-- Remaining constructors/transport abstractions, operation and remote-operation
-  handlers/waits and exhaustive context/error paths.
-- Full dynamic console callback/IO and recorded exec-output helpers.
-- OCI and SimpleStreams protocols, backup variants, remaining model/JSON/YAML helpers.
-- Per-entry supported-scope classification and meaningful complete-evidence gates
-  in the coverage generator/tests; they currently intentionally emit partial/missing.
+The current checklist above supersedes broad historical “remaining groups”
+statements. In particular, copy matrices, dynamic console, origin helpers,
+operation handlers, bounded exec and SFTP subsets have acquired evidence since
+those statements were written; their remaining scope is listed individually.
 
 ## Approved OCI host boundary
 

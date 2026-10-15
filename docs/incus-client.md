@@ -278,8 +278,8 @@ the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
 close/error/EOF semantics apply. This does not expose an arbitrary dialer or
 an OIDC adapter.
 
-The checked manifest currently has 268 differential JSON methods, 1134 partial
-reference mappings and 146 missing declarations out of 1,280. Native Incus
+The checked manifest currently has 268 differential JSON methods, 1239 partial
+reference mappings and 41 missing declarations out of 1,280. Native Incus
 method evidence is scoped to that implementation; OCI and SimpleStreams each
 have 20 partial concrete method mappings and none missing; full protocol/option
 coverage is still partial. Interface entries
@@ -309,13 +309,14 @@ source, but the actual `CopyInstance` receiver checks the target. Dependent
 instance migration devices use the native capitalized `Devices` key. Internal
 volume copy source location falls back to the discovered server name; local
 snapshot copies send the native empty type rather than the remote parent type.
-Remaining parity includes complete cross-cluster/copy option matrices, migration
-negotiation and complete relay-channel failure/cleanup evidence,
-full SFTP protocol helpers, complete dynamic console callback/IO and recorded-output helpers, all-field
-remaining model/helper behavior, complete streaming backup option/platform coverage
-and every currently missing inventory entry. Do not treat `raw_query` success
-as typed support. Linux CI, installed service and real-backend results are
-recorded separately in `foundation-validation.md`.
+The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavioral-checklist--audited-2026-10-15)
+separates implemented bounded contracts from missing endpoint methods, evidence,
+approved restrictions and separate acceptance gates. The Go declaration counts
+are not endpoint completion counts. The checklist audits 247 documented verb/path
+pairs plus 46 query variants; only 21 pairs are currently in the checked evidence
+manifest, all partial. It retains remaining copy/stream/model/helper scope without
+treating already verified slices as wholly missing. No full-port or new backend/
+hardware acceptance follows from those fixtures.
 
 The callback listener has at most `min(queue_limit, 128)` handlers and one callback
 worker at a time. Each worker is limited by the connection timeout and remaining
