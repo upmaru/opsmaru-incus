@@ -18,6 +18,10 @@ defmodule Opsmaru.Incus.InstancePatchTest do
       args: %{"name" => "guest"},
       path: "/1.0/instances/guest",
       body: @body,
+      populated: %{
+        "config" => %{"user.note" => "fixture"},
+        "devices" => %{"data" => %{"type" => "disk", "path" => "/data", "pool" => "fixture"}}
+      },
       null: %{"description" => nil, "config" => nil},
       invalid: %{"ephemeral" => "false"},
       rejection: %{"restore" => "snap"},
@@ -29,6 +33,7 @@ defmodule Opsmaru.Incus.InstancePatchTest do
       args: %{"name" => "project /one"},
       path: "/1.0/projects/project%20%2Fone",
       body: %{"description" => "", "config" => %{}},
+      populated: %{"config" => %{"features.images" => "true", "user.note" => "fixture"}},
       null: %{"description" => nil, "config" => nil},
       invalid: %{"description" => false},
       rejection: %{},
@@ -40,6 +45,10 @@ defmodule Opsmaru.Incus.InstancePatchTest do
       args: %{"name" => "profile /one"},
       path: "/1.0/profiles/profile%20%2Fone",
       body: %{"description" => "", "config" => %{}, "devices" => %{}},
+      populated: %{
+        "config" => %{"user.note" => "fixture"},
+        "devices" => %{"data" => %{"type" => "disk", "path" => "/data", "pool" => "fixture"}}
+      },
       null: %{"config" => nil, "devices" => nil},
       invalid: %{"devices" => false},
       rejection: %{},
@@ -51,6 +60,11 @@ defmodule Opsmaru.Incus.InstancePatchTest do
       args: %{"fingerprint" => "image /one"},
       path: "/1.0/images/image%20%2Fone",
       body: %{"public" => false, "auto_update" => false, "properties" => %{}},
+      populated: %{
+        "public" => false,
+        "auto_update" => false,
+        "properties" => %{"os" => "Linux", "description" => "fixture"}
+      },
       null: %{"properties" => nil},
       invalid: %{"public" => "false"},
       rejection: %{},
@@ -62,6 +76,7 @@ defmodule Opsmaru.Incus.InstancePatchTest do
       args: %{"name" => "guest /one", "snapshot" => "snap /one"},
       path: "/1.0/instances/guest%20%2Fone/snapshots/snap%20%2Fone",
       body: %{"expires_at" => "2030-01-02T03:04:05Z"},
+      populated: %{"expires_at" => "2030-01-02T03:04:05Z"},
       null: %{"expires_at" => nil},
       invalid: %{"expires_at" => false},
       rejection: %{},
@@ -103,7 +118,7 @@ defmodule Opsmaru.Incus.InstancePatchTest do
       spec = unquote(Macro.escape(spec))
       identity = identity(root, unquote(transport))
 
-      for body <- [%{}, spec.body, spec.null, Map.put(spec.body, "future_field", false)],
+      for body <- [%{}, spec.body, spec.null, Map.put(spec.populated, "future_field", false)],
           do: compare(root, identity, spec, body, 200)
 
       for code <- [400, 403, 404, 412], do: compare(root, identity, spec, spec.rejection, code)

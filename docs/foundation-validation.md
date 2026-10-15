@@ -1557,3 +1557,22 @@ compile, strict Credo and all three strict OpenSpec changes. Reference checks
 pass the inventory/schema tooling and 188 native constants. Coverage regeneration
 is deterministic; declaration IDs/statuses are identical to merged develop.
 Pushed both-platform and immutable-consumer results are recorded on the draft PR.
+
+## PR #13 populated-map fixture correction — 2026-10-16
+
+Greptile's 4/5 review identified a valid regression in fixture parameterization:
+the former nonempty instance config body had become an empty-map body plus an
+unknown field. Restore populated config for instance/project/profile, populated
+nested devices for instance/profile and populated image properties, retaining
+the independent omitted/empty/null cases and unknown-field preservation. Snapshot
+keeps its existing populated expiry scalar; no map field is invented for it.
+The existing exact body and wire comparisons detect lost populated entries over
+Unix and mutual HTTPS. Runtime, catalogue, oracle and accepted contract scope
+remain unchanged. Coverage regeneration is byte-identical; every existing
+partial/missing declaration status and task 3.9's open gate remain visible.
+
+Corrected focused fixtures pass all 40 tests (80 transport comparisons). Canonical
+checks pass all 1081 tests, format, warnings-as-errors compile, strict Credo and
+all three strict OpenSpec changes. Reference checks pass, including 188 constants.
+Fresh hosted review and both-platform/immutable-consumer results are recorded on
+PR #13; these checks do not promote any endpoint or declaration to complete.
