@@ -44,6 +44,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **WHEN** the ten initial-tool list/get methods have typed Unix and mutual-HTTPS comparisons plus independent bound/lifetime evidence
 - **THEN** the manifest may record their explicit fixture-verified scope and required cases while whole endpoint and declaration statuses remain partial, unsupported variants and backend acceptance remain visible, and removed methods/cases/evidence fail validation
 
+#### Scenario: Remaining initial inspection contracts
+
+- **WHEN** the nine B02 typed reads and explicit server discovery have scoped Unix/mutual-HTTPS fixture evidence
+- **THEN** populated/empty/grouped results use fixed fixture expectations, native errors/routing/binding and applicable ETags remain faithful, and byte/readiness/lifetime bounds have independent cleanup evidence
+- **AND** discovery RawQuery transport evidence remains distinct from connect/2 compatibility guards and named Go DTO parity, while broader variants, whole endpoints and declarations stay partial
+
 #### Scenario: Full endpoint inventory classification
 
 - **WHEN** the full classification audit is validated

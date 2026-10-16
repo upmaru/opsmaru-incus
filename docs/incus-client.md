@@ -695,6 +695,15 @@ ending after acceptance retains the caller's bound handle and never issues remot
 cancellation or replays the mutation. Both Unix and mutual HTTPS have named-Go
 request/result comparisons, applicable PUT ETags, native rejection and malformed/
 lost-reply evidence. Existing stalled-wait cleanup tests are linked separately.
-The 18 scoped method contracts live within 36 partial endpoint rows; other bodies/
+The 28 scoped contracts (27 methods and connect/2) live within 36 partial endpoint rows; other bodies/
 source/state/error/cluster variants and backend effects remain open. These fixtures
 neither export tools nor prove real-daemon mutation effects.
+
+The `core_inspection_v1` scope adds nine existing instance/state/snapshot/image/
+operation reads and `connect/2` discovery. Both transports have fixed populated/
+empty DTO fields, native 403/404, type guards, routing/binding, response bytes,
+readiness and deadline/cancellation peer-cleanup evidence. Grouped operations are
+compared without cross-group ordering. Discovery's RawQuery transport differential
+and independent required-field/version guards are distinct from named GetServer
+DTO parity. Additional selectors/types/fields/errors and real-backend acceptance
+remain open; this evidence alone does not export shared operations/tools.

@@ -1,7 +1,7 @@
 # Task 3.9 finite closure backlog
 
 Audited at Incus v7.0.1 `13f3992766142d5087fff2e362cd2e1a75294fe8`
-after merged PR #13 (`8e9ce89`), with B01 bounded mutation lifecycle evidence added. The authoritative classified rows are in
+after merged PR #13 (`8e9ce89`), with B01 bounded mutation lifecycle and B02 core inspection evidence added. The authoritative classified rows are in
 [`endpoint-inventory.json`](../priv/incus/endpoint-inventory.json). This is a
 classified backlog, updated with bounded implementation evidence; it does not claim behavioral completion.
 
@@ -99,7 +99,7 @@ estimates of lines or commits. Split a batch into bounded slices before coding.
 | Batch | Assigned documented pairs | Exit |
 | --- | ---: | --- |
 | B01: Initial mutation lifecycle | 8 | Eight bounded initial_mutation_lifecycle_v1 contracts now have Unix/mutual-HTTPS named-Go and independent fixture evidence: acceptance/direct native wait, update/restore/state preconditions, rejection, uncertainty/no replay and synchronous cancellation. Other body/source/state/error/cluster variants and real-backend acceptance remain explicit gaps; whole endpoints are partial. |
-| B02: Initial inspection certification | 20 | Reuse ten verified inspection scopes; certify ten other selected JSON/discovery read contracts. Enumerate catalogue selectors/fields, populated/empty/native rejection, routing/ETag and transport/bound/lifetime evidence; no exhaustive field cross-product. |
+| B02: Initial inspection certification | 20 | All 20 initial inspection contracts now have bounded Unix/mutual-HTTPS evidence: nineteen named catalogue reads and connect/2 discovery. Core instance/snapshot/image/operation fields and grouped results, native rejection, applicable ETags, routing and byte/readiness/lifetime cleanup are checked. Extra selectors/types/fields/errors remain open; no whole-endpoint completion. |
 | B03: Exec and operation channel/wait scope | 4 | Attach existing live exec/native wait/channel and events-listener (S03) evidence to finite supported contracts; resolve secret/public-access views and forwarding scope explicitly. Recorded output belongs to B07. |
 | B04: Instance PATCH contract certification | 1 | Retain the verified conditional InstancePut contract; resolve unconditional/restore/field scope explicitly without inferring daemon merge acceptance. |
 | B05: Conditional PATCH and remaining PATCH contracts | 24 | Four conditional methods are implemented with bounded fixture evidence and remain partial; 20 other pairs still need typed PATCH implementation. Certify the four scopes and remaining native behavior or obtain explicit exclusions. PUT/raw-query success cannot close these rows. |
@@ -199,8 +199,8 @@ accepted handle, not completion. No endpoint or declaration is promoted to parit
 - [ ] Verify broader body/source/state/extension/error/cluster variants or obtain
   explicit scope decisions; real-daemon lifecycle acceptance remains separate.
 
-There are now 18 explicitly fixture-verified method scopes (ten inspection plus
-these eight lifecycle scopes), within the same 36 partial selected endpoint pairs.
+There are now 28 explicitly fixture-verified scopes (nineteen inspection methods,
+connect/2 discovery and eight lifecycle methods), within the same 36 partial selected endpoint pairs.
 This closes the listed bounded evidence obligations, not all B01 endpoint behavior
 or task 3.9. The 32 missing typed implementations and 28 selector gaps are unchanged.
 Other backlog batches and shared tool implementation remain outside this batch.
@@ -209,3 +209,22 @@ The ledger is curated audit data. `test/endpoint_evidence_test.exs` independentl
 extracts the unchanged REST document and server AST, checks hashes, exhaustiveness,
 method/query/helper mappings, source/test anchors and backlog integrity. It rejects
 missing/duplicate views, stale sources/methods and completion overclaims.
+
+## B02 core inspection progress
+
+- [x] Verify the remaining nine named reads: instance list/get/state, snapshot
+  list/get, image list/get and operation list/get on Unix and mutual HTTPS.
+- [x] Compare fixed populated/empty fields, corruption and native 403/404 with the
+  unchanged named Go methods; flatten grouped operations without ordering claims.
+- [x] Verify connect/2 discovery separately using RawQuery transport and independent
+  required-field/version guards; an empty server object is rejected, not accepted.
+- [x] Check scoped binding, applicable getter ETags, byte/readiness rejection and
+  deadline/cancellation with actual peer EOF for all ten new contracts.
+- [x] Record core_inspection_v1 on exactly ten partial rows in both ledgers.
+- [ ] Close additional recursion/filter/all-projects/private-image/instance-type,
+  field/error/cluster and discovery/auth variants or obtain explicit scope decisions.
+
+B02 now has initial scoped evidence for all twenty assigned rows. Together with
+B01 this raises explicit scoped contracts from 18 to 28 (27 methods and one helper).
+It does not close every view or imply tool export/backend acceptance. No typed
+implementation or selector gap is removed by an evidence-only batch.

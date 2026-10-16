@@ -55,8 +55,8 @@ entire endpoint, protocol or Go declaration is complete. The audit changed no su
   ubuntu-24.04 and macos-15, first attempt: CI run 38691372898.
 
 These are completed behavior slices. The conditional PATCH behavior is fixture-verified; its broader endpoint scope
-remains partial. The checked manifest now has 36 partial pairs and 18 fixture-verified scoped
-method contracts (ten inspection and eight mutation lifecycle). The separate Go
+remains partial. The checked manifest now has 36 partial pairs and 28 fixture-verified scoped
+contracts (nineteen inspection methods, one discovery helper and eight mutation lifecycle methods). The separate Go
 ledger still has 1239 partial / 41 missing declarations, `complete_port=false`.
 No percentage of task completion can be derived from either counter.
 
@@ -157,16 +157,16 @@ additional scoped evidence, not a repetition of that baseline.
 | Selected pairs | Count | Additional behavior already evidenced | Remaining concrete closure obligation |
 | --- | ---: | --- | --- |
 | GET list/get projects, profiles, networks, storage pools and volumes | 10 | initial_inspection_v1: typed populated/empty/corrupt/403/404 results, routing, binding, byte/extension/lifetime bounds on Unix/mutual HTTPS | Only the named catalogue queries and tested DTO fields; custom volume samples. Other list selectors/types/fields/errors and backend/tool acceptance remain separate. |
-| GET server discovery | 1 | Explicit connection, readiness, discovery fields, trust/identity helpers | Define bounded discovery fields/options and native rejection/transport cases to certify; classify PUT/PATCH/root discovery separately. |
-| GET instances, instance and state | 3 | Catalogue list/full/filter methods have generic fixtures | Link supported recursion/filter/type variants; verify populated/empty results and representative Unix/TLS rejection cases for that scope. |
+| GET server discovery | 1 | core_inspection_v1: populated/minimal valid metadata, RawQuery transport, required-field/version guards, 403/404 and scoped byte/readiness/lifetime cleanup on both transports | Broader discovery/auth fields and options remain open; no named-Go GetServer DTO parity. PUT/PATCH/root discovery are separate. |
+| GET instances, instance and state | 3 | core_inspection_v1: catalogue queries with container samples, populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Other recursion/filter/all-projects/instance-type/field/error/cluster variants remain open. |
 | PATCH instance | 1 | Conditional typed InstancePut, explicit ETag, native empty sync result, Unix/mutual-HTTPS transport and independent failure/lifetime fixtures | Unconditional updates, full field/cluster behavior and real-daemon merge acceptance remain unverified. |
 | PATCH project/profile/image/instance snapshot | 4 | Explicit ETag, valid field presence, scoped routes, native 200 empty sync versus 202 snapshot acceptance, errors, uncertain response loss and lifetime cleanup on Unix/mutual HTTPS | Conditional subset only; B05 certification, unconditional variants, additional fields/cluster/rejections and real-daemon merge/expiry acceptance remain separate. |
 | POST instance; PUT instance/state; DELETE instance | 4 | initial_mutation_lifecycle_v1: named-Go submission plus native /wait composition; populated update and restore bodies, applicable PUT ETags, running/success/failure, rejection, uncertainty/no replay and binding on both transports | Additional source/state/body/extension/error/cluster variants and real-daemon effects remain unverified. |
-| GET snapshots and snapshot | 2 | Native catalogue request/result | Define names/recursion/type/result scope and representative absence/permission/transport evidence. |
+| GET snapshots and snapshot | 2 | core_inspection_v1: catalogue list/get queries, populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Names/other recursion, stateful/expiry/field/error/cluster variants remain open. |
 | POST/DELETE snapshot | 2 | initial_mutation_lifecycle_v1: native acceptance/wait outcomes, rejection, response loss/no replay and binding on both transports; instance PUT separately verifies restore-body linkage | Additional snapshot fields/expiry/stateful/cluster/error behavior and real-daemon restore effects remain unverified. |
-| GET images and image | 2 | Native catalogue variants; image export has separate binary fixtures | Link public/filter/recursion/metadata scope and representative errors; classify alias/export/token behavior separately. |
+| GET images and image | 2 | core_inspection_v1: catalogue list/get populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Public/private/filter/all-projects/recursion/field/error variants remain open; alias/export/token behavior is separate. |
 | DELETE image | 1 | initial_mutation_lifecycle_v1: native acceptance/wait outcomes, rejection, response loss/no replay and binding on both transports | Further image/cluster/error cases and daemon effects remain unverified; no implicit file or alias deletion. |
-| GET operations and operation | 2 | Poll/wait, decoded event callbacks, final success/failure and binding isolation | Define list/filter/query and terminal-status scope; link exact direct/poll evidence and remaining error cases. |
+| GET operations and operation | 2 | core_inspection_v1: grouped list flattening and direct get with fixed populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports; separate poll/wait/event evidence | All-projects/other query/status/field/error/cluster variants remain open. No cross-group result ordering claim. |
 | DELETE operation | 1 | initial_mutation_lifecycle_v1: named-Go synchronous DELETE plus independent may_cancel denial, one DELETE, completion race, native rejection and lost-reply identity on both transports | Other cancellation states/errors/cluster behavior and daemon acceptance remain unverified. Acknowledgement is not proven cancellation completion or a new operation. |
 | GET native operation wait | 1 | PR #9: finite timeout queries, gated bodies, ETags, snapshots, 403, EOF, local lifetime cleanup on Unix/mutual HTTPS | Arbitrary/empty-secret encoding and cluster forwarding remain unverified; timeout=-1 rejection is an intentional finite-bound difference. Real-daemon timeout behavior is separate acceptance. |
 | POST exec | 1 | Full-duplex bounded noninteractive run/collect, negotiation, authoritative exit and cleanup | Confirm bounded live subset as the endpoint contract; recorded/interactive orchestration and arbitrary producers remain visibly separate. Tool capture/truncation/policy belongs to add-incus-operations. |
@@ -923,3 +923,21 @@ manifest's earlier blanket blocking/lifetime evidence gap only within that
 fixture scope. Both wait methods and their interface mappings, plus the endpoint
 pair, stay partial: 1239 partial declarations, 41 missing, 21 partial pairs,
 `inventory_complete=false`, `complete_port=false`; task 3.9 remains open.
+
+### B02 core inspection — approved and fixture-verified
+
+The remaining ten initial read contracts are now covered by core_inspection_v1:
+nine named Go reads and connect/2 discovery. The shared inspection fixture uses
+fixed expected fields before native DTO comparison; native defaults in nested
+state memory are supplied explicitly. Operation groups flatten to an ID-sorted
+comparison, preserving native unspecified cross-group order. Discovery uses
+unchanged RawQuery transport with discovery disabled in the Go driver; local
+required-field and API-version guards are independent evidence, not GetServer
+DTO parity. Minimal valid discovery retains required fields rather than accepting
+an empty server. Getter ETags and independent list-header retention are separate.
+
+All ten contracts cover both Unix and mutual HTTPS, native permission/absence,
+byte/readiness bounds and deadline/cancellation with peer EOF. Existing ten
+inspection and eight mutation scopes remain visible. Progress is 18 -> 28 scoped
+contracts inside the same 36 partial rows. B02's additional selectors/types/fields/
+errors remain in the backlog; no whole endpoint, declaration or task is promoted.

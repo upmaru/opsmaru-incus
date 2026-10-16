@@ -173,6 +173,39 @@ the closure checklist and recommend the next implementation batch without
 implementing it. Keep new verifier logic bounded; large mechanical ledger data
 is audit output, not authorization for runtime/parser expansion.
 
+#### Approved slice: B02 remaining initial inspection contracts (2026-10-16)
+
+Extend the existing inspection fixture for GetInstances, GetInstance,
+GetInstanceState, GetInstanceSnapshots, GetInstanceSnapshot, GetImages, GetImage,
+GetOperations and GetOperation, plus explicit server discovery through connect/2.
+Use only current catalogue queries and a container sample for GetInstances;
+other recursion/filter/all-projects/private-image/type variants remain gaps.
+No runtime, descriptor, shared tool or parser change is planned.
+
+Compare the nine unchanged named Go read methods on Unix and mutual HTTPS for
+populated/empty DTOs, known-field corruption, native 403/404, host project/member,
+response binding and applicable ETags. Preserve operation grouping semantics
+without inferring cross-group ordering. Derive expected fields from fixtures,
+assert the complete decoded fixture first, and compare fixed known keys with Go;
+unknown-field retention is an independent codec assertion, not Go DTO parity.
+
+Discovery has no typed catalogue descriptor: compare its GET transport using
+unchanged Go RawQuery with discovery disabled in the driver, then independently
+exercise connect/2's raw metadata, required API version/extensions and rejection
+of malformed or unsupported-version discovery. Minimal valid discovery retains
+required fields; it is not an empty supported server. Do not invent an ETag field
+on the connected client or claim named GetServer DTO parity from RawQuery.
+
+Reuse bounded response-byte, readiness, deadline/cancellation and actual peer EOF
+fixtures on both transports, with one local GET and no replay or backend mutation.
+Record core_inspection_v1 on exactly nine methods and the one discovery helper;
+retain the existing ten inspection and eight mutation scopes, 36 partial selected
+endpoints, all declaration gaps and complete_port=false. Validate exact methods,
+helper attachment, transports, cases and evidence; reject scope overclaims.
+Update the closure ledger and coverage evidence without certifying broader
+endpoint variants or real-backend acceptance. Keep additions data-driven within
+a few hundred handwritten lines; stop before runtime/infrastructure expansion.
+
 #### Approved slice: B01 mutation lifecycle evidence (2026-10-16)
 
 Verify the eight existing B01 endpoint/method pairs: CreateInstance,

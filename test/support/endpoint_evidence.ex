@@ -4,6 +4,8 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
 
   @inspection ~w(GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume)
 
+  @core ~w(GetInstances GetInstance GetInstanceState GetInstanceSnapshots GetInstanceSnapshot GetImages GetImage GetOperations GetOperation)
+
   @mutation ~w(CreateInstance UpdateInstance UpdateInstanceState DeleteInstance CreateInstanceSnapshot DeleteInstanceSnapshot DeleteImage DeleteOperation)
 
   # This validates evidence links and provenance, not protocol correctness.
@@ -45,6 +47,7 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
 
     inspection!(manifest)
     mutation!(manifest)
+    core!(manifest)
 
     wait = Enum.find(manifest["entries"], &String.ends_with?(&1["path"], "/wait"))
     assert wait["status"] == "partial" and wait["method"] == "GetOperationWait"
@@ -57,7 +60,7 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     assert is_map(contract), "missing inspection contract"
 
     assert Enum.sort(Map.keys(manifest["fixture_contracts"])) ==
-             ["initial_inspection_v1", "initial_mutation_lifecycle_v1"],
+             ["core_inspection_v1", "initial_inspection_v1", "initial_mutation_lifecycle_v1"],
            "unknown inspection contract"
 
     assert contract["status"] == "fixture_verified", "invalid inspection contract status"
@@ -80,9 +83,17 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     for row <- manifest["entries"] do
       expected =
         cond do
-          row["method"] in @inspection -> "initial_inspection_v1"
-          row["method"] in @mutation -> "initial_mutation_lifecycle_v1"
-          true -> nil
+          row["method"] in @core or (row["verb"] == "GET" and row["path"] == "/1.0") ->
+            "core_inspection_v1"
+
+          row["method"] in @inspection ->
+            "initial_inspection_v1"
+
+          row["method"] in @mutation ->
+            "initial_mutation_lifecycle_v1"
+
+          true ->
+            nil
         end
 
       assert row["verified_scope"] == expected, "invalid inspection contract attachment"
@@ -90,6 +101,27 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
       if row["method"] in @inspection,
         do:
           assert("inspection_contract" in row["evidence"], "missing inspection contract evidence")
+    end
+  end
+
+  defp core!(manifest) do
+    assert get_in(manifest, ["fixture_contracts", "core_inspection_v1"]) == %{
+             "status" => "fixture_verified",
+             "methods" => @core,
+             "helpers" => ~w(connect),
+             "queries" => "catalogue_only",
+             "instance_types" => ~w(container),
+             "discovery" => "raw_query_transport_and_connect_guards",
+             "transports" => ~w(unix mutual_https),
+             "cases" =>
+               ~w(populated empty metadata_type_rejection native_403 native_404 response_bound readiness deadline cancellation discovery_required_fields discovery_version),
+             "evidence" => ~w(core_inspection_contract)
+           },
+           "invalid core inspection contract"
+
+    for row <- manifest["entries"], row["verified_scope"] == "core_inspection_v1" do
+      assert "core_inspection_contract" in row["evidence"],
+             "missing core inspection contract evidence"
     end
   end
 

@@ -4,9 +4,12 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   alias Opsmaru.Incus.{Connection, Context, Error, RequestContext, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
 
-  @names ~w(GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume)
+  @names ~w(GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume GetInstances GetInstance GetInstanceState GetInstanceSnapshots GetInstanceSnapshot GetImages GetImage GetOperations GetOperation)
   @methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
            |> Enum.filter(&(&1["name"] in @names))
+  # Discovery is a public helper, not a named Go GetServer DTO comparison.
+  @discovery %{"name" => "connect", "params" => [], "result" => "discovery", "model" => "Server"}
+  @contracts @methods ++ [@discovery]
   @extensions ~w(projects network storage)
   @driver Path.expand("../.integration/inspection-driver", __DIR__)
 
@@ -19,7 +22,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 10
+    assert length(@methods) == 19
     :ok
   end
 
@@ -31,7 +34,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     %{root: root}
   end
 
-  for method <- @methods, transport <- [:unix, :https] do
+  for method <- @contracts, transport <- [:unix, :https] do
     test "#{method["name"]} #{transport} scoped inspection matches native results, routing and errors",
          %{root: root} do
       method = unquote(Macro.escape(method))
@@ -42,13 +45,17 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       for outcome <- [:populated, :empty, :corrupt, 403, 404],
           do: compare(root, identity, method, outcome)
 
+      if method == @discovery do
+        for outcome <- [:missing, :version], do: compare(root, identity, method, outcome)
+      end
+
       bounds(root, identity, method)
       for mode <- [:deadline, :cancel], do: lifetime(root, identity, method, mode)
     end
   end
 
   defp compare(root, identity, method, outcome) do
-    fixture = backend(root, identity, fn _ -> response(method, outcome) end)
+    fixture = backend(root, identity, fn _ -> response(method, outcome) end, method)
     client = client(fixture, identity)
     values = Enum.map(method["params"], &args(method)[&1])
 
@@ -60,18 +67,32 @@ defmodule Opsmaru.Incus.InspectionContractTest do
         target: "member/a"
       })
 
+    input =
+      if method == @discovery,
+        do:
+          input
+          |> Map.drop([:action, :args])
+          |> Map.merge(%{method: "GET", path: "/1.0?project=fixture+scope&target=member%2Fa"}),
+        else: input
+
     file = Path.join(root, "oracle.json")
     File.write!(file, Jason.encode!(input))
     {out, status} = System.cmd(@driver, [file], stderr_to_stdout: true)
     assert status == 0, out
     expected = Jason.decode!(out)
-    actual = Incus.call(client, method["name"], args(method))
-    assert [%{method: "GET"}, native, local] = HTTPFixture.requests(fixture)
+    actual = invoke(client, method)
+    requests = HTTPFixture.requests(fixture)
+    if method != @discovery, do: assert(length(requests) == 3)
+    assert [native, local] = if(method == @discovery, do: requests, else: tl(requests))
     assert local.method == "GET"
     assert WireComparison.request(local) == WireComparison.request(native)
     query = URI.decode_query(URI.parse(local.target).query)
     assert query["project"] == "fixture scope" and query["target"] == "member/a"
 
+    assert_result(actual, expected, client, method, outcome)
+  end
+
+  defp assert_result(actual, expected, client, method, outcome) do
     cond do
       is_integer(outcome) ->
         assert {:error,
@@ -86,29 +107,34 @@ defmodule Opsmaru.Incus.InspectionContractTest do
         assert expected["error_status"] == outcome and expected["error"] == message
         assert reply.connection == client.connection and reply.identity == :verified
 
+      method == @discovery ->
+        discovery_result(actual, expected, client, outcome)
+
       outcome == :corrupt ->
         assert expected["error"]
         assert {:error, %Error{kind: :invalid_model}} = actual
 
       true ->
-        refute expected["error"], out
+        refute expected["error"], inspect(expected)
         assert {:ok, reply} = actual
         assert reply.connection == client.connection and reply.identity == :verified
         assert reply.etag == "\"read-etag\""
         if method["result"] == "model", do: assert(reply.etag == Enum.at(expected["outputs"], 1))
-        payload = metadata(method, outcome)
+        payload = flatten(method, metadata(method, outcome))
 
         decoded =
-          if method["result"] == "list",
-            do: Enum.map(reply.metadata, & &1.data),
+          if method["result"] in ["list", "grouped_list"],
+            do: reply.metadata |> Enum.map(& &1.data) |> ordered(method),
             else: reply.metadata.data
 
         assert decoded == payload
         # The native typed DTO drops unknown fields; lossless retention is independent evidence.
         known = fn data -> Map.delete(data, "future_field") end
 
-        if method["result"] == "list" do
-          assert Enum.zip(hd(expected["outputs"]), payload)
+        if method["result"] in ["list", "grouped_list"] do
+          native = ordered(hd(expected["outputs"]), method)
+
+          assert Enum.zip(native, payload)
                  |> Enum.all?(fn {native, data} ->
                    Map.take(native, Map.keys(known.(data))) == known.(data)
                  end)
@@ -121,12 +147,12 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   end
 
   defp bounds(root, identity, method) do
-    fixture = backend(root, identity, fn _ -> response(method, :populated) end)
+    fixture = backend(root, identity, fn _ -> response(method, :populated) end, method)
     client = client(fixture, identity)
     limited = %{client | connection: %{client.connection | max_response_bytes: 32}}
 
     assert {:error, %Error{kind: :response_limit}} =
-             Incus.call(limited, method["name"], args(method))
+             invoke(limited, method)
 
     for extension <- List.wrap(method["extension"]) do
       missing = %{client | server: %Server{api_extensions: List.delete(@extensions, extension)}}
@@ -135,6 +161,12 @@ defmodule Opsmaru.Incus.InspectionContractTest do
                Incus.call(missing, method["name"], args(method))
     end
 
+    unready = %{
+      client
+      | context: Context.new!(owner: :fixture, identity: :verified, ready?: fn -> false end)
+    }
+
+    assert {:error, %Error{kind: :host_not_ready}} = invoke(unready, method)
     assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
   end
 
@@ -143,19 +175,24 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     tag = make_ref()
 
     fixture =
-      backend(root, identity, fn _ ->
-        %{
-          upgrade: fn transport, socket ->
-            send(parent, {tag, :entered})
-            send(parent, {tag, :closed, transport.recv(socket, 0, 30_000)})
-          end
-        }
-      end)
+      backend(
+        root,
+        identity,
+        fn _ ->
+          %{
+            upgrade: fn transport, socket ->
+              send(parent, {tag, :entered})
+              send(parent, {tag, :closed, transport.recv(socket, 0, 30_000)})
+            end
+          }
+        end,
+        method
+      )
 
     original = client(fixture, identity)
     context = RequestContext.new!(timeout: if(mode == :deadline, do: 3_000, else: 30_000))
     scoped = Incus.with_context(original, context)
-    task = Task.async(fn -> Incus.call(scoped, method["name"], args(method)) end)
+    task = Task.async(fn -> invoke(scoped, method) end)
     assert_receive {^tag, :entered}, 10_000
     if mode == :cancel, do: RequestContext.cancel(context)
     kind = if mode == :deadline, do: :deadline, else: :canceled
@@ -175,12 +212,125 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       body: %{type: "sync", status_code: 200, metadata: metadata(method, outcome)}
     }
 
+  defp invoke(client, @discovery), do: Incus.connect(client.connection, client.context)
+  defp invoke(client, method), do: Incus.call(client, method["name"], args(method))
+
+  defp discovery_result(actual, native, client, outcome) do
+    refute native["error"]
+    assert native["response"]["metadata"] == metadata(@discovery, outcome)
+    assert native["etag"] == "\"read-etag\""
+
+    if outcome in [:corrupt, :missing, :version] do
+      kind = if outcome == :version, do: :unsupported_version, else: :invalid_server
+      assert {:error, %Error{kind: ^kind}} = actual
+    else
+      assert {:ok, connected} = actual
+      assert connected.connection == client.connection and connected.context == client.context
+      assert connected.server.raw == metadata(@discovery, outcome)
+      assert connected.server.api_version == "1.0"
+      assert connected.server.api_extensions == metadata(@discovery, outcome)["api_extensions"]
+    end
+  end
+
+  defp metadata(@discovery, :missing), do: %{}
+  defp metadata(@discovery, :empty), do: %{"api_version" => "1.0", "api_extensions" => []}
+  defp metadata(@discovery, :version), do: %{sample("Server") | "api_version" => "2.0"}
   defp metadata(%{"result" => "list"}, :empty), do: []
   defp metadata(_, :empty), do: %{}
 
   defp metadata(method, outcome) do
-    data = if outcome == :corrupt, do: %{"config" => []}, else: sample(method["model"])
-    if method["result"] == "list", do: [data], else: data
+    data = if outcome == :corrupt, do: corrupt(method["model"]), else: sample(method["model"])
+
+    case method["result"] do
+      "list" ->
+        [data]
+
+      "grouped_list" ->
+        %{
+          "running" => [data],
+          "success" => [%{data | "id" => "finished", "status" => "Success", "status_code" => 200}]
+        }
+
+      _ ->
+        data
+    end
+  end
+
+  defp flatten(%{"result" => "grouped_list"} = method, groups),
+    do: groups |> Map.values() |> List.flatten() |> ordered(method)
+
+  defp flatten(_, data), do: data
+
+  # The Go client flattens a map of groups; cross-group result ordering is not a contract.
+  defp ordered(data, %{"result" => "grouped_list"}), do: Enum.sort_by(data, & &1["id"])
+  defp ordered(data, _), do: data
+
+  defp corrupt("Server"), do: %{"api_version" => "1.0", "api_extensions" => false}
+  defp corrupt("InstanceState"), do: %{"pid" => "invalid"}
+  defp corrupt("Image"), do: %{"public" => "invalid"}
+  defp corrupt("Operation"), do: %{sample("Operation") | "status_code" => "invalid"}
+  defp corrupt(_), do: %{"config" => []}
+
+  defp sample("Server"),
+    do: %{
+      "api_version" => "1.0",
+      "api_extensions" => @extensions,
+      "api_status" => "stable",
+      "auth" => "trusted",
+      "environment" => %{},
+      "future_field" => %{}
+    }
+
+  defp sample("InstanceState"),
+    do: %{
+      "status" => "Running",
+      "status_code" => 103,
+      "pid" => 42,
+      "processes" => 2,
+      "memory" => %{
+        "usage" => 32,
+        "usage_peak" => 0,
+        "total" => 0,
+        "swap_usage" => 0,
+        "swap_usage_peak" => 0
+      },
+      "future_field" => %{}
+    }
+
+  defp sample("Image"),
+    do: %{
+      "fingerprint" => "fixture-fingerprint",
+      "public" => false,
+      "auto_update" => false,
+      "properties" => %{"description" => "fixture"},
+      "size" => 123,
+      "architecture" => "x86_64",
+      "future_field" => %{}
+    }
+
+  defp sample("Operation"),
+    do: %{
+      "id" => "running",
+      "status" => "Running",
+      "status_code" => 103,
+      "err" => "",
+      "may_cancel" => true,
+      "metadata" => %{"fixture" => "retained"},
+      "future_field" => %{}
+    }
+
+  defp sample(model) when model in ["Instance", "InstanceSnapshot"] do
+    base = %{
+      "name" => "fixture",
+      "config" => %{"user.note" => "value"},
+      "devices" => %{"root" => %{"type" => "disk", "path" => "/", "pool" => "fixture"}},
+      "profiles" => ["default"],
+      "future_field" => %{}
+    }
+
+    if model == "Instance",
+      do: Map.merge(base, %{"type" => "container", "status" => "Running", "status_code" => 103}),
+      else: Map.put(base, "stateful", false)
   end
 
   defp sample(model) do
@@ -219,9 +369,17 @@ defmodule Opsmaru.Incus.InspectionContractTest do
 
   defp args(method),
     do:
-      Map.new(method["params"], &{&1, if(&1 == "volType", do: "custom", else: "fixture-" <> &1)})
+      Map.new(
+        method["params"],
+        &{&1,
+         case &1 do
+           "volType" -> "custom"
+           "instance_type" -> "container"
+           key -> "fixture-" <> key
+         end}
+      )
 
-  defp backend(root, identity, handler) do
+  defp backend(root, identity, handler, method) do
     options =
       if identity,
         do: [
@@ -244,7 +402,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
        options ++
          [
            handler: fn request ->
-             if URI.parse(request.target).path == "/1.0",
+             if method != @discovery and URI.parse(request.target).path == "/1.0",
                do: %{
                  status: 200,
                  body: %{

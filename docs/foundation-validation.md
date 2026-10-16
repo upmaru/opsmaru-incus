@@ -1632,3 +1632,41 @@ strict Credo and all three strict OpenSpec changes. Reference checks pass the
 inventory/schema tooling and 188 constants. Fresh hosted review and both-platform
 immutable-consumer evidence are recorded on PR #14; no scope or parity promotion
 follows from these assertions.
+
+## B02 core inspection evidence — 2026-10-16
+
+Created feature/incus-client-core-inspection from merged develop `103f144`.
+OpenSpec proposal/design/spec/tasks were updated and strictly validated before
+fixture implementation. Runtime, catalogue, Go driver and pinned oracle stay
+unchanged. This batch extends the existing fixture rather than introducing a new
+transport framework: nine named instance/state/snapshot/image/operation reads plus
+connect/2 discovery. New handwritten test/support logic stays within a few hundred
+lines; no parser, runtime fix or new acceptance scope was needed.
+
+The forty shared inspection tests cover nineteen named methods and one helper,
+on Unix and verified mutual HTTPS. They make 190 named-Go comparisons plus 14
+RawQuery discovery comparisons. Discovery required-field and version guards are
+independent of RawQuery, which does not decode GetServer DTOs. Minimal valid server
+metadata preserves required fields; empty metadata, malformed extensions and API
+2.0 reject. Fixed fixture fields are asserted in full before Go projection, and
+unknown fields are retained independently. Nested memory includes Go's explicit
+zero fields; grouped operation maps compare flattened results by ID without
+cross-group ordering claims. Native getter ETags, independent list-header retention,
+403/404, routing/identity, response bytes, readiness and deadline/cancellation with
+actual peer EOF are covered. No elapsed-time success bound was added.
+
+The checked core_inspection_v1 profile attaches to exactly ten partial rows in
+both ledgers and rejects missing methods/helper/cases/transports/evidence or
+misplaced scope claims. B02 now has initial scoped evidence on all twenty assigned
+rows; together with B01 this moves 18 -> 28 scoped contracts (27 methods and one
+helper), inside the same 36 partial endpoint rows. Further selectors/types/fields/
+errors remain explicit backlog obligations. Coverage adds links without promoting
+any declaration or endpoint status; task 3.9 and complete_port=false remain open.
+No backend, shared operation/tool or consumer-owned hardware acceptance is claimed.
+
+Final local canonical checks pass: 1107 tests, zero failures, format,
+warning-free compilation, strict Credo and all three strict OpenSpec changes.
+Reference inventory/schema tooling and all 188 constants pass. Coverage generation
+is byte-identical and all declaration IDs/statuses match merged develop. The
+pushed Ubuntu/macOS canonical/reference and immutable-consumer results are recorded
+on this slice's draft PR; they remain distinct from real-backend acceptance.

@@ -196,6 +196,30 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
+  test "rejects incomplete or overclaimed core inspection contracts", %{native: native} do
+    path = ["fixture_contracts", "core_inspection_v1"]
+
+    for field <-
+          ~w(methods helpers queries instance_types discovery transports cases evidence status) do
+      assert_raise ExUnit.AssertionError, ~r/inspection contract/, fn ->
+        EndpointEvidence.validate!(put_in(@manifest, path ++ [field], nil), native)
+      end
+    end
+
+    for row <- @manifest["entries"], row["verified_scope"] == "core_inspection_v1" do
+      entries =
+        Enum.map(@manifest["entries"], fn entry ->
+          if entry == row,
+            do: %{entry | "evidence" => entry["evidence"] -- ["core_inspection_contract"]},
+            else: entry
+        end)
+
+      assert_raise ExUnit.AssertionError, ~r/inspection contract/, fn ->
+        EndpointEvidence.validate!(%{@manifest | "entries" => entries}, native)
+      end
+    end
+  end
+
   test "rejects incomplete or overclaimed mutation lifecycle contracts", %{native: native} do
     path = ["fixture_contracts", "initial_mutation_lifecycle_v1"]
 

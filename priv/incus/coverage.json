@@ -107,9 +107,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/interface_method/ImageServer.GetImageAlias",
@@ -188,9 +189,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/interface_method/ImageServer.GetImagesAllProjects",
@@ -1203,9 +1205,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceAccess",
@@ -1370,9 +1373,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceSnapshotNames",
@@ -1388,18 +1392,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceState",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceTemplateFile",
@@ -1424,9 +1430,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstancesAllProjects",
@@ -1867,9 +1874,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/interface_method/InstanceServer.GetOperationUUIDs",
@@ -1916,9 +1924,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/interface_method/InstanceServer.GetOperationsAllProjects",
@@ -2046,9 +2055,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus.ex",
       "evidence": [
-        "test/client_test.exs"
+        "test/client_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Bounded helper slice only; consult public coverage limitations before use. connect/2 discovery has RawQuery transport differential plus independent required-field/version/readiness/bounds/lifetime evidence on Unix/mutual HTTPS; not named Go GetServer DTO parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetServerResources",
@@ -4316,9 +4326,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/method/ProtocolIncus.GetImageAlias",
@@ -4397,9 +4408,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/method/ProtocolIncus.GetImagesAllProjects",
@@ -4433,9 +4445,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceAccess",
@@ -4600,9 +4613,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceSnapshotNames",
@@ -4618,18 +4632,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceState",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceTemplateFile",
@@ -4654,9 +4670,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/method/ProtocolIncus.GetInstancesAllProjects",
@@ -5104,9 +5121,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/method/ProtocolIncus.GetOperationUUIDs",
@@ -5153,9 +5171,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified."
     },
     {
       "id": "client/method/ProtocolIncus.GetOperationsAllProjects",
@@ -5301,9 +5320,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus.ex",
       "evidence": [
-        "test/client_test.exs"
+        "test/client_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Bounded helper slice only; consult public coverage limitations before use. connect/2 discovery has RawQuery transport differential plus independent required-field/version/readiness/bounds/lifetime evidence on Unix/mutual HTTPS; not named Go GetServer DTO parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetServerResources",
