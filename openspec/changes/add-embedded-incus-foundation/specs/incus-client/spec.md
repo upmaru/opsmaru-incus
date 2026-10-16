@@ -48,6 +48,7 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 
 - **WHEN** the atom-safety fixture parses all 200 distinct keys in bounded ten-key documents
 - **THEN** every document must decode to its complete expected string map and no probe key may become an atom
+- **AND** the resource-sensitive YAML module runs serially with all large-document success, elapsed, oracle and worker/message cleanup checks retained
 - **AND** parser code, native oracle, accepted subset, production limits and test timeouts remain unchanged; retries and accepted rejections cannot establish this evidence
 
 #### Scenario: Socket receive timeout wins the deadline race

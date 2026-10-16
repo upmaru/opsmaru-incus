@@ -252,6 +252,13 @@ and verify none of the 200 keys are atoms before or after parsing. Do not accept
 rejection, retry decoding or raise any timeout. This tests atom safety without
 assuming one large document always finishes inside a wall-clock resource budget.
 
+After atom batching, run 38895931250 passed Ubuntu fully and every atom probe,
+but macOS rejected a near-limit success fixture in this same async YAML module.
+Run this resource-sensitive test module serially to remove competing async fixture
+work while retaining its large-document success, elapsed, native differential,
+worker/message cleanup and all atom assertions. Keep ownership-based worker
+tracing rather than a VM-wide process count. This changes test scheduling only.
+
 Keep NativeYaml, NativeConfig, the pinned oracle, reduction/heap/deadline limits
 and accepted subset unchanged. Update validation/closure evidence, regenerate
 coverage without status promotion, run canonical/reference checks and verify

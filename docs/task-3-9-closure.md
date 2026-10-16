@@ -968,3 +968,8 @@ requiring a single large document to finish inside a wall-clock parser cap under
 CI load. No rejection is accepted as success, no retry or timeout increase is
 introduced, and parser/oracle code and all production limits are unchanged. The
 remaining YAML subset and declaration gaps stay open.
+
+Resource-sensitive YAML fixtures run serially so native large-document acceptance
+and elapsed assertions do not compete with other async fixture suites. Actual
+worker tracing and message cleanup remain; parser budgets, success assertions and
+test timeouts are unchanged. This scheduling change adds no parser capability.

@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.NativeYamlReferenceTest do
-  use ExUnit.Case, async: true
+  # Budgeted acceptance fixtures need isolation from competing async test workloads.
+  use ExUnit.Case, async: false
   alias Opsmaru.Incus.Error
   alias Opsmaru.Incus.NativeConfig
   @moduletag timeout: 120_000
@@ -532,8 +533,7 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
                  )
       end)
 
-    # This module is async. Other tests may start processes while decoding;
-    # trace the actual two decode workers instead of counting the whole VM.
+    # Trace this caller's actual decode workers, independent of unrelated VM processes.
     assert length(workers) == 2
     for worker <- workers, do: refute(Process.alive?(worker))
     refute_received _

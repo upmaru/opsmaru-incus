@@ -1748,3 +1748,20 @@ checks pass all 1110 tests, format, warning-free compile, strict Credo and all t
 strict OpenSpec changes. Reference tooling and 188 constants pass. Coverage
 regenerates byte-identically; no runtime/oracle file changed in this follow-up.
 Pushed platform and immutable-consumer results are recorded on PR #15.
+
+CI run 38895931250 on atom-batching head `a3104d2` passed Ubuntu canonical/reference
+and the immutable consumer. Every atom probe also passed on macOS; its sole failure
+was the same async YAML module's near-limit realistic-document success assertion.
+That fixture checks throughput within the production parser budget while other
+async suites can run heavy Go/build/fixture work. The test-only follow-up runs this
+resource-sensitive module serially. It retains near-limit success and map size,
+existing elapsed bounds, all native differentials, actual decode-worker tracing,
+message cleanup, all 200 atom probes and every production/test timeout. No parser
+or runtime change was made. This isolates fixture scheduling; the CI rejection's
+specific parser bound is not exposed by the error value.
+
+All eight YAML tests pass serially with macOS failure seed 742444. Full canonical
+checks pass all 1110 tests, formatting, warning-free compile, strict Credo and all
+three strict OpenSpec changes. Reference tooling and 188 constants pass; coverage
+is byte-identical and runtime/oracle files are unchanged in this follow-up. Exact
+pushed-platform and immutable-consumer results are recorded on PR #15.
