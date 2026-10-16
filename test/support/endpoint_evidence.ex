@@ -28,22 +28,25 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     assert length(Enum.uniq(pairs)) == length(pairs), "duplicate endpoint pair"
     native_pairs = MapSet.new(native["pairs"], &normalize/1)
 
-    for row <- manifest["entries"] do
-      assert MapSet.member?(native_pairs, pair(row)), "missing native endpoint"
-      assert row["status"] in ["partial", "missing"], "unsupported completion claim"
-      assert is_binary(row["scope"]) and row["scope"] != ""
-      assert is_list(row["gaps"]) and row["gaps"] != [], "missing gaps"
+    _cache =
+      Enum.reduce(manifest["entries"], %{}, fn row, cache ->
+        assert MapSet.member?(native_pairs, pair(row)), "missing native endpoint"
+        assert row["status"] in ["partial", "missing"], "unsupported completion claim"
+        assert is_binary(row["scope"]) and row["scope"] != ""
+        assert is_list(row["gaps"]) and row["gaps"] != [], "missing gaps"
 
-      if row["status"] == "missing" do
-        assert row["method"] == nil
-        assert row["clients"] == [] and row["evidence"] == [] and row["consumer"] == []
-      else
-        assert row["clients"] != [] and row["evidence"] != [], "missing client/evidence links"
-        clients!(manifest, row)
-        evidence!(manifest, row)
-        method!(methods, native["pairs"], row)
-      end
-    end
+        if row["status"] == "missing" do
+          assert row["method"] == nil
+          assert row["clients"] == [] and row["evidence"] == [] and row["consumer"] == []
+          cache
+        else
+          assert row["clients"] != [] and row["evidence"] != [], "missing client/evidence links"
+          clients!(manifest, row)
+          cache = evidence!(manifest, row, cache)
+          method!(methods, native["pairs"], row)
+          cache
+        end
+      end)
 
     inspection!(manifest)
     mutation!(manifest)
@@ -170,22 +173,31 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     end
   end
 
-  defp evidence!(manifest, row) do
-    for key <- row["evidence"] do
+  defp evidence!(manifest, row, cache) do
+    Enum.reduce(row["evidence"], cache, fn key, cache ->
       assert Map.has_key?(manifest["evidence"], key), "missing evidence link"
       [path, anchor] = manifest["evidence"][key]
       assert File.regular?(path), "missing evidence file"
-      ast = path |> File.read!() |> Code.string_to_quoted!()
-
-      {_, tests} =
-        Macro.prewalk(ast, [], fn
-          {:test, _, [name | _]} = node, names -> {node, [Macro.to_string(name) | names]}
-          node, names -> {node, names}
-        end)
+      tests = Map.get_lazy(cache, path, fn -> test_names!(path) end)
 
       assert anchor != "" and Enum.any?(tests, &String.contains?(&1, anchor)),
              "missing test anchor: #{path} #{anchor}"
-    end
+
+      Map.put(cache, path, tests)
+    end)
+  end
+
+  # Scoped to one validate! call: every row checks its own anchor, every call rereads source.
+  defp test_names!(path) do
+    ast = path |> File.read!() |> Code.string_to_quoted!()
+
+    {_, tests} =
+      Macro.prewalk(ast, [], fn
+        {:test, _, [name | _]} = node, names -> {node, [Macro.to_string(name) | names]}
+        node, names -> {node, names}
+      end)
+
+    tests
   end
 
   defp method!(methods, native_pairs, row) do

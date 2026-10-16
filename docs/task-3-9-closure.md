@@ -953,3 +953,9 @@ GET/HEAD deadline, POST uncertainty, peer EOF, early EOF as response failure and
 one request per call. The regression failed on both transports before the fix;
 no flaky-run retry was used as evidence. core_inspection_v1 requires this separate
 receive_expiry anchor. Whole endpoint/declaration/task statuses remain unchanged.
+
+The expanded negative evidence matrix retains every case without raising its
+timeout: source test names are parsed once per file per validation, while each
+row/anchor is checked separately and subsequent calls reread source. A source-drift
+regression protects those boundaries. This is test-support bookkeeping, with no
+additional transport change or scope promotion.

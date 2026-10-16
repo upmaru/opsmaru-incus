@@ -49,6 +49,7 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **WHEN** a passive HTTP socket receive exhausts its absolute remaining deadline before the outer guard result is observed
 - **THEN** GET/HEAD report the local deadline, POST retains uncertain mutation semantics, peers close and no request is replayed
 - **AND** premature EOF remains a response failure, with deterministic Unix/mutual-HTTPS regression evidence that does not relax deadlines or accepted error kinds
+- **AND** evidence validation parses each referenced source once per invocation while retaining row-specific anchors, fresh source reads across invocations and the full negative-case matrix
 
 #### Scenario: Remaining initial inspection contracts
 

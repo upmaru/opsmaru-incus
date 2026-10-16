@@ -229,7 +229,13 @@ Map only Mint's explicit receive timeout to :deadline. Preserve all other receiv
 errors, deadlines, cancellation rules, cleanup and operation identity. Do not
 normalize all failures or change transport budgets. Add bounded regression and
 coverage/closure evidence; retain all declaration/endpoint statuses and task 3.9
-open. Stop again if diagnosis requires broader transport or callback changes.
+open. A subsequent macOS run passed the receive regressions but the expanded
+negative evidence matrix exceeded ExUnit's 60-second limit while repeatedly
+parsing fixture source. Deduplicate source parsing per validation invocation,
+retaining all row/anchor assertions and negative cases; never use a cross-call
+cache that could hide source drift or increase the test timeout. This test-support
+optimization is part of making the new evidence guards bounded. Stop again if
+diagnosis requires broader transport or callback changes.
 
 #### Approved slice: B01 mutation lifecycle evidence (2026-10-16)
 

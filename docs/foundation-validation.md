@@ -1703,3 +1703,24 @@ strict Credo and all three strict OpenSpec changes. Reference tooling and 188
 constants pass; coverage regenerates byte-identically with unchanged declaration
 IDs/statuses. Current pushed platform and immutable-consumer outcomes are recorded
 on PR #15 alongside the initial failure and reproduced cause.
+
+## PR #15 bounded evidence-source validation — 2026-10-16
+
+Fix-head CI run 38886752435 (`05d4c65`) passed Ubuntu canonical/reference and the
+immutable consumer. macOS passed the receive-expiry regressions and failed only
+the expanded negative evidence matrix's 60-second test limit while tokenizing
+fixture source repeatedly. All transport error assertions and budgets stay strict.
+
+The validator now retains a source-path -> parsed test-name map only within one
+validate! invocation. It still checks every row's evidence key, file, distinct
+anchor, method and scope, and all negative matrix cases remain. A shared-source
+regression validates two different anchors, rewrites the source, then confirms
+the next validation rejects the removed anchor. No persistent/global cache can
+hide drift. All 14 focused evidence tests pass; no timeout was increased. The
+runtime fix, coverage and every endpoint/declaration status are unchanged.
+
+Final local canonical checks pass all 1110 tests, format, warning-free compile,
+strict Credo and all three strict OpenSpec changes. Reference tooling and 188
+constants pass; coverage regeneration is unchanged. Current-head platform and
+immutable-consumer evidence is recorded on PR #15, preserving both prior failures
+and their diagnosed fixes rather than treating a rerun as verification.
