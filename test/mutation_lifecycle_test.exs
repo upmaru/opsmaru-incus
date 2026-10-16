@@ -199,8 +199,9 @@ defmodule Opsmaru.Incus.MutationLifecycleTest do
         assert reply.identity == :verified and reply.connection == client.connection
         refute Operation.completed?(operation)
 
-        assert Map.take(hd(expected["outputs"]), Map.keys(reply.metadata.data)) ==
-                 reply.metadata.data
+        data = snapshot(103)
+        assert reply.metadata.data == data
+        assert Map.take(hd(expected["outputs"]), Map.keys(data)) == data
 
         wait(root, fixture, identity, operation, outcome)
     end
@@ -224,7 +225,9 @@ defmodule Opsmaru.Incus.MutationLifecycleTest do
     assert URI.parse(local_wait.target).path == @url <> "/wait"
     assert reply.etag == Enum.at(expected["outputs"], 1) and reply.etag == "\"lifecycle\""
     assert reply.connection == operation.client.connection and reply.identity == :verified
-    assert Map.take(hd(expected["outputs"]), Map.keys(reply.metadata.data)) == reply.metadata.data
+    data = snapshot(outcome)
+    assert reply.metadata.data == data
+    assert Map.take(hd(expected["outputs"]), Map.keys(data)) == data
     current = %{operation | response: reply}
     assert Operation.completed?(current) == (outcome != 103)
     assert Operation.successful?(current) == (outcome == 200)

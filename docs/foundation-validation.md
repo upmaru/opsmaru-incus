@@ -1614,3 +1614,21 @@ Reference checks pass the inventory/schema tooling and 188 constants. Coverage
 regenerates byte-identically, and declaration IDs/statuses match merged develop.
 Pushed Ubuntu/macOS canonical/reference and immutable-consumer results are
 recorded with this slice's draft PR; they do not establish real-backend acceptance.
+
+## PR #14 fixed operation-field assertions — 2026-10-16
+
+Greptile's 4/5 finding exposed a test assertion that could hide dropped fields:
+projecting the Go result with keys from decoded data accepts a decoder that loses
+may_cancel or nested metadata. A focused reproduction confirmed that weakness.
+Both acceptance and native-wait comparisons now first assert the complete fixture
+snapshot, then compare those fixed fixture keys with Go. This protects every
+snapshot field and nested metadata contents across the existing Unix/mutual-HTTPS
+matrix. Runtime, catalogue, oracle, contract scope and declaration statuses stay
+unchanged; coverage regeneration is byte-identical and task 3.9 remains open.
+
+Corrected lifecycle fixtures pass all four tests and 222 native comparisons.
+Canonical checks pass all 1086 tests, formatting, warnings-as-errors compilation,
+strict Credo and all three strict OpenSpec changes. Reference checks pass the
+inventory/schema tooling and 188 constants. Fresh hosted review and both-platform
+immutable-consumer evidence are recorded on PR #14; no scope or parity promotion
+follows from these assertions.
