@@ -173,6 +173,98 @@ the closure checklist and recommend the next implementation batch without
 implementing it. Keep new verifier logic bounded; large mechanical ledger data
 is audit output, not authorization for runtime/parser expansion.
 
+#### Approved slice: B02 remaining initial inspection contracts (2026-10-16)
+
+Extend the existing inspection fixture for GetInstances, GetInstance,
+GetInstanceState, GetInstanceSnapshots, GetInstanceSnapshot, GetImages, GetImage,
+GetOperations and GetOperation, plus explicit server discovery through connect/2.
+Use only current catalogue queries and a container sample for GetInstances;
+other recursion/filter/all-projects/private-image/type variants remain gaps.
+The initial B02 batch changes no runtime, descriptor, shared tool or parser.
+The explicitly approved deadline-classification follow-up below is the sole runtime exception.
+
+Compare the nine unchanged named Go read methods on Unix and mutual HTTPS for
+populated/empty DTOs, known-field corruption, native 403/404, host project/member,
+response binding and applicable ETags. Preserve operation grouping semantics
+without inferring cross-group ordering. Derive expected fields from fixtures,
+assert the complete decoded fixture first, and compare fixed known keys with Go;
+unknown-field retention is an independent codec assertion, not Go DTO parity.
+
+Discovery has no typed catalogue descriptor: compare its GET transport using
+unchanged Go RawQuery with discovery disabled in the driver, then independently
+exercise connect/2's raw metadata, required API version/extensions and rejection
+of malformed or unsupported-version discovery. Minimal valid discovery retains
+required fields; it is not an empty supported server. Do not invent an ETag field
+on the connected client or claim named GetServer DTO parity from RawQuery.
+
+Reuse bounded response-byte, readiness, deadline/cancellation and actual peer EOF
+fixtures on both transports, with one local GET and no replay or backend mutation.
+Record core_inspection_v1 on exactly nine methods and the one discovery helper;
+retain the existing ten inspection and eight mutation scopes, 36 partial selected
+endpoints, all declaration gaps and complete_port=false. Validate exact methods,
+helper attachment, transports, cases and evidence; reject scope overclaims.
+Update the closure ledger and coverage evidence without certifying broader
+endpoint variants or real-backend acceptance. Keep additions data-driven within
+a few hundred handwritten lines; stop before runtime/infrastructure expansion.
+
+#### Approved B02 follow-up: receive-timeout classification (2026-10-16)
+
+PR #15 first-attempt macOS CI returned :response instead of :deadline in a
+stalled mutual-TLS read; Ubuntu and 120 local short-deadline probes passed.
+The user approved expanding this PR for a narrow diagnosis/fix. Mint reports
+passive socket receive expiry as TransportError(reason: :timeout), but the
+client currently maps every receive error to :response. The competing outer
+guard can therefore hide this classification depending on scheduling.
+
+Reproduce the socket-timeout winner deterministically with existing Unix/mutual
+HTTPS fixtures: temporarily suspend only the test-owned caller and its deadline
+guard, allow the real receive timeout to finish the worker, then resume the caller.
+Trace the real Mint timeout and receive-function result directly so the outer
+timer cannot hide a wrong result. Assert strict read :deadline and actual peer EOF; keep generic
+premature EOF as :response. Cover GET/HEAD and POST, whose possibly dispatched
+failure must remain :uncertain with one request and no replay. Use process/message
+synchronization rather than elapsed success assertions or relaxed error sets.
+
+Map only Mint's explicit receive timeout to :deadline. Preserve all other receive
+errors, deadlines, cancellation rules, cleanup and operation identity. Do not
+normalize all failures or change transport budgets. Add bounded regression and
+coverage/closure evidence; retain all declaration/endpoint statuses and task 3.9
+open. A subsequent macOS run passed the receive regressions but the expanded
+negative evidence matrix exceeded ExUnit's 60-second limit while repeatedly
+parsing fixture source. Deduplicate source parsing per validation invocation,
+retaining all row/anchor assertions and negative cases; never use a cross-call
+cache that could hide source drift or increase the test timeout. This test-support
+optimization is part of making the new evidence guards bounded. Stop again if
+diagnosis requires broader transport or callback changes.
+
+#### Approved test-only follow-up: YAML atom probes (2026-10-16)
+
+Current-head CI run 38888955608 passed macOS canonical/reference and immutable
+consumer checks. Ubuntu failed the unchanged atom-safety fixture when a single
+200-key document returned invalid_native_config. The parser's two-second wall
+budget makes load-related rejection plausible; the failure does not identify
+which bound fired. The user approved test-only stabilization after the scope stop.
+
+Retain all 200 distinct keys and all atom-safety, invalid-input, native-oracle and
+yamerl-state assertions. Split only the atom probe into twenty ten-key documents;
+require successful decoding of the complete expected string map for every batch
+and verify none of the 200 keys are atoms before or after parsing. Do not accept
+rejection, retry decoding or raise any timeout. This tests atom safety without
+assuming one large document always finishes inside a wall-clock resource budget.
+
+After atom batching, run 38895931250 passed Ubuntu fully and every atom probe,
+but macOS rejected a near-limit success fixture in this same async YAML module.
+Run this resource-sensitive test module serially to remove competing async fixture
+work while retaining its large-document success, elapsed, native differential,
+worker/message cleanup and all atom assertions. Keep ownership-based worker
+tracing rather than a VM-wide process count. This changes test scheduling only.
+
+Keep NativeYaml, NativeConfig, the pinned oracle, reduction/heap/deadline limits
+and accepted subset unchanged. Update validation/closure evidence, regenerate
+coverage without status promotion, run canonical/reference checks and verify
+both platforms and immutable consumers on the pushed revision. Stop before any
+parser or production-budget change or further unrelated repair scope.
+
 #### Approved slice: B01 mutation lifecycle evidence (2026-10-16)
 
 Verify the eight existing B01 endpoint/method pairs: CreateInstance,

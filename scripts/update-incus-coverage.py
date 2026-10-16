@@ -8,12 +8,12 @@ methods = {m['name']: m for m in load('priv/incus/methods.json')['methods']}
 models = {m[key] for m in methods.values() for key in ['body','model'] if m[key]}
 constants = load('priv/incus/constants.json')['values']
 helpers = {
- 'RawQuery': ('lib/opsmaru/incus.ex', ['test/client_test.exs','test/reference_wire_test.exs','test/instance_patch_test.exs']),
+ 'RawQuery': ('lib/opsmaru/incus.ex', ['test/client_test.exs','test/reference_wire_test.exs','test/instance_patch_test.exs','test/inspection_contract_test.exs']),
  'UseProject': ('lib/opsmaru/incus.ex',['test/resource_slice_test.exs']),
  'UseTarget': ('lib/opsmaru/incus.ex',['test/resource_slice_test.exs']),
  'HasExtension': ('lib/opsmaru/incus.ex',['test/client_test.exs']),
  'CheckExtension': ('lib/opsmaru/incus.ex',['test/client_test.exs']),
- 'GetServer': ('lib/opsmaru/incus.ex',['test/client_test.exs']),
+ 'GetServer': ('lib/opsmaru/incus.ex',['test/client_test.exs','test/inspection_contract_test.exs']),
 }
 for name in ['GetImageFile','GetImageAliasType','GetImageAliasArchitectures','GetImageSecret','CopyImage']:
  helpers[name]=('lib/opsmaru/incus/images.ex',['test/image_transfer_test.exs'])
@@ -149,6 +149,8 @@ for entry in inv['entries']:
   row.update(status='partial',elixir='lib/opsmaru/incus/session.ex',evidence=['test/resource_slice_test.exs','test/session_test.exs','test/exec_output_test.exs'],note='Native request and channel slice plus creator-owned bounded live noninteractive stdout/stderr collection: unchanged ExecInstance IO, stdin/output barriers, bytes and authoritative exit status compared over Unix and verified mutual HTTPS. Independent aggregate limits, sink rejection/deadline/cancellation/owner-loss cleanup and concurrent output evidence. Session.run adds preflight bounded binary stdin, full-duplex acknowledged IO and one submission-to-completion lifetime, with retained negotiation acceptance and original-client reconciliation. Stdin chunking respects both independently configured WebSocket frame and chunk limits, with Unix/mutual-HTTPS regressions. Independent Unix fixtures confirm deadline/cancellation while stdin is blocked in a socket send, retained acceptance, channel/peer cleanup and shared-context isolation. Recorded output, interactive IO, arbitrary producers, full Go argument orchestration and declaration parity remain unverified.')
  elif entry['package']=='client' and entry['kind'] in ['method','interface_method'] and name in ['GetOperationWait','GetOperationWaitSecret']:
   row.update(status='partial',elixir='lib/opsmaru/incus/api.ex',evidence=['test/resource_slice_test.exs','test/native_wait_reference_test.exs'],note='Direct typed native wait, separate from polling Operation.wait: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/terminal snapshots, HTTP 403 and premature EOF compared with unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight timeout=-1 rejection and hex-secret Inspect redaction. Arbitrary/empty-secret encoding, cluster forwarding, full timeout/error matrices and real-daemon acceptance remain unverified; native timeout=-1 is intentionally rejected for finite local bounds.')
+ elif entry['package']=='client' and entry['kind'] in ['method','interface_method'] and name in ['GetInstances', 'GetInstance', 'GetInstanceState', 'GetInstanceSnapshots', 'GetInstanceSnapshot', 'GetImages', 'GetImage', 'GetOperations', 'GetOperation']:
+  row.update(status='partial',elixir='lib/opsmaru/incus/api.ex',evidence=['test/resource_slice_test.exs','test/inspection_contract_test.exs'],note='Core inspection v1: catalogue queries, container instance samples and fixed populated/empty DTO fields, grouped operations without cross-group ordering, corruption and native 403/404 compared with unchanged named Go methods on Unix/mutual HTTPS. Applicable ETags, routing/binding, independent unknown fields, byte/readiness bounds and deadline/cancellation peer cleanup. Additional selectors/types/fields/errors, tool policy, backend acceptance and whole endpoint/declaration parity remain unverified.')
  elif entry['package']=='client' and entry['kind'] in ['method','interface_method'] and name in ['GetProjects', 'GetProject', 'GetProfiles', 'GetProfile', 'GetNetworks', 'GetNetwork', 'GetStoragePools', 'GetStoragePool', 'GetStoragePoolVolumes', 'GetStoragePoolVolume']:
   row.update(status='partial',elixir='lib/opsmaru/incus/api.ex',evidence=['test/resource_slice_test.exs','test/inspection_contract_test.exs'],note='Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial.')
  elif entry['package']=='client' and entry['kind'] in ['method','interface_method'] and name in ['CreateInstance','UpdateInstance','UpdateInstanceState','DeleteInstance','CreateInstanceSnapshot','DeleteInstanceSnapshot','DeleteImage','DeleteOperation']:
@@ -175,6 +177,8 @@ for entry in inv['entries']:
   row.update(status='partial',elixir='lib/opsmaru/incus/constants.ex',evidence=['test/constants_reference_test.exs'],note='Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied.')
  if entry['package']=='client' and entry['kind'] in ['method','interface_method'] and name == 'GetOperationWait':
   row['evidence'].append('test/mutation_lifecycle_test.exs')
+ if name == 'GetServer' and row['evidence'] and entry['package']=='client':
+  row['note'] += ' connect/2 discovery has RawQuery transport differential plus independent required-field/version/readiness/bounds/lifetime evidence on Unix/mutual HTTPS; not named Go GetServer DTO parity.'
  entries.append(row)
 for row in entries:
  for path in row['evidence']: assert (root/path).is_file(), path

@@ -196,6 +196,57 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
+  test "shared-source anchors stay distinct and source is fresh across validations", %{
+    native: native
+  } do
+    root = Path.join(System.tmp_dir!(), "op-evidence-#{System.unique_integer([:positive])}")
+    File.mkdir!(root)
+    File.chmod!(root, 0o700)
+    on_exit(fn -> File.rm_rf!(root) end)
+    path = Path.join(root, "anchors.exs")
+    first = ~s(test "first anchor" do :ok end)
+    second = ~s(test "second anchor" do :ok end)
+    File.write!(path, first <> "\n" <> second)
+
+    manifest =
+      @manifest
+      |> put_in(["evidence", "core_inspection_contract"], [path, "first anchor"])
+      |> put_in(["evidence", "receive_expiry"], [path, "second anchor"])
+
+    assert :ok = EndpointEvidence.validate!(manifest, native)
+    File.write!(path, first)
+
+    assert_raise ExUnit.AssertionError, ~r/missing test anchor/, fn ->
+      EndpointEvidence.validate!(manifest, native)
+    end
+  end
+
+  test "rejects incomplete or overclaimed core inspection contracts", %{native: native} do
+    path = ["fixture_contracts", "core_inspection_v1"]
+
+    for field <-
+          ~w(methods helpers queries instance_types discovery transports cases evidence status) do
+      assert_raise ExUnit.AssertionError, ~r/inspection contract/, fn ->
+        EndpointEvidence.validate!(put_in(@manifest, path ++ [field], nil), native)
+      end
+    end
+
+    for row <- @manifest["entries"],
+        row["verified_scope"] == "core_inspection_v1",
+        key <- ~w(core_inspection_contract receive_expiry) do
+      entries =
+        Enum.map(@manifest["entries"], fn entry ->
+          if entry == row,
+            do: %{entry | "evidence" => entry["evidence"] -- [key]},
+            else: entry
+        end)
+
+      assert_raise ExUnit.AssertionError, ~r/inspection contract/, fn ->
+        EndpointEvidence.validate!(%{@manifest | "entries" => entries}, native)
+      end
+    end
+  end
+
   test "rejects incomplete or overclaimed mutation lifecycle contracts", %{native: native} do
     path = ["fixture_contracts", "initial_mutation_lifecycle_v1"]
 
