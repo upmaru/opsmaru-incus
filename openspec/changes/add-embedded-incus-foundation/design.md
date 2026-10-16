@@ -180,7 +180,8 @@ GetInstanceState, GetInstanceSnapshots, GetInstanceSnapshot, GetImages, GetImage
 GetOperations and GetOperation, plus explicit server discovery through connect/2.
 Use only current catalogue queries and a container sample for GetInstances;
 other recursion/filter/all-projects/private-image/type variants remain gaps.
-No runtime, descriptor, shared tool or parser change is planned.
+The initial B02 batch changes no runtime, descriptor, shared tool or parser.
+The explicitly approved deadline-classification follow-up below is the sole runtime exception.
 
 Compare the nine unchanged named Go read methods on Unix and mutual HTTPS for
 populated/empty DTOs, known-field corruption, native 403/404, host project/member,
@@ -205,6 +206,30 @@ helper attachment, transports, cases and evidence; reject scope overclaims.
 Update the closure ledger and coverage evidence without certifying broader
 endpoint variants or real-backend acceptance. Keep additions data-driven within
 a few hundred handwritten lines; stop before runtime/infrastructure expansion.
+
+#### Approved B02 follow-up: receive-timeout classification (2026-10-16)
+
+PR #15 first-attempt macOS CI returned :response instead of :deadline in a
+stalled mutual-TLS read; Ubuntu and 120 local short-deadline probes passed.
+The user approved expanding this PR for a narrow diagnosis/fix. Mint reports
+passive socket receive expiry as TransportError(reason: :timeout), but the
+client currently maps every receive error to :response. The competing outer
+guard can therefore hide this classification depending on scheduling.
+
+Reproduce the socket-timeout winner deterministically with existing Unix/mutual
+HTTPS fixtures: temporarily suspend only the test-owned caller and its deadline
+guard, allow the real receive timeout to finish the worker, then resume the caller.
+Trace the real Mint timeout and receive-function result directly so the outer
+timer cannot hide a wrong result. Assert strict read :deadline and actual peer EOF; keep generic
+premature EOF as :response. Cover GET/HEAD and POST, whose possibly dispatched
+failure must remain :uncertain with one request and no replay. Use process/message
+synchronization rather than elapsed success assertions or relaxed error sets.
+
+Map only Mint's explicit receive timeout to :deadline. Preserve all other receive
+errors, deadlines, cancellation rules, cleanup and operation identity. Do not
+normalize all failures or change transport budgets. Add bounded regression and
+coverage/closure evidence; retain all declaration/endpoint statuses and task 3.9
+open. Stop again if diagnosis requires broader transport or callback changes.
 
 #### Approved slice: B01 mutation lifecycle evidence (2026-10-16)
 

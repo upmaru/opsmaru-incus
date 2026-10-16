@@ -1670,3 +1670,36 @@ Reference inventory/schema tooling and all 188 constants pass. Coverage generati
 is byte-identical and all declaration IDs/statuses match merged develop. The
 pushed Ubuntu/macOS canonical/reference and immutable-consumer results are recorded
 on this slice's draft PR; they remain distinct from real-backend acceptance.
+
+## PR #15 receive-timeout classification — 2026-10-16
+
+First-attempt CI on `9305a9b`, run 38883208790: Ubuntu passed canonical/reference
+and immutable-consumer checks. macOS failed the strict GetOperation HTTPS deadline
+assertion with :response; reference/consumer steps were skipped. The scope stop
+was reported and the user explicitly approved a narrow runtime diagnosis/fix.
+No assertion or duration was relaxed and CI was not retried to obtain a green run.
+
+The ordinary 120-request short-TLS probe did not reproduce the timing. A controlled
+regression then paused the test-owned caller/guard, allowed the socket receive to
+expire, and traced both Mint.HTTP.recv and Transport.receive_response return values.
+This reproduced real Mint TransportError(reason: :timeout) being mapped to :response
+on both Unix and mutual HTTPS, even when the outer timer hid that result publicly.
+Both deterministic tests failed before the fix with the incorrect receive result.
+
+The runtime fix adds one specific receive-error branch: Mint timeout becomes the
+local deadline because recv was supplied the remaining absolute budget. Other
+receive errors remain :response; caller-level mutation mapping remains :uncertain.
+Six GET/HEAD/POST flows cover both transports, actual socket/worker closure and
+original-client context isolation; six early-EOF controls preserve response errors
+and uncertain mutation results. Exact request counts exclude replay. Production
+timers, guards, callback ordering, operation identity and oracle are unchanged.
+The checked receive_expiry anchor and RawQuery coverage link retain the new evidence
+without promoting any endpoint or declaration. These raw-query controls do not
+close B06's typed HEAD gaps. Task 3.9 remains open.
+
+The two controlled regressions pass after the fix, including all six timeout and
+six EOF flows. Canonical checks pass all 1109 tests, format, warning-free compile,
+strict Credo and all three strict OpenSpec changes. Reference tooling and 188
+constants pass; coverage regenerates byte-identically with unchanged declaration
+IDs/statuses. Current pushed platform and immutable-consumer outcomes are recorded
+on PR #15 alongside the initial failure and reproduced cause.

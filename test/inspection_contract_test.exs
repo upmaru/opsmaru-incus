@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.InspectionContractTest do
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Connection, Context, Error, RequestContext, Server}
+  alias Opsmaru.Incus.{Connection, Context, Error, RequestContext, Server, Transport}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
 
   @names ~w(GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume GetInstances GetInstance GetInstanceState GetInstanceSnapshots GetInstanceSnapshot GetImages GetImage GetOperations GetOperation)
@@ -52,6 +52,100 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       bounds(root, identity, method)
       for mode <- [:deadline, :cancel], do: lifetime(root, identity, method, mode)
     end
+  end
+
+  for transport <- [:unix, :https] do
+    test "#{transport} socket receive expiry retains deadline despite delayed observation", %{
+      root: root
+    } do
+      identity =
+        if unquote(transport) == :https, do: TLSIdentity.generate(root, "expiry", "localhost")
+
+      for method <- ["GET", "HEAD", "POST"], do: receive_expiry(root, identity, method)
+    end
+  end
+
+  defp receive_expiry(root, identity, method) do
+    parent = self()
+    tag = make_ref()
+
+    fixture =
+      backend(
+        root,
+        identity,
+        fn request ->
+          %{
+            upgrade: fn transport, socket ->
+              if URI.parse(request.target).path == "/1.0/stalled" do
+                send(parent, {tag, :entered})
+                send(parent, {tag, :closed, transport.recv(socket, 0, 30_000)})
+              end
+            end
+          }
+        end,
+        @discovery
+      )
+
+    original = client(fixture, identity)
+    context = RequestContext.new!(timeout: 3_000)
+    scoped = Incus.with_context(original, context)
+
+    caller =
+      spawn(fn ->
+        receive do
+          :start -> send(parent, {tag, Incus.raw_query(scoped, method, "/1.0/stalled")})
+        end
+      end)
+
+    on_exit(fn -> if Process.alive?(caller), do: Process.exit(caller, :kill) end)
+    patterns = [{Mint.HTTP, :recv, 3}, {Transport, :receive_response, 5}]
+
+    for {module, _, _} = pattern <- patterns do
+      Code.ensure_loaded!(module)
+      assert :erlang.trace_pattern(pattern, [{:_, [], [{:return_trace}]}], [:local]) == 1
+    end
+
+    on_exit(fn ->
+      for pattern <- patterns, do: :erlang.trace_pattern(pattern, false, [:local])
+    end)
+
+    :erlang.trace(caller, true, [:call, :procs, :set_on_spawn])
+    send(caller, :start)
+    assert_receive {:trace, ^caller, :spawn, worker, _}, 10_000
+    assert_receive {:trace, ^worker, :spawn, guard, _}, 10_000
+
+    on_exit(fn ->
+      for pid <- [worker, guard], Process.alive?(pid), do: Process.exit(pid, :kill)
+    end)
+
+    for pid <- [caller, worker, guard], do: :erlang.trace(pid, false, [:procs, :set_on_spawn])
+    # Force the actual socket timeout to win; neither competing observer can end the worker.
+    assert :erlang.suspend_process(guard)
+    assert :erlang.suspend_process(caller)
+    monitor = Process.monitor(worker)
+    assert_receive {^tag, :entered}, 10_000
+    assert_receive {:DOWN, ^monitor, :process, ^worker, :normal}, 10_000
+    assert_receive {^tag, :closed, {:error, :closed}}, 10_000
+
+    assert_receive {:trace, ^worker, :return_from, {Mint.HTTP, :recv, 3},
+                    {:error, _, %Mint.TransportError{reason: :timeout}, []}},
+                   10_000
+
+    assert_receive {:trace, ^worker, :return_from, {Transport, :receive_response, 5}, classified},
+                   10_000
+
+    assert classified == {:error, :deadline}
+    assert :erlang.resume_process(caller)
+    expected = if method in ["GET", "HEAD"], do: :deadline, else: :uncertain
+    assert_receive {^tag, result}, 10_000
+    assert {:error, %Error{kind: ^expected}} = result
+    assert RequestContext.status(context) == :deadline
+    assert original.connection.request_context == nil
+
+    # An early peer EOF is still a response failure, not a synthetic deadline.
+    eof_kind = if method in ["GET", "HEAD"], do: :response, else: :uncertain
+    assert {:error, %Error{kind: ^eof_kind}} = Incus.raw_query(original, method, "/1.0/eof")
+    assert [%{method: ^method}, %{method: ^method}] = HTTPFixture.requests(fixture)
   end
 
   defp compare(root, identity, method, outcome) do

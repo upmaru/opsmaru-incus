@@ -707,3 +707,8 @@ compared without cross-group ordering. Discovery's RawQuery transport differenti
 and independent required-field/version guards are distinct from named GetServer
 DTO parity. Additional selectors/types/fields/errors and real-backend acceptance
 remain open; this evidence alone does not export shared operations/tools.
+
+HTTP receive expiry uses the remaining absolute request budget and reports a
+local deadline even when the socket timeout beats the outer guard. Premature EOF
+remains a response failure. A possibly dispatched mutation still reports uncertainty;
+local timeout never proves cancellation or authorizes automatic replay.

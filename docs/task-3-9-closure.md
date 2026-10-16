@@ -941,3 +941,15 @@ byte/readiness bounds and deadline/cancellation with peer EOF. Existing ten
 inspection and eight mutation scopes remain visible. Progress is 18 -> 28 scoped
 contracts inside the same 36 partial rows. B02's additional selectors/types/fields/
 errors remain in the backlog; no whole endpoint, declaration or task is promoted.
+
+#### B02 receive-timeout follow-up
+
+PR #15's first CI attempt passed Ubuntu, but macOS exposed :response where the
+HTTPS stalled read required :deadline. The approved narrow follow-up fixes only
+Mint receive-timeout classification; deadlines/budgets and strict assertions are
+unchanged. A deterministic regression on both transports suspends the test-owned
+outer observers, traces the real Mint timeout and receive result, and verifies
+GET/HEAD deadline, POST uncertainty, peer EOF, early EOF as response failure and
+one request per call. The regression failed on both transports before the fix;
+no flaky-run retry was used as evidence. core_inspection_v1 requires this separate
+receive_expiry anchor. Whole endpoint/declaration/task statuses remain unchanged.

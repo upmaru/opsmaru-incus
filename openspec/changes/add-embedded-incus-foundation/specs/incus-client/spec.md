@@ -44,6 +44,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **WHEN** the ten initial-tool list/get methods have typed Unix and mutual-HTTPS comparisons plus independent bound/lifetime evidence
 - **THEN** the manifest may record their explicit fixture-verified scope and required cases while whole endpoint and declaration statuses remain partial, unsupported variants and backend acceptance remain visible, and removed methods/cases/evidence fail validation
 
+#### Scenario: Socket receive timeout wins the deadline race
+
+- **WHEN** a passive HTTP socket receive exhausts its absolute remaining deadline before the outer guard result is observed
+- **THEN** GET/HEAD report the local deadline, POST retains uncertain mutation semantics, peers close and no request is replayed
+- **AND** premature EOF remains a response failure, with deterministic Unix/mutual-HTTPS regression evidence that does not relax deadlines or accepted error kinds
+
 #### Scenario: Remaining initial inspection contracts
 
 - **WHEN** the nine B02 typed reads and explicit server discovery have scoped Unix/mutual-HTTPS fixture evidence

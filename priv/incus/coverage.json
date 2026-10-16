@@ -2591,7 +2591,8 @@
       "evidence": [
         "test/client_test.exs",
         "test/reference_wire_test.exs",
-        "test/instance_patch_test.exs"
+        "test/instance_patch_test.exs",
+        "test/inspection_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -5866,7 +5867,8 @@
       "evidence": [
         "test/client_test.exs",
         "test/reference_wire_test.exs",
-        "test/instance_patch_test.exs"
+        "test/instance_patch_test.exs",
+        "test/inspection_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },

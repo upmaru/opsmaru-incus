@@ -226,6 +226,10 @@ defmodule Opsmaru.Incus.Transport do
             {:error, reason} -> {:error, reason}
           end
 
+        # recv uses the absolute remaining budget; its timeout is a local deadline.
+        {:error, _, %Mint.TransportError{reason: :timeout}, _} ->
+          {:error, :deadline}
+
         {:error, _, _, _} ->
           {:error, :response}
       end

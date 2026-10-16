@@ -206,11 +206,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
       end
     end
 
-    for row <- @manifest["entries"], row["verified_scope"] == "core_inspection_v1" do
+    for row <- @manifest["entries"],
+        row["verified_scope"] == "core_inspection_v1",
+        key <- ~w(core_inspection_contract receive_expiry) do
       entries =
         Enum.map(@manifest["entries"], fn entry ->
           if entry == row,
-            do: %{entry | "evidence" => entry["evidence"] -- ["core_inspection_contract"]},
+            do: %{entry | "evidence" => entry["evidence"] -- [key]},
             else: entry
         end)
 

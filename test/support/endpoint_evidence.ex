@@ -114,14 +114,14 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
              "discovery" => "raw_query_transport_and_connect_guards",
              "transports" => ~w(unix mutual_https),
              "cases" =>
-               ~w(populated empty metadata_type_rejection native_403 native_404 response_bound readiness deadline cancellation discovery_required_fields discovery_version),
-             "evidence" => ~w(core_inspection_contract)
+               ~w(populated empty metadata_type_rejection native_403 native_404 response_bound readiness deadline cancellation discovery_required_fields discovery_version receive_timeout_classification),
+             "evidence" => ~w(core_inspection_contract receive_expiry)
            },
            "invalid core inspection contract"
 
     for row <- manifest["entries"], row["verified_scope"] == "core_inspection_v1" do
-      assert "core_inspection_contract" in row["evidence"],
-             "missing core inspection contract evidence"
+      for key <- ~w(core_inspection_contract receive_expiry),
+          do: assert(key in row["evidence"], "missing core inspection contract evidence")
     end
   end
 

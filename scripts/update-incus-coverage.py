@@ -8,7 +8,7 @@ methods = {m['name']: m for m in load('priv/incus/methods.json')['methods']}
 models = {m[key] for m in methods.values() for key in ['body','model'] if m[key]}
 constants = load('priv/incus/constants.json')['values']
 helpers = {
- 'RawQuery': ('lib/opsmaru/incus.ex', ['test/client_test.exs','test/reference_wire_test.exs','test/instance_patch_test.exs']),
+ 'RawQuery': ('lib/opsmaru/incus.ex', ['test/client_test.exs','test/reference_wire_test.exs','test/instance_patch_test.exs','test/inspection_contract_test.exs']),
  'UseProject': ('lib/opsmaru/incus.ex',['test/resource_slice_test.exs']),
  'UseTarget': ('lib/opsmaru/incus.ex',['test/resource_slice_test.exs']),
  'HasExtension': ('lib/opsmaru/incus.ex',['test/client_test.exs']),
