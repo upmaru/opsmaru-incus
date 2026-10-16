@@ -237,6 +237,27 @@ cache that could hide source drift or increase the test timeout. This test-suppo
 optimization is part of making the new evidence guards bounded. Stop again if
 diagnosis requires broader transport or callback changes.
 
+#### Approved test-only follow-up: YAML atom probes (2026-10-16)
+
+Current-head CI run 38888955608 passed macOS canonical/reference and immutable
+consumer checks. Ubuntu failed the unchanged atom-safety fixture when a single
+200-key document returned invalid_native_config. The parser's two-second wall
+budget makes load-related rejection plausible; the failure does not identify
+which bound fired. The user approved test-only stabilization after the scope stop.
+
+Retain all 200 distinct keys and all atom-safety, invalid-input, native-oracle and
+yamerl-state assertions. Split only the atom probe into twenty ten-key documents;
+require successful decoding of the complete expected string map for every batch
+and verify none of the 200 keys are atoms before or after parsing. Do not accept
+rejection, retry decoding or raise any timeout. This tests atom safety without
+assuming one large document always finishes inside a wall-clock resource budget.
+
+Keep NativeYaml, NativeConfig, the pinned oracle, reduction/heap/deadline limits
+and accepted subset unchanged. Update validation/closure evidence, regenerate
+coverage without status promotion, run canonical/reference checks and verify
+both platforms and immutable consumers on the pushed revision. Stop before any
+parser or production-budget change or further unrelated repair scope.
+
 #### Approved slice: B01 mutation lifecycle evidence (2026-10-16)
 
 Verify the eight existing B01 endpoint/method pairs: CreateInstance,

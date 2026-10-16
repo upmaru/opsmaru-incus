@@ -1724,3 +1724,27 @@ strict Credo and all three strict OpenSpec changes. Reference tooling and 188
 constants pass; coverage regeneration is unchanged. Current-head platform and
 immutable-consumer evidence is recorded on PR #15, preserving both prior failures
 and their diagnosed fixes rather than treating a rerun as verification.
+
+## PR #15 test-only YAML atom-probe stabilization — 2026-10-16
+
+CI run 38888955608 on `19c135c` passed macOS canonical/reference and the immutable
+consumer. Ubuntu passed every B02/deadline/evidence-validator regression, but the
+unchanged YAML atom-safety test rejected a single 200-key document. The failure
+log does not distinguish parser bounds; the unchanged two-second wall guard makes
+load-related rejection plausible. This was reported as a separate scope stop and
+the user explicitly approved test-only stabilization.
+
+The atom fixture now sends the same 200 distinct keys in twenty ten-key documents.
+Each document must decode successfully to its exact complete string map, and all
+200 keys must remain absent from the atom table before and after parsing. No retry
+or accepted rejection is used. Other bounds, native-oracle, raising, environment
+and atom assertions remain. NativeYaml/NativeConfig, the oracle, accepted subset,
+production deadlines/reduction/heap limits and test timeouts are unchanged. This
+is atom-safety evidence, not guaranteed 200-key throughput under a wall-clock cap
+or new YAML parity. Coverage and task 3.9 remain partial.
+
+The focused fixture passes with the failed Ubuntu run's seed (155024). Canonical
+checks pass all 1110 tests, format, warning-free compile, strict Credo and all three
+strict OpenSpec changes. Reference tooling and 188 constants pass. Coverage
+regenerates byte-identically; no runtime/oracle file changed in this follow-up.
+Pushed platform and immutable-consumer results are recorded on PR #15.

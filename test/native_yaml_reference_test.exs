@@ -604,7 +604,15 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
     end
 
     keys = for i <- 1..200, do: "opsmaru_yaml_atom_probe_#{i}"
-    {:ok, _} = NativeConfig.from_yaml("ConfigMap", Enum.map_join(keys, "", &"#{&1}: #{&1}\n"))
+    refute Enum.any?(keys, &atom_exists?/1)
+
+    # Atom safety needs all keys decoded, not one large document racing a resource budget.
+    for batch <- Enum.chunk_every(keys, 10) do
+      yaml = Enum.map_join(batch, "", &"#{&1}: #{&1}\n")
+      expected = Map.new(batch, &{&1, &1})
+      assert {:ok, ^expected} = NativeConfig.from_yaml("ConfigMap", yaml)
+    end
+
     refute Enum.any?(keys, &atom_exists?/1)
 
     garbage = ["{", "[", "a: [", "a: 'x", "&a", "*a", ": :", "- - -", "? ? ?", "a: *missing"]

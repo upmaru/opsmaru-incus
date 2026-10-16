@@ -959,3 +959,12 @@ timeout: source test names are parsed once per file per validation, while each
 row/anchor is checked separately and subsequent calls reread source. A source-drift
 regression protects those boundaries. This is test-support bookkeeping, with no
 additional transport change or scope promotion.
+
+#### Test-only YAML atom-safety stabilization
+
+The user-approved follow-up retains all 200 atom probes across twenty ten-key
+successful decodes, with exact expected maps and pre/post atom absence. It avoids
+requiring a single large document to finish inside a wall-clock parser cap under
+CI load. No rejection is accepted as success, no retry or timeout increase is
+introduced, and parser/oracle code and all production limits are unchanged. The
+remaining YAML subset and declaration gaps stay open.
