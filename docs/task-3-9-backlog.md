@@ -1,8 +1,8 @@
 # Task 3.9 finite closure backlog
 
 Audited at Incus v7.0.1 `13f3992766142d5087fff2e362cd2e1a75294fe8`
-after merged PR #12 (`a710340`), with the four conditional resource PATCH methods added. The authoritative classified rows are in
-[`endpoint-inventory.json`](../priv/incus/endpoint-inventory.json). This is an
+after merged PR #13 (`8e9ce89`), with B01 bounded mutation lifecycle evidence added. The authoritative classified rows are in
+[`endpoint-inventory.json`](../priv/incus/endpoint-inventory.json). This is a
 classified backlog, updated with bounded implementation evidence; it does not claim behavioral completion.
 
 ## Inventory result
@@ -98,7 +98,7 @@ estimates of lines or commits. Split a batch into bounded slices before coding.
 
 | Batch | Assigned documented pairs | Exit |
 | --- | ---: | --- |
-| B01: Initial mutation lifecycle | 8 | Verify eight pairs: instance create/update (including restore)/state/delete, snapshot create/delete, image delete and operation cancel. Reuse native baselines; compare accepted identity through completed/failed/running, applicable preconditions, response loss and no replay on Unix/mutual HTTPS. |
+| B01: Initial mutation lifecycle | 8 | Eight bounded initial_mutation_lifecycle_v1 contracts now have Unix/mutual-HTTPS named-Go and independent fixture evidence: acceptance/direct native wait, update/restore/state preconditions, rejection, uncertainty/no replay and synchronous cancellation. Other body/source/state/error/cluster variants and real-backend acceptance remain explicit gaps; whole endpoints are partial. |
 | B02: Initial inspection certification | 20 | Reuse ten verified inspection scopes; certify ten other selected JSON/discovery read contracts. Enumerate catalogue selectors/fields, populated/empty/native rejection, routing/ETag and transport/bound/lifetime evidence; no exhaustive field cross-product. |
 | B03: Exec and operation channel/wait scope | 4 | Attach existing live exec/native wait/channel and events-listener (S03) evidence to finite supported contracts; resolve secret/public-access views and forwarding scope explicitly. Recorded output belongs to B07. |
 | B04: Instance PATCH contract certification | 1 | Retain the verified conditional InstancePut contract; resolve unconditional/restore/field scope explicitly without inferring daemon merge acceptance. |
@@ -186,10 +186,24 @@ merges. It keeps valid field presence without local read/merge/defaults. Image
 PATCH evidence covers auto_update/public/properties only. Snapshot success is an
 accepted handle, not completion. No endpoint or declaration is promoted to parity.
 
-Next prioritize B01's eight mutation lifecycle contracts for the initial
-`add-incus-operations` surface. Those methods already exist: the work is composition
-and evidence, not eight absent implementations. No other backlog item was added
-to this batch. Stop and re-scope before parser/runtime expansion or repeated fixes.
+## B01 bounded lifecycle progress
+
+- [x] Verify all eight existing B01 pairs, including separate instance update and
+  snapshot-restore bodies, on Unix and verified mutual HTTPS.
+- [x] Compose seven asynchronous pairs with native `/wait` running/success/failure
+  snapshots, accepted identity, routing/binding, applicable PUT ETags and errors.
+- [x] Verify synchronous cancellation acknowledgement, may_cancel=false denial,
+  terminal completion race, native rejection and lost-reply identity without replay.
+- [x] Record initial_mutation_lifecycle_v1 on exactly eight partial rows, with
+  checked methods/cases/transports/evidence and copied full-ledger scopes.
+- [ ] Verify broader body/source/state/extension/error/cluster variants or obtain
+  explicit scope decisions; real-daemon lifecycle acceptance remains separate.
+
+There are now 18 explicitly fixture-verified method scopes (ten inspection plus
+these eight lifecycle scopes), within the same 36 partial selected endpoint pairs.
+This closes the listed bounded evidence obligations, not all B01 endpoint behavior
+or task 3.9. The 32 missing typed implementations and 28 selector gaps are unchanged.
+Other backlog batches and shared tool implementation remain outside this batch.
 
 The ledger is curated audit data. `test/endpoint_evidence_test.exs` independently
 extracts the unchanged REST document and server AST, checks hashes, exhaustiveness,

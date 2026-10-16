@@ -22,7 +22,7 @@ POST repair row; mapping a route does not certify its supported contract.
 ## Current behavioral checklist — audited 2026-10-15
 
 This checklist started at `47b1918` (PR #9) and now includes the approved
-conditional instance PATCH, ten-method inspection, full classification and four conditional resource PATCH slices. Sections below it are chronological evidence and may describe gaps since superseded.
+conditional instance PATCH, ten-method inspection, full classification, four conditional resource PATCH and B01 lifecycle slices. Sections below it are chronological evidence and may describe gaps since superseded.
 A checked item means the stated bounded behavior has evidence, not that its
 entire endpoint, protocol or Go declaration is complete. The audit changed no support status. The new four-method batch adds bounded typed implementations; endpoint/declaration parity and tool exports remain separate.
 
@@ -55,8 +55,8 @@ entire endpoint, protocol or Go declaration is complete. The audit changed no su
   ubuntu-24.04 and macos-15, first attempt: CI run 38691372898.
 
 These are completed behavior slices. The conditional PATCH behavior is fixture-verified; its broader endpoint scope
-remains partial. The checked manifest now has 36 partial pairs and ten fixture-verified scoped
-inspection method contracts. The separate Go
+remains partial. The checked manifest now has 36 partial pairs and 18 fixture-verified scoped
+method contracts (ten inspection and eight mutation lifecycle). The separate Go
 ledger still has 1239 partial / 41 missing declarations, `complete_port=false`.
 No percentage of task completion can be derived from either counter.
 
@@ -133,6 +133,11 @@ missing typed implementations, one equivalent POST route and one repair mismatch
   the finite backlog; two HEAD path selectors overlap B06.
 - [x] Guard copied verified_scope values against selected evidence entries;
   removed, altered or unrelated fixture-scope claims fail validation.
+- [x] Verify eight bounded B01 lifecycle contracts on Unix/mutual HTTPS:
+  named-Go request/acceptance, direct native wait running/success/failure, separate
+  update/restore bodies, applicable PUT ETags, native rejection and response-loss
+  uncertainty without replay. Cancellation stays synchronous, with permission,
+  completion-race and lost-reply evidence. Broader endpoint scope remains open.
 - [x] Define finite certification criteria and assign all endpoint/stream
   obligations in [task-3-9-backlog.md](task-3-9-backlog.md).
 - [ ] Complete required B01–B12 contracts and S01–S12 streaming obligations;
@@ -156,13 +161,13 @@ additional scoped evidence, not a repetition of that baseline.
 | GET instances, instance and state | 3 | Catalogue list/full/filter methods have generic fixtures | Link supported recursion/filter/type variants; verify populated/empty results and representative Unix/TLS rejection cases for that scope. |
 | PATCH instance | 1 | Conditional typed InstancePut, explicit ETag, native empty sync result, Unix/mutual-HTTPS transport and independent failure/lifetime fixtures | Unconditional updates, full field/cluster behavior and real-daemon merge acceptance remain unverified. |
 | PATCH project/profile/image/instance snapshot | 4 | Explicit ETag, valid field presence, scoped routes, native 200 empty sync versus 202 snapshot acceptance, errors, uncertain response loss and lifetime cleanup on Unix/mutual HTTPS | Conditional subset only; B05 certification, unconditional variants, additional fields/cluster/rejections and real-daemon merge/expiry acceptance remain separate. |
-| POST instance; PUT instance/state; DELETE instance | 4 | Accepted operation identity; restore guard/body checks; shared uncertainty/no-replay fixtures | Per-flow ETag/precondition where applicable, accepted-to-completed/failed/still-running composition and response-loss reconciliation, on both transports. GET polling fixtures alone do not establish every mutation flow. |
+| POST instance; PUT instance/state; DELETE instance | 4 | initial_mutation_lifecycle_v1: named-Go submission plus native /wait composition; populated update and restore bodies, applicable PUT ETags, running/success/failure, rejection, uncertainty/no replay and binding on both transports | Additional source/state/body/extension/error/cluster variants and real-daemon effects remain unverified. |
 | GET snapshots and snapshot | 2 | Native catalogue request/result | Define names/recursion/type/result scope and representative absence/permission/transport evidence. |
-| POST/DELETE snapshot | 2 | Acceptance; expiry extension and native body/error baseline | Complete bounded lifecycle/uncertainty and restore-source linkage; restore itself is instance PUT. |
+| POST/DELETE snapshot | 2 | initial_mutation_lifecycle_v1: native acceptance/wait outcomes, rejection, response loss/no replay and binding on both transports; instance PUT separately verifies restore-body linkage | Additional snapshot fields/expiry/stateful/cluster/error behavior and real-daemon restore effects remain unverified. |
 | GET images and image | 2 | Native catalogue variants; image export has separate binary fixtures | Link public/filter/recursion/metadata scope and representative errors; classify alias/export/token behavior separately. |
-| DELETE image | 1 | Native acceptance/error baseline | Verify defined completion/rejection/uncertainty flow and both transports; no implicit file or alias deletion. |
+| DELETE image | 1 | initial_mutation_lifecycle_v1: native acceptance/wait outcomes, rejection, response loss/no replay and binding on both transports | Further image/cluster/error cases and daemon effects remain unverified; no implicit file or alias deletion. |
 | GET operations and operation | 2 | Poll/wait, decoded event callbacks, final success/failure and binding isolation | Define list/filter/query and terminal-status scope; link exact direct/poll evidence and remaining error cases. |
-| DELETE operation | 1 | may_cancel preflight, one DELETE and completion race | Add explicit non-cancelable/native rejection and lost cancellation response outcomes to the bounded contract across transports. |
+| DELETE operation | 1 | initial_mutation_lifecycle_v1: named-Go synchronous DELETE plus independent may_cancel denial, one DELETE, completion race, native rejection and lost-reply identity on both transports | Other cancellation states/errors/cluster behavior and daemon acceptance remain unverified. Acknowledgement is not proven cancellation completion or a new operation. |
 | GET native operation wait | 1 | PR #9: finite timeout queries, gated bodies, ETags, snapshots, 403, EOF, local lifetime cleanup on Unix/mutual HTTPS | Arbitrary/empty-secret encoding and cluster forwarding remain unverified; timeout=-1 rejection is an intentional finite-bound difference. Real-daemon timeout behavior is separate acceptance. |
 | POST exec | 1 | Full-duplex bounded noninteractive run/collect, negotiation, authoritative exit and cleanup | Confirm bounded live subset as the endpoint contract; recorded/interactive orchestration and arbitrary producers remain visibly separate. Tool capture/truncation/policy belongs to add-incus-operations. |
 | GET operation WebSocket | 1 | Exec channels, barriers, bounded queues/frames, control and write-lifetime cleanup | Classify non-exec channel contracts and secret/query scope separately; exec evidence does not close console/events/migration. |

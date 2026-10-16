@@ -1576,3 +1576,59 @@ checks pass all 1081 tests, format, warnings-as-errors compile, strict Credo and
 all three strict OpenSpec changes. Reference checks pass, including 188 constants.
 Fresh hosted review and both-platform/immutable-consumer results are recorded on
 PR #13; these checks do not promote any endpoint or declaration to complete.
+
+## B01 bounded mutation lifecycle evidence — 2026-10-16
+
+Created feature/incus-client-mutation-lifecycle from merged develop `8e9ce89`.
+OpenSpec was updated and strictly validated before fixture implementation.
+The batch covers eight existing B01 endpoint pairs, with instance PUT update
+and snapshot restore as separate body flows. Seven asynchronous pairs retain
+accepted identity and compose directly with GetOperationWait (native `/wait`),
+not a new polling layer, across running/success/failure snapshots. Cancellation
+DELETE stays synchronous and never manufactures an operation or completion.
+
+Four parameterized Unix/mutual-HTTPS tests make 222 unchanged named-Go calls:
+174 mutation comparisons and 48 native-wait comparisons. Populated update maps,
+restore/state bodies, applicable PUT ETags, host routing/binding, native
+403/404/409/412, EOF/malformed replies and known-identity malformed operation
+metadata are checked. Exact request counts prove no replay or implicit polling.
+Local expired/canceled contexts after acceptance add no I/O and leave the
+originating bound handle available; existing gated-body tests separately prove
+actual deadline/cancellation/caller-loss peer cleanup. Independent cancellation
+fixtures verify may_cancel=false, terminal race, rejection and lost reply with
+at most one DELETE. Go DeleteOperation is compared directly; its Cancel helper
+orchestration is not claimed equivalent to the public library's explicit preflight.
+
+All 16 focused lifecycle/endpoint tests and strict Credo pass. The checked
+initial_mutation_lifecycle_v1 profile names exactly eight methods, transports,
+body samples and cases, and rejects missing requirements/evidence. Copied scopes
+are updated in the full inventory. Ten inspection scopes remain unchanged; the
+36 selected whole endpoints and all declaration statuses stay partial/missing.
+Coverage adds evidence without a parity promotion. No runtime, catalogue, oracle,
+Go driver, shared tools or live backend changed; broader B01 variants and task 3.9
+remain open. Canonical/reference and pushed platform results follow this entry.
+
+Final local canonical checks pass: 1086 tests, zero failures, formatting,
+warning-free compilation, strict Credo and all three strict OpenSpec changes.
+Reference checks pass the inventory/schema tooling and 188 constants. Coverage
+regenerates byte-identically, and declaration IDs/statuses match merged develop.
+Pushed Ubuntu/macOS canonical/reference and immutable-consumer results are
+recorded with this slice's draft PR; they do not establish real-backend acceptance.
+
+## PR #14 fixed operation-field assertions — 2026-10-16
+
+Greptile's 4/5 finding exposed a test assertion that could hide dropped fields:
+projecting the Go result with keys from decoded data accepts a decoder that loses
+may_cancel or nested metadata. A focused reproduction confirmed that weakness.
+Both acceptance and native-wait comparisons now first assert the complete fixture
+snapshot, then compare those fixed fixture keys with Go. This protects every
+snapshot field and nested metadata contents across the existing Unix/mutual-HTTPS
+matrix. Runtime, catalogue, oracle, contract scope and declaration statuses stay
+unchanged; coverage regeneration is byte-identical and task 3.9 remains open.
+
+Corrected lifecycle fixtures pass all four tests and 222 native comparisons.
+Canonical checks pass all 1086 tests, formatting, warnings-as-errors compilation,
+strict Credo and all three strict OpenSpec changes. Reference checks pass the
+inventory/schema tooling and 188 constants. Fresh hosted review and both-platform
+immutable-consumer evidence are recorded on PR #14; no scope or parity promotion
+follows from these assertions.

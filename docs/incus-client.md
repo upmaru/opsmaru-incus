@@ -682,3 +682,19 @@ are not inferred. Native errors and uncertain dispatch retain known identity
 without replay. The shared five-method Unix/mutual-HTTPS fixtures compare unchanged
 Go RawQuery transport and independent endpoint shapes, not named Go PATCH methods
 or real-daemon merges. All five PATCH contracts and task 3.9 remain partial.
+
+The `initial_mutation_lifecycle_v1` fixture scope covers eight existing B01 methods:
+CreateInstance, UpdateInstance (including a separate restore body),
+UpdateInstanceState, DeleteInstance, CreateInstanceSnapshot,
+DeleteInstanceSnapshot, DeleteImage and DeleteOperation. Seven asynchronous pairs
+compose their native accepted handle with typed GetOperationWait `/wait` snapshots
+for running, success and failure. Cancellation DELETE is synchronous acknowledgement;
+Operation.cancel's authoritative may_cancel/completion-race preflight has independent
+fixtures and is not claimed identical to Go Cancel orchestration. Local lifetime
+ending after acceptance retains the caller's bound handle and never issues remote
+cancellation or replays the mutation. Both Unix and mutual HTTPS have named-Go
+request/result comparisons, applicable PUT ETags, native rejection and malformed/
+lost-reply evidence. Existing stalled-wait cleanup tests are linked separately.
+The 18 scoped method contracts live within 36 partial endpoint rows; other bodies/
+source/state/error/cluster variants and backend effects remain open. These fixtures
+neither export tools nor prove real-daemon mutation effects.

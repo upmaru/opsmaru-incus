@@ -41,6 +41,8 @@ for name in ['CopyInstance','CopyInstanceSnapshot','CopyStoragePoolVolume','Move
  helpers.setdefault(name, ('lib/opsmaru/incus/copy.ex', []))[1].append('test/copy_negotiation_reference_test.exs')
 for name in ['CreateInstanceFromImage','RebuildInstanceFromImage']:
  helpers[name]=('lib/opsmaru/incus/image_instances.ex',['test/copy_negotiation_reference_test.exs'])
+for name in ['operation.Cancel','Operation.Cancel']:
+ helpers[name][1].append('test/mutation_lifecycle_test.exs')
 helpers['RawOperation']=('lib/opsmaru/incus/operation.ex',['test/raw_operation_reference_test.exs'])
 writable_types = 'Certificate ClusterMember ClusterGroup Image Instance InstanceSnapshot Network NetworkACL NetworkAddressSet NetworkForward NetworkIntegration NetworkLoadBalancer NetworkPeer NetworkZone NetworkZoneRecord Profile Project Server StoragePool StorageBucket StorageBucketKey StorageVolume StorageVolumeSnapshot'.split()
 for name in writable_types:
@@ -149,6 +151,8 @@ for entry in inv['entries']:
   row.update(status='partial',elixir='lib/opsmaru/incus/api.ex',evidence=['test/resource_slice_test.exs','test/native_wait_reference_test.exs'],note='Direct typed native wait, separate from polling Operation.wait: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/terminal snapshots, HTTP 403 and premature EOF compared with unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight timeout=-1 rejection and hex-secret Inspect redaction. Arbitrary/empty-secret encoding, cluster forwarding, full timeout/error matrices and real-daemon acceptance remain unverified; native timeout=-1 is intentionally rejected for finite local bounds.')
  elif entry['package']=='client' and entry['kind'] in ['method','interface_method'] and name in ['GetProjects', 'GetProject', 'GetProfiles', 'GetProfile', 'GetNetworks', 'GetNetwork', 'GetStoragePools', 'GetStoragePool', 'GetStoragePoolVolumes', 'GetStoragePoolVolume']:
   row.update(status='partial',elixir='lib/opsmaru/incus/api.ex',evidence=['test/resource_slice_test.exs','test/inspection_contract_test.exs'],note='Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial.')
+ elif entry['package']=='client' and entry['kind'] in ['method','interface_method'] and name in ['CreateInstance','UpdateInstance','UpdateInstanceState','DeleteInstance','CreateInstanceSnapshot','DeleteInstanceSnapshot','DeleteImage','DeleteOperation']:
+  row.update(status='partial',elixir='lib/opsmaru/incus/api.ex',evidence=['test/resource_slice_test.exs','test/mutation_lifecycle_test.exs','test/native_wait_reference_test.exs'],note='Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial.')
  elif entry['kind'] in ['method','interface_method'] and name in methods:
   row.update(status='partial',elixir='lib/opsmaru/incus/api.ex',evidence=['test/resource_slice_test.exs'] + (['test/session_test.exs'] if name in ['ExecInstance','ConsoleInstance'] else []) + (['test/migration_test.exs'] if name.startswith('Migrate') else []),note='Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate.')
  elif entry['kind'] in ['method','interface_method','function'] and (entry['name'] in helpers or name in helpers):
@@ -169,6 +173,8 @@ for entry in inv['entries']:
   row.update(status='partial',elixir='lib/opsmaru/incus/status.ex',evidence=['test/model_helpers_reference_test.exs'],note='All pinned status names/values and unknown-code behavior compared with unchanged native helpers.')
  elif entry['package']=='shared/api' and entry['kind']=='const' and entry['name'] in constants:
   row.update(status='partial',elixir='lib/opsmaru/incus/constants.ex',evidence=['test/constants_reference_test.exs'],note='Pinned native API constant values compared through unchanged exports. Pure model data only; no protocol activation or capability grant implied.')
+ if entry['package']=='client' and entry['kind'] in ['method','interface_method'] and name == 'GetOperationWait':
+  row['evidence'].append('test/mutation_lifecycle_test.exs')
  entries.append(row)
 for row in entries:
  for path in row['evidence']: assert (root/path).is_file(), path

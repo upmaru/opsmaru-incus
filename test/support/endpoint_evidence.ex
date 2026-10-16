@@ -4,6 +4,8 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
 
   @inspection ~w(GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume)
 
+  @mutation ~w(CreateInstance UpdateInstance UpdateInstanceState DeleteInstance CreateInstanceSnapshot DeleteInstanceSnapshot DeleteImage DeleteOperation)
+
   # This validates evidence links and provenance, not protocol correctness.
   def validate!(manifest, native) do
     pin = Jason.decode!(File.read!("priv/incus/reference.json"))
@@ -42,6 +44,7 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     end
 
     inspection!(manifest)
+    mutation!(manifest)
 
     wait = Enum.find(manifest["entries"], &String.ends_with?(&1["path"], "/wait"))
     assert wait["status"] == "partial" and wait["method"] == "GetOperationWait"
@@ -53,7 +56,8 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     contract = get_in(manifest, ["fixture_contracts", "initial_inspection_v1"])
     assert is_map(contract), "missing inspection contract"
 
-    assert Map.keys(manifest["fixture_contracts"]) == ["initial_inspection_v1"],
+    assert Enum.sort(Map.keys(manifest["fixture_contracts"])) ==
+             ["initial_inspection_v1", "initial_mutation_lifecycle_v1"],
            "unknown inspection contract"
 
     assert contract["status"] == "fixture_verified", "invalid inspection contract status"
@@ -74,12 +78,49 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     assert contract["evidence"] == ["inspection_contract"], "missing inspection contract evidence"
 
     for row <- manifest["entries"] do
-      expected = if row["method"] in @inspection, do: "initial_inspection_v1"
+      expected =
+        cond do
+          row["method"] in @inspection -> "initial_inspection_v1"
+          row["method"] in @mutation -> "initial_mutation_lifecycle_v1"
+          true -> nil
+        end
+
       assert row["verified_scope"] == expected, "invalid inspection contract attachment"
 
-      if expected,
+      if row["method"] in @inspection,
         do:
           assert("inspection_contract" in row["evidence"], "missing inspection contract evidence")
+    end
+  end
+
+  defp mutation!(manifest) do
+    contract = get_in(manifest, ["fixture_contracts", "initial_mutation_lifecycle_v1"])
+
+    assert contract == %{
+             "status" => "fixture_verified",
+             "methods" => @mutation,
+             "transports" => ["unix", "mutual_https"],
+             "queries" => "catalogue_only",
+             "bodies" => "bounded_fixture_samples_including_restore",
+             "cases" =>
+               ~w(native_request native_403 native_404 native_409 native_412 response_loss malformed_response no_replay binding),
+             "async_cases" =>
+               ~w(accepted native_wait_running native_wait_success native_wait_failure etag local_lifetime_after_acceptance),
+             "cancel_cases" =>
+               ~w(sync_ack may_cancel completion_race native_rejection lost_reply),
+             "evidence" => ["mutation_lifecycle", "mutation_cancellation", "native_wait_lifetime"]
+           },
+           "invalid mutation contract"
+
+    for row <- manifest["entries"], row["method"] in @mutation do
+      assert "mutation_lifecycle" in row["evidence"], "missing mutation contract evidence"
+
+      required =
+        if row["method"] == "DeleteOperation",
+          do: "mutation_cancellation",
+          else: "native_wait_lifetime"
+
+      assert required in row["evidence"], "missing mutation contract evidence"
     end
   end
 
