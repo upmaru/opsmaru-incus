@@ -1059,6 +1059,12 @@ certified under `b03_exec_v1`. Task 3.9, global `behavior_complete`,
   buffers, because shrinking an established Linux 6.x TCP socket clamps its window
   for good, and the blocked TLS write uses 32 MiB of stdin to exceed autotuned
   buffers (reproduced on kernel 6.12).
+- [x] Same race during collection: when a request context ends, its watchers stop
+  the exec channels, and if that happened before the collection guard fired,
+  collection reported `:exec_output_protocol` (seen once on macOS over TLS). A
+  channel that stops while the request context has ended now reports that
+  context's `:deadline`/`:canceled`. A guard-suspended cancellation regression on
+  both transports failed before the fix.
 - [x] Negative validator tests reject a removed exec case, transport or evidence
   kind, unlinked evidence, unclassified selectors, unapproved exclusions or
   differences, reopened or misattributed S01 and a partial selected exec row.

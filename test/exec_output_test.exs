@@ -689,6 +689,50 @@ defmodule Opsmaru.Incus.ExecOutputTest do
   end
 
   for transport <- [:gen_tcp, :ssl] do
+    test "collection reports a request context that stopped its channels first over #{transport}",
+         %{root: root} do
+      {client, fixture, _} = fixture(root, unquote(transport), gate_stdout: true)
+      context = RequestContext.new!(timeout: 30_000)
+      client = Incus.with_context(client, context)
+      parent = self()
+      sink = fn _ -> :ok end
+
+      caller =
+        spawn(fn ->
+          {:ok, session} = Session.exec(client, "fixture", @body)
+          send(parent, {:session, session})
+
+          receive do
+            :collect -> send(parent, {:collected, Session.collect(session, sink, sink)})
+          end
+        end)
+
+      on_exit(fn -> if Process.alive?(caller), do: Process.exit(caller, :kill) end)
+      assert_receive {:session, session}, 5_000
+      assert_receive {:stdout_gate, peer}, 5_000
+      :erlang.trace(caller, true, [:procs, :set_on_spawn])
+      send(caller, :collect)
+      assert_receive {:trace, ^caller, :spawn, worker, _}, 5_000
+      assert_receive {:trace, ^worker, :spawn, guard, _}, 5_000
+      on_exit(fn -> if Process.alive?(guard), do: Process.exit(guard, :kill) end)
+
+      # With the collection guard held, only the channels' context watchers can end it.
+      assert :erlang.suspend_process(guard)
+      monitors = for {_, channel} <- session.channels, do: Process.monitor(channel.pid)
+      RequestContext.cancel(context)
+      for monitor <- monitors, do: assert_receive({:DOWN, ^monitor, :process, _, _}, 5_000)
+
+      assert_receive {:collected, {:error, %Error{kind: :canceled, operation: url}}}, 5_000
+      assert url == session.operation.url
+      assert :erlang.resume_process(guard)
+      send(peer, :release_stdout)
+      requests = HTTPFixture.requests(fixture)
+      assert Enum.count(requests, &(&1.method == "POST")) == 1
+      refute Enum.any?(requests, &(&1.method == "DELETE"))
+    end
+  end
+
+  for transport <- [:gen_tcp, :ssl] do
     test "run local timeout and host cancellation kill stalled sinks and retain a reusable handle over #{transport}",
          %{root: root} do
       for mode <- [:local_deadline, :host_deadline, :cancellation] do
