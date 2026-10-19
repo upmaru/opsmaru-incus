@@ -6,7 +6,7 @@ defmodule Opsmaru.Incus.WebSocket do
   """
   use GenServer
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Context, Error, HTTP, Response, Transport, Upgrade}
+  alias Opsmaru.Incus.{Context, Error, HTTP, RequestContext, Response, Transport, Upgrade}
   alias Opsmaru.Incus.HTTP.Response, as: HTTPResponse
   defstruct [:pid, :ref]
 
@@ -40,7 +40,12 @@ defmodule Opsmaru.Incus.WebSocket do
           {:error, %Error{kind: kind}}
 
         _ ->
-          {:error, %Error{kind: :websocket_upgrade}}
+          # The request-context watcher stops a pending upgrade when that context
+          # ends; report its deadline or cancellation rather than a failed upgrade.
+          case RequestContext.status(client.connection.request_context) do
+            kind when kind in [:deadline, :canceled] -> {:error, %Error{kind: kind}}
+            _ -> {:error, %Error{kind: :websocket_upgrade}}
+          end
       end
     else
       {:error, kind} -> {:error, %Error{kind: kind}}

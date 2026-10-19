@@ -103,9 +103,21 @@ defmodule Opsmaru.Incus.ExecOutput do
         :timeout ->
           {:error, %Error{kind: :deadline}}
 
+        {{:error, _down}, _, _} ->
+          channel_down(session)
+
         _ ->
           {:error, %Error{kind: :exec_output_protocol}}
       end
+    end
+  end
+
+  # The request context's watcher stops channels when that context ends; report
+  # its deadline or cancellation rather than a protocol failure.
+  defp channel_down(session) do
+    case RequestContext.status(session.operation.client.connection.request_context) do
+      kind when kind in [:deadline, :canceled] -> {:error, %Error{kind: kind}}
+      _ -> {:error, %Error{kind: :exec_output_protocol}}
     end
   end
 

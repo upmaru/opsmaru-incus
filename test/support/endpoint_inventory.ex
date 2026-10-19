@@ -7,7 +7,9 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     "native_long_poll" =>
       ~w(running completed failed cancelled etag routing native_403 native_404 response_loss_no_replay deadline cancellation caller_loss preflight redaction),
     "event_stream" =>
-      ~w(populated field_presence selectors routing native_400 native_403 native_404 no_retry preflight handlers capacity callback_failure owner_loss caller_loss eof malformed overflow byte_bounds deadline cancellation local_wait send peer_closure)
+      ~w(populated field_presence selectors routing native_400 native_403 native_404 no_retry preflight handlers capacity callback_failure owner_loss caller_loss eof malformed overflow byte_bounds deadline cancellation local_wait send peer_closure),
+    "live_exec" =>
+      ~w(collected non_waiting interactive record_output user_group_cwd_size empty_output routing upgrade_targets extension_guards control_frames control_range native_400 native_403 native_404 accepted_identity response_loss_no_replay stream_negotiation invalid_stream_metadata pending_status missing_channels redaction preflight stdin_chunking blocked_stdin deadline cancellation owner_loss sink_limit running_failed close_barrier_abrupt peer_closure)
   }
   @evidence_kinds ~w(named_go_differential raw_query_transport independent_fixture)
 

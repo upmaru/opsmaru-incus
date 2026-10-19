@@ -321,8 +321,8 @@ separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
 pairs plus 46 query/access variants; 37 pairs are currently in the checked evidence
-manifest. Native wait and events are complete under reviewed completion records;
-the other 35 are partial. It retains remaining copy/stream/model/helper scope without
+manifest. Native wait, events and exec are complete under reviewed completion
+records; the other 34 are partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
@@ -662,8 +662,41 @@ host cancellation still apply; the private lifetime never cancels that context.
 Returned operation/response bindings use the original client for reconciliation.
 Loss of a possibly accepted POST response is uncertain; known accepted identity
 survives negotiation/callback failures. Local channels/workers close without
-DELETE or replay. Tool argument policy, captured/truncated results, interactive
-or recorded exec and arbitrary input producers remain outside this subset.
+DELETE or replay. Tool argument policy, captured/truncated results and arbitrary
+input producers remain outside this subset; interactive and recorded-output
+sessions are submitted through `Session.exec/3` as described below.
+
+### Completed exec submission contract
+
+`POST /1.0/instances/{name}/exec` and stream contract S01 are complete under the
+reviewed record `b03_exec_v1`. Over Unix and verified mutual HTTPS, the unchanged
+`ExecInstance` is compared for collected noninteractive `Session.run/7`,
+`wait-for-websocket=false` through `Incus.call/4`, an interactive PTY through
+`Session.exec/3` (channel 0 plus control), `record-output=true` submission,
+empty output with exit 0 and nonzero `user`/`group`/terminal size with a
+nonempty `cwd`. `record-output` requires `container_exec_recording`, and any
+`user`, `group` or `cwd` requires `container_exec_user_group_cwd`; both reject
+before dispatch, as natively.
+
+Interactive and non-collected sessions expose host-owned channels rather than
+the pinned client's reader/writer mirroring. `Session.resize/3` and
+`Session.signal/2` write the native `window-resize` and `signal` control
+messages; width and height must be in 1..65535 and signals in 1..64, otherwise
+the call raises `FunctionClauseError` before any frame is written. Each channel
+upgrade sends its operation secret plus the host `project`/`target` routing; the
+pinned client sends only the secret and the pinned daemon ignores routing on
+this route; this routing is an approved, maintained difference. Native
+400/403/404 are returned without acceptance; upgrade rejection is
+`:stream_negotiation` and unsupported fds metadata is `:invalid_stream_metadata`,
+both retaining the accepted operation and closing opened channels. A request
+context that ends while an upgrade is pending reports its `:deadline` or
+`:canceled` (also from `WebSocket.open/3`), again with the accepted operation. `exit_status/1` reports `:operation_pending` until completion,
+and absent channels are `:missing_channel`.
+
+`record-output` is submitted only: recorded-output listing, download and
+deletion remain B07 and unimplemented. Cluster forwarding, arbitrary producers
+and tool capture/truncation policy are excluded. Real-daemon exec/PTY and Macus
+acceptance are separately recorded.
 
 
 Conditional partial instance updates use `Incus.call(client, "PatchInstance",
