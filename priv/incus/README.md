@@ -45,8 +45,9 @@ Opsmaru adaptations are tracked in Git, not claimed identical to Macus.
 293 query/access views, explicit helper/custom mappings, public server registration
 hashes/differences, missing typed implementations and finite B01–B12/S01–S12
 obligations. `classification_complete=true` means no unclassified source rows,
-not verified behavior. `endpoint-evidence.json` remains the selected 36-pair
-evidence ledger with ten verified inspection scopes. See
+not verified behavior. Its `completion_records` are the only source of
+`behavior_complete=true` rows and certified stream contracts. `endpoint-evidence.json`
+is the selected 37-pair evidence ledger with fixture-verified inspection scopes. See
 [`task-3-9-backlog.md`](../../docs/task-3-9-backlog.md) for counts and exits.
 The canonical endpoint test uses Go's standard AST parser and the existing YAML
 parser against the unchanged pin; Go is development-only and never a sidecar.

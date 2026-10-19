@@ -1,4 +1,4 @@
-// Pinned event listener lifecycle oracle against an isolated echo fixture.
+// Pinned event listener lifecycle oracle against an isolated echo fixture over Unix or HTTPS.
 package main
 
 import (
@@ -13,15 +13,28 @@ import (
 
 func main() {
 	var input struct {
-		Socket string    `json:"socket"`
-		Event  api.Event `json:"event"`
+		Socket     string    `json:"socket"`
+		URL        string    `json:"url"`
+		ServerCert string    `json:"server_cert"`
+		ClientCert string    `json:"client_cert"`
+		ClientKey  string    `json:"client_key"`
+		TLSCA      string    `json:"tls_ca"`
+		Event      api.Event `json:"event"`
 	}
 	if err := json.NewDecoder(os.Stdin).Decode(&input); err != nil {
 		panic(err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	client, err := incus.ConnectIncusUnixWithContext(ctx, input.Socket, &incus.ConnectionArgs{SkipGetEvents: true})
+	args := &incus.ConnectionArgs{SkipGetEvents: true, TLSServerCert: input.ServerCert,
+		TLSClientCert: input.ClientCert, TLSClientKey: input.ClientKey, TLSCA: input.TLSCA}
+	var client incus.InstanceServer
+	var err error
+	if input.Socket != "" {
+		client, err = incus.ConnectIncusUnixWithContext(ctx, input.Socket, args)
+	} else {
+		client, err = incus.ConnectIncusWithContext(ctx, input.URL, args)
+	}
 	if err != nil {
 		panic(err)
 	}

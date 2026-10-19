@@ -47,8 +47,13 @@ defmodule Opsmaru.Incus.WebSocket do
     end
   end
 
+  # The channel always answers within its own read timer (min(timeout,
+  # connection timeout)) once it takes the request, or ends under its lifetime,
+  # context, owner or bounded-write guards. Waiting for that answer instead of a
+  # caller-side bound means a busy channel delays a read rather than reporting
+  # false closure, and no late reply can carry a frame to an abandoned caller.
   def recv(channel, timeout \\ 5_000) when is_integer(timeout) and timeout in 1..3_600_000,
-    do: call(channel, {:recv, timeout}, timeout + 100)
+    do: call(channel, {:recv, timeout}, :infinity)
 
   def send_frame(channel, frame), do: call(channel, {:send, frame}, 3_600_100)
   def close(channel), do: call(channel, :close, 5_000)

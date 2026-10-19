@@ -1,24 +1,76 @@
 defmodule Opsmaru.TestSupport.WebSocketFixture do
   @moduledoc "Independent bounded RFC6455 fixture, not an Incus workload or Macus proxy."
   use GenServer
+  alias Opsmaru.Incus.Connection
   def start_link(opts), do: GenServer.start_link(__MODULE__, opts)
   def path(pid), do: GenServer.call(pid, :path)
+  def endpoint(pid), do: GenServer.call(pid, :endpoint)
   def requests(pid), do: GenServer.call(pid, :requests)
   @impl true
   def init(opts) do
-    path = Keyword.fetch!(opts, :path)
-
-    {:ok, listener} =
-      :gen_tcp.listen(0, [:binary, active: false, ip: {:local, String.to_charlist(path)}])
-
-    File.chmod!(path, 0o600)
+    {transport, listener, endpoint} = listen(opts)
+    opts = Keyword.put(opts, :transport, transport)
     owner = self()
     worker = spawn_link(fn -> accept(listener, owner, opts) end)
-    {:ok, %{path: path, listener: listener, worker: worker, requests: []}}
+
+    {:ok,
+     %{
+       path: endpoint[:socket],
+       endpoint: endpoint,
+       transport: transport,
+       listener: listener,
+       worker: worker,
+       requests: []
+     }}
+  end
+
+  # Unix by default; `transport: :ssl` serves verified (optionally mutual) TLS on loopback.
+  defp listen(opts) do
+    case Keyword.get(opts, :transport, :gen_tcp) do
+      :gen_tcp ->
+        path = Keyword.fetch!(opts, :path)
+
+        {:ok, listener} =
+          :gen_tcp.listen(0, [:binary, active: false, ip: {:local, String.to_charlist(path)}])
+
+        File.chmod!(path, 0o600)
+        {:gen_tcp, listener, %{socket: path}}
+
+      :ssl ->
+        {:ok, _} = Application.ensure_all_started(:ssl)
+
+        {:ok, listener} =
+          :ssl.listen(
+            0,
+            [
+              :binary,
+              ip: {127, 0, 0, 1},
+              active: false,
+              certfile: String.to_charlist(Keyword.fetch!(opts, :certfile)),
+              keyfile: String.to_charlist(Keyword.fetch!(opts, :keyfile)),
+              versions: [:"tlsv1.3"],
+              reuseaddr: true
+            ] ++ peer_options(opts)
+          )
+
+        {:ok, {_, port}} = :ssl.sockname(listener)
+        {:ssl, listener, %{url: "https://localhost:#{port}"}}
+    end
+  end
+
+  defp peer_options(opts) do
+    case Keyword.pop(Keyword.get(opts, :peer_options, []), :cacertfile) do
+      {nil, options} ->
+        options
+
+      {file, options} ->
+        Keyword.put(options, :cacerts, Connection.ca_certificates(file))
+    end
   end
 
   @impl true
   def handle_call(:path, _, state), do: {:reply, state.path, state}
+  def handle_call(:endpoint, _, state), do: {:reply, state.endpoint, state}
   def handle_call(:requests, _, state), do: {:reply, Enum.reverse(state.requests), state}
 
   def handle_call({:request, request}, _, state),
@@ -26,13 +78,13 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
 
   @impl true
   def terminate(_, state) do
-    :gen_tcp.close(state.listener)
+    state.transport.close(state.listener)
     Process.exit(state.worker, :shutdown)
-    File.rm(state.path)
+    if state.path, do: File.rm(state.path)
   end
 
   defp accept(listener, owner, opts) do
-    case :gen_tcp.accept(listener) do
+    case accept_socket(opts[:transport], listener) do
       {:ok, socket} ->
         worker =
           spawn(fn ->
@@ -41,8 +93,11 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
             end
           end)
 
-        :ok = :gen_tcp.controlling_process(socket, worker)
+        :ok = opts[:transport].controlling_process(socket, worker)
         send(worker, {:socket, socket})
+        accept(listener, owner, opts)
+
+      {:error, :handshake_failed} ->
         accept(listener, owner, opts)
 
       _ ->
@@ -50,8 +105,24 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
     end
   end
 
+  defp accept_socket(:gen_tcp, listener), do: :gen_tcp.accept(listener)
+
+  defp accept_socket(:ssl, listener) do
+    with {:ok, socket} <- :ssl.transport_accept(listener) do
+      case :ssl.handshake(socket, 5_000) do
+        {:ok, socket} ->
+          {:ok, socket}
+
+        {:error, _} ->
+          :ssl.close(socket)
+          {:error, :handshake_failed}
+      end
+    end
+  end
+
   defp serve(socket, owner, opts) do
-    {header, initial} = header(socket, "")
+    t = opts[:transport]
+    {header, initial} = header(t, socket, "")
     [request | lines] = String.split(header, "\r\n", trim: true)
     [method, target, _] = String.split(request, " ")
 
@@ -65,7 +136,7 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
 
     body =
       if byte_size(initial) < length do
-        {:ok, rest} = :gen_tcp.recv(socket, length - byte_size(initial), 5_000)
+        {:ok, rest} = t.recv(socket, length - byte_size(initial), 5_000)
         initial <> rest
       else
         initial
@@ -85,7 +156,7 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
           }
         })
 
-      :gen_tcp.send(socket, [
+      t.send(socket, [
         "HTTP/1.1 200 OK\r\nContent-Length: ",
         Integer.to_string(byte_size(body)),
         "\r\n\r\n",
@@ -96,7 +167,7 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
         response = opts[:http_handler].(request)
         body = Jason.encode!(response.body)
 
-        :gen_tcp.send(socket, [
+        t.send(socket, [
           "HTTP/1.1 ",
           Integer.to_string(response.status),
           " OK\r\nContent-Length: ",
@@ -118,14 +189,14 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
         Process.sleep(Keyword.get(opts, :upgrade_delay, 0))
 
         :ok =
-          :gen_tcp.send(socket, [
+          t.send(socket, [
             "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: ",
             accept,
             "\r\n\r\n",
             bytes
           ])
 
-        close_later(socket, opts[:close_after])
+        close_later(t, socket, opts[:close_after])
 
         echo(socket, opts)
       end
@@ -133,19 +204,19 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
   rescue
     _ -> :ok
   after
-    :gen_tcp.close(socket)
+    opts[:transport].close(socket)
   end
 
-  defp close_later(_, nil), do: :ok
+  defp close_later(_, _, nil), do: :ok
 
-  defp close_later(socket, delay) do
+  defp close_later(t, socket, delay) do
     spawn(fn ->
       Process.sleep(delay)
-      :gen_tcp.send(socket, frame(8, <<1000::16>>))
+      t.send(socket, frame(8, <<1000::16>>))
     end)
   end
 
-  defp header(socket, bytes) do
+  defp header(t, socket, bytes) do
     if byte_size(bytes) > 65_536, do: raise("fixture header budget")
 
     case :binary.split(bytes, "\r\n\r\n") do
@@ -153,8 +224,8 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
         {header, rest}
 
       [_] ->
-        {:ok, next} = :gen_tcp.recv(socket, 0, 5_000)
-        header(socket, bytes <> next)
+        {:ok, next} = t.recv(socket, 0, 5_000)
+        header(t, socket, bytes <> next)
     end
   end
 
@@ -165,13 +236,16 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
     do: <<1::1, 0::3, opcode::4, 0::1, 126::7, byte_size(bytes)::16, bytes::binary>>
 
   # Masked client frames with 7-bit or 16-bit payload lengths.
-  defp recv_header(socket) do
-    case :gen_tcp.recv(socket, 2, 5_000) do
+  defp recv_header(t, socket) do
+    case t.recv(socket, 2, 5_000) do
       {:ok, <<_fin::1, _::3, opcode::4, 1::1, 126::7>>} ->
-        with {:ok, <<length::16>>} <- :gen_tcp.recv(socket, 2, 5_000), do: {:ok, opcode, length}
+        with {:ok, <<length::16>>} <- t.recv(socket, 2, 5_000), do: {:ok, opcode, length}
 
       {:ok, <<_fin::1, _::3, opcode::4, 1::1, length::7>>} when length <= 125 ->
         {:ok, opcode, length}
+
+      {:error, reason} ->
+        {:error, reason}
 
       _ ->
         :error
@@ -179,10 +253,12 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
   end
 
   defp echo(socket, opts) do
-    case recv_header(socket) do
+    t = opts[:transport]
+
+    case recv_header(t, socket) do
       {:ok, opcode, length} ->
         {:ok, <<mask::binary-size(4), payload::binary-size(length)>>} =
-          :gen_tcp.recv(socket, 4 + length, 5_000)
+          t.recv(socket, 4 + length, 5_000)
 
         data =
           payload
@@ -193,16 +269,24 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
 
         if opcode != 8 do
           cond do
-            opts[:response_frames] -> :gen_tcp.send(socket, opts[:response_frames].(opcode, data))
+            opts[:response_frames] -> t.send(socket, opts[:response_frames].(opcode, data))
             opts[:frame_handler] -> opts[:frame_handler].(opcode, data)
-            true -> :gen_tcp.send(socket, frame(opcode, data))
+            true -> t.send(socket, frame(opcode, data))
           end
 
           echo(socket, opts)
+        else
+          peer(opts, :close_frame)
         end
 
+      {:error, :closed} ->
+        peer(opts, :closed)
+
       _ ->
-        :ok
+        peer(opts, :idle_or_invalid)
     end
   end
+
+  # Optional observation of how the client ended the stream, for peer-closure evidence.
+  defp peer(opts, outcome), do: if(pid = opts[:notify], do: send(pid, {:websocket_peer, outcome}))
 end

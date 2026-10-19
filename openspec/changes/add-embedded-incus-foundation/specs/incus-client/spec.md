@@ -74,6 +74,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **WHEN** query parameters and copied fixture-verification scopes are checked
 - **THEN** parameter support comes only from methods matching that documented view and each copied verified_scope equals its selected evidence entry, so unrelated recursion views or endpoint rows cannot conceal gaps or claim verification
 
+#### Scenario: Reviewed endpoint completion record
+
+- **WHEN** an endpoint row or stream contract is marked complete or certified
+- **THEN** a completion record lists it with its methods/helpers, supported and approved-excluded views, selector treatment, bodies/modes, result fields, locally rejected variants, approved differences, required cases and evidence kinds on Unix and mutual HTTPS, and every stream contract linked to the row is certified
+- **AND** validation rejects removed cases, transports or evidence, unlisted views, unapproved exclusions, completion claimed for an unrelated, missing-typed or open-stream row, and any change to global completion, complete_port or Go declaration statuses
+
 ### Requirement: Truthful backend compatibility
 
 Version, extension and live backend capability checks SHALL precede operations requiring those capabilities. Unsupported behavior SHALL return an explicit compatibility failure. Host limitations MUST NOT conceal missing client implementation.
@@ -102,6 +108,13 @@ Accepted operations SHALL remain distinguishable from completed operations. Wait
 
 - **WHEN** either typed native wait method receives a gated response body after flushed headers over Unix or verified HTTPS
 - **THEN** fixture evidence compares finite wait queries, operation snapshots, ETags and native errors with the unchanged pinned client, while independent deadline/cancellation/caller-loss checks prove local socket cleanup without replay or remote cancellation; polling behavior and partial declaration status remain unchanged
+
+#### Scenario: Completed native wait contract
+
+- **WHEN** a native wait has an empty or non-hexadecimal secret, or a timeout outside 0..3600
+- **THEN** it is rejected before I/O, rather than being sent as a different request
+- **AND** supported waits keep pinned-client agreement for running, completed, failed and cancelled snapshots and for native 403/404 errors, and connection loss before headers leaves one request with no replay
+- **AND** the public view, arbitrary/empty secrets and cluster forwarding remain recorded approved exclusions
 
 ### Requirement: Bounded conditional instance partial updates
 
@@ -156,6 +169,12 @@ Exec, console, events, files, images, backups and migrations SHALL preserve nati
 - **WHEN** deadline, host cancellation or owner loss interrupts negotiation, input or output after exec acceptance
 - **THEN** local work and channels terminate, known operation identity and binding remain available for reconciliation, unknown acceptance is reported as uncertain, and the client neither cancels nor replays the native operation
 
+#### Scenario: Completed exec submission contract
+
+- **WHEN** exec is submitted in collected noninteractive, non-waiting, interactive PTY or record-output mode, with or without user/group/cwd and terminal size
+- **THEN** the request and accepted handle agree with the pinned client over Unix and mutual HTTPS, recording and user/group/cwd fields require their extensions before dispatch, and interactive resize/signal control frames match native messages within their bounds
+- **AND** native rejection, channel upgrade targets and failures, redaction, and the existing failure and cleanup outcomes hold on both transports, while recorded-output retrieval and the shared operation WebSocket row remain open
+
 ### Requirement: Bounded event subscriptions
 
 Subscriptions SHALL have explicit lifetime and queue bounds. Overflow SHALL fail visibly and permit reconciliation against authoritative backend state. Cancellation and completion races SHALL release resources without disrupting unrelated operations.
@@ -164,6 +183,12 @@ Subscriptions SHALL have explicit lifetime and queue bounds. Overflow SHALL fail
 
 - **WHEN** a subscription exceeds its documented queue limit
 - **THEN** it terminates with a visible overflow error and other client requests remain available
+
+#### Scenario: Completed event subscription contract
+
+- **WHEN** a host subscribes with type lists, all-projects or connection project/member routing over Unix or mutual HTTPS
+- **THEN** upgrade targets match the pinned client, with all-projects suppressing project; unknown types receive native 400, absent projects 404 and permission failures 403; and Event fields and inbound byte bounds hold
+- **AND** handlers, capacity, callback failure, owner/caller loss, EOF, malformed events, overflow, deadline and cancellation end with actual peer closure where the client ends the stream, and a context-ended listener reports that context's cancellation or deadline, without callback ordering claims or cluster forwarding
 
 ### Requirement: Independently recorded acceptance
 

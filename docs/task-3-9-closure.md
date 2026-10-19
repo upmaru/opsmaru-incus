@@ -22,7 +22,7 @@ POST repair row; mapping a route does not certify its supported contract.
 ## Current behavioral checklist — audited 2026-10-15
 
 This checklist started at `47b1918` (PR #9) and now includes the approved
-conditional instance PATCH, ten-method inspection, full classification, four conditional resource PATCH and B01 lifecycle slices. Sections below it are chronological evidence and may describe gaps since superseded.
+conditional instance PATCH, ten-method inspection, full classification, four conditional resource PATCH, B01 lifecycle and B03 completion-record slices. Sections below it are chronological evidence and may describe gaps since superseded.
 A checked item means the stated bounded behavior has evidence, not that its
 entire endpoint, protocol or Go declaration is complete. The audit changed no support status. The new four-method batch adds bounded typed implementations; endpoint/declaration parity and tool exports remain separate.
 
@@ -33,8 +33,14 @@ entire endpoint, protocol or Go declaration is complete. The audit changed no su
 - [x] 268 named-Go JSON methods retain their native fixture baseline; five REST-specific
   PATCH descriptors add dedicated evidence (`test/instance_patch_test.exs`).
   The 273 descriptors map to 193 routes; these are not completed endpoints.
-- [x] 36 selected pairs have checked REST provenance, method/evidence anchors,
+- [x] 37 selected pairs have checked REST provenance, method/evidence anchors,
   supported scope and gaps (`priv/incus/endpoint-evidence.json`).
+- [x] Reviewed completion records (`completion_records` in
+  `priv/incus/endpoint-inventory.json`) complete two endpoint rows and certify
+  S03: `b03_native_wait_v1` (`GET /1.0/operations/{id}/wait`) and
+  `b03_events_v1` (`GET /1.0/events` with S03). The validator rejects removed
+  cases/transports/evidence, unlisted views, unapproved exclusions and
+  completion for unrelated, missing-typed or open-stream rows.
 - [x] Bounded live noninteractive exec has full-duplex finite stdin, acknowledged
   stdout/stderr, native barriers, exit status, one submission-to-completion
   lifetime, retained acceptance and blocked-stdin cleanup evidence
@@ -55,7 +61,7 @@ entire endpoint, protocol or Go declaration is complete. The audit changed no su
   ubuntu-24.04 and macos-15, first attempt: CI run 38691372898.
 
 These are completed behavior slices. The conditional PATCH behavior is fixture-verified; its broader endpoint scope
-remains partial. The checked manifest now has 36 partial pairs and 28 fixture-verified scoped
+remains partial. The checked manifest now has 37 pairs (35 partial, 2 complete) and 28 fixture-verified scoped
 contracts (nineteen inspection methods, one discovery helper and eight mutation lifecycle methods). The separate Go
 ledger still has 1239 partial / 41 missing declarations, `complete_port=false`.
 No percentage of task completion can be derived from either counter.
@@ -90,10 +96,10 @@ fully documented or that matching a route establishes behavior parity.
 | Network allocations | 1 | 1 | 0 |
 | Metadata | 1 | 1 | 0 |
 | Resources | 1 | 1 | 0 |
-| Events | 1 | 0 | 0 |
+| Events | 1 | 0 | 1 |
 | Metrics | 1 | 0 | 0 |
 | Warnings | 5 | 4 | 0 |
-| **Total** | **247** | **187** | **36** |
+| **Total** | **247** | **187** | **37** |
 
 Six of the 193 catalogue routes use literal `volumes/custom` where REST uses a
 volume-type parameter. They require subtype-aware mapping; they are not six
@@ -143,11 +149,11 @@ missing typed implementations, one equivalent POST route and one repair mismatch
 - [ ] Complete required B01–B12 contracts and S01–S12 streaming obligations;
   classification is complete, behavioral certification remains open. Preserve
   already fixture-verified scopes and do not infer completion from source links.
-- [ ] Add reviewed completion records for finite supported contracts. The selected
-  evidence validator continues to accept only partial/missing endpoint status;
-  no endpoint/declaration is promoted by this audit.
+- [ ] Add reviewed completion records for every remaining finite supported contract.
+  The mechanism exists and two rows plus S03 are complete; the operation WebSocket
+  row stays partial while S02/S10 are open. No Go declaration is promoted.
 
-### The selected 36 pairs: verified scope and next closure obligation
+### The selected 37 pairs: verified scope and next closure obligation
 
 `resource_slice_test.exs` provides the shared **Unix** official typed-method
 request/result, project/member, extension and native-error baseline. Shared TLS
@@ -168,7 +174,8 @@ additional scoped evidence, not a repetition of that baseline.
 | DELETE image | 1 | initial_mutation_lifecycle_v1: native acceptance/wait outcomes, rejection, response loss/no replay and binding on both transports | Further image/cluster/error cases and daemon effects remain unverified; no implicit file or alias deletion. |
 | GET operations and operation | 2 | core_inspection_v1: grouped list flattening and direct get with fixed populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports; separate poll/wait/event evidence | All-projects/other query/status/field/error/cluster variants remain open. No cross-group result ordering claim. |
 | DELETE operation | 1 | initial_mutation_lifecycle_v1: named-Go synchronous DELETE plus independent may_cancel denial, one DELETE, completion race, native rejection and lost-reply identity on both transports | Other cancellation states/errors/cluster behavior and daemon acceptance remain unverified. Acknowledgement is not proven cancellation completion or a new operation. |
-| GET native operation wait | 1 | PR #9: finite timeout queries, gated bodies, ETags, snapshots, 403, EOF, local lifetime cleanup on Unix/mutual HTTPS | Arbitrary/empty-secret encoding and cluster forwarding remain unverified; timeout=-1 rejection is an intentional finite-bound difference. Real-daemon timeout behavior is separate acceptance. |
+| GET native operation wait | 1 | **Complete** (`b03_native_wait_v1`): finite timeout queries, gated bodies, ETags, running/completed/failed/cancelled snapshots, 403/404, EOF and pre-header loss, local lifetime cleanup and preflight on Unix/mutual HTTPS | None within the record. Approved exclusions: `?public`, arbitrary/empty secrets (rejected before I/O) and cluster forwarding; timeout=-1 rejection is an approved difference. Real-daemon timeout behavior is separate acceptance. |
+| GET events | 1 | **Complete** (`b03_events_v1`, S03): named-Go type/all-projects/project/target upgrade targets, native 400/403/404, Event fields, listener/send matrix, inbound bounds, deadline/cancellation and peer closure on Unix/mutual HTTPS | None within the record. Approved exclusions: cluster forwarding and callback ordering. Real-daemon event streams are separate acceptance. |
 | POST exec | 1 | Full-duplex bounded noninteractive run/collect, negotiation, authoritative exit and cleanup | Confirm bounded live subset as the endpoint contract; recorded/interactive orchestration and arbitrary producers remain visibly separate. Tool capture/truncation/policy belongs to add-incus-operations. |
 | GET operation WebSocket | 1 | Exec channels, barriers, bounded queues/frames, control and write-lifetime cleanup | Classify non-exec channel contracts and secret/query scope separately; exec evidence does not close console/events/migration. |
 
@@ -190,7 +197,7 @@ file/image transfers. They remain foundation classification obligations.
 | --- | --- | --- |
 | Live noninteractive exec | `Session.run/collect`; `test/exec_output_test.exs`, `test/session_test.exs` | Live subset is implemented; classify recorded output and interactive orchestration separately. Tools own capture/truncation/schema policy. |
 | Static and dynamic console WebSocket | `Session.console`, `DynamicConsole`; `test/dynamic_console_reference_test.exs` includes native frames, repeated attachments, TLS, bounds and peer cleanup | Full native callback/reader/writer orchestration and all console types/options remain partial. Earlier blanket “dynamic console missing” notes are superseded. |
-| Events and operation callbacks | `EventListener`, `Events`; `test/event_listener_test.exs`, `test/event_send_test.exs`, `test/operation_handler_test.exs` | Explicit listener ownership is a recorded difference; classify filters/all-projects/target/lifecycle scope. Never assert Go callback order. |
+| Events and operation callbacks | `EventListener`, `Events`; `test/event_contract_test.exs`, `test/event_listener_test.exs`, `test/event_send_test.exs`, `test/operation_handler_test.exs` | S03 certified by `b03_events_v1` on Unix/mutual HTTPS. Explicit listener ownership is a recorded difference; Go callback order is never asserted. Operation handler orchestration stays with its own rows. |
 | Instance/volume file GET/POST/DELETE | `Files`, `FileHeaders`; `test/file_reference_test.exs`, `test/file_variants_reference_test.exs`, `test/file_headers_reference_test.exs` | HEAD is absent; reconcile link/type/mode/query variants and both-transport failure matrix. Directory metadata and binary sinks already have separate evidence. |
 | Image import/export/private token | `Images`; `test/image_transfer_test.exs`, `test/private_image_reference_test.exs` | Unified/split bytes, private token encoding, aliases and copy uncertainty have evidence; remaining compression/header/options and multipart failure cases need bounded classification. |
 | Instance/volume/bucket archives | `Files`; `test/file_variants_reference_test.exs`, `test/backup_variants_test.exs` | Export/import/direct POST are implemented; classify each archive/name/pool/config/device/ISO variant and TLS/failure evidence rather than treating backups as absent. |
@@ -973,3 +980,43 @@ Resource-sensitive YAML fixtures run serially so native large-document acceptanc
 and elapsed assertions do not compete with other async fixture suites. Actual
 worker tracing and message cleanup remain; parser budgets, success assertions and
 test timeouts are unchanged. This scheduling change adds no parser capability.
+
+## B03 completion records, native wait and events (PR 1)
+
+Approved 2026-10-19. This is the first slice to promote endpoint rows. Two rows
+and one stream contract are complete under reviewed records in
+`priv/incus/endpoint-inventory.json`. Task 3.9, global `behavior_complete`,
+`complete_port` and every Go declaration (1239 partial / 41 missing) are unchanged.
+
+- [x] Native wait: `GetOperationWaitSecret` now rejects empty, non-lowercase-hex
+  or oversized secrets before I/O. Previously an empty secret was silently dropped,
+  turning the call into a plain wait; `GetPrivateImage` keeps its existing
+  empty-secret behavior. Named-Go comparisons add 404 absence, the cancelled (401)
+  snapshot and connection loss before headers (one GET, `:response`, no replay);
+  preflight adds 3601, string and float timeouts, and 3600 is accepted.
+- [x] Events: the pinned `eventselectors` driver compares GetEvents, ByType,
+  AllProjects and AllProjectsByType upgrade targets and populated/minimal Event
+  fields over Unix and mutual HTTPS. Unknown types are forwarded and the native
+  400 is preserved. Native 403/404 are also compared, and a rejection is never
+  retried. Because `all-projects` suppresses `project` (as in the pinned client),
+  the server's project-conflict 400 cannot be produced by either client.
+- [x] The listener and explicit-send matrices run on both transports with actual
+  peer-closure assertions. `WebSocketFixture` gained a loopback mutual-TLS mode
+  and closure notification. Caller loss blocked in upgrade or write is covered on
+  both transports. Inbound bounds: bytes coalesced with the 101 fail the open with
+  `:frame_limit`; a later oversized frame ends with `:overflow`, and exceeding the
+  stream byte budget ends with `:frame_limit`.
+- [x] `EventListener.wait/2` now reports `:canceled` or `:deadline` when the
+  connection's request context ended the listener, instead of `:listener_failed`.
+  This holds whichever context watcher acts first: a read that fails because the
+  channel's own watcher closed it also records the context's reason.
+- [x] Review follow-up: `WebSocket.recv/2` waits for the channel's own answer
+  (its read timer, or channel end) instead of a caller-side 100 ms margin.
+  Previously a channel slowed past that margin (seen on macOS CI over TLS)
+  reported false `:channel_closed` and killed the listener; an interim fix that
+  kept the request outstanding could leave a late reply for a catch-all handler
+  to discard, stalling reads and losing the frame. Both are covered by tests on
+  Unix and mutual HTTPS. Completion selectors must carry a nonempty description.
+- [ ] PR 2: complete `POST /1.0/instances/{name}/exec` with S01. The operation
+  WebSocket row stays partial while S02 (console) and S10 (copy/migration) are open.
+

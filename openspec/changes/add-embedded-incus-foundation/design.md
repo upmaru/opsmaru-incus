@@ -129,6 +129,104 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: B03 completion records, native wait, events and exec (2026-10-19)
+
+This is the first slice that promotes rows. It closes three B03 endpoint rows,
+`GET /1.0/operations/{id}/wait`, `GET /1.0/events` and
+`POST /1.0/instances/{name}/exec`, and certifies stream contracts S01 (live exec)
+and S03 (events and callbacks). `GET /1.0/operations/{id}/websocket` stays
+partial, because S02 (console) and S10 (copy/migration) also use it and remain
+open; its exec-channel evidence improves through S01. Task 3.9, global
+`behavior_complete`, `complete_port` and every Go declaration status (1239
+partial / 41 missing) are unchanged.
+
+User-approved exclusions (2026-10-19), recorded on each affected record with
+this date: the `?public` documentation views for wait and websocket, because
+the client always uses a verified-identity connection; arbitrary and empty
+operation-wait secrets; and cluster forwarding for wait, events and exec. Host
+`project`/`target` routing stays compared on the wire; the exclusion only means
+no claim that the daemon forwards to another member. The finite `/wait` timeout
+bound (0..3600, `-1` rejected before I/O) from the 2026-10-15 native-wait slice
+is retained as an approved difference. Real-daemon and Macus acceptance remain
+separately recorded and are not part of these records.
+
+Reviewed completion records. `priv/incus/endpoint-inventory.json` gains a
+`completion_records` map. Each record names its approval date, rows, stream
+contracts, methods/helpers, supported views, excluded views with approval,
+per-query selector treatment, bodies/modes, result fields, locally rejected
+variants, excluded scope and approved differences, required cases, the
+transports `unix` and `mutual_https`, and evidence keys with their kind
+(named-Go differential, RawQuery transport or independent fixture). A completed
+row sets `behavior_complete: true` and names its record; the selected manifest
+row uses `status: "complete"` with the same record and keeps nonempty `gaps`
+listing exclusions and separately owned acceptance. A certified stream contract
+uses `status: "certified"` and names its record. The events row joins the
+selected manifest, which grows from 36 to 37 pairs.
+
+The validators accept completion only when a record lists the row and the row
+is not `missing_typed`; every documented view is supported or approved-excluded;
+every query parameter of a supported view has a selector treatment; every linked
+stream contract is certified; both transports and the certification-rule cases
+for the row's kind are present, with each case linked to an existing anchored
+evidence key. Negative tests reject a removed case, transport or evidence key;
+an unlisted view; an exclusion without approval; a completed row with an open
+linked stream contract (the websocket row); a record claiming an unrelated or
+missing-typed row; completion or certification without a record; and changed
+global completion, `complete_port` or declaration counts. A record is reviewed
+through the human pull-request review; agents never mark it reviewed themselves.
+
+PR 1 — record mechanism, native wait and events with S03.
+
+- Wait: `GetOperationWaitSecret` rejects an empty or non-lowercase-hex secret,
+  or one over 1024 bytes, before I/O. This replaces the current silent drop of
+  an empty secret, which turned the call into a plain wait. Daemon secrets come
+  from `RandomHexString`. Add named-Go evidence for 404 absence and a cancelled
+  (401) terminal snapshot, timeout 3600 accepted and 3601/non-integer rejected
+  before I/O, and an independent fixture for connection loss before headers:
+  one GET, no replay and no DELETE. Retain the 20 differential and 12 stalled-
+  body cases.
+- Events: extend the pinned `eventhandlers` driver to compare GetEvents,
+  GetEventsByType, GetEventsAllProjects and GetEventsAllProjectsByType
+  upgrade targets: comma `type` lists, `all-projects=true` suppressing
+  `project`, and member `target`. Unknown types are forwarded, not locally
+  filtered, and the native 400 is preserved. Add native 403 envelope, 400
+  (unsupported type) and 404 (absent project) on upgrade. Because
+  `all-projects` suppresses `project`, as in the pinned client, neither client
+  can produce the server's project-conflict 400. Compare populated and minimal Event fields (type, timestamp,
+  metadata, location, project). Cover inbound per-frame and total-stream
+  bounds. Parameterize the listener and explicit-send matrix (handlers,
+  filters, capacity, callback failure/timeout, owner and caller loss, EOF with
+  queued tail, malformed events, overflow, deadline and context cancellation)
+  over Unix and verified mutual HTTPS, asserting actual peer closure where the
+  local side ends the stream. Native callback order stays unspecified.
+
+PR 2 — exec with S01.
+
+- Compare every InstanceExecPost field and mode with the named Go
+  `ExecInstance` on both transports: collected noninteractive `run`,
+  `wait-for-websocket=false` through `call`, interactive PTY through
+  `Session.exec` (channel 0 plus control), `record-output=true` submission and
+  nonzero width/height/user/group with nonempty cwd.
+- Prove `container_exec_recording` and `container_exec_user_group_cwd`
+  rejection before dispatch, and read back resize/signal control frames
+  against Go's control messages, including range rejection. Add native
+  400/403/404 through `Session.exec` and `run`.
+- Assert each channel's upgrade target (secret plus project/target),
+  `:stream_negotiation` upgrade rejection, `:invalid_stream_metadata` fds,
+  empty output with exit 0, pending exit status, missing channels and Session
+  Inspect redaction.
+- Run the Unix-only preflight, blocked-stdin, owner-loss, lost-response,
+  sink-limit, running/failed and close/barrier/abrupt cases on mutual HTTPS
+  too.
+- S01's boundary becomes: bounded noninteractive collection plus interactive
+  host-owned channels, with no arbitrary producer or tool capture policy.
+  Recorded-output listing, download and deletion stay in B07, unimplemented.
+
+Each PR updates the closure ledger, backlog and generated coverage evidence, and
+reuses the existing fixtures and reference drivers. Target well under a thousand
+handwritten lines per PR. Stop and report if new transport infrastructure,
+production timeout changes or repair rounds would expand scope.
+
 #### Approved slice: complete endpoint classification audit (2026-10-15)
 
 Create a separate full classification ledger alongside the selected endpoint

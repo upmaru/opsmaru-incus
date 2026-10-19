@@ -122,7 +122,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "36 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "37 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -139,7 +139,8 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
-             "partial" => 36
+             "partial" => 35,
+             "complete" => 2
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -268,6 +269,127 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
         end)
 
       assert_raise ExUnit.AssertionError, ~r/mutation contract/, fn ->
+        EndpointEvidence.validate!(%{@manifest | "entries" => entries}, native)
+      end
+    end
+  end
+
+  test "reviewed completion records gate every completed row and certified stream", %{
+    native: native
+  } do
+    audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
+    assert :ok = EndpointInventory.validate!(audit, native)
+
+    assert audit["entries"]
+           |> Enum.filter(& &1["behavior_complete"])
+           |> Enum.map(&{&1["pair"], &1["completion_record"]}) == [
+             {"GET /1.0/events", "b03_events_v1"},
+             {"GET /1.0/operations/{}/wait", "b03_native_wait_v1"}
+           ]
+
+    assert for(%{"status" => "certified", "id" => id} <- audit["stream_contracts"], do: id) ==
+             ["S03"]
+
+    refute audit["behavior_complete"] or audit["complete_port"]
+    wait = ["completion_records", "b03_native_wait_v1"]
+    events = ["completion_records", "b03_events_v1"]
+    socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
+    head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
+
+    complete = fn row, record ->
+      entries =
+        Enum.map(audit["entries"], fn entry ->
+          if entry == row,
+            do: Map.merge(entry, %{"behavior_complete" => true, "completion_record" => record}),
+            else: entry
+        end)
+
+      %{audit | "entries" => entries}
+    end
+
+    for {changed, message} <- [
+          {update_in(audit, wait ++ ["cases"], &Map.delete(&1, "native_404")),
+           "missing completion case"},
+          {put_in(audit, wait ++ ["cases", "invented"], ["native_wait"]),
+           "missing completion case"},
+          {put_in(audit, wait ++ ["transports"], ["unix"]), "missing completion transport"},
+          {put_in(audit, events ++ ["cases", "native_403"], []), "missing completion evidence"},
+          {put_in(audit, events ++ ["evidence_kinds", "event_rejection"], "proxy_success"),
+           "unknown completion evidence kind"},
+          {update_in(audit, wait ++ ["evidence_kinds"], &Map.delete(&1, "native_wait_preflight")),
+           "stale completion evidence kinds"},
+          {put_in(audit, wait ++ ["excluded_views"], %{}), "unlisted completion view"},
+          {put_in(
+             audit,
+             wait ++ ["excluded_views", "GET /1.0/operations/{id}/wait?public", "approved"],
+             nil
+           ), "unapproved exclusion"},
+          {update_in(audit, wait ++ ["excluded_scope"], &[%{"scope" => "unapproved"} | &1]),
+           "unapproved exclusion"},
+          {update_in(audit, events ++ ["selectors"], &Map.delete(&1, "type")),
+           "unclassified completion selector"},
+          {put_in(audit, events ++ ["selectors", "type"], nil),
+           "unclassified completion selector"},
+          {put_in(audit, events ++ ["selectors", "type"], ""),
+           "unclassified completion selector"},
+          {put_in(audit, wait ++ ["methods"], ["GetOperationWait"]), "stale completion methods"},
+          {put_in(audit, wait ++ ["approved"], nil), "unapproved completion record"},
+          {put_in(audit, wait ++ ["rows"], ["GET /1.0/operations/{}/wait", socket["pair"]]),
+           "unrelated completion record row"},
+          {complete.(socket, "b03_native_wait_v1"), "unsupported completion claim"},
+          {complete.(head, "b03_native_wait_v1"), "unsupported completion claim"},
+          {update_in(audit, ["stream_contracts"], fn contracts ->
+             Enum.map(contracts, fn contract ->
+               if contract["id"] == "S03",
+                 do: Map.merge(contract, %{"status" => "open_contract_certification"}),
+                 else: contract
+             end)
+           end), "open linked stream contract"},
+          {update_in(audit, ["stream_contracts"], fn contracts ->
+             Enum.map(contracts, fn contract ->
+               if contract["id"] == "S01",
+                 do: %{contract | "status" => "certified"},
+                 else: contract
+             end)
+           end), "unsupported certification claim"},
+          {%{audit | "behavior_complete" => true}, ""},
+          {%{audit | "complete_port" => true}, ""}
+        ] do
+      assert_raise ExUnit.AssertionError, ~r/#{message}/, fn ->
+        EndpointInventory.validate!(changed, native)
+      end
+    end
+
+    # A completed row whose linked stream contract is still open cannot complete.
+    record = get_in(audit, events)
+
+    shared =
+      Map.merge(socket, %{"behavior_complete" => true, "completion_record" => "b03_events_v1"})
+
+    changed =
+      audit
+      |> put_in(events ++ ["rows"], record["rows"] ++ [socket["pair"]])
+      |> Map.update!("entries", fn entries ->
+        Enum.map(entries, &if(&1 == socket, do: shared, else: &1))
+      end)
+
+    assert_raise ExUnit.AssertionError, ~r/open linked stream contract/, fn ->
+      EndpointInventory.validate!(changed, native)
+    end
+
+    # Selected rows cannot drop or claim completion independently of the full ledger.
+    for {pair, status} <- [
+          {"/1.0/operations/{id}/wait", "partial"},
+          {"/1.0/instances", "complete"}
+        ] do
+      entries =
+        Enum.map(@manifest["entries"], fn row ->
+          if row["path"] == pair and row["verb"] == "GET",
+            do: %{row | "status" => status},
+            else: row
+        end)
+
+      assert_raise ExUnit.AssertionError, ~r/unsupported completion claim/, fn ->
         EndpointEvidence.validate!(%{@manifest | "entries" => entries}, native)
       end
     end

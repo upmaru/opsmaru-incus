@@ -202,6 +202,13 @@ the host was not waiting in `WebSocket.recv/2`. Unknown references are ignored;
 control-channel termination releases remaining local attachments and data
 failure does not automatically cancel the backend operation.
 
+`recv/2` waits for the channel's own answer: a frame, `:eof`, or `:deadline`
+from the channel's read timer (`min(timeout, connection timeout)`). A busy channel
+delays that answer rather than producing a false closure, and no late reply can
+reach a caller that has stopped waiting. The wait stays bounded by the channel's
+lifetime, request context, owner and write guards; `:channel_closed` means the
+channel process has ended.
+
 Remote WebSocket close frames emit `{channel.ref, :eof}` once to their owner while
 queued tail frames remain available through `recv/2`. Dynamic consoles forward
 this as `{:dynamic_console, console.pid, {channel.ref, :eof, console.operation}}`.
@@ -313,8 +320,9 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 36 pairs are currently in the checked evidence
-manifest, all partial. It retains remaining copy/stream/model/helper scope without
+pairs plus 46 query/access variants; 37 pairs are currently in the checked evidence
+manifest. Native wait and events are complete under reviewed completion records;
+the other 35 are partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
@@ -322,8 +330,10 @@ The callback listener has at most `min(queue_limit, 128)` handlers and one callb
 worker at a time. Each worker is limited by the connection timeout and remaining
 stream lifetime; workers die with their listener. A callback exception or timeout
 terminates that local subscription with a redacted error. Native event data is
-passed explicitly as a `Model`, not logged. These fixtures cover Unix listener
-lifecycle; the underlying WebSocket HTTPS transport has separate fixtures.
+passed explicitly as a `Model`, not logged. Listener, send and subscription
+fixtures run over Unix and verified mutual HTTPS with peer-closure checks. When
+the connection's request context ends a listener, `wait/2` returns that
+context's `:canceled` or `:deadline`.
 Operation/remote-operation handler orchestration remains unimplemented.
 
 Typed metadata extraction uses a 1 MiB projection budget. Generic native Go
@@ -513,6 +523,14 @@ waiting, including long poll sleeps, and retains the last native snapshot after
 cancellation. The original handle remains available for reconciliation. This
 implements the approved no-backend-cancellation exception to native WaitContext.
 
+The typed native long-poll methods `GetOperationWait` and `GetOperationWaitSecret`
+(`Incus.call/4`) are separate from polling. `timeout` must be an integer in
+0..3600; the native indefinite `-1` is rejected. `GetOperationWaitSecret`
+requires a nonempty lowercase hexadecimal secret (as daemon operations issue)
+up to 1024 bytes; empty or arbitrary secrets are rejected before I/O rather than
+sent as a plain wait. A finite wait that returns a running snapshot is not
+completion, and a local deadline or cancellation never cancels the operation.
+
 Host OCI/delta calls inherit the context deadline and run per-call cleanup after
 tracked workers stop on local cancellation. Cleanup receives canceled as its
 outcome; delayed termination retains the existing visible cleanup-pending gate.
@@ -660,7 +678,7 @@ full field/cluster behavior and real-daemon merge acceptance remain unverified.
 The initial-tool inspection profile now fixture-verifies ten existing list/get
 methods across projects, profiles, networks, storage pools and custom-volume
 samples. See `fixture_contracts.initial_inspection_v1` in the endpoint manifest
-for required cases and scope. All 36 selected whole endpoints remain partial;
+for required cases and scope. These ten selected whole endpoints remain partial;
 only these ten method contracts have this explicit profile. Catalogue queries,
 Unix/mutual HTTPS, DTO results, 403/404/type rejection, declared extension checks,
 byte bounds and deadline/cancellation peer cleanup have evidence. Other selectors,
@@ -695,7 +713,7 @@ ending after acceptance retains the caller's bound handle and never issues remot
 cancellation or replays the mutation. Both Unix and mutual HTTPS have named-Go
 request/result comparisons, applicable PUT ETags, native rejection and malformed/
 lost-reply evidence. Existing stalled-wait cleanup tests are linked separately.
-The 28 scoped contracts (27 methods and connect/2) live within 36 partial endpoint rows; other bodies/
+The 28 scoped contracts (27 methods and connect/2) live within partial endpoint rows; other bodies/
 source/state/error/cluster variants and backend effects remain open. These fixtures
 neither export tools nor prove real-daemon mutation effects.
 

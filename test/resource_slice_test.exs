@@ -302,6 +302,8 @@ defmodule Opsmaru.Incus.ResourceSliceTest do
              "force" -> true
              "filters" -> []
              "timeout" -> 1
+             # Operation wait secrets are lowercase hex; other values reject before I/O.
+             "secret" -> "0123456789abcdef"
              _ -> "native"
            end}
         end)
