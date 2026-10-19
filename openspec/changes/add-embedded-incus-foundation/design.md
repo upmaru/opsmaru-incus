@@ -129,6 +129,65 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: B01 mutation and B04 instance PATCH completion (2026-10-19)
+
+Complete eight single-method rows under reviewed completion records, reusing
+the `initial_mutation_lifecycle_v1` and conditional instance PATCH evidence that
+already runs on Unix and verified mutual HTTPS:
+
+- `PUT /1.0/instances/{name}` (`UpdateInstance`, configuration update and restore)
+- `PUT /1.0/instances/{name}/state` (`UpdateInstanceState`)
+- `DELETE /1.0/instances/{name}` (`DeleteInstance`)
+- `POST /1.0/instances/{name}/snapshots` (`CreateInstanceSnapshot`)
+- `DELETE /1.0/instances/{name}/snapshots/{snapshot}` (`DeleteInstanceSnapshot`)
+- `DELETE /1.0/images/{fingerprint}` (`DeleteImage`)
+- `DELETE /1.0/operations/{id}` (`DeleteOperation`)
+- `PATCH /1.0/instances/{name}` (`PatchInstance`, B04)
+
+`POST /1.0/instances` stays partial: it is linked to S06 (archives) and S10
+(copy/migration), which remain open. Task 3.9, `complete_port` and every Go
+declaration status are unchanged.
+
+User-approved exclusions (2026-10-19): cluster forwarding beyond host target
+routing for all eight rows, and unconditional PATCH. `PatchInstance` stays
+conditional-only: a missing or empty caller ETag is rejected before I/O, as
+today. Real-daemon effects remain separately recorded acceptance.
+
+Record kinds. Add three kinds to the validator, each with an exact required-case
+list and negative tests:
+
+- `async_mutation` (six rows): named-Go request and accepted identity, direct
+  native `/wait` running/completed/failed/cancelled snapshots, applicable
+  ETag preconditions, native 403/404/409/412, malformed and lost replies with no
+  replay, host binding, extension guards, preflight and local lifetime after
+  acceptance.
+- `sync_cancellation` (`DeleteOperation`): the existing authoritative may_cancel
+  inspection, one synchronous DELETE, completion race, native rejection and
+  lost-reply identity.
+- `conditional_patch` (`PatchInstance`): RawQuery transport comparison (the
+  pinned client has no named PATCH method), field presence without local merge,
+  native empty synchronous success, 400/403/404/412 and restore-mode rejection,
+  uncertain dispatched loss without replay, lifetime cleanup and conditional
+  preflight. Evidence kinds stay distinct from named-Go and daemon evidence.
+
+Evidence to add, parameterized over both transports:
+
+- Request bodies with every field: a fully populated `InstancePut` (architecture,
+  config, devices, ephemeral, profiles, stateful, description) and a stateful
+  restore; every `InstanceStatePut` action (start, stop, restart, freeze,
+  unfreeze) with timeout, force and stateful; `InstanceSnapshotsPost` with
+  name, stateful and `expires_at`. Compare each with the named Go method.
+- Extension guards before dispatch: `disk_only` restore requires
+  `instance_snapshot_disk_only_restore` and `expires_at` requires
+  `snapshot_expiry_creation`; with the extension present the field is sent.
+- A cancelled (401) `/wait` snapshot for the six asynchronous rows.
+
+Each record names its supported view, the excluded scope, the bodies or actions
+it covers and the evidence kind of every case. Update the closure ledger,
+backlog, client docs and generated coverage. Reuse the existing fixtures and
+mutation/PATCH drivers; target well under a thousand handwritten lines and stop
+if new transport infrastructure would be needed.
+
 #### Approved slice: B03 completion records, native wait, events and exec (2026-10-19)
 
 This is the first slice that promotes rows. It closes three B03 endpoint rows,
