@@ -1040,6 +1040,14 @@ certified under `b03_exec_v1`. Task 3.9, global `behavior_complete`,
 - [x] Upgrade targets match per channel by path and secret. The pinned
   `GetOperationWebsocket` sends only the secret; this client also sends the host
   `project`/`target`, which the pinned daemon's operation WebSocket handler ignores.
+  By user decision (2026-10-19) this routing is maintained and recorded as an
+  approved difference on `b03_exec_v1`.
+- [x] Approved narrow fix: a request context that ends while a channel upgrade is
+  pending is reported as `:deadline`/`:canceled` with the accepted operation, not
+  `:stream_negotiation`. Previously the context watcher could win the race against
+  the run guard (seen once over TLS). `WebSocket.open` reports the ended context
+  and `Session.channels` propagates it. Regressions on both transports failed
+  before the fix; budgets and timeouts are unchanged.
 - [x] `:stream_negotiation` closes already opened channels and `:invalid_stream_metadata`
   rejects unsupported fds before any upgrade, both retaining acceptance. Pending
   exit status, missing channels and Session/Error Inspect redaction are covered.

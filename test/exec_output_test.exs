@@ -658,6 +658,33 @@ defmodule Opsmaru.Incus.ExecOutputTest do
     end
   end
 
+  for mode <- [:deadline, :cancellation], transport <- [:gen_tcp, :ssl] do
+    test "request context #{mode} during a channel upgrade keeps its kind and acceptance over #{transport}",
+         %{root: root} do
+      {client, fixture, _} = fixture(root, unquote(transport), upgrade_gate: true)
+      timeout = if unquote(mode) == :deadline, do: 1_000, else: 15_000
+      context = RequestContext.new!(timeout: timeout)
+      client = Incus.with_context(client, context)
+      exec = Task.async(fn -> Session.exec(client, "fixture", @body) end)
+
+      # The upgrade stays pending, so only the context watcher can end the channel.
+      assert_receive {:request_gate, peer}, 5_000
+      if unquote(mode) == :cancellation, do: RequestContext.cancel(context)
+      expected = if unquote(mode) == :deadline, do: :deadline, else: :canceled
+
+      assert {:error, %Error{kind: ^expected, operation: url, response: response}} =
+               Task.await(exec, 10_000)
+
+      assert url == "/1.0/operations/exec-id" and response.connection == client.connection
+      assert RequestContext.status(context) == expected
+      send(peer, :release_request)
+      requests = HTTPFixture.requests(fixture)
+      assert Enum.count(requests, &(&1.method == "POST")) == 1
+      assert Enum.count(requests, &(&1.headers["upgrade"] == "websocket")) == 1
+      refute Enum.any?(requests, &(&1.method == "DELETE"))
+    end
+  end
+
   for transport <- [:gen_tcp, :ssl] do
     test "run local timeout and host cancellation kill stalled sinks and retain a reusable handle over #{transport}",
          %{root: root} do

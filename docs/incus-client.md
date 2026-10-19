@@ -685,10 +685,12 @@ messages; width and height must be in 1..65535 and signals in 1..64, otherwise
 the call raises `FunctionClauseError` before any frame is written. Each channel
 upgrade sends its operation secret plus the host `project`/`target` routing; the
 pinned client sends only the secret and the pinned daemon ignores routing on
-this route. Native 400/403/404 are returned without acceptance; upgrade
-rejection is `:stream_negotiation` and unsupported fds metadata is
-`:invalid_stream_metadata`, both retaining the accepted operation and closing
-opened channels. `exit_status/1` reports `:operation_pending` until completion,
+this route; this routing is an approved, maintained difference. Native
+400/403/404 are returned without acceptance; upgrade rejection is
+`:stream_negotiation` and unsupported fds metadata is `:invalid_stream_metadata`,
+both retaining the accepted operation and closing opened channels. A request
+context that ends while an upgrade is pending reports its `:deadline` or
+`:canceled` (also from `WebSocket.open/3`), again with the accepted operation. `exit_status/1` reports `:operation_pending` until completion,
 and absent channels are `:missing_channel`.
 
 `record-output` is submitted only: recorded-output listing, download and

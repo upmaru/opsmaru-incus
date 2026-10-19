@@ -77,6 +77,12 @@ defmodule Opsmaru.Incus.Session do
           {:ok, channel} ->
             {:cont, {:ok, %{session | channels: Map.put(session.channels, name, channel)}}}
 
+          {:error, %Error{kind: kind}} when kind in [:deadline, :canceled] ->
+            close(session)
+
+            {:halt,
+             {:error, %Error{kind: kind, response: operation.response, operation: operation.url}}}
+
           {:error, error} ->
             close(session)
 

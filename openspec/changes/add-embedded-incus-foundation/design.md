@@ -222,6 +222,18 @@ PR 2 — exec with S01.
   host-owned channels, with no arbitrary producer or tool capture policy.
   Recorded-output listing, download and deletion stay in B07, unimplemented.
 
+User decisions during PR 2 (2026-10-19). The pinned `GetOperationWebsocket`
+sends only the operation secret; this client also sends the host
+`project`/`target` on every channel upgrade, which the pinned daemon ignores
+(it forwards by where the operation lives). This existing routing is
+maintained and recorded as an approved difference on `b03_exec_v1`; S02/S10
+behavior is unchanged. A request context ending while an upgrade is pending
+could be reported as `:stream_negotiation`, depending on which local timer won.
+Fix it narrowly: `WebSocket.open` reports the ended context's `:deadline` or
+`:canceled`, and `Session.channels` propagates those kinds with the accepted
+operation. Add both-transport regressions; transport budgets and timeouts are
+unchanged.
+
 Each PR updates the closure ledger, backlog and generated coverage evidence, and
 reuses the existing fixtures and reference drivers. Target well under a thousand
 handwritten lines per PR. Stop and report if new transport infrastructure,
