@@ -448,7 +448,7 @@
         "test/mutation_lifecycle_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial. The endpoint row is complete under a reviewed b01 completion record covering every body field/action, extension guards before dispatch and the cancelled snapshot on both transports; cluster forwarding is excluded. Endpoint completion is not Go declaration parity."
+      "note": "Asynchronous mutation. The endpoint row is complete under a reviewed b01 completion record: every declared body field/action and extension guard (rejected before dispatch), accepted identity, direct native /wait running/completed/failed/cancelled snapshots, applicable PUT ETags, native 403/404/409/412 and malformed/lost replies without replay, compared with the named Go method on Unix/mutual HTTPS. Cluster forwarding is excluded and real-daemon effects remain separate; endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateInstanceTemplateFile",
@@ -735,7 +735,7 @@
         "test/mutation_lifecycle_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial. The endpoint row is complete under a reviewed b01 completion record covering every body field/action, extension guards before dispatch and the cancelled snapshot on both transports; cluster forwarding is excluded. Endpoint completion is not Go declaration parity."
+      "note": "Asynchronous mutation. The endpoint row is complete under a reviewed b01 completion record: every declared body field/action and extension guard (rejected before dispatch), accepted identity, direct native /wait running/completed/failed/cancelled snapshots, applicable PUT ETags, native 403/404/409/412 and malformed/lost replies without replay, compared with the named Go method on Unix/mutual HTTPS. Cluster forwarding is excluded and real-daemon effects remain separate; endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteImageAlias",
@@ -755,7 +755,7 @@
         "test/mutation_lifecycle_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial. The endpoint row is complete under a reviewed b01 completion record covering every body field/action, extension guards before dispatch and the cancelled snapshot on both transports; cluster forwarding is excluded. Endpoint completion is not Go declaration parity."
+      "note": "Asynchronous mutation. The endpoint row is complete under a reviewed b01 completion record: every declared body field/action and extension guard (rejected before dispatch), accepted identity, direct native /wait running/completed/failed/cancelled snapshots, applicable PUT ETags, native 403/404/409/412 and malformed/lost replies without replay, compared with the named Go method on Unix/mutual HTTPS. Cluster forwarding is excluded and real-daemon effects remain separate; endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteInstanceBackup",
@@ -802,7 +802,7 @@
         "test/mutation_lifecycle_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial. The endpoint row is complete under a reviewed b01 completion record covering every body field/action, extension guards before dispatch and the cancelled snapshot on both transports; cluster forwarding is excluded. Endpoint completion is not Go declaration parity."
+      "note": "Asynchronous mutation. The endpoint row is complete under a reviewed b01 completion record: every declared body field/action and extension guard (rejected before dispatch), accepted identity, direct native /wait running/completed/failed/cancelled snapshots, applicable PUT ETags, native 403/404/409/412 and malformed/lost replies without replay, compared with the named Go method on Unix/mutual HTTPS. Cluster forwarding is excluded and real-daemon effects remain separate; endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteInstanceTemplateFile",
@@ -903,7 +903,7 @@
         "test/mutation_lifecycle_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial. The endpoint row is complete under a reviewed b01 completion record covering every body field/action, extension guards before dispatch and the cancelled snapshot on both transports; cluster forwarding is excluded. Endpoint completion is not Go declaration parity."
+      "note": "Synchronous cancellation. The DELETE /1.0/operations/{id} endpoint row is complete under reviewed record b01_cancel_operation_v1: named-Go synchronous DELETE plus independent authoritative may_cancel inspection, one DELETE, completion race, native rejection and lost-reply identity on Unix/mutual HTTPS. Acknowledgement is not proof that cancellation completed or a new operation. Cluster forwarding is excluded; endpoint completion is not Go declaration parity or full Go Cancel orchestration."
     },
     {
       "id": "client/interface_method/InstanceServer.DeletePendingClusterMember",
@@ -2885,7 +2885,7 @@
         "test/mutation_lifecycle_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial. The endpoint row is complete under a reviewed b01 completion record covering every body field/action, extension guards before dispatch and the cancelled snapshot on both transports; cluster forwarding is excluded. Endpoint completion is not Go declaration parity."
+      "note": "Asynchronous mutation. The endpoint row is complete under a reviewed b01 completion record: every declared body field/action and extension guard (rejected before dispatch), accepted identity, direct native /wait running/completed/failed/cancelled snapshots, applicable PUT ETags, native 403/404/409/412 and malformed/lost replies without replay, compared with the named Go method on Unix/mutual HTTPS. Cluster forwarding is excluded and real-daemon effects remain separate; endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateInstanceMetadata",
@@ -2914,7 +2914,7 @@
         "test/mutation_lifecycle_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial. The endpoint row is complete under a reviewed b01 completion record covering every body field/action, extension guards before dispatch and the cancelled snapshot on both transports; cluster forwarding is excluded. Endpoint completion is not Go declaration parity."
+      "note": "Asynchronous mutation. The endpoint row is complete under a reviewed b01 completion record: every declared body field/action and extension guard (rejected before dispatch), accepted identity, direct native /wait running/completed/failed/cancelled snapshots, applicable PUT ETags, native 403/404/409/412 and malformed/lost replies without replay, compared with the named Go method on Unix/mutual HTTPS. Cluster forwarding is excluded and real-daemon effects remain separate; endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateInstances",
@@ -3521,7 +3521,7 @@
         "test/mutation_lifecycle_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial. The endpoint row is complete under a reviewed b01 completion record covering every body field/action, extension guards before dispatch and the cancelled snapshot on both transports; cluster forwarding is excluded. Endpoint completion is not Go declaration parity."
+      "note": "Asynchronous mutation. The endpoint row is complete under a reviewed b01 completion record: every declared body field/action and extension guard (rejected before dispatch), accepted identity, direct native /wait running/completed/failed/cancelled snapshots, applicable PUT ETags, native 403/404/409/412 and malformed/lost replies without replay, compared with the named Go method on Unix/mutual HTTPS. Cluster forwarding is excluded and real-daemon effects remain separate; endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateInstanceTemplateFile",
@@ -3808,7 +3808,7 @@
         "test/mutation_lifecycle_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial. The endpoint row is complete under a reviewed b01 completion record covering every body field/action, extension guards before dispatch and the cancelled snapshot on both transports; cluster forwarding is excluded. Endpoint completion is not Go declaration parity."
+      "note": "Asynchronous mutation. The endpoint row is complete under a reviewed b01 completion record: every declared body field/action and extension guard (rejected before dispatch), accepted identity, direct native /wait running/completed/failed/cancelled snapshots, applicable PUT ETags, native 403/404/409/412 and malformed/lost replies without replay, compared with the named Go method on Unix/mutual HTTPS. Cluster forwarding is excluded and real-daemon effects remain separate; endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteImageAlias",
@@ -3828,7 +3828,7 @@
         "test/mutation_lifecycle_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial. The endpoint row is complete under a reviewed b01 completion record covering every body field/action, extension guards before dispatch and the cancelled snapshot on both transports; cluster forwarding is excluded. Endpoint completion is not Go declaration parity."
+      "note": "Asynchronous mutation. The endpoint row is complete under a reviewed b01 completion record: every declared body field/action and extension guard (rejected before dispatch), accepted identity, direct native /wait running/completed/failed/cancelled snapshots, applicable PUT ETags, native 403/404/409/412 and malformed/lost replies without replay, compared with the named Go method on Unix/mutual HTTPS. Cluster forwarding is excluded and real-daemon effects remain separate; endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteInstanceBackup",
@@ -3875,7 +3875,7 @@
         "test/mutation_lifecycle_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial. The endpoint row is complete under a reviewed b01 completion record covering every body field/action, extension guards before dispatch and the cancelled snapshot on both transports; cluster forwarding is excluded. Endpoint completion is not Go declaration parity."
+      "note": "Asynchronous mutation. The endpoint row is complete under a reviewed b01 completion record: every declared body field/action and extension guard (rejected before dispatch), accepted identity, direct native /wait running/completed/failed/cancelled snapshots, applicable PUT ETags, native 403/404/409/412 and malformed/lost replies without replay, compared with the named Go method on Unix/mutual HTTPS. Cluster forwarding is excluded and real-daemon effects remain separate; endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteInstanceTemplateFile",
@@ -3976,7 +3976,7 @@
         "test/mutation_lifecycle_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial. The endpoint row is complete under a reviewed b01 completion record covering every body field/action, extension guards before dispatch and the cancelled snapshot on both transports; cluster forwarding is excluded. Endpoint completion is not Go declaration parity."
+      "note": "Synchronous cancellation. The DELETE /1.0/operations/{id} endpoint row is complete under reviewed record b01_cancel_operation_v1: named-Go synchronous DELETE plus independent authoritative may_cancel inspection, one DELETE, completion race, native rejection and lost-reply identity on Unix/mutual HTTPS. Acknowledgement is not proof that cancellation completed or a new operation. Cluster forwarding is excluded; endpoint completion is not Go declaration parity or full Go Cancel orchestration."
     },
     {
       "id": "client/method/ProtocolIncus.DeletePendingClusterMember",
@@ -6169,7 +6169,7 @@
         "test/mutation_lifecycle_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial. The endpoint row is complete under a reviewed b01 completion record covering every body field/action, extension guards before dispatch and the cancelled snapshot on both transports; cluster forwarding is excluded. Endpoint completion is not Go declaration parity."
+      "note": "Asynchronous mutation. The endpoint row is complete under a reviewed b01 completion record: every declared body field/action and extension guard (rejected before dispatch), accepted identity, direct native /wait running/completed/failed/cancelled snapshots, applicable PUT ETags, native 403/404/409/412 and malformed/lost replies without replay, compared with the named Go method on Unix/mutual HTTPS. Cluster forwarding is excluded and real-daemon effects remain separate; endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateInstanceMetadata",
@@ -6198,7 +6198,7 @@
         "test/mutation_lifecycle_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial. The endpoint row is complete under a reviewed b01 completion record covering every body field/action, extension guards before dispatch and the cancelled snapshot on both transports; cluster forwarding is excluded. Endpoint completion is not Go declaration parity."
+      "note": "Asynchronous mutation. The endpoint row is complete under a reviewed b01 completion record: every declared body field/action and extension guard (rejected before dispatch), accepted identity, direct native /wait running/completed/failed/cancelled snapshots, applicable PUT ETags, native 403/404/409/412 and malformed/lost replies without replay, compared with the named Go method on Unix/mutual HTTPS. Cluster forwarding is excluded and real-daemon effects remain separate; endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateInstances",
