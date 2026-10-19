@@ -2,7 +2,17 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
   @moduledoc false
   import ExUnit.Assertions
 
-  # Classification and link integrity only: this does not certify behavior.
+  # Required cases per completion-record kind; equality rejects removed or invented cases.
+  @record_cases %{
+    "native_long_poll" =>
+      ~w(running completed failed cancelled etag routing native_403 native_404 response_loss_no_replay deadline cancellation caller_loss preflight redaction),
+    "event_stream" =>
+      ~w(populated field_presence selectors routing native_400 native_403 native_404 no_retry preflight handlers capacity callback_failure owner_loss caller_loss eof malformed overflow byte_bounds deadline cancellation local_wait send peer_closure)
+  }
+  @evidence_kinds ~w(named_go_differential raw_query_transport independent_fixture)
+
+  # Classification and link integrity, plus reviewed completion-record consistency.
+  # Records name their evidence; the canonical check runs the actual tests.
   def validate!(audit, native) do
     selected = Jason.decode!(File.read!(audit["selected_evidence"]))
     methods = Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
@@ -56,6 +66,7 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     for row <- rows, do: row!(row, methods, audit, server, selected_rows)
     extras!(audit, server, keys)
     links!(audit)
+    completion!(audit, selected)
     :ok
   end
 
@@ -71,7 +82,7 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     expected = classification(key, exact, custom, helper_ids)
 
     assert row["classification"] == expected, "misleading classification"
-    assert row["behavior_complete"] == false, "unsupported completion claim"
+    assert is_boolean(row["behavior_complete"]), "unsupported completion claim"
     assert audit["backlog"][row["backlog"]]["exit"] not in [nil, ""], "missing backlog"
 
     expected_server =
@@ -195,7 +206,7 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     end
 
     for contract <- audit["stream_contracts"] do
-      assert contract["status"] == "open_contract_certification"
+      assert contract["status"] in ["open_contract_certification", "certified"]
       assert contract["remaining"] not in [nil, ""] and contract["boundary"] not in [nil, ""]
       anchor!(contract["evidence"])
     end
@@ -205,6 +216,137 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
 
     :ok
   end
+
+  defp completion!(audit, selected) do
+    records = audit["completion_records"]
+    assert is_map(records), "missing completion records"
+    rows = Map.new(audit["entries"], &{&1["pair"], &1})
+    streams = Map.new(audit["stream_contracts"], &{&1["id"], &1})
+
+    selected_rows =
+      Map.new(selected["entries"], &{normalize(&1["verb"] <> " " <> &1["path"]), &1})
+
+    for row <- audit["entries"] do
+      id = row["completion_record"]
+      chosen = selected_rows[row["pair"]]
+
+      if row["behavior_complete"] do
+        assert records[id] && row["pair"] in records[id]["rows"], "unsupported completion claim"
+        assert row["classification"] != "missing_typed", "unsupported completion claim"
+
+        for stream <- Map.get(row, "stream_contracts", []),
+            do: assert(streams[stream]["status"] == "certified", "open linked stream contract")
+
+        assert chosen["status"] == "complete" and chosen["completion_record"] == id,
+               "stale selected completion"
+      else
+        assert is_nil(id), "unsupported completion claim"
+        if chosen, do: assert(chosen["status"] != "complete", "stale selected completion")
+      end
+    end
+
+    for stream <- audit["stream_contracts"] do
+      id = stream["completion_record"]
+
+      if stream["status"] == "certified",
+        do:
+          assert(
+            records[id] && stream["id"] in records[id]["stream_contracts"],
+            "unsupported certification claim"
+          ),
+        else: assert(is_nil(id), "unsupported certification claim")
+    end
+
+    for {id, record} <- records,
+        do: record!(id, record, rows, streams, selected_rows, selected["evidence"])
+  end
+
+  defp record!(id, record, rows, streams, selected_rows, evidence) do
+    required = @record_cases[record["kind"]]
+    assert required, "unknown completion record kind"
+    assert approved?(record), "unapproved completion record"
+    anchor!(record["design"])
+    assert record["rows"] != [], "empty completion record"
+    listed = Enum.map(record["rows"], &rows[&1])
+
+    for row <- listed,
+        do:
+          assert(
+            (row && row["behavior_complete"]) and row["completion_record"] == id,
+            "unrelated completion record row"
+          )
+
+    for stream <- record["stream_contracts"],
+        do: assert(streams[stream]["completion_record"] == id, "unrelated completion stream")
+
+    for {field, key} <- [{"methods", "methods"}, {"helpers", "helpers"}] do
+      assert Enum.sort(record[field]) ==
+               listed |> Enum.flat_map(& &1[key]) |> Enum.uniq() |> Enum.sort(),
+             "stale completion #{field}"
+    end
+
+    record_views!(record, Enum.flat_map(listed, & &1["documented_views"]))
+    assert record["transports"] == ["unix", "mutual_https"], "missing completion transport"
+    record_evidence!(record, required, listed, selected_rows, evidence)
+
+    for field <- ~w(bodies result separate_acceptance),
+        do:
+          assert(is_binary(record[field]) and record[field] != "", "missing completion #{field}")
+  end
+
+  # Every documented view is supported with classified selectors or approved-excluded.
+  defp record_views!(record, views) do
+    excluded = record["excluded_views"]
+
+    assert Enum.sort(record["supported_views"] ++ Map.keys(excluded)) ==
+             Enum.sort(Enum.map(views, & &1["operation"])),
+           "unlisted completion view"
+
+    for view <- views do
+      if view["operation"] in record["supported_views"] do
+        for query <- view["query_parameters"],
+            do:
+              assert(Map.has_key?(record["selectors"], query), "unclassified completion selector")
+      else
+        assert approved?(excluded[view["operation"]]), "unapproved exclusion"
+      end
+    end
+
+    for entry <- record["excluded_scope"] ++ record["approved_differences"],
+        do: assert(approved?(entry), "unapproved exclusion")
+  end
+
+  # Each required case names anchored evidence of a known kind linked to the selected row.
+  defp record_evidence!(record, required, listed, selected_rows, evidence) do
+    assert Enum.sort(Map.keys(record["cases"])) == Enum.sort(required),
+           "missing completion case"
+
+    assert Enum.all?(Map.values(record["cases"]), &(&1 != [])), "missing completion evidence"
+
+    used =
+      Enum.uniq(
+        List.flatten(Map.values(record["cases"])) ++
+          Enum.map(record["rejected_variants"], & &1["evidence"])
+      )
+
+    assert Enum.sort(Map.keys(record["evidence_kinds"])) == Enum.sort(used),
+           "stale completion evidence kinds"
+
+    for {key, kind} <- record["evidence_kinds"] do
+      assert kind in @evidence_kinds, "unknown completion evidence kind"
+      assert Map.has_key?(evidence, key), "missing completion evidence"
+      anchor!(evidence[key])
+
+      for row <- listed,
+          do:
+            assert(key in selected_rows[row["pair"]]["evidence"], "unlinked completion evidence")
+    end
+  end
+
+  defp approved?(%{"approved" => date}) when is_binary(date),
+    do: Regex.match?(~r/\A\d{4}-\d{2}-\d{2}\z/, date)
+
+  defp approved?(_), do: false
 
   defp anchor!([path, anchor]) do
     assert anchor != "" and File.regular?(path) and String.contains?(File.read!(path), anchor),

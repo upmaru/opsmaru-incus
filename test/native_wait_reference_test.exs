@@ -33,7 +33,7 @@ defmodule Opsmaru.Incus.NativeWaitReferenceTest do
       identity = identity(root, unquote(transport))
 
       for method <- ["GetOperationWait", "GetOperationWaitSecret"],
-          outcome <- [103, 200, 400, :forbidden, :eof] do
+          outcome <- [103, 200, 400, 401, :forbidden, :not_found, :eof, :reset] do
         compare(root, identity, method, outcome)
       end
     end
@@ -91,22 +91,56 @@ defmodule Opsmaru.Incus.NativeWaitReferenceTest do
       scope = RequestContext.new!(timeout: 30_000)
       RequestContext.cancel(scope)
 
-      for method <- ["GetOperationWait", "GetOperationWaitSecret"] do
+      for method <- ["GetOperationWait", "GetOperationWaitSecret"],
+          timeout <- [-1, 3601, "1", 1.0] do
         assert {:error, %Error{kind: :invalid_arguments}} =
-                 Incus.call(original, method, args(method, -1))
+                 Incus.call(original, method, args(method, timeout))
+      end
 
+      # Empty and arbitrary secrets are approved exclusions, never a plain wait.
+      for secret <- ["", "ABCDEF", "not-hex", "a b", "0123%2f", String.duplicate("a", 1025)] do
+        assert {:error, %Error{kind: :invalid_arguments}} =
+                 Incus.call(
+                   original,
+                   "GetOperationWaitSecret",
+                   %{args("GetOperationWaitSecret", 0) | "secret" => secret}
+                 )
+      end
+
+      for method <- ["GetOperationWait", "GetOperationWaitSecret"] do
         assert {:error, %Error{kind: :canceled}} =
                  Incus.call(Incus.with_context(original, scope), method, args(method, 0))
       end
 
       assert HTTPFixture.requests(fixture) == []
+
+      for method <- ["GetOperationWait", "GetOperationWaitSecret"] do
+        assert {:ok, _} = Incus.call(original, method, args(method, 3600))
+      end
+
+      assert [first, second] = HTTPFixture.requests(fixture)
+
+      assert Enum.map([first, second], &URI.decode_query(URI.parse(&1.target).query)) == [
+               %{"project" => "fixture scope", "target" => "member/a", "timeout" => "3600"},
+               %{
+                 "project" => "fixture scope",
+                 "target" => "member/a",
+                 "timeout" => "3600",
+                 "secret" => @secret
+               }
+             ]
     end
   end
 
   defp compare(root, identity, method, outcome) do
     parent = self()
     tag = make_ref()
-    handler = fn _ -> gated(parent, tag, response(outcome), :release) end
+
+    handler =
+      if outcome == :reset,
+        do: fn _ -> reset(parent, tag) end,
+        else: fn _ -> gated(parent, tag, response(outcome), :release) end
+
     timeout = if outcome == 103, do: 0, else: 1
     native = backend(root, identity, handler)
 
@@ -142,17 +176,24 @@ defmodule Opsmaru.Incus.NativeWaitReferenceTest do
         assert expected["error"]
         assert {:error, %Error{kind: :response}} = actual
 
-      :forbidden ->
+      :reset ->
+        assert expected["error"]
+        assert {:error, %Error{kind: :response} = error} = actual
+        refute inspect(error) =~ @secret
+
+      native when native in [:forbidden, :not_found] ->
+        status = if native == :forbidden, do: 403, else: 404
+
         assert {:error,
                 %Error{
                   kind: :native,
-                  http_status: 403,
-                  error_code: 403,
+                  http_status: ^status,
+                  error_code: ^status,
                   message: message,
                   response: reply
                 } = error} = actual
 
-        assert expected["error_status"] == 403
+        assert expected["error_status"] == status
         assert expected["error"] == message
         assert reply.connection == client.connection and reply.identity == :verified
         refute inspect(error) =~ @secret
@@ -168,6 +209,8 @@ defmodule Opsmaru.Incus.NativeWaitReferenceTest do
         refute inspect(reply) =~ @secret
     end
   end
+
+  defp release(_task, tag, :reset), do: assert_receive({^tag, :entered, _}, 10_000)
 
   defp release(task, tag, outcome) do
     assert_receive {^tag, :entered, peer}, 10_000
@@ -205,7 +248,15 @@ defmodule Opsmaru.Incus.NativeWaitReferenceTest do
     }
   end
 
+  # The connection drops after the request is read and before any response header.
+  defp reset(parent, tag) do
+    %{upgrade: fn _transport, _socket -> send(parent, {tag, :entered, self()}) end}
+  end
+
   defp response(:eof), do: response(200)
+
+  defp response(:not_found),
+    do: %{status: 404, body: %{type: "error", error_code: 404, error: "Operation not found"}}
 
   defp response(:forbidden),
     do: %{status: 403, body: %{type: "error", error_code: 403, error: "denied #{@secret}"}}
@@ -219,8 +270,9 @@ defmodule Opsmaru.Incus.NativeWaitReferenceTest do
         metadata: %{
           id: @uuid,
           status_code: code,
-          status: %{103 => "Running", 200 => "Success", 400 => "Failure"}[code],
-          err: if(code == 400, do: "exec failed", else: ""),
+          status:
+            %{103 => "Running", 200 => "Success", 400 => "Failure", 401 => "Cancelled"}[code],
+          err: %{400 => "exec failed", 401 => "operation canceled"}[code] || "",
           may_cancel: false,
           metadata: %{}
         }

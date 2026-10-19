@@ -23,7 +23,7 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     assert manifest["inventory_complete"] == false
     assert manifest["complete_port"] == false
     assert manifest["catalogue_contracts"] == ~w(query extension guards body model result)
-    assert length(manifest["entries"]) == 36
+    assert length(manifest["entries"]) == 37
     pairs = Enum.map(manifest["entries"], &pair/1)
     assert length(Enum.uniq(pairs)) == length(pairs), "duplicate endpoint pair"
     native_pairs = MapSet.new(native["pairs"], &normalize/1)
@@ -31,7 +31,12 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     _cache =
       Enum.reduce(manifest["entries"], %{}, fn row, cache ->
         assert MapSet.member?(native_pairs, pair(row)), "missing native endpoint"
-        assert row["status"] in ["partial", "missing"], "unsupported completion claim"
+        assert row["status"] in ["partial", "missing", "complete"], "unsupported completion claim"
+
+        # Completion is cross-checked against its reviewed record by EndpointInventory.
+        assert is_binary(row["completion_record"]) == (row["status"] == "complete"),
+               "unsupported completion claim"
+
         assert is_binary(row["scope"]) and row["scope"] != ""
         assert is_list(row["gaps"]) and row["gaps"] != [], "missing gaps"
 
@@ -53,7 +58,7 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     core!(manifest)
 
     wait = Enum.find(manifest["entries"], &String.ends_with?(&1["path"], "/wait"))
-    assert wait["status"] == "partial" and wait["method"] == "GetOperationWait"
+    assert wait["status"] == "complete" and wait["method"] == "GetOperationWait"
     assert wait["variants"] == ["GetOperationWaitSecret"], "missing native secret-wait variant"
     :ok
   end

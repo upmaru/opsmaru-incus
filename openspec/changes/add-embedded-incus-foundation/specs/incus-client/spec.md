@@ -187,8 +187,8 @@ Subscriptions SHALL have explicit lifetime and queue bounds. Overflow SHALL fail
 #### Scenario: Completed event subscription contract
 
 - **WHEN** a host subscribes with type lists, all-projects or connection project/member routing over Unix or mutual HTTPS
-- **THEN** upgrade targets match the pinned client, unknown types and conflicting project selection receive native 400 while absent projects receive 404 and permission failures receive native 403, and Event fields and inbound byte bounds hold
-- **AND** handlers, capacity, callback failure, owner/caller loss, EOF, malformed events, overflow, deadline and cancellation end with actual peer closure where the client ends the stream, without callback ordering claims or cluster forwarding
+- **THEN** upgrade targets match the pinned client, with all-projects suppressing project; unknown types receive native 400, absent projects 404 and permission failures 403; and Event fields and inbound byte bounds hold
+- **AND** handlers, capacity, callback failure, owner/caller loss, EOF, malformed events, overflow, deadline and cancellation end with actual peer closure where the client ends the stream, and a context-ended listener reports that context's cancellation or deadline, without callback ordering claims or cluster forwarding
 
 ### Requirement: Independently recorded acceptance
 

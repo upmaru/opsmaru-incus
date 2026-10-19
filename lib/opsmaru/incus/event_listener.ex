@@ -7,7 +7,7 @@ defmodule Opsmaru.Incus.EventListener do
   No listener is created by loading the application or constructing a client.
   """
   use GenServer
-  alias Opsmaru.Incus.{Error, Events, Model, Transport, WebSocket}
+  alias Opsmaru.Incus.{Error, Events, Model, RequestContext, Transport, WebSocket}
 
   @failures [
     :deadline,
@@ -21,7 +21,7 @@ defmodule Opsmaru.Incus.EventListener do
     :channel_closed,
     :listener_failed
   ]
-  defstruct [:pid, :ref, :owner, :result, :binding]
+  defstruct [:pid, :ref, :owner, :result, :binding, :context]
 
   def open(client, opts \\ []) do
     ref = make_ref()
@@ -38,7 +38,8 @@ defmodule Opsmaru.Incus.EventListener do
            ref: ref,
            owner: owner,
            result: result,
-           binding: backend_binding(client)
+           binding: backend_binding(client),
+           context: client.connection.request_context
          }}
 
       {:error, %Error{} = error} ->
@@ -72,7 +73,7 @@ defmodule Opsmaru.Incus.EventListener do
       monitor = Process.monitor(listener.pid)
 
       receive do
-        {:DOWN, ^monitor, :process, _, _} -> outcome(listener.result)
+        {:DOWN, ^monitor, :process, _, _} -> outcome(listener)
       after
         timeout ->
           Process.demonitor(monitor, [:flush])
@@ -291,10 +292,13 @@ defmodule Opsmaru.Incus.EventListener do
   defp record(result, kind),
     do: :atomics.put(result, 1, 2 + (Enum.find_index(@failures, &(&1 == kind)) || 9))
 
-  defp outcome(result) do
-    case :atomics.get(result, 1) do
-      1 -> :ok
-      code when code >= 2 -> {:error, %Error{kind: Enum.at(@failures, code - 2)}}
+  # A request-context watcher kills the listener without recording a result;
+  # report that context's cancellation or deadline rather than a generic failure.
+  defp outcome(listener) do
+    case {:atomics.get(listener.result, 1), RequestContext.status(listener.context)} do
+      {1, _} -> :ok
+      {code, _} when code >= 2 -> {:error, %Error{kind: Enum.at(@failures, code - 2)}}
+      {_, status} when status in [:canceled, :deadline] -> {:error, %Error{kind: status}}
       _ -> {:error, %Error{kind: :listener_failed}}
     end
   end

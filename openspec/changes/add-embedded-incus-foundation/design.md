@@ -190,8 +190,9 @@ PR 1 — record mechanism, native wait and events with S03.
   upgrade targets: comma `type` lists, `all-projects=true` suppressing
   `project`, and member `target`. Unknown types are forwarded, not locally
   filtered, and the native 400 is preserved. Add native 403 envelope, 400
-  (unsupported type and project with all-projects) and 404 (absent project)
-  on upgrade. Compare populated and minimal Event fields (type, timestamp,
+  (unsupported type) and 404 (absent project) on upgrade. Because
+  `all-projects` suppresses `project`, as in the pinned client, neither client
+  can produce the server's project-conflict 400. Compare populated and minimal Event fields (type, timestamp,
   metadata, location, project). Cover inbound per-frame and total-stream
   bounds. Parameterize the listener and explicit-send matrix (handlers,
   filters, capacity, callback failure/timeout, owner and caller loss, EOF with

@@ -1163,42 +1163,50 @@
     {
       "id": "client/interface_method/InstanceServer.GetEvents",
       "status": "partial",
-      "elixir": "lib/opsmaru/incus/web_socket.ex",
+      "elixir": "lib/opsmaru/incus/events.ex",
       "evidence": [
+        "test/event_contract_test.exs",
+        "test/event_listener_test.exs",
         "test/web_socket_test.exs",
         "test/tls_stream_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Explicit owner-bound subscription. The GET /1.0/events endpoint row and S03 are complete under reviewed record b03_events_v1: type/all-projects selectors, host project/target routing, native 400/403/404 upgrade rejection and Event fields compared with the unchanged pinned client over Unix and verified mutual HTTPS, with independent listener, send, bound, lifetime and peer-closure evidence. The pinned shared per-project connection and asynchronous mutable listener are not reproduced; cluster forwarding and callback ordering are excluded. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetEventsAllProjects",
       "status": "partial",
-      "elixir": "lib/opsmaru/incus/web_socket.ex",
+      "elixir": "lib/opsmaru/incus/events.ex",
       "evidence": [
+        "test/event_contract_test.exs",
+        "test/event_listener_test.exs",
         "test/web_socket_test.exs",
         "test/tls_stream_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Explicit owner-bound subscription. The GET /1.0/events endpoint row and S03 are complete under reviewed record b03_events_v1: type/all-projects selectors, host project/target routing, native 400/403/404 upgrade rejection and Event fields compared with the unchanged pinned client over Unix and verified mutual HTTPS, with independent listener, send, bound, lifetime and peer-closure evidence. The pinned shared per-project connection and asynchronous mutable listener are not reproduced; cluster forwarding and callback ordering are excluded. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetEventsAllProjectsByType",
       "status": "partial",
-      "elixir": "lib/opsmaru/incus/web_socket.ex",
+      "elixir": "lib/opsmaru/incus/events.ex",
       "evidence": [
+        "test/event_contract_test.exs",
+        "test/event_listener_test.exs",
         "test/web_socket_test.exs",
         "test/tls_stream_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Explicit owner-bound subscription. The GET /1.0/events endpoint row and S03 are complete under reviewed record b03_events_v1: type/all-projects selectors, host project/target routing, native 400/403/404 upgrade rejection and Event fields compared with the unchanged pinned client over Unix and verified mutual HTTPS, with independent listener, send, bound, lifetime and peer-closure evidence. The pinned shared per-project connection and asynchronous mutable listener are not reproduced; cluster forwarding and callback ordering are excluded. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetEventsByType",
       "status": "partial",
-      "elixir": "lib/opsmaru/incus/web_socket.ex",
+      "elixir": "lib/opsmaru/incus/events.ex",
       "evidence": [
+        "test/event_contract_test.exs",
+        "test/event_listener_test.exs",
         "test/web_socket_test.exs",
         "test/tls_stream_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Explicit owner-bound subscription. The GET /1.0/events endpoint row and S03 are complete under reviewed record b03_events_v1: type/all-projects selectors, host project/target routing, native 400/403/404 upgrade rejection and Event fields compared with the unchanged pinned client over Unix and verified mutual HTTPS, with independent listener, send, bound, lifetime and peer-closure evidence. The pinned shared per-project connection and asynchronous mutable listener are not reproduced; cluster forwarding and callback ordering are excluded. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstance",
@@ -1897,7 +1905,7 @@
         "test/native_wait_reference_test.exs",
         "test/mutation_lifecycle_test.exs"
       ],
-      "note": "Direct typed native wait, separate from polling Operation.wait: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/terminal snapshots, HTTP 403 and premature EOF compared with unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight timeout=-1 rejection and hex-secret Inspect redaction. Arbitrary/empty-secret encoding, cluster forwarding, full timeout/error matrices and real-daemon acceptance remain unverified; native timeout=-1 is intentionally rejected for finite local bounds."
+      "note": "Direct typed native wait, separate from polling Operation.wait. The GET /1.0/operations/{id}/wait endpoint row is complete under reviewed record b03_native_wait_v1: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/completed/failed/cancelled snapshots, HTTP 403/404, premature EOF and pre-header loss compared with the unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight rejection of timeout outside 0..3600 and of empty/non-hex secrets, and Inspect redaction. Approved exclusions: public view, arbitrary/empty secrets and cluster forwarding; native timeout=-1 is intentionally rejected. Endpoint completion is not Go declaration parity; real-daemon acceptance is separate."
     },
     {
       "id": "client/interface_method/InstanceServer.GetOperationWaitSecret",
@@ -1907,7 +1915,7 @@
         "test/resource_slice_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Direct typed native wait, separate from polling Operation.wait: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/terminal snapshots, HTTP 403 and premature EOF compared with unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight timeout=-1 rejection and hex-secret Inspect redaction. Arbitrary/empty-secret encoding, cluster forwarding, full timeout/error matrices and real-daemon acceptance remain unverified; native timeout=-1 is intentionally rejected for finite local bounds."
+      "note": "Direct typed native wait, separate from polling Operation.wait. The GET /1.0/operations/{id}/wait endpoint row is complete under reviewed record b03_native_wait_v1: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/completed/failed/cancelled snapshots, HTTP 403/404, premature EOF and pre-header loss compared with the unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight rejection of timeout outside 0..3600 and of empty/non-hex secrets, and Inspect redaction. Approved exclusions: public view, arbitrary/empty secrets and cluster forwarding; native timeout=-1 is intentionally rejected. Endpoint completion is not Go declaration parity; real-daemon acceptance is separate."
     },
     {
       "id": "client/interface_method/InstanceServer.GetOperationWebsocket",
@@ -4276,42 +4284,50 @@
     {
       "id": "client/method/ProtocolIncus.GetEvents",
       "status": "partial",
-      "elixir": "lib/opsmaru/incus/web_socket.ex",
+      "elixir": "lib/opsmaru/incus/events.ex",
       "evidence": [
+        "test/event_contract_test.exs",
+        "test/event_listener_test.exs",
         "test/web_socket_test.exs",
         "test/tls_stream_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Explicit owner-bound subscription. The GET /1.0/events endpoint row and S03 are complete under reviewed record b03_events_v1: type/all-projects selectors, host project/target routing, native 400/403/404 upgrade rejection and Event fields compared with the unchanged pinned client over Unix and verified mutual HTTPS, with independent listener, send, bound, lifetime and peer-closure evidence. The pinned shared per-project connection and asynchronous mutable listener are not reproduced; cluster forwarding and callback ordering are excluded. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetEventsAllProjects",
       "status": "partial",
-      "elixir": "lib/opsmaru/incus/web_socket.ex",
+      "elixir": "lib/opsmaru/incus/events.ex",
       "evidence": [
+        "test/event_contract_test.exs",
+        "test/event_listener_test.exs",
         "test/web_socket_test.exs",
         "test/tls_stream_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Explicit owner-bound subscription. The GET /1.0/events endpoint row and S03 are complete under reviewed record b03_events_v1: type/all-projects selectors, host project/target routing, native 400/403/404 upgrade rejection and Event fields compared with the unchanged pinned client over Unix and verified mutual HTTPS, with independent listener, send, bound, lifetime and peer-closure evidence. The pinned shared per-project connection and asynchronous mutable listener are not reproduced; cluster forwarding and callback ordering are excluded. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetEventsAllProjectsByType",
       "status": "partial",
-      "elixir": "lib/opsmaru/incus/web_socket.ex",
+      "elixir": "lib/opsmaru/incus/events.ex",
       "evidence": [
+        "test/event_contract_test.exs",
+        "test/event_listener_test.exs",
         "test/web_socket_test.exs",
         "test/tls_stream_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Explicit owner-bound subscription. The GET /1.0/events endpoint row and S03 are complete under reviewed record b03_events_v1: type/all-projects selectors, host project/target routing, native 400/403/404 upgrade rejection and Event fields compared with the unchanged pinned client over Unix and verified mutual HTTPS, with independent listener, send, bound, lifetime and peer-closure evidence. The pinned shared per-project connection and asynchronous mutable listener are not reproduced; cluster forwarding and callback ordering are excluded. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetEventsByType",
       "status": "partial",
-      "elixir": "lib/opsmaru/incus/web_socket.ex",
+      "elixir": "lib/opsmaru/incus/events.ex",
       "evidence": [
+        "test/event_contract_test.exs",
+        "test/event_listener_test.exs",
         "test/web_socket_test.exs",
         "test/tls_stream_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Explicit owner-bound subscription. The GET /1.0/events endpoint row and S03 are complete under reviewed record b03_events_v1: type/all-projects selectors, host project/target routing, native 400/403/404 upgrade rejection and Event fields compared with the unchanged pinned client over Unix and verified mutual HTTPS, with independent listener, send, bound, lifetime and peer-closure evidence. The pinned shared per-project connection and asynchronous mutable listener are not reproduced; cluster forwarding and callback ordering are excluded. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetHTTPClient",
@@ -5145,7 +5161,7 @@
         "test/native_wait_reference_test.exs",
         "test/mutation_lifecycle_test.exs"
       ],
-      "note": "Direct typed native wait, separate from polling Operation.wait: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/terminal snapshots, HTTP 403 and premature EOF compared with unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight timeout=-1 rejection and hex-secret Inspect redaction. Arbitrary/empty-secret encoding, cluster forwarding, full timeout/error matrices and real-daemon acceptance remain unverified; native timeout=-1 is intentionally rejected for finite local bounds."
+      "note": "Direct typed native wait, separate from polling Operation.wait. The GET /1.0/operations/{id}/wait endpoint row is complete under reviewed record b03_native_wait_v1: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/completed/failed/cancelled snapshots, HTTP 403/404, premature EOF and pre-header loss compared with the unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight rejection of timeout outside 0..3600 and of empty/non-hex secrets, and Inspect redaction. Approved exclusions: public view, arbitrary/empty secrets and cluster forwarding; native timeout=-1 is intentionally rejected. Endpoint completion is not Go declaration parity; real-daemon acceptance is separate."
     },
     {
       "id": "client/method/ProtocolIncus.GetOperationWaitSecret",
@@ -5155,7 +5171,7 @@
         "test/resource_slice_test.exs",
         "test/native_wait_reference_test.exs"
       ],
-      "note": "Direct typed native wait, separate from polling Operation.wait: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/terminal snapshots, HTTP 403 and premature EOF compared with unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight timeout=-1 rejection and hex-secret Inspect redaction. Arbitrary/empty-secret encoding, cluster forwarding, full timeout/error matrices and real-daemon acceptance remain unverified; native timeout=-1 is intentionally rejected for finite local bounds."
+      "note": "Direct typed native wait, separate from polling Operation.wait. The GET /1.0/operations/{id}/wait endpoint row is complete under reviewed record b03_native_wait_v1: finite queries, scoped routing/ETags, gated bodies after flushed headers, running/completed/failed/cancelled snapshots, HTTP 403/404, premature EOF and pre-header loss compared with the unchanged pinned client over Unix and verified mutual HTTPS. Independent local deadline/cancellation/caller-loss peer cleanup, no replay/DELETE, preflight rejection of timeout outside 0..3600 and of empty/non-hex secrets, and Inspect redaction. Approved exclusions: public view, arbitrary/empty secrets and cluster forwarding; native timeout=-1 is intentionally rejected. Endpoint completion is not Go declaration parity; real-daemon acceptance is separate."
     },
     {
       "id": "client/method/ProtocolIncus.GetOperationWebsocket",
@@ -9766,7 +9782,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/event_send_test.exs"
+        "test/event_send_test.exs",
+        "test/event_contract_test.exs"
       ],
       "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },

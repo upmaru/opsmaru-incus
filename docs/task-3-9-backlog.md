@@ -100,7 +100,7 @@ estimates of lines or commits. Split a batch into bounded slices before coding.
 | --- | ---: | --- |
 | B01: Initial mutation lifecycle | 8 | Eight bounded initial_mutation_lifecycle_v1 contracts now have Unix/mutual-HTTPS named-Go and independent fixture evidence: acceptance/direct native wait, update/restore/state preconditions, rejection, uncertainty/no replay and synchronous cancellation. Other body/source/state/error/cluster variants and real-backend acceptance remain explicit gaps; whole endpoints are partial. |
 | B02: Initial inspection certification | 20 | All 20 initial inspection contracts now have bounded Unix/mutual-HTTPS evidence: nineteen named catalogue reads and connect/2 discovery. Core instance/snapshot/image/operation fields and grouped results, native rejection, applicable ETags, routing and byte/readiness/lifetime cleanup are checked. Extra selectors/types/fields/errors remain open; no whole-endpoint completion. |
-| B03: Exec and operation channel/wait scope | 4 | Attach existing live exec/native wait/channel and events-listener (S03) evidence to finite supported contracts; resolve secret/public-access views and forwarding scope explicitly. Recorded output belongs to B07. |
+| B03: Exec and operation channel/wait scope | 4 | Native wait (`b03_native_wait_v1`) and events with S03 (`b03_events_v1`) are complete; `?public`, arbitrary/empty wait secrets and cluster forwarding are approved exclusions (2026-10-19). Exec with S01 is next. The operation WebSocket row stays partial while S02/S10 are open. Recorded output belongs to B07. |
 | B04: Instance PATCH contract certification | 1 | Retain the verified conditional InstancePut contract; resolve unconditional/restore/field scope explicitly without inferring daemon merge acceptance. |
 | B05: Conditional PATCH and remaining PATCH contracts | 24 | Four conditional methods are implemented with bounded fixture evidence and remain partial; 20 other pairs still need typed PATCH implementation. Certify the four scopes and remaining native behavior or obtain explicit exclusions. PUT/raw-query success cannot close these rows. |
 | B06: File metadata HEAD | 2 | Implement instance and volume metadata-only typed helpers with header fidelity, empty body, rejection and bounded cleanup evidence on both transports. |
@@ -123,7 +123,7 @@ the Incus REST document and remain in the completion gate.
 | --- | --- | --- |
 | S01: Live exec | Certify finite binary stdin, acknowledged output, authoritative exit, limits and accepted-error identity using existing evidence. | Live noninteractive bounded subset; no arbitrary producer or tool capture policy. |
 | S02: Console | Enumerate supported static/dynamic attachment/control types and existing repeated-attachment/cleanup evidence; resolve remaining callback orchestration scope. | Host-owned streams and finite lifetimes. |
-| S03: Events and callbacks | Enumerate type filters, all-projects/target/lifecycle selectors and link capacity/callback/owner-loss evidence. | Explicit listener ownership; native callback order is unspecified. |
+| S03: Events and callbacks | **Certified** by `b03_events_v1`: type/all-projects/target selectors, native rejection, Event fields, capacity/callback/owner/caller-loss, bounds and peer closure on both transports. | Explicit listener ownership; native callback order is unspecified. |
 | S04: Files | Certify file/directory/symlink, uid/gid/mode, overwrite/append, path/routing, binary bounds and native failures; HEAD remains B06. | Acknowledged host sources/sinks; no implicit host files. |
 | S05: Image binary handoff | Enumerate supported unified/split/compression/header/token modes; link existing private-token/copy/uncertainty evidence and identify uncovered cases. | Host-owned sources/sinks/staging; no implicit tools. |
 | S06: Archives | Enumerate instance/volume/bucket import/export/direct POST, name/pool/config/device and ISO modes; reconcile existing fixtures and remaining transport/failure evidence. | No implicit host filesystem state. |
@@ -160,7 +160,7 @@ No exhaustive cross-product of every possible field/error is required.
 - [x] Preserve the ten fixture-verified inspection scopes and existing bounded slices.
 - [ ] Finish B01–B12: implement/verify the required contracts or record explicit approvals.
 - [ ] Finish S01–S12 certification within the existing approved host/protocol boundaries.
-- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete.
+- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. The record mechanism and two B03 rows plus S03 are complete.
 - [ ] Independently review and pass canonical/reference/platform/immutable-consumer checks for closing slices.
 
 Installed OCI/delta converters, explicitly opted-in isolated real-Incus acceptance
