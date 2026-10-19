@@ -526,7 +526,10 @@ defmodule Opsmaru.Incus.ExecOutputTest do
       }
 
       parent = self()
-      stdin = :binary.copy(<<0, 255>>, 2_097_152)
+      # TLS keeps default TCP buffers, which autotune to several MiB (Linux
+      # tcp_wmem/tcp_rmem maxima); exceed them so the write stays blocked.
+      pairs = if unquote(transport) == :ssl, do: 16_777_216, else: 2_097_152
+      stdin = :binary.copy(<<0, 255>>, pairs)
       timeout = if unquote(mode) == :deadline, do: 10_000, else: 30_000
 
       runner =
@@ -1167,7 +1170,7 @@ defmodule Opsmaru.Incus.ExecOutputTest do
 
   defp upgrade(t, s, request, name, parent, opts) do
     gate? = name == "0" and opts[:input_gate] == true
-    recbuf = if gate?, do: throttle_input(t, s)
+    if gate?, do: throttle_input(t, s)
 
     accept =
       Base.encode64(
@@ -1183,7 +1186,7 @@ defmodule Opsmaru.Incus.ExecOutputTest do
         "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: #{accept}\r\n\r\n"
       )
 
-    if gate?, do: await_input_release(t, s, parent, recbuf)
+    if gate?, do: await_input_release(parent)
 
     if name in ["1", "2"], do: send_output(t, s, name, parent, opts)
 
@@ -1245,30 +1248,23 @@ defmodule Opsmaru.Incus.ExecOutputTest do
     :ok = t.send(s, output <> barrier)
   end
 
-  # A small receive buffer lets the gated peer block the client's stdin write.
-  defp throttle_input(t, s) do
-    {:ok, [recbuf: recbuf]} = getopts(t, s, [:recbuf])
-    :ok = setopts(t, s, recbuf: 4096)
-    recbuf
-  end
+  # A small receive buffer lets the gated Unix peer block the client's stdin
+  # write. TCP (the TLS fixtures) keeps its buffer: shrinking an established
+  # Linux TCP socket clamps its window and growing it later does not reopen it,
+  # so draining after release stalls on delayed ACKs. Unread default buffers
+  # already block the client; blocked-write tests confirm that explicitly.
+  defp throttle_input(:gen_tcp, socket), do: :ok = :inet.setopts(socket, recbuf: 4096)
+  defp throttle_input(:ssl, _socket), do: :ok
 
-  # Restore the original buffer on release. Over Linux loopback TCP (the TLS
-  # fixtures) a window below one TLS record otherwise drains only at the
-  # Nagle/delayed-ACK rate, stalling both the remaining stdin and peer closure.
-  defp await_input_release(t, s, parent, recbuf) do
+  defp await_input_release(parent) do
     send(parent, {:input_gate, self()})
 
     receive do
-      :release_input -> :ok = setopts(t, s, recbuf: recbuf)
+      :release_input -> :ok
     after
       20_000 -> raise "fixture input gate"
     end
   end
-
-  defp getopts(:gen_tcp, socket, opts), do: :inet.getopts(socket, opts)
-  defp getopts(:ssl, socket, opts), do: :ssl.getopts(socket, opts)
-  defp setopts(:gen_tcp, socket, opts), do: :inet.setopts(socket, opts)
-  defp setopts(:ssl, socket, opts), do: :ssl.setopts(socket, opts)
 
   defp native_error(status),
     do: %{

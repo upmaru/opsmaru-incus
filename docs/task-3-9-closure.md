@@ -1054,9 +1054,11 @@ certified under `b03_exec_v1`. Task 3.9, global `behavior_complete`,
 - [x] Preflight, stdin chunking, blocked stdin, deadline/cancellation, owner loss,
   lost response/no replay, sink limits, running/failed completion and
   close/barrier/abrupt cases now also run over mutual HTTPS. On TLS the blocked
-  write is confirmed in the TLS sender the channel waits on. The gated fixture
-  peer restores its original receive buffer on release; on Linux loopback TCP the
-  4 KiB gating buffer otherwise drains TLS records only at the delayed-ACK rate.
+  write is confirmed in the TLS sender the channel waits on. Only the Unix
+  fixture peer shrinks its receive buffer while gated. TLS peers keep default TCP
+  buffers, because shrinking an established Linux 6.x TCP socket clamps its window
+  for good, and the blocked TLS write uses 32 MiB of stdin to exceed autotuned
+  buffers (reproduced on kernel 6.12).
 - [x] Negative validator tests reject a removed exec case, transport or evidence
   kind, unlinked evidence, unclassified selectors, unapproved exclusions or
   differences, reopened or misattributed S01 and a partial selected exec row.
