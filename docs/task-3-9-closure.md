@@ -1008,6 +1008,14 @@ and one stream contract are complete under reviewed records in
   stream byte budget ends with `:frame_limit`.
 - [x] `EventListener.wait/2` now reports `:canceled` or `:deadline` when the
   connection's request context ended the listener, instead of `:listener_failed`.
+  This holds whichever context watcher acts first: a read that fails because the
+  channel's own watcher closed it also records the context's reason.
+- [x] Review follow-up: `WebSocket.recv/2` reports a busy channel that misses the
+  caller's bound as a local `:deadline`, not `:channel_closed`. The unanswered
+  request stays outstanding and the next `recv` collects it, so no frame is
+  dropped; `close/1` abandons it. Previously a channel slowed past 100 ms (seen
+  on macOS CI over TLS) killed the listener. Completion selectors must carry a
+  nonempty description.
 - [ ] PR 2: complete `POST /1.0/instances/{name}/exec` with S01. The operation
   WebSocket row stays partial while S02 (console) and S10 (copy/migration) are open.
 

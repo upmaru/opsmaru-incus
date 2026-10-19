@@ -305,8 +305,7 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     for view <- views do
       if view["operation"] in record["supported_views"] do
         for query <- view["query_parameters"],
-            do:
-              assert(Map.has_key?(record["selectors"], query), "unclassified completion selector")
+            do: assert(described?(record["selectors"][query]), "unclassified completion selector")
       else
         assert approved?(excluded[view["operation"]]), "unapproved exclusion"
       end
@@ -342,6 +341,8 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
             assert(key in selected_rows[row["pair"]]["evidence"], "unlinked completion evidence")
     end
   end
+
+  defp described?(value), do: is_binary(value) and String.trim(value) != ""
 
   defp approved?(%{"approved" => date}) when is_binary(date),
     do: Regex.match?(~r/\A\d{4}-\d{2}-\d{2}\z/, date)

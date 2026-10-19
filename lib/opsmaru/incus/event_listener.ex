@@ -19,7 +19,8 @@ defmodule Opsmaru.Incus.EventListener do
     :callback_timeout,
     :channel_io,
     :channel_closed,
-    :listener_failed
+    :listener_failed,
+    :canceled
   ]
   defstruct [:pid, :ref, :owner, :result, :binding, :context]
 
@@ -112,7 +113,8 @@ defmodule Opsmaru.Incus.EventListener do
            handlers: [],
            capacity: min(client.connection.queue_limit, 128),
            timeout: client.connection.timeout,
-           deadline: now() + client.connection.stream_timeout
+           deadline: now() + client.connection.stream_timeout,
+           context: client.connection.request_context
          }}
 
       {:error, error} ->
@@ -278,9 +280,20 @@ defmodule Opsmaru.Incus.EventListener do
   end
 
   defp stop(state, kind) do
-    record(state.result, kind)
+    record(state.result, ended(state, kind))
     {:stop, :normal, state}
   end
+
+  # The channel has its own request-context watcher. When it ends the channel
+  # first, the failed read reports the context's reason, not channel closure.
+  defp ended(state, kind) when kind in [:channel_closed, :channel_io] do
+    case RequestContext.status(state.context) do
+      status when status in [:canceled, :deadline] -> status
+      _ -> kind
+    end
+  end
+
+  defp ended(_, kind), do: kind
 
   defp stop(state, kind, reply) do
     record(state.result, kind)

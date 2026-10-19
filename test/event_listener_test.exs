@@ -2,7 +2,19 @@ defmodule Opsmaru.Incus.EventListenerTest do
   use ExUnit.Case, async: false
   import ExUnit.CaptureLog
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Connection, Context, Error, EventListener, Model, RequestContext, Server}
+
+  alias Opsmaru.Incus.{
+    Connection,
+    Context,
+    Error,
+    EventListener,
+    Events,
+    Model,
+    RequestContext,
+    Server,
+    WebSocket
+  }
+
   alias Opsmaru.TestSupport.{CleanupAssertions, HTTPFixture, TLSIdentity, WebSocketFixture}
   @driver Path.expand("../.integration/event-handlers-driver", __DIR__)
   @event %{"type" => "logging", "timestamp" => "2026-10-11T12:00:00Z", "metadata" => %{}}
@@ -460,6 +472,62 @@ defmodule Opsmaru.Incus.EventListenerTest do
       assert_peer_closed()
     end
 
+    test "#{transport} cancellation is reported whichever context watcher ends the stream first",
+         %{root: root} do
+      scope = RequestContext.new!(timeout: 30_000)
+      {client, _} = fixture(unquote(transport), root)
+      {:ok, listener} = EventListener.open(Incus.with_context(client, scope))
+      channel = :sys.get_state(listener.pid).channel
+
+      # Stop the listener's own watcher (the one monitoring this owner), so only
+      # the channel's watcher reacts and the listener sees a failed read.
+      {:monitored_by, watchers} = Process.info(listener.pid, :monitored_by)
+
+      for pid <- watchers,
+          pid != channel.pid,
+          {:monitors, monitors} = Process.info(pid, :monitors),
+          {:process, self()} in monitors,
+          do: Process.exit(pid, :kill)
+
+      RequestContext.cancel(scope)
+      assert {:error, %Error{kind: :canceled}} = EventListener.wait(listener)
+      refute Process.alive?(channel.pid)
+      assert_peer_closed()
+    end
+
+    test "#{transport} a slow channel reply is a local read deadline that keeps the listener and every frame",
+         %{root: root} do
+      {client, _} = fixture(unquote(transport), root)
+      {:ok, listener} = EventListener.open(client)
+      parent = self()
+      {:ok, _} = EventListener.add_handler(listener, [], &send(parent, {:event, &1.data}))
+
+      # Pause the channel beyond the listener's read bound (100 ms plus margin).
+      channel = :sys.get_state(listener.pid).channel
+      :sys.suspend(channel.pid)
+      Process.sleep(400)
+      :sys.resume(channel.pid)
+      assert EventListener.active?(listener)
+      assert :ok = EventListener.send_event(listener, @event)
+      assert_receive {:event, event}, 2_000
+      assert event["type"] == @event["type"]
+
+      # A raw subscription reports the overrun as a deadline and still delivers the frame.
+      {:ok, raw} = Events.subscribe(client)
+      :sys.suspend(raw.pid)
+      started = System.monotonic_time(:millisecond)
+      assert {:error, %Error{kind: :deadline}} = WebSocket.recv(raw, 50)
+      assert System.monotonic_time(:millisecond) - started < 1_000
+      :sys.resume(raw.pid)
+      assert :ok = Events.send(raw, @event)
+      assert {:ok, %Model{type: "Event", data: data}} = next_event(raw, 20)
+      assert data["type"] == @event["type"]
+      assert :ok = Events.close(raw)
+      assert_peer_closed()
+      assert :ok = EventListener.disconnect(listener)
+      assert_peer_closed()
+    end
+
     test "#{transport} context cancellation and inbound byte bounds end the listener and close the peer",
          %{root: root} do
       scope = RequestContext.new!(timeout: 30_000)
@@ -559,6 +627,14 @@ defmodule Opsmaru.Incus.EventListenerTest do
       client_cert: File.read!(connection.tls[:certfile]),
       client_key: File.read!(connection.tls[:keyfile])
     }
+  end
+
+  # An outstanding read may first report its own local deadline.
+  defp next_event(channel, attempts) when attempts > 0 do
+    case Events.next(channel, 100) do
+      {:error, %Error{kind: :deadline}} -> next_event(channel, attempts - 1)
+      other -> other
+    end
   end
 
   defp assert_peer_closed do
