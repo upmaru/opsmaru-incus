@@ -61,7 +61,7 @@ entire endpoint, protocol or Go declaration is complete. The audit changed no su
   ubuntu-24.04 and macos-15, first attempt: CI run 38691372898.
 
 These are completed behavior slices. The conditional PATCH behavior is fixture-verified; its broader endpoint scope
-remains partial. The checked manifest now has 37 pairs (35 partial, 2 complete) and 28 fixture-verified scoped
+remains partial. The checked manifest now has 37 pairs (26 partial, 11 complete) and 28 fixture-verified scoped
 contracts (nineteen inspection methods, one discovery helper and eight mutation lifecycle methods). The separate Go
 ledger still has 1239 partial / 41 missing declarations, `complete_port=false`.
 No percentage of task completion can be derived from either counter.
@@ -150,8 +150,8 @@ missing typed implementations, one equivalent POST route and one repair mismatch
   classification is complete, behavioral certification remains open. Preserve
   already fixture-verified scopes and do not infer completion from source links.
 - [ ] Add reviewed completion records for every remaining finite supported contract.
-  The mechanism exists and two rows plus S03 are complete; the operation WebSocket
-  row stays partial while S02/S10 are open. No Go declaration is promoted.
+  Eleven rows plus S01/S03 are complete; the operation WebSocket and instance
+  creation rows stay partial while S02/S06/S10 are open. No Go declaration is promoted.
 
 ### The selected 37 pairs: verified scope and next closure obligation
 
@@ -165,15 +165,15 @@ additional scoped evidence, not a repetition of that baseline.
 | GET list/get projects, profiles, networks, storage pools and volumes | 10 | initial_inspection_v1: typed populated/empty/corrupt/403/404 results, routing, binding, byte/extension/lifetime bounds on Unix/mutual HTTPS | Only the named catalogue queries and tested DTO fields; custom volume samples. Other list selectors/types/fields/errors and backend/tool acceptance remain separate. |
 | GET server discovery | 1 | core_inspection_v1: populated/minimal valid metadata, RawQuery transport, required-field/version guards, 403/404 and scoped byte/readiness/lifetime cleanup on both transports | Broader discovery/auth fields and options remain open; no named-Go GetServer DTO parity. PUT/PATCH/root discovery are separate. |
 | GET instances, instance and state | 3 | core_inspection_v1: catalogue queries with container samples, populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Other recursion/filter/all-projects/instance-type/field/error/cluster variants remain open. |
-| PATCH instance | 1 | Conditional typed InstancePut, explicit ETag, native empty sync result, Unix/mutual-HTTPS transport and independent failure/lifetime fixtures | Unconditional updates, full field/cluster behavior and real-daemon merge acceptance remain unverified. |
+| PATCH instance | 1 | **Complete** (`b04_instance_patch_v1`). Conditional typed InstancePut, explicit ETag, native empty sync result, Unix/mutual-HTTPS transport and independent failure/lifetime fixtures | Unconditional updates, full field/cluster behavior and real-daemon merge acceptance remain unverified. |
 | PATCH project/profile/image/instance snapshot | 4 | Explicit ETag, valid field presence, scoped routes, native 200 empty sync versus 202 snapshot acceptance, errors, uncertain response loss and lifetime cleanup on Unix/mutual HTTPS | Conditional subset only; B05 certification, unconditional variants, additional fields/cluster/rejections and real-daemon merge/expiry acceptance remain separate. |
-| POST instance; PUT instance/state; DELETE instance | 4 | initial_mutation_lifecycle_v1: named-Go submission plus native /wait composition; populated update and restore bodies, applicable PUT ETags, running/success/failure, rejection, uncertainty/no replay and binding on both transports | Additional source/state/body/extension/error/cluster variants and real-daemon effects remain unverified. |
+| POST instance; PUT instance/state; DELETE instance | 4 | PUT instance, PUT state and DELETE instance are **complete** (`b01_update_instance_v1`, `b01_update_instance_state_v1`, `b01_delete_instance_v1`); POST instance stays partial while S06/S10 are open. initial_mutation_lifecycle_v1: named-Go submission plus native /wait composition; populated update and restore bodies, applicable PUT ETags, running/success/failure, rejection, uncertainty/no replay and binding on both transports | Additional source/state/body/extension/error/cluster variants and real-daemon effects remain unverified. |
 | GET snapshots and snapshot | 2 | core_inspection_v1: catalogue list/get queries, populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Names/other recursion, stateful/expiry/field/error/cluster variants remain open. |
-| POST/DELETE snapshot | 2 | initial_mutation_lifecycle_v1: native acceptance/wait outcomes, rejection, response loss/no replay and binding on both transports; instance PUT separately verifies restore-body linkage | Additional snapshot fields/expiry/stateful/cluster/error behavior and real-daemon restore effects remain unverified. |
+| POST/DELETE snapshot | 2 | **Complete** (`b01_create_instance_snapshot_v1`, `b01_delete_instance_snapshot_v1`). initial_mutation_lifecycle_v1: native acceptance/wait outcomes, rejection, response loss/no replay and binding on both transports; instance PUT separately verifies restore-body linkage | Additional snapshot fields/expiry/stateful/cluster/error behavior and real-daemon restore effects remain unverified. |
 | GET images and image | 2 | core_inspection_v1: catalogue list/get populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Public/private/filter/all-projects/recursion/field/error variants remain open; alias/export/token behavior is separate. |
-| DELETE image | 1 | initial_mutation_lifecycle_v1: native acceptance/wait outcomes, rejection, response loss/no replay and binding on both transports | Further image/cluster/error cases and daemon effects remain unverified; no implicit file or alias deletion. |
+| DELETE image | 1 | **Complete** (`b01_delete_image_v1`). initial_mutation_lifecycle_v1: native acceptance/wait outcomes, rejection, response loss/no replay and binding on both transports | Further image/cluster/error cases and daemon effects remain unverified; no implicit file or alias deletion. |
 | GET operations and operation | 2 | core_inspection_v1: grouped list flattening and direct get with fixed populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports; separate poll/wait/event evidence | All-projects/other query/status/field/error/cluster variants remain open. No cross-group result ordering claim. |
-| DELETE operation | 1 | initial_mutation_lifecycle_v1: named-Go synchronous DELETE plus independent may_cancel denial, one DELETE, completion race, native rejection and lost-reply identity on both transports | Other cancellation states/errors/cluster behavior and daemon acceptance remain unverified. Acknowledgement is not proven cancellation completion or a new operation. |
+| DELETE operation | 1 | **Complete** (`b01_cancel_operation_v1`). initial_mutation_lifecycle_v1: named-Go synchronous DELETE plus independent may_cancel denial, one DELETE, completion race, native rejection and lost-reply identity on both transports | Other cancellation states/errors/cluster behavior and daemon acceptance remain unverified. Acknowledgement is not proven cancellation completion or a new operation. |
 | GET native operation wait | 1 | **Complete** (`b03_native_wait_v1`): finite timeout queries, gated bodies, ETags, running/completed/failed/cancelled snapshots, 403/404, EOF and pre-header loss, local lifetime cleanup and preflight on Unix/mutual HTTPS | None within the record. Approved exclusions: `?public`, arbitrary/empty secrets (rejected before I/O) and cluster forwarding; timeout=-1 rejection is an approved difference. Real-daemon timeout behavior is separate acceptance. |
 | GET events | 1 | **Complete** (`b03_events_v1`, S03): named-Go type/all-projects/project/target upgrade targets, native 400/403/404, Event fields, listener/send matrix, inbound bounds, deadline/cancellation and peer closure on Unix/mutual HTTPS | None within the record. Approved exclusions: cluster forwarding and callback ordering. Real-daemon event streams are separate acceptance. |
 | POST exec | 1 | **Complete** (`b03_exec_v1`, S01): named-Go collected, non-waiting, interactive PTY and record-output submission with user/group/cwd/size, extension guards, control frames, native 400/403/404 and upgrade targets; independent channel-failure, status, redaction, limit, lifetime and peer-closure fixtures on Unix/mutual HTTPS | None within the record. Approved exclusions: recorded-output retrieval (B07), cluster forwarding, arbitrary producers and tool capture/truncation policy. Real-daemon exec/PTY is separate acceptance. |
@@ -1068,4 +1068,34 @@ certified under `b03_exec_v1`. Task 3.9, global `behavior_complete`,
 - [x] Negative validator tests reject a removed exec case, transport or evidence
   kind, unlinked evidence, unclassified selectors, unapproved exclusions or
   differences, reopened or misattributed S01 and a partial selected exec row.
+
+## B01 mutation and B04 instance PATCH completion
+
+Approved 2026-10-19. Eight single-method rows are complete under reviewed
+records with three new kinds: `async_mutation` (six rows), `sync_cancellation`
+(`DELETE /1.0/operations/{id}`) and `conditional_patch` (`PATCH /1.0/instances/{name}`).
+`POST /1.0/instances` stays partial while S06 and S10 are open. Task 3.9,
+`complete_port` and every Go declaration status (1239 partial / 41 missing) are
+unchanged.
+
+- [x] Every `InstancePut` field (architecture, config, devices, ephemeral,
+  profiles, stateful, description), stateful and `disk_only` restore, every
+  `InstanceStatePut` action (start, stop, restart, freeze, unfreeze) with
+  timeout, force and stateful, and `InstanceSnapshotsPost` with `expires_at` are
+  compared with the named Go methods over Unix and mutual HTTPS, each through an
+  accepted operation to completed and cancelled `/wait` snapshots.
+- [x] The cancelled (401) snapshot joins running/completed/failed for every
+  asynchronous lifecycle row.
+- [x] `disk_only` restore without `instance_snapshot_disk_only_restore` and
+  `expires_at` without `snapshot_expiry_creation` are rejected before dispatch,
+  as the pinned client refuses them; with the extension the field is sent.
+- [x] The validator now derives required cases from the method catalogue: a body
+  requires `body_fields`, guarded fields require `extension_guards`, and a PUT or
+  conditional method requires `etag`. The existing exec record gained its
+  `body_fields` case. Negative tests cover each derived case, unlinked evidence,
+  an unapproved PATCH exclusion and completing instance creation while its
+  stream contracts are open.
+- Approved exclusions (2026-10-19): cluster forwarding for all eight rows, and
+  unconditional PATCH (rejected before I/O). PATCH evidence remains RawQuery
+  transport comparison, distinct from named-Go and daemon merge evidence.
 

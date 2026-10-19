@@ -8,6 +8,12 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
       ~w(running completed failed cancelled etag routing native_403 native_404 response_loss_no_replay deadline cancellation caller_loss preflight redaction),
     "event_stream" =>
       ~w(populated field_presence selectors routing native_400 native_403 native_404 no_retry preflight handlers capacity callback_failure owner_loss caller_loss eof malformed overflow byte_bounds deadline cancellation local_wait send peer_closure),
+    "async_mutation" =>
+      ~w(request accepted_identity running completed failed cancelled routing binding native_403 native_404 native_409 native_412 malformed_reply response_loss_no_replay local_lifetime),
+    "sync_cancellation" =>
+      ~w(request routing binding native_403 native_404 malformed_reply authoritative_inspection may_cancel_denied single_delete completion_race lost_reply_identity),
+    "conditional_patch" =>
+      ~w(request field_presence empty_sync routing native_400 native_403 native_404 native_412 restore_rejection response_loss_no_replay deadline cancellation preflight unconditional_rejection),
     "live_exec" =>
       ~w(collected non_waiting interactive record_output user_group_cwd_size empty_output routing upgrade_targets extension_guards control_frames control_range native_400 native_403 native_404 accepted_identity response_loss_no_replay stream_negotiation invalid_stream_metadata pending_status missing_channels redaction preflight stdin_chunking blocked_stdin deadline cancellation owner_loss sink_limit running_failed close_barrier_abrupt peer_closure)
   }
@@ -68,7 +74,7 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     for row <- rows, do: row!(row, methods, audit, server, selected_rows)
     extras!(audit, server, keys)
     links!(audit)
-    completion!(audit, selected)
+    completion!(audit, selected, Map.new(methods, &{&1["name"], &1}))
     :ok
   end
 
@@ -219,7 +225,7 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     :ok
   end
 
-  defp completion!(audit, selected) do
+  defp completion!(audit, selected, catalogue) do
     records = audit["completion_records"]
     assert is_map(records), "missing completion records"
     rows = Map.new(audit["entries"], &{&1["pair"], &1})
@@ -260,12 +266,12 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     end
 
     for {id, record} <- records,
-        do: record!(id, record, rows, streams, selected_rows, selected["evidence"])
+        do: record!(id, record, rows, streams, selected_rows, selected["evidence"], catalogue)
   end
 
-  defp record!(id, record, rows, streams, selected_rows, evidence) do
-    required = @record_cases[record["kind"]]
-    assert required, "unknown completion record kind"
+  defp record!(id, record, rows, streams, selected_rows, evidence, catalogue) do
+    assert Map.has_key?(@record_cases, record["kind"]), "unknown completion record kind"
+    required = required_cases(record, catalogue)
     assert approved?(record), "unapproved completion record"
     anchor!(record["design"])
     assert record["rows"] != [], "empty completion record"
@@ -343,6 +349,27 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
             assert(key in selected_rows[row["pair"]]["evidence"], "unlinked completion evidence")
     end
   end
+
+  # Kinds name the base cases; the catalogue adds what each listed method declares:
+  # a body needs body_fields, guarded fields need extension_guards, and a PUT or
+  # conditional method needs its ETag precondition.
+  defp required_cases(record, catalogue) do
+    methods = Enum.map(record["methods"], &catalogue[&1])
+
+    derived =
+      for {case, needed?} <- [
+            {"body_fields", &(&1["body"] != nil)},
+            {"extension_guards", &Enum.any?(&1["guards"], fn guard -> guard["extension"] end)},
+            {"etag", &(&1["verb"] == "PUT" or conditional?(&1))}
+          ],
+          Enum.any?(methods, needed?),
+          do: case
+
+    Enum.uniq(@record_cases[record["kind"]] ++ derived)
+  end
+
+  # Mirrors the client: explicit conditional descriptors and empty-sync PATCH require an ETag.
+  defp conditional?(method), do: method["conditional"] == true or method["result"] == "empty_sync"
 
   defp described?(value), do: is_binary(value) and String.trim(value) != ""
 

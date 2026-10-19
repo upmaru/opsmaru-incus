@@ -139,8 +139,8 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
-             "partial" => 34,
-             "complete" => 3
+             "partial" => 26,
+             "complete" => 11
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -283,9 +283,17 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     assert audit["entries"]
            |> Enum.filter(& &1["behavior_complete"])
            |> Enum.map(&{&1["pair"], &1["completion_record"]}) == [
+             {"DELETE /1.0/images/{}", "b01_delete_image_v1"},
+             {"DELETE /1.0/instances/{}", "b01_delete_instance_v1"},
+             {"DELETE /1.0/instances/{}/snapshots/{}", "b01_delete_instance_snapshot_v1"},
+             {"DELETE /1.0/operations/{}", "b01_cancel_operation_v1"},
              {"GET /1.0/events", "b03_events_v1"},
              {"GET /1.0/operations/{}/wait", "b03_native_wait_v1"},
-             {"POST /1.0/instances/{}/exec", "b03_exec_v1"}
+             {"PATCH /1.0/instances/{}", "b04_instance_patch_v1"},
+             {"POST /1.0/instances/{}/exec", "b03_exec_v1"},
+             {"POST /1.0/instances/{}/snapshots", "b01_create_instance_snapshot_v1"},
+             {"PUT /1.0/instances/{}", "b01_update_instance_v1"},
+             {"PUT /1.0/instances/{}/state", "b01_update_instance_state_v1"}
            ]
 
     assert for(%{"status" => "certified", "id" => id} <- audit["stream_contracts"], do: id) ==
@@ -293,6 +301,10 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
 
     refute audit["behavior_complete"] or audit["complete_port"]
     wait = ["completion_records", "b03_native_wait_v1"]
+    update = ["completion_records", "b01_update_instance_v1"]
+    delete = ["completion_records", "b01_delete_image_v1"]
+    cancel = ["completion_records", "b01_cancel_operation_v1"]
+    patch = ["completion_records", "b04_instance_patch_v1"]
     events = ["completion_records", "b03_events_v1"]
     socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
     head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
@@ -353,6 +365,23 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                  else: contract
              end)
            end), "unsupported certification claim"},
+          {update_in(audit, update ++ ["cases"], &Map.delete(&1, "extension_guards")),
+           "missing completion case"},
+          {update_in(audit, update ++ ["cases"], &Map.delete(&1, "etag")),
+           "missing completion case"},
+          {update_in(
+             audit,
+             ["completion_records", "b03_exec_v1", "cases"],
+             &Map.delete(&1, "body_fields")
+           ), "missing completion case"},
+          {update_in(audit, patch ++ ["cases"], &Map.delete(&1, "unconditional_rejection")),
+           "missing completion case"},
+          {put_in(audit, delete ++ ["cases", "native_404"], ["mutation_guards"])
+           |> put_in(delete ++ ["evidence_kinds", "mutation_guards"], "named_go_differential"),
+           "unlinked completion evidence"},
+          {put_in(audit, patch ++ ["excluded_scope"], [%{"scope" => "unconditional PATCH"}]),
+           "unapproved exclusion"},
+          {put_in(audit, cancel ++ ["kind"], "async_mutation"), "missing completion case"},
           {%{audit | "behavior_complete" => true}, ""},
           {%{audit | "complete_port" => true}, ""}
         ] do
@@ -372,6 +401,32 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
       |> put_in(events ++ ["rows"], record["rows"] ++ [socket["pair"]])
       |> Map.update!("entries", fn entries ->
         Enum.map(entries, &if(&1 == socket, do: shared, else: &1))
+      end)
+
+    assert_raise ExUnit.AssertionError, ~r/open linked stream contract/, fn ->
+      EndpointInventory.validate!(changed, native)
+    end
+
+    # Instance creation stays partial while its archive and migration contracts are open.
+    create = Enum.find(audit["entries"], &(&1["pair"] == "POST /1.0/instances"))
+    record = get_in(audit, update)
+
+    changed =
+      audit
+      |> put_in(update ++ ["rows"], record["rows"] ++ [create["pair"]])
+      |> put_in(update ++ ["methods"], record["methods"] ++ ["CreateInstance"])
+      |> Map.update!("entries", fn entries ->
+        Enum.map(
+          entries,
+          &if(&1 == create,
+            do:
+              Map.merge(create, %{
+                "behavior_complete" => true,
+                "completion_record" => "b01_update_instance_v1"
+              }),
+            else: &1
+          )
+        )
       end)
 
     assert_raise ExUnit.AssertionError, ~r/open linked stream contract/, fn ->
