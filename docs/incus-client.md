@@ -202,11 +202,12 @@ the host was not waiting in `WebSocket.recv/2`. Unknown references are ignored;
 control-channel termination releases remaining local attachments and data
 failure does not automatically cancel the backend operation.
 
-If a busy channel cannot answer `recv/2` within the caller's timeout plus 100 ms,
-the call returns a local `:deadline` and the channel stays open. The unanswered
-read stays outstanding for that caller and the next `recv/2` collects it, so a
-frame delivered meanwhile is not lost; `close/1` abandons it. `:channel_closed`
-means the channel process has ended.
+`recv/2` waits for the channel's own answer: a frame, `:eof`, or `:deadline`
+from the channel's read timer (`min(timeout, connection timeout)`). A busy channel
+delays that answer rather than producing a false closure, and no late reply can
+reach a caller that has stopped waiting. The wait stays bounded by the channel's
+lifetime, request context, owner and write guards; `:channel_closed` means the
+channel process has ended.
 
 Remote WebSocket close frames emit `{channel.ref, :eof}` once to their owner while
 queued tail frames remain available through `recv/2`. Dynamic consoles forward

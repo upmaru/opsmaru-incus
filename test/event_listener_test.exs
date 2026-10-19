@@ -11,8 +11,7 @@ defmodule Opsmaru.Incus.EventListenerTest do
     Events,
     Model,
     RequestContext,
-    Server,
-    WebSocket
+    Server
   }
 
   alias Opsmaru.TestSupport.{CleanupAssertions, HTTPFixture, TLSIdentity, WebSocketFixture}
@@ -495,7 +494,7 @@ defmodule Opsmaru.Incus.EventListenerTest do
       assert_peer_closed()
     end
 
-    test "#{transport} a slow channel reply is a local read deadline that keeps the listener and every frame",
+    test "#{transport} a slow channel delays reads without false closure, late replies or lost frames",
          %{root: root} do
       {client, _} = fixture(unquote(transport), root)
       {:ok, listener} = EventListener.open(client)
@@ -512,16 +511,28 @@ defmodule Opsmaru.Incus.EventListenerTest do
       assert_receive {:event, event}, 2_000
       assert event["type"] == @event["type"]
 
-      # A raw subscription reports the overrun as a deadline and still delivers the frame.
+      # A raw read outlasting its own bound waits for the busy channel's answer,
+      # so no late reply is left behind for a catch-all handler to discard.
       {:ok, raw} = Events.subscribe(client)
       :sys.suspend(raw.pid)
+
+      spawn(fn ->
+        Process.sleep(300)
+        :sys.resume(raw.pid)
+      end)
+
       started = System.monotonic_time(:millisecond)
-      assert {:error, %Error{kind: :deadline}} = WebSocket.recv(raw, 50)
-      assert System.monotonic_time(:millisecond) - started < 1_000
-      :sys.resume(raw.pid)
+      assert {:error, %Error{kind: :deadline}} = Events.next(raw, 100)
+      assert System.monotonic_time(:millisecond) - started >= 300
       assert :ok = Events.send(raw, @event)
-      assert {:ok, %Model{type: "Event", data: data}} = next_event(raw, 20)
+      Process.sleep(200)
+      {:messages, late} = Process.info(self(), :messages)
+      assert late == []
+      assert {:ok, %Model{type: "Event", data: data}} = Events.next(raw, 2_000)
       assert data["type"] == @event["type"]
+
+      assert :ok = Events.send(raw, %{@event | "metadata" => %{"next" => true}})
+      assert {:ok, %Model{data: %{"metadata" => %{"next" => true}}}} = Events.next(raw, 2_000)
       assert :ok = Events.close(raw)
       assert_peer_closed()
       assert :ok = EventListener.disconnect(listener)
@@ -627,14 +638,6 @@ defmodule Opsmaru.Incus.EventListenerTest do
       client_cert: File.read!(connection.tls[:certfile]),
       client_key: File.read!(connection.tls[:keyfile])
     }
-  end
-
-  # An outstanding read may first report its own local deadline.
-  defp next_event(channel, attempts) when attempts > 0 do
-    case Events.next(channel, 100) do
-      {:error, %Error{kind: :deadline}} -> next_event(channel, attempts - 1)
-      other -> other
-    end
   end
 
   defp assert_peer_closed do

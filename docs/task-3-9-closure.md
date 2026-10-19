@@ -1010,12 +1010,13 @@ and one stream contract are complete under reviewed records in
   connection's request context ended the listener, instead of `:listener_failed`.
   This holds whichever context watcher acts first: a read that fails because the
   channel's own watcher closed it also records the context's reason.
-- [x] Review follow-up: `WebSocket.recv/2` reports a busy channel that misses the
-  caller's bound as a local `:deadline`, not `:channel_closed`. The unanswered
-  request stays outstanding and the next `recv` collects it, so no frame is
-  dropped; `close/1` abandons it. Previously a channel slowed past 100 ms (seen
-  on macOS CI over TLS) killed the listener. Completion selectors must carry a
-  nonempty description.
+- [x] Review follow-up: `WebSocket.recv/2` waits for the channel's own answer
+  (its read timer, or channel end) instead of a caller-side 100 ms margin.
+  Previously a channel slowed past that margin (seen on macOS CI over TLS)
+  reported false `:channel_closed` and killed the listener; an interim fix that
+  kept the request outstanding could leave a late reply for a catch-all handler
+  to discard, stalling reads and losing the frame. Both are covered by tests on
+  Unix and mutual HTTPS. Completion selectors must carry a nonempty description.
 - [ ] PR 2: complete `POST /1.0/instances/{name}/exec` with S01. The operation
   WebSocket row stays partial while S02 (console) and S10 (copy/migration) are open.
 

@@ -47,44 +47,16 @@ defmodule Opsmaru.Incus.WebSocket do
     end
   end
 
-  # A busy channel may answer after the caller's bound. That is a local read
-  # deadline, not closure: the unanswered request stays outstanding and the next
-  # recv collects it, so a frame delivered meanwhile is never dropped.
-  def recv(channel, timeout \\ 5_000) when is_integer(timeout) and timeout in 1..3_600_000 do
-    key = {__MODULE__, :recv, channel.pid}
-
-    request =
-      Process.get(key) || :gen_server.send_request(channel.pid, {:recv, timeout})
-
-    case :gen_server.wait_response(request, timeout + 100) do
-      {:reply, reply} ->
-        Process.delete(key)
-        reply
-
-      :timeout ->
-        if Process.alive?(channel.pid) do
-          Process.put(key, request)
-          {:error, %Error{kind: :deadline}}
-        else
-          Process.delete(key)
-          {:error, %Error{kind: :channel_closed}}
-        end
-
-      {:error, _} ->
-        Process.delete(key)
-        {:error, %Error{kind: :channel_closed}}
-    end
-  end
+  # The channel always answers within its own read timer (min(timeout,
+  # connection timeout)) once it takes the request, or ends under its lifetime,
+  # context, owner or bounded-write guards. Waiting for that answer instead of a
+  # caller-side bound means a busy channel delays a read rather than reporting
+  # false closure, and no late reply can carry a frame to an abandoned caller.
+  def recv(channel, timeout \\ 5_000) when is_integer(timeout) and timeout in 1..3_600_000,
+    do: call(channel, {:recv, timeout}, :infinity)
 
   def send_frame(channel, frame), do: call(channel, {:send, frame}, 3_600_100)
-
-  def close(channel) do
-    # Abandon any outstanding read: deactivates its reply alias and monitor.
-    if request = Process.delete({__MODULE__, :recv, channel.pid}),
-      do: :gen_server.receive_response(request, 0)
-
-    call(channel, :close, 5_000)
-  end
+  def close(channel), do: call(channel, :close, 5_000)
 
   @doc false
   def close_owned(channels) do
