@@ -1632,3 +1632,136 @@ strict Credo and all three strict OpenSpec changes. Reference checks pass the
 inventory/schema tooling and 188 constants. Fresh hosted review and both-platform
 immutable-consumer evidence are recorded on PR #14; no scope or parity promotion
 follows from these assertions.
+
+## B02 core inspection evidence — 2026-10-16
+
+Created feature/incus-client-core-inspection from merged develop `103f144`.
+OpenSpec proposal/design/spec/tasks were updated and strictly validated before
+fixture implementation. Runtime, catalogue, Go driver and pinned oracle stay
+unchanged. This batch extends the existing fixture rather than introducing a new
+transport framework: nine named instance/state/snapshot/image/operation reads plus
+connect/2 discovery. New handwritten test/support logic stays within a few hundred
+lines; no parser, runtime fix or new acceptance scope was needed.
+
+The forty shared inspection tests cover nineteen named methods and one helper,
+on Unix and verified mutual HTTPS. They make 190 named-Go comparisons plus 14
+RawQuery discovery comparisons. Discovery required-field and version guards are
+independent of RawQuery, which does not decode GetServer DTOs. Minimal valid server
+metadata preserves required fields; empty metadata, malformed extensions and API
+2.0 reject. Fixed fixture fields are asserted in full before Go projection, and
+unknown fields are retained independently. Nested memory includes Go's explicit
+zero fields; grouped operation maps compare flattened results by ID without
+cross-group ordering claims. Native getter ETags, independent list-header retention,
+403/404, routing/identity, response bytes, readiness and deadline/cancellation with
+actual peer EOF are covered. No elapsed-time success bound was added.
+
+The checked core_inspection_v1 profile attaches to exactly ten partial rows in
+both ledgers and rejects missing methods/helper/cases/transports/evidence or
+misplaced scope claims. B02 now has initial scoped evidence on all twenty assigned
+rows; together with B01 this moves 18 -> 28 scoped contracts (27 methods and one
+helper), inside the same 36 partial endpoint rows. Further selectors/types/fields/
+errors remain explicit backlog obligations. Coverage adds links without promoting
+any declaration or endpoint status; task 3.9 and complete_port=false remain open.
+No backend, shared operation/tool or consumer-owned hardware acceptance is claimed.
+
+Final local canonical checks pass: 1107 tests, zero failures, format,
+warning-free compilation, strict Credo and all three strict OpenSpec changes.
+Reference inventory/schema tooling and all 188 constants pass. Coverage generation
+is byte-identical and all declaration IDs/statuses match merged develop. The
+pushed Ubuntu/macOS canonical/reference and immutable-consumer results are recorded
+on this slice's draft PR; they remain distinct from real-backend acceptance.
+
+## PR #15 receive-timeout classification — 2026-10-16
+
+First-attempt CI on `9305a9b`, run 38883208790: Ubuntu passed canonical/reference
+and immutable-consumer checks. macOS failed the strict GetOperation HTTPS deadline
+assertion with :response; reference/consumer steps were skipped. The scope stop
+was reported and the user explicitly approved a narrow runtime diagnosis/fix.
+No assertion or duration was relaxed and CI was not retried to obtain a green run.
+
+The ordinary 120-request short-TLS probe did not reproduce the timing. A controlled
+regression then paused the test-owned caller/guard, allowed the socket receive to
+expire, and traced both Mint.HTTP.recv and Transport.receive_response return values.
+This reproduced real Mint TransportError(reason: :timeout) being mapped to :response
+on both Unix and mutual HTTPS, even when the outer timer hid that result publicly.
+Both deterministic tests failed before the fix with the incorrect receive result.
+
+The runtime fix adds one specific receive-error branch: Mint timeout becomes the
+local deadline because recv was supplied the remaining absolute budget. Other
+receive errors remain :response; caller-level mutation mapping remains :uncertain.
+Six GET/HEAD/POST flows cover both transports, actual socket/worker closure and
+original-client context isolation; six early-EOF controls preserve response errors
+and uncertain mutation results. Exact request counts exclude replay. Production
+timers, guards, callback ordering, operation identity and oracle are unchanged.
+The checked receive_expiry anchor and RawQuery coverage link retain the new evidence
+without promoting any endpoint or declaration. These raw-query controls do not
+close B06's typed HEAD gaps. Task 3.9 remains open.
+
+The two controlled regressions pass after the fix, including all six timeout and
+six EOF flows. Canonical checks pass all 1109 tests, format, warning-free compile,
+strict Credo and all three strict OpenSpec changes. Reference tooling and 188
+constants pass; coverage regenerates byte-identically with unchanged declaration
+IDs/statuses. Current pushed platform and immutable-consumer outcomes are recorded
+on PR #15 alongside the initial failure and reproduced cause.
+
+## PR #15 bounded evidence-source validation — 2026-10-16
+
+Fix-head CI run 38886752435 (`05d4c65`) passed Ubuntu canonical/reference and the
+immutable consumer. macOS passed the receive-expiry regressions and failed only
+the expanded negative evidence matrix's 60-second test limit while tokenizing
+fixture source repeatedly. All transport error assertions and budgets stay strict.
+
+The validator now retains a source-path -> parsed test-name map only within one
+validate! invocation. It still checks every row's evidence key, file, distinct
+anchor, method and scope, and all negative matrix cases remain. A shared-source
+regression validates two different anchors, rewrites the source, then confirms
+the next validation rejects the removed anchor. No persistent/global cache can
+hide drift. All 14 focused evidence tests pass; no timeout was increased. The
+runtime fix, coverage and every endpoint/declaration status are unchanged.
+
+Final local canonical checks pass all 1110 tests, format, warning-free compile,
+strict Credo and all three strict OpenSpec changes. Reference tooling and 188
+constants pass; coverage regeneration is unchanged. Current-head platform and
+immutable-consumer evidence is recorded on PR #15, preserving both prior failures
+and their diagnosed fixes rather than treating a rerun as verification.
+
+## PR #15 test-only YAML atom-probe stabilization — 2026-10-16
+
+CI run 38888955608 on `19c135c` passed macOS canonical/reference and the immutable
+consumer. Ubuntu passed every B02/deadline/evidence-validator regression, but the
+unchanged YAML atom-safety test rejected a single 200-key document. The failure
+log does not distinguish parser bounds; the unchanged two-second wall guard makes
+load-related rejection plausible. This was reported as a separate scope stop and
+the user explicitly approved test-only stabilization.
+
+The atom fixture now sends the same 200 distinct keys in twenty ten-key documents.
+Each document must decode successfully to its exact complete string map, and all
+200 keys must remain absent from the atom table before and after parsing. No retry
+or accepted rejection is used. Other bounds, native-oracle, raising, environment
+and atom assertions remain. NativeYaml/NativeConfig, the oracle, accepted subset,
+production deadlines/reduction/heap limits and test timeouts are unchanged. This
+is atom-safety evidence, not guaranteed 200-key throughput under a wall-clock cap
+or new YAML parity. Coverage and task 3.9 remain partial.
+
+The focused fixture passes with the failed Ubuntu run's seed (155024). Canonical
+checks pass all 1110 tests, format, warning-free compile, strict Credo and all three
+strict OpenSpec changes. Reference tooling and 188 constants pass. Coverage
+regenerates byte-identically; no runtime/oracle file changed in this follow-up.
+Pushed platform and immutable-consumer results are recorded on PR #15.
+
+CI run 38895931250 on atom-batching head `a3104d2` passed Ubuntu canonical/reference
+and the immutable consumer. Every atom probe also passed on macOS; its sole failure
+was the same async YAML module's near-limit realistic-document success assertion.
+That fixture checks throughput within the production parser budget while other
+async suites can run heavy Go/build/fixture work. The test-only follow-up runs this
+resource-sensitive module serially. It retains near-limit success and map size,
+existing elapsed bounds, all native differentials, actual decode-worker tracing,
+message cleanup, all 200 atom probes and every production/test timeout. No parser
+or runtime change was made. This isolates fixture scheduling; the CI rejection's
+specific parser bound is not exposed by the error value.
+
+All eight YAML tests pass serially with macOS failure seed 742444. Full canonical
+checks pass all 1110 tests, formatting, warning-free compile, strict Credo and all
+three strict OpenSpec changes. Reference tooling and 188 constants pass; coverage
+is byte-identical and runtime/oracle files are unchanged in this follow-up. Exact
+pushed-platform and immutable-consumer results are recorded on PR #15.

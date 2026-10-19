@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.NativeYamlReferenceTest do
-  use ExUnit.Case, async: true
+  # Budgeted acceptance fixtures need isolation from competing async test workloads.
+  use ExUnit.Case, async: false
   alias Opsmaru.Incus.Error
   alias Opsmaru.Incus.NativeConfig
   @moduletag timeout: 120_000
@@ -532,8 +533,7 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
                  )
       end)
 
-    # This module is async. Other tests may start processes while decoding;
-    # trace the actual two decode workers instead of counting the whole VM.
+    # Trace this caller's actual decode workers, independent of unrelated VM processes.
     assert length(workers) == 2
     for worker <- workers, do: refute(Process.alive?(worker))
     refute_received _
@@ -604,7 +604,15 @@ defmodule Opsmaru.Incus.NativeYamlReferenceTest do
     end
 
     keys = for i <- 1..200, do: "opsmaru_yaml_atom_probe_#{i}"
-    {:ok, _} = NativeConfig.from_yaml("ConfigMap", Enum.map_join(keys, "", &"#{&1}: #{&1}\n"))
+    refute Enum.any?(keys, &atom_exists?/1)
+
+    # Atom safety needs all keys decoded, not one large document racing a resource budget.
+    for batch <- Enum.chunk_every(keys, 10) do
+      yaml = Enum.map_join(batch, "", &"#{&1}: #{&1}\n")
+      expected = Map.new(batch, &{&1, &1})
+      assert {:ok, ^expected} = NativeConfig.from_yaml("ConfigMap", yaml)
+    end
+
     refute Enum.any?(keys, &atom_exists?/1)
 
     garbage = ["{", "[", "a: [", "a: 'x", "&a", "*a", ": :", "- - -", "? ? ?", "a: *missing"]
