@@ -139,8 +139,8 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
-             "partial" => 35,
-             "complete" => 2
+             "partial" => 34,
+             "complete" => 3
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -284,11 +284,12 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            |> Enum.filter(& &1["behavior_complete"])
            |> Enum.map(&{&1["pair"], &1["completion_record"]}) == [
              {"GET /1.0/events", "b03_events_v1"},
-             {"GET /1.0/operations/{}/wait", "b03_native_wait_v1"}
+             {"GET /1.0/operations/{}/wait", "b03_native_wait_v1"},
+             {"POST /1.0/instances/{}/exec", "b03_exec_v1"}
            ]
 
     assert for(%{"status" => "certified", "id" => id} <- audit["stream_contracts"], do: id) ==
-             ["S03"]
+             ["S01", "S03"]
 
     refute audit["behavior_complete"] or audit["complete_port"]
     wait = ["completion_records", "b03_native_wait_v1"]
@@ -347,7 +348,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            end), "open linked stream contract"},
           {update_in(audit, ["stream_contracts"], fn contracts ->
              Enum.map(contracts, fn contract ->
-               if contract["id"] == "S01",
+               if contract["id"] == "S02",
                  do: %{contract | "status" => "certified"},
                  else: contract
              end)
@@ -391,6 +392,90 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
 
       assert_raise ExUnit.AssertionError, ~r/unsupported completion claim/, fn ->
         EndpointEvidence.validate!(%{@manifest | "entries" => entries}, native)
+      end
+    end
+  end
+
+  test "exec completion certifies S01 only with its full mode, failure and transport evidence", %{
+    native: native
+  } do
+    audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
+    exec = ["completion_records", "b03_exec_v1"]
+    record = get_in(audit, exec)
+    assert record["kind"] == "live_exec" and record["stream_contracts"] == ["S01"]
+    assert record["methods"] == ["ExecInstance"] and record["transports"] == ~w(unix mutual_https)
+
+    assert Enum.sort(for {key, "named_go_differential"} <- record["evidence_kinds"], do: key) ==
+             ~w(exec_guards exec_modes exec_native exec_rejection)
+
+    s01 = Enum.find(audit["stream_contracts"], &(&1["id"] == "S01"))
+    assert s01["boundary"] =~ "interactive host-owned channels"
+
+    reopen = fn status, record_id ->
+      update_in(audit, ["stream_contracts"], fn contracts ->
+        Enum.map(contracts, fn contract ->
+          if contract["id"] == "S01",
+            do: Map.merge(contract, %{"status" => status, "completion_record" => record_id}),
+            else: contract
+        end)
+      end)
+    end
+
+    for {changed, message} <- [
+          {update_in(audit, exec ++ ["cases"], &Map.delete(&1, "control_range")),
+           "missing completion case"},
+          {update_in(audit, exec ++ ["cases"], &Map.delete(&1, "extension_guards")),
+           "missing completion case"},
+          {put_in(audit, exec ++ ["transports"], ["unix"]), "missing completion transport"},
+          {put_in(audit, exec ++ ["cases", "interactive"], []), "missing completion evidence"},
+          {put_in(audit, exec ++ ["evidence_kinds", "exec_modes"], "raw_proxy_success"),
+           "unknown completion evidence kind"},
+          {update_in(audit, exec ++ ["evidence_kinds"], &Map.delete(&1, "exec_collector")),
+           "stale completion evidence kinds"},
+          {put_in(audit, exec ++ ["selectors"], %{"target" => "host_routing"}),
+           "unclassified completion selector"},
+          {put_in(audit, exec ++ ["excluded_scope"], [%{"scope" => "recorded output"}]),
+           "unapproved exclusion"},
+          {put_in(audit, exec ++ ["approved_differences"], [%{"difference" => "unreviewed"}]),
+           "unapproved exclusion"},
+          {put_in(audit, exec ++ ["methods"], ["ExecInstance", "GetInstanceFile"]),
+           "stale completion methods"},
+          {reopen.("open_contract_certification", nil), "open linked stream contract"},
+          {reopen.("certified", "b03_events_v1"), "unsupported certification claim"}
+        ] do
+      assert_raise ExUnit.AssertionError, ~r/#{message}/, fn ->
+        EndpointInventory.validate!(changed, native)
+      end
+    end
+
+    selected = fn update ->
+      entries =
+        Enum.map(@manifest["entries"], fn row ->
+          if row["method"] == "ExecInstance", do: update.(row), else: row
+        end)
+
+      %{@manifest | "entries" => entries}
+    end
+
+    # Selected evidence must still link every record evidence key and the completion.
+    root = Path.join(System.tmp_dir!(), "op-exec-record-#{System.unique_integer([:positive])}")
+    File.mkdir!(root)
+    on_exit(fn -> File.rm_rf!(root) end)
+    path = Path.join(root, "endpoint-evidence.json")
+    unlinked = selected.(&Map.update!(&1, "evidence", fn keys -> keys -- ["exec_guards"] end))
+    File.write!(path, Jason.encode!(unlinked))
+    audit = %{audit | "selected_evidence" => path}
+
+    assert_raise ExUnit.AssertionError, ~r/unlinked completion evidence/, fn ->
+      EndpointInventory.validate!(audit, native)
+    end
+
+    for {update, message} <- [
+          {&%{&1 | "status" => "partial"}, "unsupported completion claim"},
+          {&Map.delete(&1, "completion_record"), "unsupported completion claim"}
+        ] do
+      assert_raise ExUnit.AssertionError, ~r/#{message}/, fn ->
+        EndpointEvidence.validate!(selected.(update), native)
       end
     end
   end

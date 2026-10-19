@@ -176,7 +176,7 @@ additional scoped evidence, not a repetition of that baseline.
 | DELETE operation | 1 | initial_mutation_lifecycle_v1: named-Go synchronous DELETE plus independent may_cancel denial, one DELETE, completion race, native rejection and lost-reply identity on both transports | Other cancellation states/errors/cluster behavior and daemon acceptance remain unverified. Acknowledgement is not proven cancellation completion or a new operation. |
 | GET native operation wait | 1 | **Complete** (`b03_native_wait_v1`): finite timeout queries, gated bodies, ETags, running/completed/failed/cancelled snapshots, 403/404, EOF and pre-header loss, local lifetime cleanup and preflight on Unix/mutual HTTPS | None within the record. Approved exclusions: `?public`, arbitrary/empty secrets (rejected before I/O) and cluster forwarding; timeout=-1 rejection is an approved difference. Real-daemon timeout behavior is separate acceptance. |
 | GET events | 1 | **Complete** (`b03_events_v1`, S03): named-Go type/all-projects/project/target upgrade targets, native 400/403/404, Event fields, listener/send matrix, inbound bounds, deadline/cancellation and peer closure on Unix/mutual HTTPS | None within the record. Approved exclusions: cluster forwarding and callback ordering. Real-daemon event streams are separate acceptance. |
-| POST exec | 1 | Full-duplex bounded noninteractive run/collect, negotiation, authoritative exit and cleanup | Confirm bounded live subset as the endpoint contract; recorded/interactive orchestration and arbitrary producers remain visibly separate. Tool capture/truncation/policy belongs to add-incus-operations. |
+| POST exec | 1 | **Complete** (`b03_exec_v1`, S01): named-Go collected, non-waiting, interactive PTY and record-output submission with user/group/cwd/size, extension guards, control frames, native 400/403/404 and upgrade targets; independent channel-failure, status, redaction, limit, lifetime and peer-closure fixtures on Unix/mutual HTTPS | None within the record. Approved exclusions: recorded-output retrieval (B07), cluster forwarding, arbitrary producers and tool capture/truncation policy. Real-daemon exec/PTY is separate acceptance. |
 | GET operation WebSocket | 1 | Exec channels, barriers, bounded queues/frames, control and write-lifetime cleanup | Classify non-exec channel contracts and secret/query scope separately; exec evidence does not close console/events/migration. |
 
 Primary evidence: `test/client_test.exs`, `test/discovery_helpers_test.exs`,
@@ -195,7 +195,7 @@ file/image transfers. They remain foundation classification obligations.
 
 | Contract | Existing bounded implementation/evidence | Remaining scope or evidence decision |
 | --- | --- | --- |
-| Live noninteractive exec | `Session.run/collect`; `test/exec_output_test.exs`, `test/session_test.exs` | Live subset is implemented; classify recorded output and interactive orchestration separately. Tools own capture/truncation/schema policy. |
+| Live exec | `Session.run/collect/exec`; `test/exec_output_test.exs`, `test/session_test.exs` | S01 certified by `b03_exec_v1` on Unix/mutual HTTPS: bounded noninteractive collection plus interactive host-owned channels. Recorded-output retrieval stays B07; tools own capture/truncation/schema policy. |
 | Static and dynamic console WebSocket | `Session.console`, `DynamicConsole`; `test/dynamic_console_reference_test.exs` includes native frames, repeated attachments, TLS, bounds and peer cleanup | Full native callback/reader/writer orchestration and all console types/options remain partial. Earlier blanket “dynamic console missing” notes are superseded. |
 | Events and operation callbacks | `EventListener`, `Events`; `test/event_contract_test.exs`, `test/event_listener_test.exs`, `test/event_send_test.exs`, `test/operation_handler_test.exs` | S03 certified by `b03_events_v1` on Unix/mutual HTTPS. Explicit listener ownership is a recorded difference; Go callback order is never asserted. Operation handler orchestration stays with its own rows. |
 | Instance/volume file GET/POST/DELETE | `Files`, `FileHeaders`; `test/file_reference_test.exs`, `test/file_variants_reference_test.exs`, `test/file_headers_reference_test.exs` | HEAD is absent; reconcile link/type/mode/query variants and both-transport failure matrix. Directory metadata and binary sinks already have separate evidence. |
@@ -1017,6 +1017,37 @@ and one stream contract are complete under reviewed records in
   kept the request outstanding could leave a late reply for a catch-all handler
   to discard, stalling reads and losing the frame. Both are covered by tests on
   Unix and mutual HTTPS. Completion selectors must carry a nonempty description.
-- [ ] PR 2: complete `POST /1.0/instances/{name}/exec` with S01. The operation
+- [x] PR 2: `POST /1.0/instances/{name}/exec` with S01 (see below). The operation
   WebSocket row stays partial while S02 (console) and S10 (copy/migration) are open.
+
+## B03 exec with S01 (PR 2)
+
+Approved 2026-10-19. `POST /1.0/instances/{name}/exec` is complete and S01 is
+certified under `b03_exec_v1`. Task 3.9, global `behavior_complete`,
+`complete_port` and every Go declaration (1239 partial / 41 missing) are unchanged.
+
+- [x] The pinned `execio` driver gained submit and interactive modes. Named-Go
+  comparisons over Unix and mutual HTTPS cover collected `Session.run`,
+  `wait-for-websocket=false` via `Incus.call`, interactive PTY via `Session.exec`
+  (channel 0 plus control, resize/signal frames decoded as `InstanceExecControl`),
+  `record-output=true` submission, empty output with exit 0, and nonzero
+  user/group/size with a nonempty cwd. Out-of-range resize/signal raise before
+  any frame.
+- [x] `container_exec_recording` and `container_exec_user_group_cwd` reject before
+  dispatch through `call`, `exec` and `run`, with the pinned client's message.
+  Native 400/403/404 match through `exec` and `run` with one POST each and no
+  upgrade, poll or replay.
+- [x] Upgrade targets match per channel by path and secret. The pinned
+  `GetOperationWebsocket` sends only the secret; this client also sends the host
+  `project`/`target`, which the pinned daemon's operation WebSocket handler ignores.
+- [x] `:stream_negotiation` closes already opened channels and `:invalid_stream_metadata`
+  rejects unsupported fds before any upgrade, both retaining acceptance. Pending
+  exit status, missing channels and Session/Error Inspect redaction are covered.
+- [x] Preflight, stdin chunking, blocked stdin, deadline/cancellation, owner loss,
+  lost response/no replay, sink limits, running/failed completion and
+  close/barrier/abrupt cases now also run over mutual HTTPS. On TLS the blocked
+  write is confirmed in the TLS sender the channel waits on.
+- [x] Negative validator tests reject a removed exec case, transport or evidence
+  kind, unlinked evidence, unclassified selectors, unapproved exclusions or
+  differences, reopened or misattributed S01 and a partial selected exec row.
 

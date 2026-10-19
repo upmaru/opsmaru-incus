@@ -1041,7 +1041,7 @@
         "test/session_test.exs",
         "test/exec_output_test.exs"
       ],
-      "note": "Native request and channel slice plus creator-owned bounded live noninteractive stdout/stderr collection: unchanged ExecInstance IO, stdin/output barriers, bytes and authoritative exit status compared over Unix and verified mutual HTTPS. Independent aggregate limits, sink rejection/deadline/cancellation/owner-loss cleanup and concurrent output evidence. Session.run adds preflight bounded binary stdin, full-duplex acknowledged IO and one submission-to-completion lifetime, with retained negotiation acceptance and original-client reconciliation. Stdin chunking respects both independently configured WebSocket frame and chunk limits, with Unix/mutual-HTTPS regressions. Independent Unix fixtures confirm deadline/cancellation while stdin is blocked in a socket send, retained acceptance, channel/peer cleanup and shared-context isolation. Recorded output, interactive IO, arbitrary producers, full Go argument orchestration and declaration parity remain unverified."
+      "note": "The POST /1.0/instances/{name}/exec endpoint row and S01 are complete under reviewed record b03_exec_v1: collected noninteractive Session.run, non-waiting Incus.call, interactive PTY Session.exec with resize/signal control frames, record-output submission and nonzero user/group/cwd/terminal size compared with unchanged ExecInstance over Unix and verified mutual HTTPS, including container_exec_recording/container_exec_user_group_cwd rejection before dispatch, native 400/403/404, upgrade targets and empty output. Independent fixtures on both transports cover preflight, stdin chunking and blocked stdin, deadline/cancellation, owner loss, sink limits, running/failed completion, close/barrier/abrupt outcomes, negotiation and fds metadata failures, pending status, missing channels and redaction with peer closure. Interactive sessions expose host-owned channels instead of reader/writer mirroring; recorded-output retrieval stays in B07. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetCertificate",
@@ -4143,7 +4143,7 @@
         "test/session_test.exs",
         "test/exec_output_test.exs"
       ],
-      "note": "Native request and channel slice plus creator-owned bounded live noninteractive stdout/stderr collection: unchanged ExecInstance IO, stdin/output barriers, bytes and authoritative exit status compared over Unix and verified mutual HTTPS. Independent aggregate limits, sink rejection/deadline/cancellation/owner-loss cleanup and concurrent output evidence. Session.run adds preflight bounded binary stdin, full-duplex acknowledged IO and one submission-to-completion lifetime, with retained negotiation acceptance and original-client reconciliation. Stdin chunking respects both independently configured WebSocket frame and chunk limits, with Unix/mutual-HTTPS regressions. Independent Unix fixtures confirm deadline/cancellation while stdin is blocked in a socket send, retained acceptance, channel/peer cleanup and shared-context isolation. Recorded output, interactive IO, arbitrary producers, full Go argument orchestration and declaration parity remain unverified."
+      "note": "The POST /1.0/instances/{name}/exec endpoint row and S01 are complete under reviewed record b03_exec_v1: collected noninteractive Session.run, non-waiting Incus.call, interactive PTY Session.exec with resize/signal control frames, record-output submission and nonzero user/group/cwd/terminal size compared with unchanged ExecInstance over Unix and verified mutual HTTPS, including container_exec_recording/container_exec_user_group_cwd rejection before dispatch, native 400/403/404, upgrade targets and empty output. Independent fixtures on both transports cover preflight, stdin chunking and blocked stdin, deadline/cancellation, owner loss, sink limits, running/failed completion, close/barrier/abrupt outcomes, negotiation and fds metadata failures, pending status, missing channels and redaction with peer closure. Interactive sessions expose host-owned channels instead of reader/writer mirroring; recorded-output retrieval stays in B07. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.ExportImage",
@@ -10066,6 +10066,7 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
+        "test/exec_output_test.exs",
         "test/nested_models_reference_test.exs"
       ],
       "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
@@ -10075,7 +10076,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/exec_output_test.exs"
       ],
       "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
