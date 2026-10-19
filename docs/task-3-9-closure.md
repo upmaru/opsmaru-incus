@@ -1054,7 +1054,9 @@ certified under `b03_exec_v1`. Task 3.9, global `behavior_complete`,
 - [x] Preflight, stdin chunking, blocked stdin, deadline/cancellation, owner loss,
   lost response/no replay, sink limits, running/failed completion and
   close/barrier/abrupt cases now also run over mutual HTTPS. On TLS the blocked
-  write is confirmed in the TLS sender the channel waits on.
+  write is confirmed in the TLS sender the channel waits on. The gated fixture
+  peer restores its original receive buffer on release; on Linux loopback TCP the
+  4 KiB gating buffer otherwise drains TLS records only at the delayed-ACK rate.
 - [x] Negative validator tests reject a removed exec case, transport or evidence
   kind, unlinked evidence, unclassified selectors, unapproved exclusions or
   differences, reopened or misattributed S01 and a partial selected exec row.

@@ -1166,7 +1166,8 @@ defmodule Opsmaru.Incus.ExecOutputTest do
   end
 
   defp upgrade(t, s, request, name, parent, opts) do
-    if name == "0" and opts[:input_gate], do: setopts(t, s, recbuf: 4096)
+    gate? = name == "0" and opts[:input_gate] == true
+    recbuf = if gate?, do: throttle_input(t, s)
 
     accept =
       Base.encode64(
@@ -1182,15 +1183,7 @@ defmodule Opsmaru.Incus.ExecOutputTest do
         "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: #{accept}\r\n\r\n"
       )
 
-    if name == "0" and opts[:input_gate] do
-      send(parent, {:input_gate, self()})
-
-      receive do
-        :release_input -> :ok
-      after
-        20_000 -> raise "fixture input gate"
-      end
-    end
+    if gate?, do: await_input_release(t, s, parent, recbuf)
 
     if name in ["1", "2"], do: send_output(t, s, name, parent, opts)
 
@@ -1252,6 +1245,28 @@ defmodule Opsmaru.Incus.ExecOutputTest do
     :ok = t.send(s, output <> barrier)
   end
 
+  # A small receive buffer lets the gated peer block the client's stdin write.
+  defp throttle_input(t, s) do
+    {:ok, [recbuf: recbuf]} = getopts(t, s, [:recbuf])
+    :ok = setopts(t, s, recbuf: 4096)
+    recbuf
+  end
+
+  # Restore the original buffer on release. Over Linux loopback TCP (the TLS
+  # fixtures) a window below one TLS record otherwise drains only at the
+  # Nagle/delayed-ACK rate, stalling both the remaining stdin and peer closure.
+  defp await_input_release(t, s, parent, recbuf) do
+    send(parent, {:input_gate, self()})
+
+    receive do
+      :release_input -> :ok = setopts(t, s, recbuf: recbuf)
+    after
+      20_000 -> raise "fixture input gate"
+    end
+  end
+
+  defp getopts(:gen_tcp, socket, opts), do: :inet.getopts(socket, opts)
+  defp getopts(:ssl, socket, opts), do: :ssl.getopts(socket, opts)
   defp setopts(:gen_tcp, socket, opts), do: :inet.setopts(socket, opts)
   defp setopts(:ssl, socket, opts), do: :ssl.setopts(socket, opts)
 
