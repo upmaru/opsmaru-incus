@@ -18,13 +18,19 @@ defmodule Opsmaru.Incus.InstancePatchTest do
       args: %{"name" => "guest"},
       path: "/1.0/instances/guest",
       body: @body,
+      # Every InstancePut field; restore mode (including disk_only) is a native rejection.
       populated: %{
+        "architecture" => "x86_64",
         "config" => %{"user.note" => "fixture"},
-        "devices" => %{"data" => %{"type" => "disk", "path" => "/data", "pool" => "fixture"}}
+        "devices" => %{"data" => %{"type" => "disk", "path" => "/data", "pool" => "fixture"}},
+        "ephemeral" => true,
+        "profiles" => ["default"],
+        "stateful" => true,
+        "description" => "populated"
       },
       null: %{"description" => nil, "config" => nil},
       invalid: %{"ephemeral" => "false"},
-      rejection: %{"restore" => "snap"},
+      rejection: %{"restore" => "snap", "disk_only" => true},
       extension: nil,
       accepted: false
     },

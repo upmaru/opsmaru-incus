@@ -104,6 +104,12 @@ Accepted operations SHALL remain distinguishable from completed operations. Wait
 - **THEN** seven asynchronous pairs preserve native acceptance and identity through direct finite `/wait` running/completed/failed snapshots, update/restore bodies and applicable preconditions remain faithful, native rejection and response-loss uncertainty never replay mutations, and synchronous operation cancellation retains authoritative permission/race semantics without claiming completion
 - **AND** a checked fixture scope records exactly the evidenced methods/cases while whole endpoints, declaration parity, broader variants and real-backend acceptance remain separate
 
+#### Scenario: Completed single-method mutation contracts
+
+- **WHEN** instance update/restore, state change, deletion, snapshot creation/deletion, image deletion or operation cancellation is submitted with any supported body field or action over Unix or mutual HTTPS
+- **THEN** the request and accepted identity agree with the pinned client, guarded fields require their extensions before dispatch, and native running/completed/failed/cancelled snapshots, ETag preconditions and native rejection hold without replay on lost or malformed replies
+- **AND** a reviewed completion record lists each completed row with its cases and evidence kinds, while cluster forwarding stays an approved exclusion and instance creation stays partial while its archive and migration contracts are open
+
 #### Scenario: Direct native operation wait evidence
 
 - **WHEN** either typed native wait method receives a gated response body after flushed headers over Unix or verified HTTPS
@@ -129,6 +135,12 @@ uncertain without replay or manufacturing an operation identity.
 
 - **WHEN** a ready authorized host supplies bounded partial configuration and If-Match
 - **THEN** one PATCH preserves field presence and native synchronous result, while unchanged RawQuery transport comparison and independent endpoint fixtures are recorded separately from real-daemon merge acceptance
+
+#### Scenario: Completed conditional instance PATCH
+
+- **WHEN** a host submits instance PATCH without a nonempty ETag
+- **THEN** it is rejected before I/O, as unconditional PATCH is an approved exclusion
+- **AND** the conditional contract's field presence, empty synchronous success, native and restore-mode rejection, uncertainty without replay and lifetime cleanup are recorded under a reviewed completion record
 
 ### Requirement: Bounded conditional resource partial updates
 

@@ -29,6 +29,38 @@ defmodule Opsmaru.Incus.MutationLifecycleTest do
     {"DeleteImage", %{"fingerprint" => "image /one"}, nil},
     {"DeleteOperation", %{"uuid" => @uuid}, nil}
   ]
+  @extensions ~w(instance_snapshot_disk_only_restore snapshot_expiry_creation)
+  # Every supported field and action beyond the lifecycle samples above.
+  @bodies [
+            {"UpdateInstance", %{"name" => "guest /one"},
+             %{
+               "architecture" => "x86_64",
+               "config" => %{"limits.cpu" => "2", "user.note" => "fixture"},
+               "devices" => %{"root" => %{"type" => "disk", "path" => "/", "pool" => "fixture"}},
+               "ephemeral" => true,
+               "profiles" => ["default", "fixture"],
+               "stateful" => true,
+               "description" => "populated"
+             }},
+            {"UpdateInstance", %{"name" => "guest /one"},
+             %{"restore" => "snapshot-a", "stateful" => true}},
+            {"UpdateInstance", %{"name" => "guest /one"},
+             %{"restore" => "snapshot-a", "disk_only" => true}}
+          ] ++
+            for(
+              action <- ~w(start stop restart freeze unfreeze),
+              do:
+                {"UpdateInstanceState", %{"name" => "guest /one"},
+                 %{"action" => action, "timeout" => 30, "force" => true, "stateful" => true}}
+            ) ++
+            [
+              {"CreateInstanceSnapshot", %{"instance_name" => "guest /one"},
+               %{
+                 "name" => "snapshot-b",
+                 "stateful" => true,
+                 "expires_at" => "2026-11-01T00:00:00Z"
+               }}
+            ]
   @methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
            |> Map.new(&{&1["name"], &1})
 
@@ -66,10 +98,52 @@ defmodule Opsmaru.Incus.MutationLifecycleTest do
 
       for {name, args, body} <- @flows do
         outcomes =
-          if name == "DeleteOperation", do: [:sync], else: [103, 200, 400, :bad_operation]
+          if name == "DeleteOperation", do: [:sync], else: [103, 200, 400, 401, :bad_operation]
 
         for outcome <- outcomes ++ [403, 404, 409, 412, :eof, :malformed],
             do: compare(root, identity, @methods[name], args, body, outcome)
+      end
+    end
+
+    test "#{transport} B01 every body field and action agrees with the pinned client", %{
+      root: root
+    } do
+      identity =
+        if unquote(transport) == :https, do: TLSIdentity.generate(root, "bodies", "localhost")
+
+      # Accepted, then completed and cancelled native /wait snapshots.
+      for {name, args, body} <- @bodies,
+          outcome <- [200, 401],
+          do: compare(root, identity, @methods[name], args, body, outcome, @extensions)
+    end
+
+    test "#{transport} B01 guarded fields require their extensions before dispatch", %{
+      root: root
+    } do
+      identity =
+        if unquote(transport) == :https, do: TLSIdentity.generate(root, "guards", "localhost")
+
+      for {name, args, body, extension} <- [
+            {"UpdateInstance", %{"name" => "guest /one"},
+             %{"restore" => "snapshot-a", "disk_only" => true},
+             "instance_snapshot_disk_only_restore"},
+            {"CreateInstanceSnapshot", %{"instance_name" => "guest /one"},
+             %{"name" => "snapshot-b", "expires_at" => "2026-11-01T00:00:00Z"},
+             "snapshot_expiry_creation"}
+          ] do
+        method = @methods[name]
+        fixture = backend(root, identity, fn _ -> flunk("guarded mutation was dispatched") end)
+        etag = if method["verb"] == "PUT", do: ["\"before\""], else: []
+        values = Enum.map(method["params"], &args[&1]) ++ [body] ++ etag
+        expected = oracle(root, fixture, identity, name, values)
+        assert expected["error"] =~ extension
+        opts = [body: body] ++ if(etag == [], do: [], else: [etag: hd(etag)])
+
+        assert {:error, %Error{kind: :unsupported_extension, extension: ^extension}} =
+                 Incus.call(client(fixture, identity), name, args, opts)
+
+        # Only the pinned client's server discovery reached the fixture.
+        assert [%{method: "GET", target: "/1.0"}] = HTTPFixture.requests(fixture)
       end
     end
 
@@ -130,13 +204,18 @@ defmodule Opsmaru.Incus.MutationLifecycleTest do
     end
   end
 
-  defp compare(root, identity, method, args, body, outcome) do
+  defp compare(root, identity, method, args, body, outcome, extensions \\ []) do
     fixture =
-      backend(root, identity, fn request ->
-        if String.ends_with?(URI.parse(request.target).path, "/wait"),
-          do: envelope(200, "sync", snapshot(outcome)),
-          else: mutation_reply(outcome)
-      end)
+      backend(
+        root,
+        identity,
+        fn request ->
+          if String.ends_with?(URI.parse(request.target).path, "/wait"),
+            do: envelope(200, "sync", snapshot(outcome)),
+            else: mutation_reply(outcome)
+        end,
+        extensions
+      )
 
     values =
       Enum.map(method["params"], &args[&1]) ++
@@ -144,7 +223,7 @@ defmodule Opsmaru.Incus.MutationLifecycleTest do
         if(method["verb"] == "PUT", do: ["\"before\""], else: [])
 
     expected = oracle(root, fixture, identity, method["name"], values)
-    client = client(fixture, identity)
+    client = client(fixture, identity, extensions)
 
     opts =
       if body,
@@ -231,7 +310,7 @@ defmodule Opsmaru.Incus.MutationLifecycleTest do
     current = %{operation | response: reply}
     assert Operation.completed?(current) == (outcome != 103)
     assert Operation.successful?(current) == (outcome == 200)
-    assert reply.metadata.data["err"] == if(outcome == 400, do: "fixture failure", else: "")
+    assert reply.metadata.data["err"] == snapshot(outcome)["err"]
 
     for kind <- [:deadline, :canceled] do
       context = RequestContext.new!(timeout: 30_000)
@@ -298,13 +377,14 @@ defmodule Opsmaru.Incus.MutationLifecycleTest do
     do: %{
       "id" => @uuid,
       "status_code" => code,
-      "status" => %{103 => "Running", 200 => "Success", 400 => "Failure"}[code],
-      "err" => if(code == 400, do: "fixture failure", else: ""),
+      "status" =>
+        %{103 => "Running", 200 => "Success", 400 => "Failure", 401 => "Cancelled"}[code],
+      "err" => %{400 => "fixture failure", 401 => "operation canceled"}[code] || "",
       "may_cancel" => may_cancel,
       "metadata" => %{"fixture" => "retained"}
     }
 
-  defp backend(root, identity, handler) do
+  defp backend(root, identity, handler, extensions \\ []) do
     options =
       if identity,
         do: [
@@ -329,7 +409,11 @@ defmodule Opsmaru.Incus.MutationLifecycleTest do
            handler: fn request ->
              if URI.parse(request.target).path == "/1.0",
                do:
-                 envelope(200, "sync", %{api_version: "1.0", api_extensions: [], environment: %{}}),
+                 envelope(200, "sync", %{
+                   api_version: "1.0",
+                   api_extensions: extensions,
+                   environment: %{}
+                 }),
                else: handler.(request)
            end
          ]},
@@ -337,7 +421,7 @@ defmodule Opsmaru.Incus.MutationLifecycleTest do
     )
   end
 
-  defp client(fixture, identity) do
+  defp client(fixture, identity, extensions \\ []) do
     endpoint = HTTPFixture.endpoint(fixture)
     opts = [owner: :fixture, project: "fixture scope", member: "member/a", timeout: 30_000]
 
@@ -360,7 +444,7 @@ defmodule Opsmaru.Incus.MutationLifecycleTest do
     %Incus{
       connection: connection,
       context: Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end),
-      server: %Server{api_extensions: []}
+      server: %Server{api_extensions: extensions}
     }
   end
 
