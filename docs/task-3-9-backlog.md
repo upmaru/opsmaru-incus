@@ -99,7 +99,7 @@ estimates of lines or commits. Split a batch into bounded slices before coding.
 | Batch | Assigned documented pairs | Exit |
 | --- | ---: | --- |
 | B01: Initial mutation lifecycle | 8 | Seven single-method rows are **complete** under reviewed `b01_*` records: every body field/action, extension guards before dispatch, running/completed/failed/cancelled snapshots, ETags, native rejection and no replay on both transports; cluster forwarding is an approved exclusion. `POST /1.0/instances` stays partial while S06/S10 are open. |
-| B02: Initial inspection certification | 20 | All 20 initial inspection contracts now have bounded Unix/mutual-HTTPS evidence: nineteen named catalogue reads and connect/2 discovery. Core instance/snapshot/image/operation fields and grouped results, native rejection, applicable ETags, routing and byte/readiness/lifetime cleanup are checked. Extra selectors/types/fields/errors remain open; no whole-endpoint completion. |
+| B02: Initial inspection certification | 20 | Ten rows are **complete** under reviewed `b02_*` read records with every mapped method (discovery, images, image, instances, instance, snapshots, snapshot, state, operations, operation). Names-only filter/all-projects, `?public` views and cluster forwarding are approved exclusions. Projects, profiles, networks and storage follow in PR 2. |
 | B03: Exec and operation channel/wait scope | 4 | Native wait (`b03_native_wait_v1`) and events with S03 (`b03_events_v1`) are complete; `?public`, arbitrary/empty wait secrets and cluster forwarding are approved exclusions (2026-10-19). Exec with S01 (`b03_exec_v1`) is complete; recorded-output retrieval, cluster forwarding, arbitrary producers and tool capture policy are approved exclusions (2026-10-19). The operation WebSocket row stays partial while S02/S10 are open. Recorded output belongs to B07. |
 | B04: Instance PATCH contract certification | 1 | **Complete** (`b04_instance_patch_v1`): conditional InstancePut with caller ETag; unconditional PATCH and cluster forwarding are approved exclusions (2026-10-19). Daemon merge acceptance stays separate. |
 | B05: Conditional PATCH and remaining PATCH contracts | 24 | Four conditional methods are implemented with bounded fixture evidence and remain partial; 20 other pairs still need typed PATCH implementation. Certify the four scopes and remaining native behavior or obtain explicit exclusions. PUT/raw-query success cannot close these rows. |
@@ -160,7 +160,7 @@ No exhaustive cross-product of every possible field/error is required.
 - [x] Preserve the ten fixture-verified inspection scopes and existing bounded slices.
 - [ ] Finish B01–B12: implement/verify the required contracts or record explicit approvals.
 - [ ] Finish S01–S12 certification within the existing approved host/protocol boundaries.
-- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. Eleven rows (three B03, seven B01, B04) plus S01/S03 are complete.
+- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. Twenty-one rows (three B03, seven B01, B04 and ten B02) plus S01/S03 are complete.
 - [ ] Independently review and pass canonical/reference/platform/immutable-consumer checks for closing slices.
 
 Installed OCI/delta converters, explicitly opted-in isolated real-Incus acceptance

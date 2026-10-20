@@ -5,12 +5,14 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
 
   @names ~w(GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume GetInstances GetInstance GetInstanceState GetInstanceSnapshots GetInstanceSnapshot GetImages GetImage GetOperations GetOperation)
+  # B02 PR 1: every other method mapped to the instance, image and operation rows.
+  @b02 ~w(GetImageFingerprints GetImagesWithFilter GetImagesAllProjects GetImagesAllProjectsWithFilter GetPrivateImage GetInstanceNames GetInstanceNamesAllProjects GetInstancesWithFilter GetInstancesAllProjects GetInstancesAllProjectsWithFilter GetInstancesFull GetInstancesFullWithFilter GetInstancesFullAllProjects GetInstancesFullAllProjectsWithFilter GetInstanceFull GetInstanceSnapshotNames GetOperationUUIDs GetOperationsAllProjects)
   @methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
-           |> Enum.filter(&(&1["name"] in @names))
+           |> Enum.filter(&(&1["name"] in (@names ++ @b02)))
   # Discovery is a public helper, not a named Go GetServer DTO comparison.
   @discovery %{"name" => "connect", "params" => [], "result" => "discovery", "model" => "Server"}
   @contracts @methods ++ [@discovery]
-  @extensions ~w(projects network storage)
+  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects)
   @driver Path.expand("../.integration/inspection-driver", __DIR__)
 
   setup_all do
@@ -22,7 +24,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 19
+    assert length(@methods) == 37
     :ok
   end
 
@@ -48,6 +50,9 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       if method == @discovery do
         for outcome <- [:missing, :version], do: compare(root, identity, method, outcome)
       end
+
+      # The daemon groups operation URLs by status; a flat list stays accepted too.
+      if method["name"] == "GetOperationUUIDs", do: compare(root, identity, method, :flat)
 
       bounds(root, identity, method)
       for mode <- [:deadline, :cancel], do: lifetime(root, identity, method, mode)
@@ -181,7 +186,12 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     assert local.method == "GET"
     assert WireComparison.request(local) == WireComparison.request(native)
     query = URI.decode_query(URI.parse(local.target).query)
-    assert query["project"] == "fixture scope" and query["target"] == "member/a"
+    assert query["target"] == "member/a"
+
+    # all-projects suppresses the connection project, as in the pinned client.
+    if method["query"]["all-projects"],
+      do: assert(query["all-projects"] == "true" and not Map.has_key?(query, "project")),
+      else: assert(query["project"] == "fixture scope")
 
     assert_result(actual, expected, client, method, outcome)
   end
@@ -208,35 +218,52 @@ defmodule Opsmaru.Incus.InspectionContractTest do
         assert expected["error"]
         assert {:error, %Error{kind: :invalid_model}} = actual
 
+      method["result"] in ["names", "project_names"] ->
+        names_result(actual, expected, client, method, outcome)
+
       true ->
-        refute expected["error"], inspect(expected)
-        assert {:ok, reply} = actual
-        assert reply.connection == client.connection and reply.identity == :verified
-        assert reply.etag == "\"read-etag\""
-        if method["result"] == "model", do: assert(reply.etag == Enum.at(expected["outputs"], 1))
-        payload = flatten(method, metadata(method, outcome))
+        model_result(actual, expected, client, method, outcome)
+    end
+  end
 
-        decoded =
-          if method["result"] in ["list", "grouped_list"],
-            do: reply.metadata |> Enum.map(& &1.data) |> ordered(method),
-            else: reply.metadata.data
+  defp names_result(actual, expected, client, method, outcome) do
+    assert {:ok, reply} = actual
+    assert reply.connection == client.connection and reply.identity == :verified
+    assert reply.metadata == names(method, outcome)
 
-        assert decoded == payload
-        # The native typed DTO drops unknown fields; lossless retention is independent evidence.
-        known = fn data -> Map.delete(data, "future_field") end
+    # Approved difference: the pinned client cannot decode the daemon's grouped map.
+    if method["name"] == "GetOperationUUIDs" and outcome == :populated,
+      do: assert(expected["error"]),
+      else: assert(hd(expected["outputs"]) == reply.metadata)
+  end
 
-        if method["result"] in ["list", "grouped_list"] do
-          native = ordered(hd(expected["outputs"]), method)
+  defp model_result(actual, expected, client, method, outcome) do
+    refute expected["error"], inspect(expected)
+    assert {:ok, reply} = actual
+    assert reply.connection == client.connection and reply.identity == :verified
+    assert reply.etag == "\"read-etag\""
+    if method["result"] == "model", do: assert(reply.etag == Enum.at(expected["outputs"], 1))
+    payload = flatten(method, metadata(method, outcome))
+    listed? = method["result"] in ["list", "grouped_list"]
 
-          assert Enum.zip(native, payload)
-                 |> Enum.all?(fn {native, data} ->
-                   Map.take(native, Map.keys(known.(data))) == known.(data)
-                 end)
+    decoded =
+      if listed?,
+        do: reply.metadata |> Enum.map(& &1.data) |> ordered(method),
+        else: reply.metadata.data
 
-          assert length(hd(expected["outputs"])) == length(payload)
-        else
-          assert Map.take(hd(expected["outputs"]), Map.keys(known.(payload))) == known.(payload)
-        end
+    assert decoded == payload
+    # The native typed DTO drops unknown fields; lossless retention is independent evidence.
+    known = fn data -> Map.delete(data, "future_field") end
+
+    if listed? do
+      native = ordered(hd(expected["outputs"]), method)
+
+      assert Enum.zip(native, payload)
+             |> Enum.all?(fn {native, data} -> sent?(native, known.(data)) end)
+
+      assert length(hd(expected["outputs"])) == length(payload)
+    else
+      assert sent?(hd(expected["outputs"]), known.(payload))
     end
   end
 
@@ -329,8 +356,42 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   defp metadata(@discovery, :missing), do: %{}
   defp metadata(@discovery, :empty), do: %{"api_version" => "1.0", "api_extensions" => []}
   defp metadata(@discovery, :version), do: %{sample("Server") | "api_version" => "2.0"}
-  defp metadata(%{"result" => "list"}, :empty), do: []
+
+  defp metadata(%{"result" => result}, :empty) when result in ~w(list names project_names),
+    do: []
+
+  defp metadata(%{"name" => "GetOperationUUIDs"}, :empty), do: %{}
   defp metadata(_, :empty), do: %{}
+
+  defp metadata(%{"result" => "names"} = method, outcome) do
+    prefix =
+      String.replace(method["path"], ~r/\{[^}]+\}/, &("fixture-" <> String.slice(&1, 1..-2//1)))
+
+    prefix = URI.encode(prefix)
+
+    cond do
+      outcome == :corrupt ->
+        ["/1.0/unrelated/fixture"]
+
+      method["name"] == "GetOperationUUIDs" and outcome == :populated ->
+        %{"running" => [prefix <> "/running"], "success" => [prefix <> "/finished"]}
+
+      method["name"] == "GetOperationUUIDs" ->
+        [prefix <> "/running", prefix <> "/finished"]
+
+      true ->
+        [prefix <> "/fixture", prefix <> "/second%20one"]
+    end
+  end
+
+  defp metadata(%{"result" => "project_names"}, :corrupt), do: [%{"name" => 1}]
+
+  defp metadata(%{"result" => "project_names"}, _),
+    do: [
+      %{"name" => "fixture", "project" => "default"},
+      %{"name" => "second", "project" => "fixture scope"},
+      %{"name" => "third", "project" => "fixture scope"}
+    ]
 
   defp metadata(method, outcome) do
     data = if outcome == :corrupt, do: corrupt(method["model"]), else: sample(method["model"])
@@ -349,6 +410,28 @@ defmodule Opsmaru.Incus.InspectionContractTest do
         data
     end
   end
+
+  # Decoded names for each fixture shape (grouped operation URLs flatten by status).
+  defp names(%{"result" => "project_names"}, :empty), do: %{}
+  defp names(_, :empty), do: []
+
+  defp names(%{"result" => "project_names"}, _),
+    do: %{"default" => ["fixture"], "fixture scope" => ["second", "third"]}
+
+  defp names(%{"name" => "GetOperationUUIDs"}, _), do: ["running", "finished"]
+  defp names(_, _), do: ["fixture", "second one"]
+
+  # Every field the fixture sent survives in the native DTO at every depth; the
+  # DTO may add zero-valued fields the fixture omitted.
+  defp sent?(native, sent) when is_map(sent),
+    do: is_map(native) and Enum.all?(sent, fn {key, value} -> sent?(native[key], value) end)
+
+  defp sent?(native, sent) when is_list(sent),
+    do:
+      is_list(native) and length(native) == length(sent) and
+        Enum.all?(Enum.zip(native, sent), fn {n, v} -> sent?(n, v) end)
+
+  defp sent?(native, sent), do: native == sent
 
   defp flatten(%{"result" => "grouped_list"} = method, groups),
     do: groups |> Map.values() |> List.flatten() |> ordered(method)
@@ -413,6 +496,14 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       "future_field" => %{}
     }
 
+  defp sample("InstanceFull"),
+    do:
+      Map.merge(sample("Instance"), %{
+        "state" => Map.delete(sample("InstanceState"), "future_field"),
+        "snapshots" => [Map.delete(sample("InstanceSnapshot"), "future_field")],
+        "backups" => []
+      })
+
   defp sample(model) when model in ["Instance", "InstanceSnapshot"] do
     base = %{
       "name" => "fixture",
@@ -469,6 +560,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
          case &1 do
            "volType" -> "custom"
            "instance_type" -> "container"
+           "filters" -> ["name=fixture", "status=Running"]
            key -> "fixture-" <> key
          end}
       )

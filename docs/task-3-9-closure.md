@@ -61,7 +61,7 @@ entire endpoint, protocol or Go declaration is complete. The audit changed no su
   ubuntu-24.04 and macos-15, first attempt: CI run 38691372898.
 
 These are completed behavior slices. The conditional PATCH behavior is fixture-verified; its broader endpoint scope
-remains partial. The checked manifest now has 37 pairs (26 partial, 11 complete) and 28 fixture-verified scoped
+remains partial. The checked manifest now has 37 pairs (16 partial, 21 complete) and 28 fixture-verified scoped
 contracts (nineteen inspection methods, one discovery helper and eight mutation lifecycle methods). The separate Go
 ledger still has 1239 partial / 41 missing declarations, `complete_port=false`.
 No percentage of task completion can be derived from either counter.
@@ -150,7 +150,7 @@ missing typed implementations, one equivalent POST route and one repair mismatch
   classification is complete, behavioral certification remains open. Preserve
   already fixture-verified scopes and do not infer completion from source links.
 - [ ] Add reviewed completion records for every remaining finite supported contract.
-  Eleven rows plus S01/S03 are complete; the operation WebSocket and instance
+  Twenty-one rows plus S01/S03 are complete; the operation WebSocket and instance
   creation rows stay partial while S02/S06/S10 are open. No Go declaration is promoted.
 
 ### The selected 37 pairs: verified scope and next closure obligation
@@ -163,16 +163,16 @@ additional scoped evidence, not a repetition of that baseline.
 | Selected pairs | Count | Additional behavior already evidenced | Remaining concrete closure obligation |
 | --- | ---: | --- | --- |
 | GET list/get projects, profiles, networks, storage pools and volumes | 10 | initial_inspection_v1: typed populated/empty/corrupt/403/404 results, routing, binding, byte/extension/lifetime bounds on Unix/mutual HTTPS | Only the named catalogue queries and tested DTO fields; custom volume samples. Other list selectors/types/fields/errors and backend/tool acceptance remain separate. |
-| GET server discovery | 1 | core_inspection_v1: populated/minimal valid metadata, RawQuery transport, required-field/version guards, 403/404 and scoped byte/readiness/lifetime cleanup on both transports | Broader discovery/auth fields and options remain open; no named-Go GetServer DTO parity. PUT/PATCH/root discovery are separate. |
-| GET instances, instance and state | 3 | core_inspection_v1: catalogue queries with container samples, populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Other recursion/filter/all-projects/instance-type/field/error/cluster variants remain open. |
+| GET server discovery | 1 | **Complete** (`b02_discovery_v1`) with every mapped method. core_inspection_v1: populated/minimal valid metadata, RawQuery transport, required-field/version guards, 403/404 and scoped byte/readiness/lifetime cleanup on both transports | Broader discovery/auth fields and options remain open; no named-Go GetServer DTO parity. PUT/PATCH/root discovery are separate. |
+| GET instances, instance and state | 3 | **Complete** (`b02_instances_v1`, `b02_instance_v1`, `b02_instance_state_v1`) with every mapped method. core_inspection_v1: catalogue queries with container samples, populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Other recursion/filter/all-projects/instance-type/field/error/cluster variants remain open. |
 | PATCH instance | 1 | **Complete** (`b04_instance_patch_v1`). Conditional typed InstancePut, explicit ETag, native empty sync result, Unix/mutual-HTTPS transport and independent failure/lifetime fixtures | Unconditional updates, full field/cluster behavior and real-daemon merge acceptance remain unverified. |
 | PATCH project/profile/image/instance snapshot | 4 | Explicit ETag, valid field presence, scoped routes, native 200 empty sync versus 202 snapshot acceptance, errors, uncertain response loss and lifetime cleanup on Unix/mutual HTTPS | Conditional subset only; B05 certification, unconditional variants, additional fields/cluster/rejections and real-daemon merge/expiry acceptance remain separate. |
 | POST instance; PUT instance/state; DELETE instance | 4 | PUT instance, PUT state and DELETE instance are **complete** (`b01_update_instance_v1`, `b01_update_instance_state_v1`, `b01_delete_instance_v1`); POST instance stays partial while S06/S10 are open. initial_mutation_lifecycle_v1: named-Go submission plus native /wait composition; populated update and restore bodies, applicable PUT ETags, running/success/failure, rejection, uncertainty/no replay and binding on both transports | Additional source/state/body/extension/error/cluster variants and real-daemon effects remain unverified. |
-| GET snapshots and snapshot | 2 | core_inspection_v1: catalogue list/get queries, populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Names/other recursion, stateful/expiry/field/error/cluster variants remain open. |
+| GET snapshots and snapshot | 2 | **Complete** (`b02_instance_snapshots_v1`, `b02_instance_snapshot_v1`) with every mapped method. core_inspection_v1: catalogue list/get queries, populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Names/other recursion, stateful/expiry/field/error/cluster variants remain open. |
 | POST/DELETE snapshot | 2 | **Complete** (`b01_create_instance_snapshot_v1`, `b01_delete_instance_snapshot_v1`). initial_mutation_lifecycle_v1: native acceptance/wait outcomes, rejection, response loss/no replay and binding on both transports; instance PUT separately verifies restore-body linkage | Additional snapshot fields/expiry/stateful/cluster/error behavior and real-daemon restore effects remain unverified. |
-| GET images and image | 2 | core_inspection_v1: catalogue list/get populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Public/private/filter/all-projects/recursion/field/error variants remain open; alias/export/token behavior is separate. |
+| GET images and image | 2 | **Complete** (`b02_images_v1`, `b02_image_v1`) with every mapped method. core_inspection_v1: catalogue list/get populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Public/private/filter/all-projects/recursion/field/error variants remain open; alias/export/token behavior is separate. |
 | DELETE image | 1 | **Complete** (`b01_delete_image_v1`). initial_mutation_lifecycle_v1: native acceptance/wait outcomes, rejection, response loss/no replay and binding on both transports | Further image/cluster/error cases and daemon effects remain unverified; no implicit file or alias deletion. |
-| GET operations and operation | 2 | core_inspection_v1: grouped list flattening and direct get with fixed populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports; separate poll/wait/event evidence | All-projects/other query/status/field/error/cluster variants remain open. No cross-group result ordering claim. |
+| GET operations and operation | 2 | **Complete** (`b02_operations_v1`, `b02_operation_v1`) with every mapped method. core_inspection_v1: grouped list flattening and direct get with fixed populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports; separate poll/wait/event evidence | All-projects/other query/status/field/error/cluster variants remain open. No cross-group result ordering claim. |
 | DELETE operation | 1 | **Complete** (`b01_cancel_operation_v1`). initial_mutation_lifecycle_v1: named-Go synchronous DELETE plus independent may_cancel denial, one DELETE, completion race, native rejection and lost-reply identity on both transports | Other cancellation states/errors/cluster behavior and daemon acceptance remain unverified. Acknowledgement is not proven cancellation completion or a new operation. |
 | GET native operation wait | 1 | **Complete** (`b03_native_wait_v1`): finite timeout queries, gated bodies, ETags, running/completed/failed/cancelled snapshots, 403/404, EOF and pre-header loss, local lifetime cleanup and preflight on Unix/mutual HTTPS | None within the record. Approved exclusions: `?public`, arbitrary/empty secrets (rejected before I/O) and cluster forwarding; timeout=-1 rejection is an approved difference. Real-daemon timeout behavior is separate acceptance. |
 | GET events | 1 | **Complete** (`b03_events_v1`, S03): named-Go type/all-projects/project/target upgrade targets, native 400/403/404, Event fields, listener/send matrix, inbound bounds, deadline/cancellation and peer closure on Unix/mutual HTTPS | None within the record. Approved exclusions: cluster forwarding and callback ordering. Real-daemon event streams are separate acceptance. |
@@ -1098,4 +1098,32 @@ unchanged.
 - Approved exclusions (2026-10-19): cluster forwarding for all eight rows, and
   unconditional PATCH (rejected before I/O). PATCH evidence remains RawQuery
   transport comparison, distinct from named-Go and daemon merge evidence.
+
+## B02 inspection completion (PR 1)
+
+Approved 2026-10-20. Ten B02 rows are complete under reviewed `read_contract`
+records: discovery, images, image, instances, instance, snapshots, snapshot,
+state, operations and operation. The other ten B02 rows (projects, profiles,
+networks and storage) follow in PR 2. Task 3.9, `complete_port` and every Go
+declaration status (1239 partial / 41 missing) are unchanged.
+
+- [x] All 27 methods mapped to these rows, not just the 9 core methods, are
+  compared with the named Go method over Unix and mutual HTTPS through the
+  data-driven inspection contract test: names, project-grouped names, list,
+  full (`InstanceFull`, recursion=2), filter and all-projects variants, and
+  `GetPrivateImage` with its secret. Each covers populated, empty and corrupt
+  results, native 403/404, routing and binding, declared extensions before
+  dispatch, response and readiness bounds, and deadline/cancellation cleanup.
+- [x] All-projects variants omit `project`, matching the pinned client. Nested
+  results are compared field by field at every depth, allowing only the
+  zero-valued fields the Go DTO adds.
+- [x] `GetOperationUUIDs` follows the daemon's status-grouped response, which the
+  pinned Go method cannot decode (approved difference, user decision 2026-10-21).
+  A flat list stays accepted and is compared with the pinned client.
+- [x] The validator adds the `read_contract` kind. Required cases now also derive
+  `extension_guards` from a method's top-level extension, `selectors` from
+  filter/all-projects/instance-type queries, and discovery guards from the
+  `connect` helper. Negative tests cover each.
+- Approved exclusions (2026-10-20): names-only filter/all-projects selectors,
+  the `?public` views and cluster forwarding.
 

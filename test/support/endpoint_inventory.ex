@@ -14,6 +14,8 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
       ~w(request routing binding native_403 native_404 malformed_reply authoritative_inspection may_cancel_denied single_delete completion_race lost_reply_identity),
     "conditional_patch" =>
       ~w(request field_presence empty_sync routing native_400 native_403 native_404 native_412 restore_rejection response_loss_no_replay deadline cancellation preflight unconditional_rejection),
+    "read_contract" =>
+      ~w(request populated empty corrupt native_403 native_404 routing binding response_bound readiness deadline cancellation),
     "live_exec" =>
       ~w(collected non_waiting interactive record_output user_group_cwd_size empty_output routing upgrade_targets extension_guards control_frames control_range native_400 native_403 native_404 accepted_identity response_loss_no_replay stream_negotiation invalid_stream_metadata pending_status missing_channels redaction preflight stdin_chunking blocked_stdin deadline cancellation owner_loss sink_limit running_failed close_barrier_abrupt peer_closure)
   }
@@ -351,21 +353,34 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
   end
 
   # Kinds name the base cases; the catalogue adds what each listed method declares:
-  # a body needs body_fields, guarded fields need extension_guards, and a PUT or
-  # conditional method needs its ETag precondition.
+  # a body needs body_fields, a declared or field-guarded extension needs
+  # extension_guards, a PUT or conditional method needs its ETag precondition, and
+  # filter/all-projects/instance-type queries need selectors.
   defp required_cases(record, catalogue) do
-    methods = Enum.map(record["methods"], &catalogue[&1])
+    # Unknown methods fail the separate stale-method check, not this derivation.
+    methods = Enum.flat_map(record["methods"], &List.wrap(catalogue[&1]))
 
     derived =
       for {case, needed?} <- [
             {"body_fields", &(&1["body"] != nil)},
-            {"extension_guards", &Enum.any?(&1["guards"], fn guard -> guard["extension"] end)},
-            {"etag", &(&1["verb"] == "PUT" or conditional?(&1))}
+            {"extension_guards",
+             &(&1["extension"] not in [nil, []] or
+                 Enum.any?(&1["guards"], fn guard -> guard["extension"] end))},
+            {"etag", &(&1["verb"] == "PUT" or conditional?(&1))},
+            {"selectors",
+             &(Map.keys(&1["query"]) -- ["filter", "all-projects", "instance-type"] !=
+                 Map.keys(&1["query"]))}
           ],
           Enum.any?(methods, needed?),
           do: case
 
-    Enum.uniq(@record_cases[record["kind"]] ++ derived)
+    # Server discovery also proves its required-field and version guards.
+    discovery =
+      if "connect" in record["helpers"],
+        do: ~w(discovery_required_fields discovery_version),
+        else: []
+
+    Enum.uniq(@record_cases[record["kind"]] ++ derived ++ discovery)
   end
 
   # Mirrors the client: explicit conditional descriptors and empty-sync PATCH require an ETag.

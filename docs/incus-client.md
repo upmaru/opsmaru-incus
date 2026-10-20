@@ -321,9 +321,10 @@ separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
 pairs plus 46 query/access variants; 37 pairs are currently in the checked evidence
-manifest. Eleven are complete under reviewed completion records: native wait,
-events, exec, seven single-method B01 mutations and conditional instance PATCH.
-The other 26 are partial. It retains remaining copy/stream/model/helper scope without
+manifest. Twenty-one are complete under reviewed completion records: native
+wait, events, exec, seven single-method B01 mutations, conditional instance PATCH
+and ten B02 inspection rows (discovery, instances, snapshots, state, images and
+operations). The other 16 are partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
@@ -523,6 +524,11 @@ snapshot and preserves errors/ETags/identity. `wait_with_context/3` limits local
 waiting, including long poll sleeps, and retains the last native snapshot after
 cancellation. The original handle remains available for reconciliation. This
 implements the approved no-backend-cancellation exception to native WaitContext.
+
+`GetOperationUUIDs` follows the daemon: without recursion the daemon groups
+operation URLs by status, which the pinned Go method cannot decode. The client
+flattens that map (and still accepts a flat list), so the call works against a
+real daemon; this is a recorded approved difference.
 
 The typed native long-poll methods `GetOperationWait` and `GetOperationWaitSecret`
 (`Incus.call/4`) are separate from polling. `timeout` must be an integer in
