@@ -129,6 +129,58 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: B02 inspection completion (2026-10-20)
+
+Complete all 20 B02 rows under reviewed completion records. They map 59 catalogue
+methods plus `connect/2` discovery; 19 methods and discovery already have
+`initial_inspection_v1` / `core_inspection_v1` evidence on Unix and verified
+mutual HTTPS. Certify the remaining 40 methods by extending the data-driven
+inspection contract test, and keep the existing scopes.
+
+User-approved exclusions (2026-10-20):
+
+- Names-only views (no recursion) document `filter` and `all-projects`, but the
+  pinned client has no names method that sends them (14 obligations across the
+  image, instance, network, operation, profile, project, storage pool and volume
+  lists). Filtering and all-projects are certified on the recursion=1/2 methods;
+  names-only views do not offer them, matching the pinned client.
+- The `?public` documentation views (`GET /1.0`, the image list, the recursive
+  image list and a single image). The client always uses a verified-identity
+  connection; `GetPrivateImage` with a secret stays certified over it.
+- Cluster forwarding beyond host project/target routing.
+
+Record kind `read_contract`. Required cases: named-Go request and result,
+populated, empty, corrupt result rejection, native 403 and 404, routing and
+binding, response bound, readiness, deadline and cancellation with peer cleanup.
+The catalogue-derived rules add `extension_guards` for every method that
+declares an extension (rejected before dispatch), and `selectors` where a
+supported view has `filter`, `all-projects` or `instance-type`. Discovery
+(`GET /1.0`) uses its existing RawQuery-transport and required-field/version
+evidence, and keeps no named Go `GetServer` DTO parity claim.
+
+Evidence to add, parameterized over both transports:
+
+- Result kinds not yet covered: names lists, project-grouped names
+  (`GetInstanceNamesAllProjects`) and project URLs
+  (`GetStoragePoolVolumeNamesAllProjects`), compared with the pinned client.
+- Arguments: `filters` encoding for every `WithFilter` method, `instance-type`
+  for instance lists, and the image `secret` for `GetPrivateImage`.
+- Full models (`InstanceFull`, `StorageVolumeFull`) with populated and empty
+  samples, and the recursion=2 instance and volume variants.
+- Every declared extension (`api_filtering`, `instance_all_projects`,
+  `container_full`, `instance_get_full`, `images_all_projects`,
+  `networks_all_projects`, `profiles_all_projects`,
+  `operations_get_query_all_projects`, `storage_volume_full`,
+  `storage_volumes_all_projects`) rejected before dispatch.
+
+Delivery: PR 1 completes instances, instance, snapshots, snapshot, state,
+images, image, operations, operation and discovery (10 rows). PR 2 completes
+projects, project, profiles, profile, networks, network, storage pools, pool,
+volumes and volume (10 rows). Each PR updates the ledgers, closure ledger,
+backlog, client docs and generated coverage, reuses the existing fixtures and
+inspection driver, and stops if new transport infrastructure is needed. Task
+3.9, `complete_port` and every Go declaration status are unchanged.
+
 #### Approved slice: B01 mutation and B04 instance PATCH completion (2026-10-19)
 
 Complete eight single-method rows under reviewed completion records, reusing

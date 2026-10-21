@@ -58,6 +58,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **AND** premature EOF remains a response failure, with deterministic Unix/mutual-HTTPS regression evidence that does not relax deadlines or accepted error kinds
 - **AND** evidence validation parses each referenced source once per invocation while retaining row-specific anchors, fresh source reads across invocations and the full negative-case matrix
 
+#### Scenario: Completed inspection contracts
+
+- **WHEN** any names, list, full, filtered, all-projects or single-object inspection method of a B02 row, or connect/2 discovery, is called over Unix or mutual HTTPS
+- **THEN** request and populated/empty results agree with the pinned client, corrupt results and native 403/404 are rejected faithfully, declared extensions are required before dispatch, and response bounds, readiness, deadline and cancellation clean up the peer
+- **AND** each completed row has a reviewed completion record, while names-only filter/all-projects selectors, public views and cluster forwarding are recorded approved exclusions
+
 #### Scenario: Remaining initial inspection contracts
 
 - **WHEN** the nine B02 typed reads and explicit server discovery have scoped Unix/mutual-HTTPS fixture evidence

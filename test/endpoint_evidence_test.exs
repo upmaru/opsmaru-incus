@@ -139,8 +139,8 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
-             "partial" => 26,
-             "complete" => 11
+             "partial" => 16,
+             "complete" => 21
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -287,7 +287,17 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"DELETE /1.0/instances/{}", "b01_delete_instance_v1"},
              {"DELETE /1.0/instances/{}/snapshots/{}", "b01_delete_instance_snapshot_v1"},
              {"DELETE /1.0/operations/{}", "b01_cancel_operation_v1"},
+             {"GET /1.0", "b02_discovery_v1"},
              {"GET /1.0/events", "b03_events_v1"},
+             {"GET /1.0/images", "b02_images_v1"},
+             {"GET /1.0/images/{}", "b02_image_v1"},
+             {"GET /1.0/instances", "b02_instances_v1"},
+             {"GET /1.0/instances/{}", "b02_instance_v1"},
+             {"GET /1.0/instances/{}/snapshots", "b02_instance_snapshots_v1"},
+             {"GET /1.0/instances/{}/snapshots/{}", "b02_instance_snapshot_v1"},
+             {"GET /1.0/instances/{}/state", "b02_instance_state_v1"},
+             {"GET /1.0/operations", "b02_operations_v1"},
+             {"GET /1.0/operations/{}", "b02_operation_v1"},
              {"GET /1.0/operations/{}/wait", "b03_native_wait_v1"},
              {"PATCH /1.0/instances/{}", "b04_instance_patch_v1"},
              {"POST /1.0/instances/{}/exec", "b03_exec_v1"},
@@ -305,6 +315,9 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     delete = ["completion_records", "b01_delete_image_v1"]
     cancel = ["completion_records", "b01_cancel_operation_v1"]
     patch = ["completion_records", "b04_instance_patch_v1"]
+    instances = ["completion_records", "b02_instances_v1"]
+    images = ["completion_records", "b02_images_v1"]
+    discovery = ["completion_records", "b02_discovery_v1"]
     events = ["completion_records", "b03_events_v1"]
     socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
     head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
@@ -382,6 +395,18 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
           {put_in(audit, patch ++ ["excluded_scope"], [%{"scope" => "unconditional PATCH"}]),
            "unapproved exclusion"},
           {put_in(audit, cancel ++ ["kind"], "async_mutation"), "missing completion case"},
+          {update_in(audit, instances ++ ["cases"], &Map.delete(&1, "selectors")),
+           "missing completion case"},
+          {update_in(audit, images ++ ["cases"], &Map.delete(&1, "extension_guards")),
+           "missing completion case"},
+          {update_in(audit, discovery ++ ["cases"], &Map.delete(&1, "discovery_version")),
+           "missing completion case"},
+          {put_in(audit, images ++ ["excluded_views", "GET /1.0/images?public", "approved"], nil),
+           "unapproved exclusion"},
+          {update_in(audit, instances ++ ["selectors"], &Map.delete(&1, "filter")),
+           "unclassified completion selector"},
+          {update_in(audit, instances ++ ["methods"], &List.delete(&1, "GetInstancesFull")),
+           "stale completion methods"},
           {%{audit | "behavior_complete" => true}, ""},
           {%{audit | "complete_port" => true}, ""}
         ] do
@@ -434,13 +459,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
 
     # Selected rows cannot drop or claim completion independently of the full ledger.
-    for {pair, status} <- [
-          {"/1.0/operations/{id}/wait", "partial"},
-          {"/1.0/instances", "complete"}
+    for {verb, pair, status} <- [
+          {"GET", "/1.0/operations/{id}/wait", "partial"},
+          {"POST", "/1.0/instances", "complete"}
         ] do
       entries =
         Enum.map(@manifest["entries"], fn row ->
-          if row["path"] == pair and row["verb"] == "GET",
+          if row["path"] == pair and row["verb"] == verb,
             do: %{row | "status" => status},
             else: row
         end)
@@ -575,7 +600,8 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
           {Map.put(second, "variants", ["GetImage"]), "method/endpoint mismatch"},
           {%{second | "clients" => ["absent"]}, "missing client link"},
           {%{second | "evidence" => ["absent"]}, "missing evidence link"},
-          {%{second | "status" => "complete"}, "unsupported completion claim"},
+          {Map.delete(%{second | "status" => "complete"}, "completion_record"),
+           "unsupported completion claim"},
           {%{second | "gaps" => []}, "missing gaps"},
           {%{second | "path" => "/1.0/not-a-route"}, "missing native endpoint"}
         ] do
