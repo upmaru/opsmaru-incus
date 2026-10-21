@@ -54,6 +54,11 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       # The daemon groups operation URLs by status; a flat list stays accepted too.
       if method["name"] == "GetOperationUUIDs", do: compare(root, identity, method, :flat)
 
+      if method["result"] == "names" do
+        malformed = if method["name"] == "GetOperationUUIDs", do: :nested, else: :grouped
+        compare(root, identity, method, malformed)
+      end
+
       bounds(root, identity, method)
       for mode <- [:deadline, :cancel], do: lifetime(root, identity, method, mode)
     end
@@ -214,7 +219,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       method == @discovery ->
         discovery_result(actual, expected, client, outcome)
 
-      outcome == :corrupt ->
+      outcome in [:corrupt, :grouped, :nested] ->
         assert expected["error"]
         assert {:error, %Error{kind: :invalid_model}} = actual
 
@@ -232,7 +237,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     assert reply.metadata == names(method, outcome)
 
     # Approved difference: the pinned client cannot decode the daemon's grouped map.
-    if method["name"] == "GetOperationUUIDs" and outcome == :populated,
+    if method["name"] == "GetOperationUUIDs" and outcome in [:populated, :empty],
       do: assert(expected["error"]),
       else: assert(hd(expected["outputs"]) == reply.metadata)
   end
@@ -357,10 +362,12 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   defp metadata(@discovery, :empty), do: %{"api_version" => "1.0", "api_extensions" => []}
   defp metadata(@discovery, :version), do: %{sample("Server") | "api_version" => "2.0"}
 
+  # The daemon groups operation URLs by status, so its empty answer is an empty map.
+  defp metadata(%{"name" => "GetOperationUUIDs"}, :empty), do: %{}
+
   defp metadata(%{"result" => result}, :empty) when result in ~w(list names project_names),
     do: []
 
-  defp metadata(%{"name" => "GetOperationUUIDs"}, :empty), do: %{}
   defp metadata(_, :empty), do: %{}
 
   defp metadata(%{"result" => "names"} = method, outcome) do
@@ -372,6 +379,13 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     cond do
       outcome == :corrupt ->
         ["/1.0/unrelated/fixture"]
+
+      # Only operation UUIDs are grouped; other names reject a map or nested groups.
+      outcome == :grouped ->
+        %{"running" => [prefix <> "/fixture"]}
+
+      outcome == :nested ->
+        %{"running" => [[prefix <> "/running"]]}
 
       method["name"] == "GetOperationUUIDs" and outcome == :populated ->
         %{"running" => [prefix <> "/running"], "success" => [prefix <> "/finished"]}

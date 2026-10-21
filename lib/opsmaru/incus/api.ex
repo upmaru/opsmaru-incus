@@ -313,10 +313,12 @@ defmodule Opsmaru.Incus.API do
 
   # The daemon groups operation URLs by status even without recursion; the pinned
   # Go GetOperationUUIDs expects a flat list. Follow the daemon (approved difference).
-  defp decode(%{"result" => "names"} = method, %{metadata: groups} = response, path)
+  defp decode(%{"name" => "GetOperationUUIDs"} = method, %{metadata: groups} = response, path)
        when is_map(groups) and not is_struct(groups) do
-    if Enum.all?(Map.values(groups), &is_list/1),
-      do: decode(method, %{response | metadata: groups |> Map.values() |> List.flatten()}, path),
+    urls = Map.values(groups)
+
+    if Enum.all?(urls, fn group -> is_list(group) and Enum.all?(group, &is_binary/1) end),
+      do: decode(method, %{response | metadata: Enum.concat(urls)}, path),
       else: {:error, :invalid_model}
   end
 
