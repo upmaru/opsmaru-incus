@@ -150,12 +150,28 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     if method["verb"] == "PUT", do: Keyword.put(opts, :etag, @etag), else: opts
   end
 
-  # The pinned client's decoded body, so both sides send the same typed value.
+  # The pinned client's decoded body, so both sides send the same typed value. Every
+  # generated field must survive Go's decoding at every depth, so a field the DTO
+  # drops cannot silently shrink the every-field coverage.
+  defp normalized(_expected, %{"body" => nil}, _body), do: nil
+
   defp normalized(expected, method, body) do
-    if method["body"],
-      do: Enum.at(expected["normalized_args"], length(method["params"])) || body,
-      else: nil
+    decoded = Enum.at(expected["normalized_args"], length(method["params"]))
+    assert decoded, "pinned client returned no normalized body"
+    assert sent?(decoded, body), "pinned DTO dropped or changed a generated field"
+    decoded
   end
+
+  # The decoded value keeps every sent field and value; Go may add zero-valued fields.
+  defp sent?(decoded, sent) when is_map(sent),
+    do: is_map(decoded) and Enum.all?(sent, fn {key, value} -> sent?(decoded[key], value) end)
+
+  defp sent?(decoded, sent) when is_list(sent),
+    do:
+      is_list(decoded) and length(decoded) == length(sent) and
+        Enum.all?(Enum.zip(decoded, sent), fn {d, v} -> sent?(d, v) end)
+
+  defp sent?(decoded, sent), do: decoded == sent
 
   defp body(%{"body" => nil}), do: nil
 
