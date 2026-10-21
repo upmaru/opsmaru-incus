@@ -61,7 +61,7 @@ entire endpoint, protocol or Go declaration is complete. The audit changed no su
   ubuntu-24.04 and macos-15, first attempt: CI run 38691372898.
 
 These are completed behavior slices. The conditional PATCH behavior is fixture-verified; its broader endpoint scope
-remains partial. The checked manifest now has 57 pairs (6 partial, 51 complete) and 28 fixture-verified scoped
+remains partial. The checked manifest now has 88 pairs (6 partial, 82 complete) and 28 fixture-verified scoped
 contracts (nineteen inspection methods, one discovery helper and eight mutation lifecycle methods). The separate Go
 ledger still has 1239 partial / 41 missing declarations, `complete_port=false`.
 No percentage of task completion can be derived from either counter.
@@ -150,10 +150,10 @@ missing typed implementations, one equivalent POST route and one repair mismatch
   classification is complete, behavioral certification remains open. Preserve
   already fixture-verified scopes and do not infer completion from source links.
 - [ ] Add reviewed completion records for every remaining finite supported contract.
-  Fifty-one rows plus S01/S03 are complete; the operation WebSocket and instance
+  Eighty-two rows plus S01/S03 are complete; the operation WebSocket and instance
   creation rows stay partial while S02/S06/S10 are open. No Go declaration is promoted.
 
-### The selected 57 pairs: verified scope and next closure obligation
+### The selected 88 pairs: verified scope and next closure obligation
 
 `resource_slice_test.exs` provides the shared **Unix** official typed-method
 request/result, project/member, extension and native-error baseline. Shared TLS
@@ -1175,4 +1175,28 @@ declaration status (1239 partial / 41 missing) are unchanged.
 - Approved exclusions (2026-10-21): `filter`/`all-projects` selectors the pinned
   client does not send (names-only views, and recursion views without a filtered
   method) and cluster forwarding.
+
+## B09 network completion (PR 2: writes)
+
+The 31 B09 synchronous write rows (create, rename, update and delete for
+networks, ACLs, address sets, integrations, zones and records, forwards, load
+balancers and peers) are complete under reviewed `sync_mutation` records and
+join the selected manifest (57 -> 88 pairs). With PR 1, 51 of the 53 B09 rows are
+complete; `GET /1.0/metrics` and the ACL log stay partial while S07 is open. Task
+3.9, `complete_port` and every Go declaration status (1239 partial / 41 missing)
+are unchanged.
+
+- [x] A new data-driven `sync_mutation_contract_test.exs` compares each write with
+  the named Go method over Unix and mutual HTTPS: schema-generated request bodies
+  (via the shared `ModelSamples` generator), path escaping, project/target
+  routing, PUT If-Match ETags, native synchronous success and 400/403/404/409/412.
+  Lost and malformed replies are `:uncertain` after exactly one request.
+- [x] Preflight rejects invalid bodies, unready hosts and every missing declared
+  extension before dispatch. A non-local peer type without `network_integrations`
+  is refused before dispatch, as the pinned client refuses it; a local peer
+  needs no integration extension.
+- [x] The validator adds the `sync_mutation` kind, with negative tests for removed
+  base and ETag cases, a missing guard evidence kind and a wrong record kind.
+- Approved exclusion (2026-10-21): cluster forwarding. Real-daemon network effects
+  remain separately recorded.
 

@@ -469,81 +469,90 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateNetworkACL",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateNetworkAddressSet",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateNetworkForward",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateNetworkIntegration",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateNetworkLoadBalancer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateNetworkPeer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateNetworkZone",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateNetworkZoneRecord",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateProfile",
@@ -823,81 +832,90 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteNetworkACL",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteNetworkAddressSet",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteNetworkForward",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteNetworkIntegration",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteNetworkLoadBalancer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteNetworkPeer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteNetworkZone",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteNetworkZoneRecord",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteOperation",
@@ -2781,36 +2799,40 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.RenameNetworkACL",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.RenameNetworkAddressSet",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.RenameNetworkIntegration",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.RenameProfile",
@@ -3002,81 +3024,90 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateNetworkACL",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateNetworkAddressSet",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateNetworkForward",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateNetworkIntegration",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateNetworkLoadBalancer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateNetworkPeer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateNetworkZone",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateNetworkZoneRecord",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateProfile",
@@ -3609,81 +3640,90 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateNetworkACL",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateNetworkAddressSet",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateNetworkForward",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateNetworkIntegration",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateNetworkLoadBalancer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateNetworkPeer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateNetworkZone",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateNetworkZoneRecord",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateProfile",
@@ -3963,81 +4003,90 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteNetworkACL",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteNetworkAddressSet",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteNetworkForward",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteNetworkIntegration",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteNetworkLoadBalancer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteNetworkPeer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteNetworkZone",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteNetworkZoneRecord",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteOperation",
@@ -6137,36 +6186,40 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.RenameNetworkACL",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.RenameNetworkAddressSet",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.RenameNetworkIntegration",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.RenameProfile",
@@ -6358,81 +6411,90 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateNetworkACL",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateNetworkAddressSet",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateNetworkForward",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateNetworkIntegration",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateNetworkLoadBalancer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateNetworkPeer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateNetworkZone",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateNetworkZoneRecord",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network write. The endpoint row is complete under a reviewed b09 sync-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success and 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts and missing extensions (including the non-local peer integration guard) reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateProfile",

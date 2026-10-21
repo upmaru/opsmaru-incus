@@ -14,6 +14,8 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
       ~w(request routing binding native_403 native_404 malformed_reply authoritative_inspection may_cancel_denied single_delete completion_race lost_reply_identity),
     "conditional_patch" =>
       ~w(request field_presence empty_sync routing native_400 native_403 native_404 native_412 restore_rejection response_loss_no_replay deadline cancellation preflight unconditional_rejection),
+    "sync_mutation" =>
+      ~w(request sync_success routing binding native_400 native_403 native_404 native_409 native_412 malformed_reply response_loss_no_replay preflight),
     "read_contract" =>
       ~w(request populated empty corrupt native_403 native_404 routing binding response_bound readiness deadline cancellation),
     "live_exec" =>
