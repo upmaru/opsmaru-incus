@@ -9,12 +9,17 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   @b02 ~w(GetImageFingerprints GetImagesWithFilter GetImagesAllProjects GetImagesAllProjectsWithFilter GetPrivateImage GetInstanceNames GetInstanceNamesAllProjects GetInstancesWithFilter GetInstancesAllProjects GetInstancesAllProjectsWithFilter GetInstancesFull GetInstancesFullWithFilter GetInstancesFullAllProjects GetInstancesFullAllProjectsWithFilter GetInstanceFull GetInstanceSnapshotNames GetOperationUUIDs GetOperationsAllProjects)
   # B02 PR 2: every other method mapped to the project, profile, network and storage rows.
   @b02_storage ~w(GetProjectNames GetProjectsWithFilter GetProfileNames GetProfilesWithFilter GetProfilesAllProjects GetProfilesAllProjectsWithFilter GetNetworkNames GetNetworksWithFilter GetNetworksAllProjects GetNetworksAllProjectsWithFilter GetStoragePoolNames GetStoragePoolsWithFilter GetStoragePoolVolumesWithFilter GetStoragePoolVolumesFull GetStoragePoolVolumesFullWithFilter GetStoragePoolVolumeNames GetStoragePoolVolumesAllProjects GetStoragePoolVolumesWithFilterAllProjects GetStoragePoolVolumesFullAllProjects GetStoragePoolVolumesFullWithFilterAllProjects GetStoragePoolVolumeNamesAllProjects GetStoragePoolVolumeFull)
+  # B09 PR 1: every read method mapped to the network rows.
+  @b09 ~w(GetNetworkACLNames GetNetworkACLs GetNetworkACLsAllProjects GetNetworkACL GetNetworkAddressSetNames GetNetworkAddressSets GetNetworkAddressSetsAllProjects GetNetworkAddressSet GetNetworkAllocations GetNetworkAllocationsAllProjects GetNetworkIntegrationNames GetNetworkIntegrations GetNetworkIntegration GetNetworkZoneNames GetNetworkZones GetNetworkZonesAllProjects GetNetworkZone GetNetworkZoneRecords GetNetworkZoneRecordNames GetNetworkZoneRecord GetNetworkForwards GetNetworkForwardAddresses GetNetworkForward GetNetworkLeases GetNetworkLoadBalancerAddresses GetNetworkLoadBalancers GetNetworkLoadBalancer GetNetworkLoadBalancerState GetNetworkPeers GetNetworkPeerNames GetNetworkPeer GetNetworkState)
   @methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
-           |> Enum.filter(&(&1["name"] in (@names ++ @b02 ++ @b02_storage)))
+           |> Enum.filter(&(&1["name"] in (@names ++ @b02 ++ @b02_storage ++ @b09)))
+  # Models without a hand-written sample get a schema-driven one (see generate/2).
+  @models Jason.decode!(File.read!("priv/incus/models.json"))["models"]
+  @generated ~w(NetworkACL NetworkAddressSet NetworkAllocations NetworkForward NetworkIntegration NetworkLease NetworkLoadBalancer NetworkLoadBalancerState NetworkPeer NetworkState NetworkZone NetworkZoneRecord)
   # Discovery is a public helper, not a named Go GetServer DTO comparison.
   @discovery %{"name" => "connect", "params" => [], "result" => "discovery", "model" => "Server"}
   @contracts @methods ++ [@discovery]
-  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects networks_all_projects profiles_all_projects storage_volume_full storage_volumes_all_projects)
+  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects networks_all_projects profiles_all_projects storage_volume_full storage_volumes_all_projects network_acl network_acls_all_projects network_address_set network_allocations network_dns network_dns_records network_forward network_integrations network_leases network_load_balancer network_load_balancer_state network_peer network_state network_zones_all_projects)
   @driver Path.expand("../.integration/inspection-driver", __DIR__)
 
   setup_all do
@@ -26,7 +31,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 59
+    assert length(@methods) == 91
     :ok
   end
 
@@ -252,7 +257,10 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     assert {:ok, reply} = actual
     assert reply.connection == client.connection and reply.identity == :verified
     assert reply.etag == "\"read-etag\""
-    if method["result"] == "model", do: assert(reply.etag == Enum.at(expected["outputs"], 1))
+    # Some pinned getters (network and load-balancer state) return no ETag to compare.
+    if method["result"] == "model" and length(expected["outputs"]) > 1,
+      do: assert(reply.etag == Enum.at(expected["outputs"], 1))
+
     payload = flatten(method, metadata(method, outcome))
     listed? = method["result"] in ["list", "grouped_list"]
 
@@ -472,6 +480,29 @@ defmodule Opsmaru.Incus.InspectionContractTest do
 
   defp names(_, _), do: ["fixture", "second one"]
 
+  # Schema-driven sample: every field gets a typed non-zero value; nested structs,
+  # pointers, lists and maps recurse, bounded in depth.
+  defp generate(model, depth) do
+    Map.new(@models[model]["fields"], fn field ->
+      {field["name"], value(field["type"], field["name"], depth)}
+    end)
+  end
+
+  defp value("*" <> type, name, depth), do: value(type, name, depth)
+  defp value("[]string", name, _), do: ["fixture-" <> name]
+
+  defp value("[]" <> type, name, depth),
+    do: if(depth < 3, do: [value(type, name, depth + 1)], else: [])
+
+  defp value("map[string]" <> type, name, depth),
+    do: if(depth < 3, do: %{"fixture" => value(type, name, depth + 1)}, else: %{})
+
+  defp value("string", name, _), do: "fixture-" <> name
+  defp value("bool", _, _), do: true
+  defp value(type, _, _) when type in ~w(int int64 uint64), do: 7
+  defp value("ConfigMap", _, _), do: %{"user.fixture" => "value"}
+  defp value(type, _, depth) when is_map_key(@models, type), do: generate(type, depth + 1)
+
   # Every field the fixture sent survives in the native DTO at every depth; the
   # DTO may add zero-valued fields the fixture omitted.
   defp sent?(native, sent) when is_map(sent),
@@ -503,6 +534,21 @@ defmodule Opsmaru.Incus.InspectionContractTest do
 
   defp corrupt("StorageVolumeFull backup"),
     do: %{sample("StorageVolumeFull") | "backups" => [%{"volume_only" => "yes"}]}
+
+  # A generated model breaks its first string field (or, without one, gives its first
+  # collection field a string), which the pinned DTO rejects.
+  defp corrupt(model) when model in @generated do
+    fields = @models[model]["fields"]
+
+    case Enum.find(fields, &(&1["type"] == "string")) do
+      %{"name" => name} ->
+        %{sample(model) | name => 7}
+
+      nil ->
+        %{"name" => name} = Enum.find(fields, &String.starts_with?(&1["type"], ["map[", "[]"]))
+        %{sample(model) | name => "invalid"}
+    end
+  end
 
   defp corrupt(_), do: %{"config" => []}
 
@@ -600,6 +646,9 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       do: Map.merge(base, %{"type" => "container", "status" => "Running", "status_code" => 103}),
       else: Map.put(base, "stateful", false)
   end
+
+  defp sample(model) when model in @generated,
+    do: Map.put(generate(model, 0), "future_field", %{})
 
   defp sample(model) do
     base = %{

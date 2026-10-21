@@ -61,7 +61,7 @@ entire endpoint, protocol or Go declaration is complete. The audit changed no su
   ubuntu-24.04 and macos-15, first attempt: CI run 38691372898.
 
 These are completed behavior slices. The conditional PATCH behavior is fixture-verified; its broader endpoint scope
-remains partial. The checked manifest now has 37 pairs (6 partial, 31 complete) and 28 fixture-verified scoped
+remains partial. The checked manifest now has 57 pairs (6 partial, 51 complete) and 28 fixture-verified scoped
 contracts (nineteen inspection methods, one discovery helper and eight mutation lifecycle methods). The separate Go
 ledger still has 1239 partial / 41 missing declarations, `complete_port=false`.
 No percentage of task completion can be derived from either counter.
@@ -150,10 +150,10 @@ missing typed implementations, one equivalent POST route and one repair mismatch
   classification is complete, behavioral certification remains open. Preserve
   already fixture-verified scopes and do not infer completion from source links.
 - [ ] Add reviewed completion records for every remaining finite supported contract.
-  Thirty-one rows plus S01/S03 are complete; the operation WebSocket and instance
+  Fifty-one rows plus S01/S03 are complete; the operation WebSocket and instance
   creation rows stay partial while S02/S06/S10 are open. No Go declaration is promoted.
 
-### The selected 37 pairs: verified scope and next closure obligation
+### The selected 57 pairs: verified scope and next closure obligation
 
 `resource_slice_test.exs` provides the shared **Unix** official typed-method
 request/result, project/member, extension and native-error baseline. Shared TLS
@@ -1149,4 +1149,30 @@ unchanged.
   documented manifest variants.
 - Approved exclusions (2026-10-20): names-only filter/all-projects selectors and
   cluster forwarding.
+
+## B09 network completion (PR 1: reads)
+
+Approved 2026-10-21. Twenty B09 network read rows are complete under reviewed
+`read_contract` records and join the selected manifest, which grows from 37 to
+57 pairs: ACLs, address sets, allocations, integrations, zones and records,
+and per-network forwards, leases, load balancers (including state), peers and
+state. Their 31 write rows follow in PR 2, and `GET /1.0/metrics` and the ACL
+log stay partial while S07 is open. Task 3.9, `complete_port` and every Go
+declaration status (1239 partial / 41 missing) are unchanged.
+
+- [x] All 32 B09 read methods are compared with the named Go method over Unix
+  and mutual HTTPS through the inspection contract test (91 methods plus
+  discovery in total), covering populated, empty and corrupt results, native
+  403/404, routing, binding, applicable ETags, declared extensions before
+  dispatch, bounds, readiness and deadline/cancellation cleanup.
+- [x] New models use a schema-driven sample generator over `models.json`: every
+  field gets a typed non-zero value and nested structs, pointers, lists and maps
+  recurse. Existing hand-written samples are unchanged. Generated corrupt
+  samples break a string field, or a collection field where the model has none.
+- [x] `GetNetworkState` and `GetNetworkLoadBalancerState` return no ETag in the
+  pinned client; the client still reports the native header, and ETags are
+  compared only where the pinned method returns one.
+- Approved exclusions (2026-10-21): `filter`/`all-projects` selectors the pinned
+  client does not send (names-only views, and recursion views without a filtered
+  method) and cluster forwarding.
 

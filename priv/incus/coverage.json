@@ -1555,9 +1555,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkACLLogfile",
@@ -1573,180 +1574,200 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkACLs",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkACLsAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkAddressSet",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkAddressSetNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkAddressSets",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkAddressSetsAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkAllocations",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkAllocationsAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkForward",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkForwardAddresses",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkForwards",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkIntegration",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkIntegrationNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkIntegrations",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkLeases",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkLoadBalancer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkLoadBalancerAddresses",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkLoadBalancerState",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkLoadBalancers",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkNames",
@@ -1763,99 +1784,110 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkPeerNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkPeers",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkState",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkZone",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkZoneNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkZoneRecord",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkZoneRecordNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkZoneRecords",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkZones",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkZonesAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworks",
@@ -4843,9 +4875,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkACLLogfile",
@@ -4861,180 +4894,200 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkACLs",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkACLsAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkAddressSet",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkAddressSetNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkAddressSets",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkAddressSetsAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkAllocations",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkAllocationsAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkForward",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkForwardAddresses",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkForwards",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkIntegration",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkIntegrationNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkIntegrations",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkLeases",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkLoadBalancer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkLoadBalancerAddresses",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkLoadBalancerState",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkLoadBalancers",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkNames",
@@ -5051,99 +5104,110 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkPeerNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkPeers",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkState",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkZone",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkZoneNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkZoneRecord",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkZoneRecordNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkZoneRecords",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkZones",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkZonesAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B09 network inspection. The endpoint row is complete under a reviewed b09 read record: every mapped names, list, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Selectors the pinned client does not send and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworks",
