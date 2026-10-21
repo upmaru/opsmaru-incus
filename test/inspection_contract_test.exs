@@ -61,6 +61,9 @@ defmodule Opsmaru.Incus.InspectionContractTest do
         compare(root, identity, method, malformed)
       end
 
+      if method["model"] == "StorageVolumeFull",
+        do: compare(root, identity, method, :corrupt_backup)
+
       bounds(root, identity, method)
       for mode <- [:deadline, :cancel], do: lifetime(root, identity, method, mode)
     end
@@ -221,7 +224,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       method == @discovery ->
         discovery_result(actual, expected, client, outcome)
 
-      outcome in [:corrupt, :grouped, :nested] ->
+      outcome in [:corrupt, :corrupt_backup, :grouped, :nested] ->
         assert expected["error"]
         assert {:error, %Error{kind: :invalid_model}} = actual
 
@@ -428,7 +431,12 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     ]
 
   defp metadata(method, outcome) do
-    data = if outcome == :corrupt, do: corrupt(method["model"]), else: sample(method["model"])
+    data =
+      case outcome do
+        :corrupt -> corrupt(method["model"])
+        :corrupt_backup -> corrupt(method["model"] <> " backup")
+        _ -> sample(method["model"])
+      end
 
     case method["result"] do
       "list" ->
@@ -489,6 +497,13 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   defp corrupt("InstanceState"), do: %{"pid" => "invalid"}
   defp corrupt("Image"), do: %{"public" => "invalid"}
   defp corrupt("Operation"), do: %{sample("Operation") | "status_code" => "invalid"}
+  # Full volumes prove each nested collection rejects a malformed item on its own.
+  defp corrupt("StorageVolumeFull"),
+    do: %{sample("StorageVolumeFull") | "snapshots" => [%{"name" => 1}]}
+
+  defp corrupt("StorageVolumeFull backup"),
+    do: %{sample("StorageVolumeFull") | "backups" => [%{"volume_only" => "yes"}]}
+
   defp corrupt(_), do: %{"config" => []}
 
   defp sample("Server"),
@@ -543,8 +558,25 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     do:
       Map.merge(sample("StorageVolume"), %{
         "state" => %{"usage" => %{"used" => 42, "total" => 100}},
-        "snapshots" => [],
-        "backups" => []
+        "snapshots" => [
+          %{
+            "name" => "snap0",
+            "description" => "nested",
+            "config" => %{"size" => "1GiB"},
+            "content_type" => "filesystem",
+            "created_at" => "2026-10-20T12:00:00Z",
+            "expires_at" => "2026-11-20T12:00:00Z"
+          }
+        ],
+        "backups" => [
+          %{
+            "name" => "backup0",
+            "created_at" => "2026-10-20T12:00:00Z",
+            "expires_at" => "2026-11-20T12:00:00Z",
+            "volume_only" => true,
+            "optimized_storage" => false
+          }
+        ]
       })
 
   defp sample("InstanceFull"),
