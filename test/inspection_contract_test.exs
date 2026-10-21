@@ -2,7 +2,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, RequestContext, Server, Transport}
-  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
+  alias Opsmaru.TestSupport.{HTTPFixture, ModelSamples, TLSIdentity, WireComparison}
 
   @names ~w(GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume GetInstances GetInstance GetInstanceState GetInstanceSnapshots GetInstanceSnapshot GetImages GetImage GetOperations GetOperation)
   # B02 PR 1: every other method mapped to the instance, image and operation rows.
@@ -13,8 +13,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   @b09 ~w(GetNetworkACLNames GetNetworkACLs GetNetworkACLsAllProjects GetNetworkACL GetNetworkAddressSetNames GetNetworkAddressSets GetNetworkAddressSetsAllProjects GetNetworkAddressSet GetNetworkAllocations GetNetworkAllocationsAllProjects GetNetworkIntegrationNames GetNetworkIntegrations GetNetworkIntegration GetNetworkZoneNames GetNetworkZones GetNetworkZonesAllProjects GetNetworkZone GetNetworkZoneRecords GetNetworkZoneRecordNames GetNetworkZoneRecord GetNetworkForwards GetNetworkForwardAddresses GetNetworkForward GetNetworkLeases GetNetworkLoadBalancerAddresses GetNetworkLoadBalancers GetNetworkLoadBalancer GetNetworkLoadBalancerState GetNetworkPeers GetNetworkPeerNames GetNetworkPeer GetNetworkState)
   @methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
            |> Enum.filter(&(&1["name"] in (@names ++ @b02 ++ @b02_storage ++ @b09)))
-  # Models without a hand-written sample get a schema-driven one (see generate/2).
-  @models Jason.decode!(File.read!("priv/incus/models.json"))["models"]
+  # Models without a hand-written sample get a schema-driven one (ModelSamples).
   @generated ~w(NetworkACL NetworkAddressSet NetworkAllocations NetworkForward NetworkIntegration NetworkLease NetworkLoadBalancer NetworkLoadBalancerState NetworkPeer NetworkState NetworkZone NetworkZoneRecord)
   # Discovery is a public helper, not a named Go GetServer DTO comparison.
   @discovery %{"name" => "connect", "params" => [], "result" => "discovery", "model" => "Server"}
@@ -480,29 +479,6 @@ defmodule Opsmaru.Incus.InspectionContractTest do
 
   defp names(_, _), do: ["fixture", "second one"]
 
-  # Schema-driven sample: every field gets a typed non-zero value; nested structs,
-  # pointers, lists and maps recurse, bounded in depth.
-  defp generate(model, depth) do
-    Map.new(@models[model]["fields"], fn field ->
-      {field["name"], value(field["type"], field["name"], depth)}
-    end)
-  end
-
-  defp value("*" <> type, name, depth), do: value(type, name, depth)
-  defp value("[]string", name, _), do: ["fixture-" <> name]
-
-  defp value("[]" <> type, name, depth),
-    do: if(depth < 3, do: [value(type, name, depth + 1)], else: [])
-
-  defp value("map[string]" <> type, name, depth),
-    do: if(depth < 3, do: %{"fixture" => value(type, name, depth + 1)}, else: %{})
-
-  defp value("string", name, _), do: "fixture-" <> name
-  defp value("bool", _, _), do: true
-  defp value(type, _, _) when type in ~w(int int64 uint64), do: 7
-  defp value("ConfigMap", _, _), do: %{"user.fixture" => "value"}
-  defp value(type, _, depth) when is_map_key(@models, type), do: generate(type, depth + 1)
-
   # Every field the fixture sent survives in the native DTO at every depth; the
   # DTO may add zero-valued fields the fixture omitted.
   defp sent?(native, sent) when is_map(sent),
@@ -538,7 +514,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   # A generated model breaks its first string field (or, without one, gives its first
   # collection field a string), which the pinned DTO rejects.
   defp corrupt(model) when model in @generated do
-    fields = @models[model]["fields"]
+    fields = ModelSamples.fields(model)
 
     case Enum.find(fields, &(&1["type"] == "string")) do
       %{"name" => name} ->
@@ -648,7 +624,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   end
 
   defp sample(model) when model in @generated,
-    do: Map.put(generate(model, 0), "future_field", %{})
+    do: Map.put(ModelSamples.generate(model), "future_field", %{})
 
   defp sample(model) do
     base = %{

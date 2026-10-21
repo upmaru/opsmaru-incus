@@ -320,10 +320,11 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 57 pairs are currently in the checked evidence
-manifest. Fifty-one are complete under reviewed completion records: native wait,
+pairs plus 46 query/access variants; 88 pairs are currently in the checked evidence
+manifest. Eighty-two are complete under reviewed completion records: native wait,
 events, exec, seven single-method B01 mutations, conditional instance PATCH, all
-twenty B02 inspection rows and twenty B09 network read rows. The other 6 are partial. It retains remaining copy/stream/model/helper scope without
+twenty B02 inspection rows and 51 B09 network rows (reads and synchronous
+writes). The other 6 are partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 

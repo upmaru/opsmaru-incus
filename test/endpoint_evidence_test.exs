@@ -122,7 +122,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "57 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "88 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -136,12 +136,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork
                GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume
                PatchProject PatchProfile PatchImage PatchInstanceSnapshot
-               GetNetworkACLNames GetNetworkACL GetNetworkAddressSetNames GetNetworkAddressSet GetNetworkAllocations GetNetworkIntegrationNames GetNetworkIntegration GetNetworkZoneNames GetNetworkZone GetNetworkZoneRecords GetNetworkZoneRecord GetNetworkForwards GetNetworkForward GetNetworkLeases GetNetworkLoadBalancerAddresses GetNetworkLoadBalancer GetNetworkLoadBalancerState GetNetworkPeers GetNetworkPeer GetNetworkState)
+               GetNetworkACLNames GetNetworkACL GetNetworkAddressSetNames GetNetworkAddressSet GetNetworkAllocations GetNetworkIntegrationNames GetNetworkIntegration GetNetworkZoneNames GetNetworkZone GetNetworkZoneRecords GetNetworkZoneRecord GetNetworkForwards GetNetworkForward GetNetworkLeases GetNetworkLoadBalancerAddresses GetNetworkLoadBalancer GetNetworkLoadBalancerState GetNetworkPeers GetNetworkPeer GetNetworkState
+               DeleteNetworkACL DeleteNetworkAddressSet DeleteNetworkIntegration DeleteNetworkZone DeleteNetworkZoneRecord DeleteNetwork DeleteNetworkForward DeleteNetworkLoadBalancer DeleteNetworkPeer CreateNetworkACL RenameNetworkACL CreateNetworkAddressSet RenameNetworkAddressSet CreateNetworkIntegration RenameNetworkIntegration CreateNetworkZone CreateNetworkZoneRecord CreateNetwork RenameNetwork CreateNetworkForward CreateNetworkLoadBalancer CreateNetworkPeer UpdateNetworkACL UpdateNetworkAddressSet UpdateNetworkIntegration UpdateNetworkZone UpdateNetworkZoneRecord UpdateNetwork UpdateNetworkForward UpdateNetworkLoadBalancer UpdateNetworkPeer)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
              "partial" => 6,
-             "complete" => 51
+             "complete" => 82
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -287,6 +288,17 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"DELETE /1.0/images/{}", "b01_delete_image_v1"},
              {"DELETE /1.0/instances/{}", "b01_delete_instance_v1"},
              {"DELETE /1.0/instances/{}/snapshots/{}", "b01_delete_instance_snapshot_v1"},
+             {"DELETE /1.0/network-acls/{}", "b09_delete_network_acls_one_v1"},
+             {"DELETE /1.0/network-address-sets/{}", "b09_delete_network_address_sets_one_v1"},
+             {"DELETE /1.0/network-integrations/{}", "b09_delete_network_integrations_one_v1"},
+             {"DELETE /1.0/network-zones/{}", "b09_delete_network_zones_one_v1"},
+             {"DELETE /1.0/network-zones/{}/records/{}",
+              "b09_delete_network_zones_one_records_one_v1"},
+             {"DELETE /1.0/networks/{}", "b09_delete_networks_one_v1"},
+             {"DELETE /1.0/networks/{}/forwards/{}", "b09_delete_networks_one_forwards_one_v1"},
+             {"DELETE /1.0/networks/{}/load-balancers/{}",
+              "b09_delete_networks_one_load_balancers_one_v1"},
+             {"DELETE /1.0/networks/{}/peers/{}", "b09_delete_networks_one_peers_one_v1"},
              {"DELETE /1.0/operations/{}", "b01_cancel_operation_v1"},
              {"GET /1.0", "b02_discovery_v1"},
              {"GET /1.0/events", "b03_events_v1"},
@@ -334,8 +346,31 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"PATCH /1.0/instances/{}", "b04_instance_patch_v1"},
              {"POST /1.0/instances/{}/exec", "b03_exec_v1"},
              {"POST /1.0/instances/{}/snapshots", "b01_create_instance_snapshot_v1"},
+             {"POST /1.0/network-acls", "b09_post_network_acls_v1"},
+             {"POST /1.0/network-acls/{}", "b09_post_network_acls_one_v1"},
+             {"POST /1.0/network-address-sets", "b09_post_network_address_sets_v1"},
+             {"POST /1.0/network-address-sets/{}", "b09_post_network_address_sets_one_v1"},
+             {"POST /1.0/network-integrations", "b09_post_network_integrations_v1"},
+             {"POST /1.0/network-integrations/{}", "b09_post_network_integrations_one_v1"},
+             {"POST /1.0/network-zones", "b09_post_network_zones_v1"},
+             {"POST /1.0/network-zones/{}/records", "b09_post_network_zones_one_records_v1"},
+             {"POST /1.0/networks", "b09_post_networks_v1"},
+             {"POST /1.0/networks/{}", "b09_post_networks_one_v1"},
+             {"POST /1.0/networks/{}/forwards", "b09_post_networks_one_forwards_v1"},
+             {"POST /1.0/networks/{}/load-balancers", "b09_post_networks_one_load_balancers_v1"},
+             {"POST /1.0/networks/{}/peers", "b09_post_networks_one_peers_v1"},
              {"PUT /1.0/instances/{}", "b01_update_instance_v1"},
-             {"PUT /1.0/instances/{}/state", "b01_update_instance_state_v1"}
+             {"PUT /1.0/instances/{}/state", "b01_update_instance_state_v1"},
+             {"PUT /1.0/network-acls/{}", "b09_put_network_acls_one_v1"},
+             {"PUT /1.0/network-address-sets/{}", "b09_put_network_address_sets_one_v1"},
+             {"PUT /1.0/network-integrations/{}", "b09_put_network_integrations_one_v1"},
+             {"PUT /1.0/network-zones/{}", "b09_put_network_zones_one_v1"},
+             {"PUT /1.0/network-zones/{}/records/{}", "b09_put_network_zones_one_records_one_v1"},
+             {"PUT /1.0/networks/{}", "b09_put_networks_one_v1"},
+             {"PUT /1.0/networks/{}/forwards/{}", "b09_put_networks_one_forwards_one_v1"},
+             {"PUT /1.0/networks/{}/load-balancers/{}",
+              "b09_put_networks_one_load_balancers_one_v1"},
+             {"PUT /1.0/networks/{}/peers/{}", "b09_put_networks_one_peers_one_v1"}
            ]
 
     assert for(%{"status" => "certified", "id" => id} <- audit["stream_contracts"], do: id) ==
@@ -350,6 +385,8 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     instances = ["completion_records", "b02_instances_v1"]
     images = ["completion_records", "b02_images_v1"]
     discovery = ["completion_records", "b02_discovery_v1"]
+    network_update = ["completion_records", "b09_put_networks_one_v1"]
+    peer_create = ["completion_records", "b09_post_networks_one_peers_v1"]
     events = ["completion_records", "b03_events_v1"]
     socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
     head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
@@ -439,6 +476,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            "unclassified completion selector"},
           {update_in(audit, instances ++ ["methods"], &List.delete(&1, "GetInstancesFull")),
            "stale completion methods"},
+          {update_in(audit, network_update ++ ["cases"], &Map.delete(&1, "native_409")),
+           "missing completion case"},
+          {update_in(audit, network_update ++ ["cases"], &Map.delete(&1, "etag")),
+           "missing completion case"},
+          {update_in(audit, peer_create ++ ["evidence_kinds"], &Map.delete(&1, "peer_guard")),
+           "stale completion evidence kinds"},
+          {put_in(audit, network_update ++ ["kind"], "read_contract"), "missing completion case"},
           {%{audit | "behavior_complete" => true}, ""},
           {%{audit | "complete_port" => true}, ""}
         ] do

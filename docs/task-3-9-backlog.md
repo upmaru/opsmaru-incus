@@ -106,7 +106,7 @@ estimates of lines or commits. Split a batch into bounded slices before coding.
 | B06: File metadata HEAD | 2 | Implement instance and volume metadata-only typed helpers with header fidelity, empty body, rejection and bounded cleanup evidence on both transports. |
 | B07: Recorded exec output | 3 | Implement typed list, acknowledged binary download and explicit delete. Verify identity/path isolation, missing output, bounds and uncertain deletion; never imply automatic deletion. |
 | B08: Storage endpoint contracts | 49 | Certify the exact catalogue/helpers for each assigned row; implement by-type volume list, bitmap download and bucket backup list/get/rename. Reconcile equivalent collection POST, custom restrictions and recursion views; add evidence for declared fields/errors/lifetimes only. |
-| B09: Network endpoint contracts | 53 | Twenty read rows are **complete** under reviewed `b09_*` read records with every mapped method; selectors the pinned client does not send and cluster forwarding are approved exclusions (2026-10-21). The 31 write rows follow in PR 2; metrics and the ACL log stay partial while S07 is open. PATCH rows remain B05. |
+| B09: Network endpoint contracts | 53 | 51 rows are **complete**: twenty reads under `b09_*` read records and 31 synchronous writes under `b09_*` sync-mutation records, with every mapped method. Selectors the pinned client does not send and cluster forwarding are approved exclusions (2026-10-21). Metrics and the ACL log stay partial while S07 is open. PATCH rows remain B05. |
 | B10: Administrative endpoint contracts | 40 | Certify assigned server/project/profile/certificate/cluster/resource/metadata/warning contracts; implement root discovery. Resolve public-access views explicitly, preserving host verification. PATCH rows remain B05. |
 | B11: Remaining instance/image contracts | 42 | Certify assigned instance/snapshot/backup/image/alias typed/helper scopes, including listed body modes. Verify supported fields/selectors, result/error/identity/ETag and bounds; copy/streams have additional S-contract obligations. |
 | B12: Pinned source reconciliation | 1 | Keep the documented GET debug repair mismatch and actual POST registered route linked. Design a typed mutation contract against the server POST or obtain explicit scope approval; never implement a repair mutation as a GET. |
@@ -160,7 +160,7 @@ No exhaustive cross-product of every possible field/error is required.
 - [x] Preserve the ten fixture-verified inspection scopes and existing bounded slices.
 - [ ] Finish B01–B12: implement/verify the required contracts or record explicit approvals.
 - [ ] Finish S01–S12 certification within the existing approved host/protocol boundaries.
-- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. Fifty-one rows (three B03, seven B01, B04, twenty B02 and twenty B09) plus S01/S03 are complete.
+- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. Eighty-two rows (three B03, seven B01, B04, twenty B02 and 51 B09) plus S01/S03 are complete.
 - [ ] Independently review and pass canonical/reference/platform/immutable-consumer checks for closing slices.
 
 Installed OCI/delta converters, explicitly opted-in isolated real-Incus acceptance
