@@ -321,10 +321,9 @@ separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
 pairs plus 46 query/access variants; 37 pairs are currently in the checked evidence
-manifest. Twenty-one are complete under reviewed completion records: native
+manifest. Thirty-one are complete under reviewed completion records: native
 wait, events, exec, seven single-method B01 mutations, conditional instance PATCH
-and ten B02 inspection rows (discovery, instances, snapshots, state, images and
-operations). The other 16 are partial. It retains remaining copy/stream/model/helper scope without
+and all twenty B02 inspection rows. The other 6 are partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 

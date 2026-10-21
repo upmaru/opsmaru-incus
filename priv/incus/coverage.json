@@ -1548,7 +1548,7 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkACL",
@@ -1753,9 +1753,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworkPeer",
@@ -1864,34 +1865,37 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworksAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworksAllProjectsWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetNetworksWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetOperation",
@@ -1972,16 +1976,17 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetProfileNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetProfiles",
@@ -1991,34 +1996,37 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetProfilesAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetProfilesAllProjectsWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetProfilesWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetProject",
@@ -2028,7 +2036,7 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetProjectAccess",
@@ -2044,9 +2052,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetProjectState",
@@ -2065,16 +2074,17 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetProjectsWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetServer",
@@ -2103,7 +2113,7 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucket",
@@ -2246,9 +2256,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolResources",
@@ -2267,7 +2278,7 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumeBlockNBDConn",
@@ -2301,27 +2312,30 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumeNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumeNamesAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumeSnapshot",
@@ -2367,70 +2381,77 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumesAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumesFull",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumesFullAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumesFullWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumesFullWithFilterAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumesWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumesWithFilterAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePools",
@@ -2440,16 +2461,17 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolsWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStorageVolumeBackup",
@@ -4814,7 +4836,7 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkACL",
@@ -5019,9 +5041,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworkPeer",
@@ -5130,34 +5153,37 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworksAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworksAllProjectsWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetNetworksWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetOIDCTokens",
@@ -5264,16 +5290,17 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetProfileNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetProfiles",
@@ -5283,34 +5310,37 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetProfilesAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetProfilesAllProjectsWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetProfilesWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetProject",
@@ -5320,7 +5350,7 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetProjectAccess",
@@ -5336,9 +5366,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetProjectState",
@@ -5357,16 +5388,17 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetProjectsWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetServer",
@@ -5395,7 +5427,7 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucket",
@@ -5538,9 +5570,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolResources",
@@ -5559,7 +5592,7 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumeBlockNBDConn",
@@ -5593,27 +5626,30 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumeNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumeNamesAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumeSnapshot",
@@ -5659,70 +5695,77 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumesAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumesFull",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumesFullAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumesFullWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumesFullWithFilterAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumesWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumesWithFilterAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePools",
@@ -5732,16 +5775,17 @@
         "test/resource_slice_test.exs",
         "test/inspection_contract_test.exs"
       ],
-      "note": "Initial-tool inspection v1: named catalogue method/query with typed populated/empty results, 403/404, metadata type rejection and routing/binding on Unix and verified mutual HTTPS; native getter ETags and independent list-header retention, response bounds, declared-extension preflight and deadline/cancellation peer cleanup. Custom volume samples only; unknown field retention is independent of native DTO projection. Other query/type/field/error variants, tool policy and backend acceptance remain unverified; whole endpoint and declaration remain partial."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolsWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B02 inspection. The endpoint row is complete under a reviewed b02 read record: every mapped names, list, full, filter and all-projects method and get compared with the named Go method on Unix/mutual HTTPS (populated/empty/corrupt results, native 403/404, routing/binding, ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). Names-only filter/all-projects, public views and cluster forwarding are approved exclusions; GetOperationUUIDs follows the daemon grouped response. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStorageVolumeBackup",
