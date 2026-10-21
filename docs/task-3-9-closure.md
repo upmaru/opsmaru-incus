@@ -61,7 +61,7 @@ entire endpoint, protocol or Go declaration is complete. The audit changed no su
   ubuntu-24.04 and macos-15, first attempt: CI run 38691372898.
 
 These are completed behavior slices. The conditional PATCH behavior is fixture-verified; its broader endpoint scope
-remains partial. The checked manifest now has 37 pairs (16 partial, 21 complete) and 28 fixture-verified scoped
+remains partial. The checked manifest now has 37 pairs (6 partial, 31 complete) and 28 fixture-verified scoped
 contracts (nineteen inspection methods, one discovery helper and eight mutation lifecycle methods). The separate Go
 ledger still has 1239 partial / 41 missing declarations, `complete_port=false`.
 No percentage of task completion can be derived from either counter.
@@ -150,7 +150,7 @@ missing typed implementations, one equivalent POST route and one repair mismatch
   classification is complete, behavioral certification remains open. Preserve
   already fixture-verified scopes and do not infer completion from source links.
 - [ ] Add reviewed completion records for every remaining finite supported contract.
-  Twenty-one rows plus S01/S03 are complete; the operation WebSocket and instance
+  Thirty-one rows plus S01/S03 are complete; the operation WebSocket and instance
   creation rows stay partial while S02/S06/S10 are open. No Go declaration is promoted.
 
 ### The selected 37 pairs: verified scope and next closure obligation
@@ -162,7 +162,7 @@ additional scoped evidence, not a repetition of that baseline.
 
 | Selected pairs | Count | Additional behavior already evidenced | Remaining concrete closure obligation |
 | --- | ---: | --- | --- |
-| GET list/get projects, profiles, networks, storage pools and volumes | 10 | initial_inspection_v1: typed populated/empty/corrupt/403/404 results, routing, binding, byte/extension/lifetime bounds on Unix/mutual HTTPS | Only the named catalogue queries and tested DTO fields; custom volume samples. Other list selectors/types/fields/errors and backend/tool acceptance remain separate. |
+| GET list/get projects, profiles, networks, storage pools and volumes | 10 | **Complete** (`b02_projects_v1` … `b02_storage_volume_v1`) with every mapped method. initial_inspection_v1: typed populated/empty/corrupt/403/404 results, routing, binding, byte/extension/lifetime bounds on Unix/mutual HTTPS | Only the named catalogue queries and tested DTO fields; custom volume samples. Other list selectors/types/fields/errors and backend/tool acceptance remain separate. |
 | GET server discovery | 1 | **Complete** (`b02_discovery_v1`) with every mapped method. core_inspection_v1: populated/minimal valid metadata, RawQuery transport, required-field/version guards, 403/404 and scoped byte/readiness/lifetime cleanup on both transports | Broader discovery/auth fields and options remain open; no named-Go GetServer DTO parity. PUT/PATCH/root discovery are separate. |
 | GET instances, instance and state | 3 | **Complete** (`b02_instances_v1`, `b02_instance_v1`, `b02_instance_state_v1`) with every mapped method. core_inspection_v1: catalogue queries with container samples, populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Other recursion/filter/all-projects/instance-type/field/error/cluster variants remain open. |
 | PATCH instance | 1 | **Complete** (`b04_instance_patch_v1`). Conditional typed InstancePut, explicit ETag, native empty sync result, Unix/mutual-HTTPS transport and independent failure/lifetime fixtures | Unconditional updates, full field/cluster behavior and real-daemon merge acceptance remain unverified. |
@@ -1126,4 +1126,27 @@ declaration status (1239 partial / 41 missing) are unchanged.
   `connect` helper. Negative tests cover each.
 - Approved exclusions (2026-10-20): names-only filter/all-projects selectors,
   the `?public` views and cluster forwarding.
+
+## B02 inspection completion (PR 2)
+
+The remaining ten B02 rows are complete under reviewed `read_contract` records:
+projects, project, profiles, profile, networks, network, storage pools, pool,
+volumes and volume. All twenty B02 rows are now complete. Task 3.9,
+`complete_port` and every Go declaration status (1239 partial / 41 missing) are
+unchanged.
+
+- [x] All 32 methods mapped to these rows are compared with the named Go method
+  over Unix and mutual HTTPS through the inspection contract test (59 methods
+  plus discovery in total): names, filter and all-projects variants, the
+  recursion=2 `StorageVolumeFull` list variants, `GetStoragePoolVolumeFull`
+  and project-grouped volume URLs (`GetStoragePoolVolumeNamesAllProjects`).
+  Volume names keep their `type/name` path, as in the pinned client.
+- [x] Names methods reject a status-grouped map; only `GetOperationUUIDs`
+  accepts one (approved difference).
+- Source gap recorded on `b02_storage_volumes_v1`: the recursion=2 full-volume
+  methods use a recursion level the pinned `rest-api.yaml` does not document for
+  the volumes collection. They are certified with the row but not listed as
+  documented manifest variants.
+- Approved exclusions (2026-10-20): names-only filter/all-projects selectors and
+  cluster forwarding.
 

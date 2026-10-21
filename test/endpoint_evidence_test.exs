@@ -139,8 +139,8 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
-             "partial" => 16,
-             "complete" => 21
+             "partial" => 6,
+             "complete" => 31
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -296,9 +296,19 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/instances/{}/snapshots", "b02_instance_snapshots_v1"},
              {"GET /1.0/instances/{}/snapshots/{}", "b02_instance_snapshot_v1"},
              {"GET /1.0/instances/{}/state", "b02_instance_state_v1"},
+             {"GET /1.0/networks", "b02_networks_v1"},
+             {"GET /1.0/networks/{}", "b02_network_v1"},
              {"GET /1.0/operations", "b02_operations_v1"},
              {"GET /1.0/operations/{}", "b02_operation_v1"},
              {"GET /1.0/operations/{}/wait", "b03_native_wait_v1"},
+             {"GET /1.0/profiles", "b02_profiles_v1"},
+             {"GET /1.0/profiles/{}", "b02_profile_v1"},
+             {"GET /1.0/projects", "b02_projects_v1"},
+             {"GET /1.0/projects/{}", "b02_project_v1"},
+             {"GET /1.0/storage-pools", "b02_storage_pools_v1"},
+             {"GET /1.0/storage-pools/{}", "b02_storage_pool_v1"},
+             {"GET /1.0/storage-pools/{}/volumes", "b02_storage_volumes_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}", "b02_storage_volume_v1"},
              {"PATCH /1.0/instances/{}", "b04_instance_patch_v1"},
              {"POST /1.0/instances/{}/exec", "b03_exec_v1"},
              {"POST /1.0/instances/{}/snapshots", "b01_create_instance_snapshot_v1"},

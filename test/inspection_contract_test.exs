@@ -7,12 +7,14 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   @names ~w(GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume GetInstances GetInstance GetInstanceState GetInstanceSnapshots GetInstanceSnapshot GetImages GetImage GetOperations GetOperation)
   # B02 PR 1: every other method mapped to the instance, image and operation rows.
   @b02 ~w(GetImageFingerprints GetImagesWithFilter GetImagesAllProjects GetImagesAllProjectsWithFilter GetPrivateImage GetInstanceNames GetInstanceNamesAllProjects GetInstancesWithFilter GetInstancesAllProjects GetInstancesAllProjectsWithFilter GetInstancesFull GetInstancesFullWithFilter GetInstancesFullAllProjects GetInstancesFullAllProjectsWithFilter GetInstanceFull GetInstanceSnapshotNames GetOperationUUIDs GetOperationsAllProjects)
+  # B02 PR 2: every other method mapped to the project, profile, network and storage rows.
+  @b02_storage ~w(GetProjectNames GetProjectsWithFilter GetProfileNames GetProfilesWithFilter GetProfilesAllProjects GetProfilesAllProjectsWithFilter GetNetworkNames GetNetworksWithFilter GetNetworksAllProjects GetNetworksAllProjectsWithFilter GetStoragePoolNames GetStoragePoolsWithFilter GetStoragePoolVolumesWithFilter GetStoragePoolVolumesFull GetStoragePoolVolumesFullWithFilter GetStoragePoolVolumeNames GetStoragePoolVolumesAllProjects GetStoragePoolVolumesWithFilterAllProjects GetStoragePoolVolumesFullAllProjects GetStoragePoolVolumesFullWithFilterAllProjects GetStoragePoolVolumeNamesAllProjects GetStoragePoolVolumeFull)
   @methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
-           |> Enum.filter(&(&1["name"] in (@names ++ @b02)))
+           |> Enum.filter(&(&1["name"] in (@names ++ @b02 ++ @b02_storage)))
   # Discovery is a public helper, not a named Go GetServer DTO comparison.
   @discovery %{"name" => "connect", "params" => [], "result" => "discovery", "model" => "Server"}
   @contracts @methods ++ [@discovery]
-  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects)
+  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects networks_all_projects profiles_all_projects storage_volume_full storage_volumes_all_projects)
   @driver Path.expand("../.integration/inspection-driver", __DIR__)
 
   setup_all do
@@ -24,7 +26,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 37
+    assert length(@methods) == 59
     :ok
   end
 
@@ -223,7 +225,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
         assert expected["error"]
         assert {:error, %Error{kind: :invalid_model}} = actual
 
-      method["result"] in ["names", "project_names"] ->
+      method["result"] in ["names", "project_names", "project_urls"] ->
         names_result(actual, expected, client, method, outcome)
 
       true ->
@@ -365,8 +367,9 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   # The daemon groups operation URLs by status, so its empty answer is an empty map.
   defp metadata(%{"name" => "GetOperationUUIDs"}, :empty), do: %{}
 
-  defp metadata(%{"result" => result}, :empty) when result in ~w(list names project_names),
-    do: []
+  defp metadata(%{"result" => result}, :empty)
+       when result in ~w(list names project_names project_urls),
+       do: []
 
   defp metadata(_, :empty), do: %{}
 
@@ -393,9 +396,26 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       method["name"] == "GetOperationUUIDs" ->
         [prefix <> "/running", prefix <> "/finished"]
 
+      # Volume URLs carry their type; names keep the type/name path.
+      String.ends_with?(method["path"], "/volumes") ->
+        [prefix <> "/custom/fixture", prefix <> "/custom/second%20one"]
+
       true ->
         [prefix <> "/fixture", prefix <> "/second%20one"]
     end
+  end
+
+  defp metadata(%{"result" => "project_urls"}, :corrupt), do: ["/1.0/unrelated/fixture"]
+
+  # Volume URLs across projects: the project query names the group (default when absent).
+  defp metadata(%{"result" => "project_urls"} = method, _) do
+    prefix = String.replace(method["path"], "{pool}", "fixture-pool")
+
+    [
+      prefix <> "/custom/fixture",
+      prefix <> "/custom/second?project=fixture%20scope",
+      prefix <> "/custom/third?project=fixture%20scope"
+    ]
   end
 
   defp metadata(%{"result" => "project_names"}, :corrupt), do: [%{"name" => 1}]
@@ -426,13 +446,22 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   end
 
   # Decoded names for each fixture shape (grouped operation URLs flatten by status).
-  defp names(%{"result" => "project_names"}, :empty), do: %{}
+  defp names(%{"result" => result}, :empty) when result in ~w(project_names project_urls),
+    do: %{}
+
   defp names(_, :empty), do: []
 
   defp names(%{"result" => "project_names"}, _),
     do: %{"default" => ["fixture"], "fixture scope" => ["second", "third"]}
 
+  defp names(%{"result" => "project_urls"}, _),
+    do: %{"default" => ["custom/fixture"], "fixture scope" => ["custom/second", "custom/third"]}
+
   defp names(%{"name" => "GetOperationUUIDs"}, _), do: ["running", "finished"]
+
+  defp names(%{"path" => path}, _) when binary_part(path, byte_size(path) - 8, 8) == "/volumes",
+    do: ["custom/fixture", "custom/second one"]
+
   defp names(_, _), do: ["fixture", "second one"]
 
   # Every field the fixture sent survives in the native DTO at every depth; the
@@ -509,6 +538,14 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       "metadata" => %{"fixture" => "retained"},
       "future_field" => %{}
     }
+
+  defp sample("StorageVolumeFull"),
+    do:
+      Map.merge(sample("StorageVolume"), %{
+        "state" => %{"usage" => %{"used" => 42, "total" => 100}},
+        "snapshots" => [],
+        "backups" => []
+      })
 
   defp sample("InstanceFull"),
     do:
