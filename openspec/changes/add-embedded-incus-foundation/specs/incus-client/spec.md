@@ -64,6 +64,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** request and populated/empty results agree with the pinned client, corrupt results and native 403/404 are rejected faithfully, declared extensions are required before dispatch, and response bounds, readiness, deadline and cancellation clean up the peer
 - **AND** each completed row has a reviewed completion record, while names-only filter/all-projects selectors, public views and cluster forwarding are recorded approved exclusions
 
+#### Scenario: Completed network contracts
+
+- **WHEN** any B09 network, ACL, address set, allocation, integration, zone, zone record, forward, lease, load balancer or peer method is called over Unix or mutual HTTPS
+- **THEN** reads agree with the pinned client for populated/empty/corrupt results, native 403/404, routing, extensions and lifetime cleanup, and synchronous writes agree for request bodies, ETags and native rejection while lost or malformed replies are uncertain and never replayed
+- **AND** reviewed records list each completed row, selectors the pinned client does not send and cluster forwarding are approved exclusions, and the metrics and ACL log rows stay partial while S07 is open
+
 #### Scenario: Remaining initial inspection contracts
 
 - **WHEN** the nine B02 typed reads and explicit server discovery have scoped Unix/mutual-HTTPS fixture evidence

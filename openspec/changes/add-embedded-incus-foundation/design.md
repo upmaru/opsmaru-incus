@@ -129,6 +129,47 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: B09 network completion (2026-10-21)
+
+Complete 51 of the 53 B09 rows (networks, ACLs, address sets, allocations,
+integrations, zones, zone records, forwards, leases, load balancers and peers)
+under reviewed completion records. They map 63 catalogue methods: 32 reads and
+31 synchronous writes. `GET /1.0/metrics` and `GET /1.0/network-acls/{name}/log`
+are helper rows linked to S07 (auxiliary byte streams) and stay partial until
+S07 is certified with B11.
+
+User-approved exclusions (2026-10-21):
+
+- Selectors the pinned client does not send (19 obligations): `filter` and
+  `all-projects` on names-only views, and `filter` on the recursion=1 views of
+  ACLs, address sets, integrations, zones, zone records, forwards, load
+  balancers and peers, for which the pinned client has no filtered method. The
+  client offers what the pinned client offers.
+- Cluster forwarding beyond host project/target routing.
+
+PR 1 — 20 read rows under `read_contract` records. Extend the data-driven
+inspection contract test to the 32 B09 read methods (names, lists, all-projects
+variants and gets, including network state, leases, allocations and
+load-balancer state). Replace hand-written per-model samples for new models with
+a schema-driven sample generator over `priv/incus/models.json`: each field gets
+a typed, non-zero value, nested structs and maps recurse, and the comparison with
+the pinned DTO stays field by field at every depth. Keep the existing hand-written
+samples, so B02 evidence is unchanged; the generator is reusable for B08, B10
+and B11.
+
+PR 2 — 31 write rows under a new `sync_mutation` record kind. Required cases:
+named-Go request, native synchronous success, routing and binding, native
+400/403/404/409/412, malformed reply and response loss reported as uncertain
+without replay, and preflight; the catalogue adds `body_fields`,
+`extension_guards` and `etag` (PUT) where a method declares them. Build a
+data-driven, both-transport mutation harness reusing the existing fixtures and
+mutation driver, with schema-generated request bodies compared with the named Go
+method.
+
+Each PR updates the ledgers, closure ledger, backlog, client docs and generated
+coverage, and stops if new transport infrastructure is needed. Task 3.9,
+`complete_port` and every Go declaration status are unchanged.
+
 #### Approved slice: B02 inspection completion (2026-10-20)
 
 Complete all 20 B02 rows under reviewed completion records. They map 59 catalogue
