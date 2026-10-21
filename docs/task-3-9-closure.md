@@ -61,7 +61,7 @@ entire endpoint, protocol or Go declaration is complete. The audit changed no su
   ubuntu-24.04 and macos-15, first attempt: CI run 38691372898.
 
 These are completed behavior slices. The conditional PATCH behavior is fixture-verified; its broader endpoint scope
-remains partial. The checked manifest now has 88 pairs (6 partial, 82 complete) and 28 fixture-verified scoped
+remains partial. The checked manifest now has 103 pairs (6 partial, 97 complete) and 28 fixture-verified scoped
 contracts (nineteen inspection methods, one discovery helper and eight mutation lifecycle methods). The separate Go
 ledger still has 1239 partial / 41 missing declarations, `complete_port=false`.
 No percentage of task completion can be derived from either counter.
@@ -150,10 +150,10 @@ missing typed implementations, one equivalent POST route and one repair mismatch
   classification is complete, behavioral certification remains open. Preserve
   already fixture-verified scopes and do not infer completion from source links.
 - [ ] Add reviewed completion records for every remaining finite supported contract.
-  Eighty-two rows plus S01/S03 are complete; the operation WebSocket and instance
+  Ninety-seven rows plus S01/S03 are complete; the operation WebSocket and instance
   creation rows stay partial while S02/S06/S10 are open. No Go declaration is promoted.
 
-### The selected 88 pairs: verified scope and next closure obligation
+### The selected 103 pairs: verified scope and next closure obligation
 
 `resource_slice_test.exs` provides the shared **Unix** official typed-method
 request/result, project/member, extension and native-error baseline. Shared TLS
@@ -1199,4 +1199,30 @@ are unchanged.
   base and ETag cases, a missing guard evidence kind and a wrong record kind.
 - Approved exclusion (2026-10-21): cluster forwarding. Real-daemon network effects
   remain separately recorded.
+
+## B10 administrative completion (PR 1: reads and root discovery)
+
+Approved 2026-10-22. Fifteen B10 rows are complete under reviewed `read_contract`
+records and join the selected manifest (88 -> 103 pairs): root discovery,
+certificates, cluster, cluster groups and members (including member state),
+metadata configuration, project access and state, resources and warnings. The
+25 write rows follow in PR 2. Task 3.9, `complete_port` and every Go declaration
+status (1239 partial / 41 missing) are unchanged.
+
+- [x] New typed `GetAPIVersions` REST descriptor for `GET /`, which the pinned
+  client lacks. The client now accepts exactly `/` as a request path and sends it
+  without project or target, as the daemon serves it. Evidence compares unchanged
+  Go RawQuery on both transports plus independent populated, empty, corrupt,
+  403/404, bound, readiness and lifetime cases. Confirmed typed implementation
+  gaps fall from 32 to 31.
+- [x] All 20 B10 read methods are compared with the named Go method over Unix and
+  mutual HTTPS through the inspection contract test (111 methods plus discovery
+  and root discovery in total).
+- [x] The shared `ModelSamples` generator now covers timestamps, floats, `uint16`,
+  maps keyed by named string types and alias models (`Access` is a list,
+  `MetadataConfig` a nested map). List-shaped models answer `:empty` with `[]`;
+  corrupt samples break the first field whatever its type. Comparisons treat an
+  empty sent collection as equal to Go's `omitempty`-dropped field.
+- Approved exclusions (2026-10-22): names-only `filter` (certificates, cluster
+  members) and cluster forwarding.
 

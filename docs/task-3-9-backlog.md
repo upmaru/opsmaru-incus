@@ -15,10 +15,10 @@ pair or view is left unclassified.
 
 | Classification | Pairs | What still needs closing |
 | --- | ---: | --- |
-| Exact JSON catalogue mapping | 187 | Certify a finite supported contract, reusing existing native fixtures. |
+| Exact JSON catalogue mapping | 188 | Certify a finite supported contract, reusing existing native fixtures. |
 | Custom-volume-only catalogue mapping | 5 | Certify native custom-only backup scope; the server rejects other backup subtypes. |
 | Explicit discovery/binary/upgrade helper | 22 | Certify the helper's finite options, streams, errors and cleanup. |
-| Missing typed implementation | 31 | Implement and verify, or obtain an explicit user-approved exclusion. |
+| Missing typed implementation | 30 | Implement and verify, or obtain an explicit user-approved exclusion. |
 | Equivalent volume collection POST | 1 | Same native handler as typed-volume POST; certify supported route/body behavior or resolve scope. |
 | Incorrect documented GET repair | 1 | Retain the source discrepancy; actual mutation is POST, below. |
 | **Documented total** | **247** | No classification is a completion claim. |
@@ -28,7 +28,8 @@ including image suffix actions. Root discovery is a separately checked source
 anchor in `cmd/incusd/api.go:restServer`. All documented routes reconcile except
 `GET /1.0/instances/{name}/debug/repair`: `instances.go:instanceDebugRepairCmd`
 registers **POST**. One supplemental server row tracks that missing typed mutation.
-Thus there are **32 confirmed typed implementation gaps**, plus the equivalent
+Thus there are **31 confirmed typed implementation gaps** (root discovery `GET /`
+now has the typed `GetAPIVersions` descriptor), plus the equivalent
 collection-route decision. These are not a count of missing Go declarations. Raw HTTP support does not implement those typed contracts.
 No source file in the pinned module was modified.
 
@@ -107,7 +108,7 @@ estimates of lines or commits. Split a batch into bounded slices before coding.
 | B07: Recorded exec output | 3 | Implement typed list, acknowledged binary download and explicit delete. Verify identity/path isolation, missing output, bounds and uncertain deletion; never imply automatic deletion. |
 | B08: Storage endpoint contracts | 49 | Certify the exact catalogue/helpers for each assigned row; implement by-type volume list, bitmap download and bucket backup list/get/rename. Reconcile equivalent collection POST, custom restrictions and recursion views; add evidence for declared fields/errors/lifetimes only. |
 | B09: Network endpoint contracts | 53 | 51 rows are **complete**: twenty reads under `b09_*` read records and 31 synchronous writes under `b09_*` sync-mutation records, with every mapped method. Selectors the pinned client does not send and cluster forwarding are approved exclusions (2026-10-21). Metrics and the ACL log stay partial while S07 is open. PATCH rows remain B05. |
-| B10: Administrative endpoint contracts | 40 | Certify assigned server/project/profile/certificate/cluster/resource/metadata/warning contracts; implement root discovery. Resolve public-access views explicitly, preserving host verification. PATCH rows remain B05. |
+| B10: Administrative endpoint contracts | 40 | Fifteen read rows are **complete** under reviewed `b10_*` read records, including root discovery through the new typed `GetAPIVersions` helper (RawQuery evidence). The 25 write rows follow in PR 2, with the trust-token certificate bootstrap certified. Names-only filter and cluster forwarding are approved exclusions (2026-10-22). PATCH rows remain B05. |
 | B11: Remaining instance/image contracts | 42 | Certify assigned instance/snapshot/backup/image/alias typed/helper scopes, including listed body modes. Verify supported fields/selectors, result/error/identity/ETag and bounds; copy/streams have additional S-contract obligations. |
 | B12: Pinned source reconciliation | 1 | Keep the documented GET debug repair mismatch and actual POST registered route linked. Design a typed mutation contract against the server POST or obtain explicit scope approval; never implement a repair mutation as a GET. |
 
@@ -160,7 +161,7 @@ No exhaustive cross-product of every possible field/error is required.
 - [x] Preserve the ten fixture-verified inspection scopes and existing bounded slices.
 - [ ] Finish B01–B12: implement/verify the required contracts or record explicit approvals.
 - [ ] Finish S01–S12 certification within the existing approved host/protocol boundaries.
-- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. Eighty-two rows (three B03, seven B01, B04, twenty B02 and 51 B09) plus S01/S03 are complete.
+- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. Ninety-seven rows (three B03, seven B01, B04, twenty B02, 51 B09 and fifteen B10) plus S01/S03 are complete.
 - [ ] Independently review and pass canonical/reference/platform/immutable-consumer checks for closing slices.
 
 Installed OCI/delta converters, explicitly opted-in isolated real-Incus acceptance

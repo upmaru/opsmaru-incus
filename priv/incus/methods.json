@@ -4648,6 +4648,20 @@
       "operation_id": "instance_snapshot_patch",
       "conditional": true,
       "response_status": 202
+    },
+    {
+      "name": "GetAPIVersions",
+      "verb": "GET",
+      "path": "/",
+      "params": [],
+      "query": {},
+      "extension": null,
+      "body": null,
+      "model": null,
+      "result": "strings",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "api_get"
     }
   ]
 }

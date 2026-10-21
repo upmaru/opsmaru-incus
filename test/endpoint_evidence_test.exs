@@ -122,7 +122,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "88 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "103 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -137,12 +137,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume
                PatchProject PatchProfile PatchImage PatchInstanceSnapshot
                GetNetworkACLNames GetNetworkACL GetNetworkAddressSetNames GetNetworkAddressSet GetNetworkAllocations GetNetworkIntegrationNames GetNetworkIntegration GetNetworkZoneNames GetNetworkZone GetNetworkZoneRecords GetNetworkZoneRecord GetNetworkForwards GetNetworkForward GetNetworkLeases GetNetworkLoadBalancerAddresses GetNetworkLoadBalancer GetNetworkLoadBalancerState GetNetworkPeers GetNetworkPeer GetNetworkState
-               DeleteNetworkACL DeleteNetworkAddressSet DeleteNetworkIntegration DeleteNetworkZone DeleteNetworkZoneRecord DeleteNetwork DeleteNetworkForward DeleteNetworkLoadBalancer DeleteNetworkPeer CreateNetworkACL RenameNetworkACL CreateNetworkAddressSet RenameNetworkAddressSet CreateNetworkIntegration RenameNetworkIntegration CreateNetworkZone CreateNetworkZoneRecord CreateNetwork RenameNetwork CreateNetworkForward CreateNetworkLoadBalancer CreateNetworkPeer UpdateNetworkACL UpdateNetworkAddressSet UpdateNetworkIntegration UpdateNetworkZone UpdateNetworkZoneRecord UpdateNetwork UpdateNetworkForward UpdateNetworkLoadBalancer UpdateNetworkPeer)
+               DeleteNetworkACL DeleteNetworkAddressSet DeleteNetworkIntegration DeleteNetworkZone DeleteNetworkZoneRecord DeleteNetwork DeleteNetworkForward DeleteNetworkLoadBalancer DeleteNetworkPeer CreateNetworkACL RenameNetworkACL CreateNetworkAddressSet RenameNetworkAddressSet CreateNetworkIntegration RenameNetworkIntegration CreateNetworkZone CreateNetworkZoneRecord CreateNetwork RenameNetwork CreateNetworkForward CreateNetworkLoadBalancer CreateNetworkPeer UpdateNetworkACL UpdateNetworkAddressSet UpdateNetworkIntegration UpdateNetworkZone UpdateNetworkZoneRecord UpdateNetwork UpdateNetworkForward UpdateNetworkLoadBalancer UpdateNetworkPeer
+               GetAPIVersions GetCertificateFingerprints GetCertificate GetCluster GetClusterGroups GetClusterGroup GetClusterMemberNames GetClusterMember GetClusterMemberState GetMetadataConfiguration GetProjectAccess GetProjectState GetServerResources GetWarningUUIDs GetWarning)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
              "partial" => 6,
-             "complete" => 82
+             "complete" => 97
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -300,7 +301,16 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
               "b09_delete_networks_one_load_balancers_one_v1"},
              {"DELETE /1.0/networks/{}/peers/{}", "b09_delete_networks_one_peers_one_v1"},
              {"DELETE /1.0/operations/{}", "b01_cancel_operation_v1"},
+             {"GET /", "b10_root_v1"},
              {"GET /1.0", "b02_discovery_v1"},
+             {"GET /1.0/certificates", "b10_certificates_v1"},
+             {"GET /1.0/certificates/{}", "b10_certificates_one_v1"},
+             {"GET /1.0/cluster", "b10_cluster_v1"},
+             {"GET /1.0/cluster/groups", "b10_cluster_groups_v1"},
+             {"GET /1.0/cluster/groups/{}", "b10_cluster_groups_one_v1"},
+             {"GET /1.0/cluster/members", "b10_cluster_members_v1"},
+             {"GET /1.0/cluster/members/{}", "b10_cluster_members_one_v1"},
+             {"GET /1.0/cluster/members/{}/state", "b10_cluster_members_one_state_v1"},
              {"GET /1.0/events", "b03_events_v1"},
              {"GET /1.0/images", "b02_images_v1"},
              {"GET /1.0/images/{}", "b02_image_v1"},
@@ -309,6 +319,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/instances/{}/snapshots", "b02_instance_snapshots_v1"},
              {"GET /1.0/instances/{}/snapshots/{}", "b02_instance_snapshot_v1"},
              {"GET /1.0/instances/{}/state", "b02_instance_state_v1"},
+             {"GET /1.0/metadata/configuration", "b10_metadata_configuration_v1"},
              {"GET /1.0/network-acls", "b09_network_acls_v1"},
              {"GET /1.0/network-acls/{}", "b09_network_acls_one_v1"},
              {"GET /1.0/network-address-sets", "b09_network_address_sets_v1"},
@@ -339,10 +350,15 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/profiles/{}", "b02_profile_v1"},
              {"GET /1.0/projects", "b02_projects_v1"},
              {"GET /1.0/projects/{}", "b02_project_v1"},
+             {"GET /1.0/projects/{}/access", "b10_projects_one_access_v1"},
+             {"GET /1.0/projects/{}/state", "b10_projects_one_state_v1"},
+             {"GET /1.0/resources", "b10_resources_v1"},
              {"GET /1.0/storage-pools", "b02_storage_pools_v1"},
              {"GET /1.0/storage-pools/{}", "b02_storage_pool_v1"},
              {"GET /1.0/storage-pools/{}/volumes", "b02_storage_volumes_v1"},
              {"GET /1.0/storage-pools/{}/volumes/{}/{}", "b02_storage_volume_v1"},
+             {"GET /1.0/warnings", "b10_warnings_v1"},
+             {"GET /1.0/warnings/{}", "b10_warnings_one_v1"},
              {"PATCH /1.0/instances/{}", "b04_instance_patch_v1"},
              {"POST /1.0/instances/{}/exec", "b03_exec_v1"},
              {"POST /1.0/instances/{}/snapshots", "b01_create_instance_snapshot_v1"},

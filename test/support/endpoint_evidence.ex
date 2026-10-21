@@ -23,7 +23,7 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     assert manifest["inventory_complete"] == false
     assert manifest["complete_port"] == false
     assert manifest["catalogue_contracts"] == ~w(query extension guards body model result)
-    assert length(manifest["entries"]) == 88
+    assert length(manifest["entries"]) == 103
     pairs = Enum.map(manifest["entries"], &pair/1)
     assert length(Enum.uniq(pairs)) == length(pairs), "duplicate endpoint pair"
     native_pairs = MapSet.new(native["pairs"], &normalize/1)
@@ -211,8 +211,13 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
 
       for name <- [row["method"] | Map.get(row, "variants", [])] do
         assert Map.has_key?(methods, name), "missing catalogue method"
-        typed = if methods[name]["reference_kind"] == "rest", do: "rest_typed", else: "typed"
-        assert typed in row["evidence"], "missing typed evidence"
+        # REST-only descriptors (no named Go method) cite their own rest_* typed evidence.
+        typed? =
+          if methods[name]["reference_kind"] == "rest",
+            do: Enum.any?(row["evidence"], &String.starts_with?(&1, "rest_")),
+            else: "typed" in row["evidence"]
+
+        assert typed?, "missing typed evidence"
         method = methods[name]
         assert pair(method) == pair(row), "method/endpoint mismatch"
         assert Enum.all?(~w(query extension guards body model result), &Map.has_key?(method, &1))
