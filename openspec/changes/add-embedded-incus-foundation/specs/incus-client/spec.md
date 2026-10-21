@@ -70,6 +70,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** reads agree with the pinned client for populated/empty/corrupt results, native 403/404, routing, extensions and lifetime cleanup, and synchronous writes agree for request bodies, ETags and native rejection while lost or malformed replies are uncertain and never replayed
 - **AND** reviewed records list each completed row, selectors the pinned client does not send and cluster forwarding are approved exclusions, and the metrics and ACL log rows stay partial while S07 is open
 
+#### Scenario: Completed administrative contracts
+
+- **WHEN** any B10 server, root discovery, certificate, cluster, project, profile, resource, metadata or warning method is called over Unix or mutual HTTPS
+- **THEN** reads, synchronous writes and asynchronous writes agree with the pinned client (or, for root discovery, with unchanged RawQuery transport) for results, request bodies, ETags, native rejection and accepted operations, guarded fields require their extensions before dispatch, and lost or malformed write replies are uncertain and never replayed
+- **AND** the trust-token certificate bootstrap is a certified supported view, while names-only filter selectors and cluster forwarding are recorded approved exclusions
+
 #### Scenario: Remaining initial inspection contracts
 
 - **WHEN** the nine B02 typed reads and explicit server discovery have scoped Unix/mutual-HTTPS fixture evidence
