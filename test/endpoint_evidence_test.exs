@@ -122,7 +122,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "37 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "57 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -135,12 +135,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                GetOperations GetOperation DeleteOperation GetOperationWait ExecInstance
                GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork
                GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume
-               PatchProject PatchProfile PatchImage PatchInstanceSnapshot)
+               PatchProject PatchProfile PatchImage PatchInstanceSnapshot
+               GetNetworkACLNames GetNetworkACL GetNetworkAddressSetNames GetNetworkAddressSet GetNetworkAllocations GetNetworkIntegrationNames GetNetworkIntegration GetNetworkZoneNames GetNetworkZone GetNetworkZoneRecords GetNetworkZoneRecord GetNetworkForwards GetNetworkForward GetNetworkLeases GetNetworkLoadBalancerAddresses GetNetworkLoadBalancer GetNetworkLoadBalancerState GetNetworkPeers GetNetworkPeer GetNetworkState)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
              "partial" => 6,
-             "complete" => 31
+             "complete" => 51
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -296,8 +297,29 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/instances/{}/snapshots", "b02_instance_snapshots_v1"},
              {"GET /1.0/instances/{}/snapshots/{}", "b02_instance_snapshot_v1"},
              {"GET /1.0/instances/{}/state", "b02_instance_state_v1"},
+             {"GET /1.0/network-acls", "b09_network_acls_v1"},
+             {"GET /1.0/network-acls/{}", "b09_network_acls_one_v1"},
+             {"GET /1.0/network-address-sets", "b09_network_address_sets_v1"},
+             {"GET /1.0/network-address-sets/{}", "b09_network_address_sets_one_v1"},
+             {"GET /1.0/network-allocations", "b09_network_allocations_v1"},
+             {"GET /1.0/network-integrations", "b09_network_integrations_v1"},
+             {"GET /1.0/network-integrations/{}", "b09_network_integrations_one_v1"},
+             {"GET /1.0/network-zones", "b09_network_zones_v1"},
+             {"GET /1.0/network-zones/{}", "b09_network_zones_one_v1"},
+             {"GET /1.0/network-zones/{}/records", "b09_network_zones_one_records_v1"},
+             {"GET /1.0/network-zones/{}/records/{}", "b09_network_zones_one_records_one_v1"},
              {"GET /1.0/networks", "b02_networks_v1"},
              {"GET /1.0/networks/{}", "b02_network_v1"},
+             {"GET /1.0/networks/{}/forwards", "b09_networks_one_forwards_v1"},
+             {"GET /1.0/networks/{}/forwards/{}", "b09_networks_one_forwards_one_v1"},
+             {"GET /1.0/networks/{}/leases", "b09_networks_one_leases_v1"},
+             {"GET /1.0/networks/{}/load-balancers", "b09_networks_one_load_balancers_v1"},
+             {"GET /1.0/networks/{}/load-balancers/{}", "b09_networks_one_load_balancers_one_v1"},
+             {"GET /1.0/networks/{}/load-balancers/{}/state",
+              "b09_networks_one_load_balancers_one_state_v1"},
+             {"GET /1.0/networks/{}/peers", "b09_networks_one_peers_v1"},
+             {"GET /1.0/networks/{}/peers/{}", "b09_networks_one_peers_one_v1"},
+             {"GET /1.0/networks/{}/state", "b09_networks_one_state_v1"},
              {"GET /1.0/operations", "b02_operations_v1"},
              {"GET /1.0/operations/{}", "b02_operation_v1"},
              {"GET /1.0/operations/{}/wait", "b03_native_wait_v1"},
