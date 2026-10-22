@@ -129,6 +129,73 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: B05 PATCH completion (2026-10-23)
+
+Complete all 24 B05 PATCH rows under reviewed `conditional_patch` records, one
+method per row. The four existing descriptors (`PatchProject`, `PatchProfile`,
+`PatchImage`, `PatchInstanceSnapshot`) are certified, and 20 new REST
+descriptors are added: `PatchServer`, `PatchCertificate`, `PatchClusterGroup`,
+`PatchClusterMember`, `PatchImageAlias`, `PatchInstanceMetadata`,
+`PatchNetworkACL`, `PatchNetworkAddressSet`, `PatchNetworkIntegration`,
+`PatchNetworkZone`, `PatchNetworkZoneRecord`, `PatchNetwork`,
+`PatchNetworkForward`, `PatchNetworkLoadBalancer`, `PatchNetworkPeer`,
+`PatchStoragePool`, `PatchStoragePoolBucket`, `PatchStoragePoolVolume`,
+`PatchStoragePoolVolumeSnapshot` and `PatchWarning`. No B05 row is linked to a
+stream contract.
+
+The pinned client has no PATCH method, so each descriptor takes the body model,
+path parameters, extension preflight and field guards of its pinned PUT
+counterpart (for example `failure_domain` on cluster members), and evidence is
+unchanged Go RawQuery transport plus independent fixtures, as for B04. Every new
+daemon handler returns HTTP 200 empty synchronous success; instance snapshot
+PATCH alone returns an accepted operation (HTTP 202). The implementation stops if
+a handler is found to differ.
+
+User decisions (2026-10-23):
+
+- Conditional-only on every row: a nonempty caller ETag (at most 1024 bytes) is
+  required, and unconditional PATCH stays an approved exclusion as in B04. The
+  daemon's forward, load balancer, peer, warning and storage bucket PATCH
+  handlers do not check If-Match; the ETag is sent there but not enforced, and
+  the docs say so.
+- Certify network peer PATCH with native semantics: the daemon handles it as a
+  full replace rather than a merge, so omitted fields are reset. The body is sent
+  unchanged and the docs record the replace behavior.
+- Custom volumes only for volume and volume snapshot PATCH. The daemon itself
+  accepts only custom volumes on volume PATCH; other snapshot volume types are an
+  approved exclusion.
+- Approved exclusions: unconditional PATCH, non-custom volume snapshot types and
+  cluster forwarding beyond host project/target routing. Approved difference: no
+  named pinned Go PATCH method; requests are compared through Go RawQuery.
+
+The `conditional_patch` record kind keeps its shared cases. `empty_sync` is
+derived for methods with an empty synchronous result. `restore_rejection` is
+derived for `InstancePut` bodies. The acceptance and native `/wait` cases are
+derived for operation results. The B04 record is unchanged.
+
+A new data-driven PATCH contract test runs every B05 method over Unix and mutual
+HTTPS with schema-driven `ModelSamples` bodies. It compares with Go RawQuery for
+empty, single-field, every-field, explicit null/false/empty and unknown-field
+bodies, and for If-Match, routing and native 400/403/404/412. Independent fixtures
+cover lost and malformed replies (uncertain after one PATCH, never replayed),
+deadline and cancellation peer cleanup, and preflight (no or oversized ETag,
+invalid body, empty path argument, unready host, missing extension, guarded
+field) before I/O. Snapshot PATCH also proves acceptance and `/wait`.
+
+PR 1 — 11 rows: the four existing descriptors plus server, certificate, cluster
+group and member, image alias, instance metadata and warning PATCH. The selected
+manifest grows 128 -> 135 pairs (133 complete), and confirmed typed gaps fall
+31 -> 24.
+
+PR 2 — 13 rows: nine network PATCH rows (networks, ACLs, address sets,
+integrations, zones and records, forwards, load balancers and peers) and four
+storage rows (pools, buckets, custom volumes and their snapshots). The manifest
+grows 135 -> 148 pairs (146 complete), and confirmed typed gaps fall 24 -> 11.
+
+Each PR updates the ledgers, closure ledger, backlog, client docs and generated
+coverage. Task 3.9, `complete_port` and every Go declaration status are
+unchanged.
+
 #### Approved slice: B10 administrative completion (2026-10-22)
 
 Complete all 40 B10 rows (server, root discovery, certificates, cluster, cluster
