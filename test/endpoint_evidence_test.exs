@@ -41,6 +41,14 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     [view | other_views] = first["documented_views"]
     views = [%{view | "selectors" => %{"recursion" => "99"}} | other_views]
     wrong_parameters = [%{view | "query_parameters" => ["absent"]} | other_views]
+    # The first row is complete, so the invented completion targets a partial row.
+    partial = Enum.find(audit["entries"], &(not &1["behavior_complete"]))
+
+    invented =
+      Enum.map(
+        audit["entries"],
+        &if(&1 == partial, do: %{&1 | "behavior_complete" => true}, else: &1)
+      )
 
     for changed <- [
           %{audit | "entries" => rest},
@@ -51,7 +59,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
           %{audit | "entries" => [first, first | rest]},
           put_in(audit, ["entries"], [Map.put(first, "methods", ["AbsentMethod"]) | rest]),
           put_in(audit, ["entries"], [Map.put(first, "backlog", "absent") | rest]),
-          put_in(audit, ["entries"], [Map.put(first, "behavior_complete", true) | rest]),
+          %{audit | "entries" => invented},
           put_in(audit, ["entries"], [Map.put(first, "documented_views", []) | rest]),
           %{audit | "server_sources" => %{}},
           %{audit | "supplemental_server_entries" => []},
@@ -122,7 +130,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "103 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "128 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -138,12 +146,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                PatchProject PatchProfile PatchImage PatchInstanceSnapshot
                GetNetworkACLNames GetNetworkACL GetNetworkAddressSetNames GetNetworkAddressSet GetNetworkAllocations GetNetworkIntegrationNames GetNetworkIntegration GetNetworkZoneNames GetNetworkZone GetNetworkZoneRecords GetNetworkZoneRecord GetNetworkForwards GetNetworkForward GetNetworkLeases GetNetworkLoadBalancerAddresses GetNetworkLoadBalancer GetNetworkLoadBalancerState GetNetworkPeers GetNetworkPeer GetNetworkState
                DeleteNetworkACL DeleteNetworkAddressSet DeleteNetworkIntegration DeleteNetworkZone DeleteNetworkZoneRecord DeleteNetwork DeleteNetworkForward DeleteNetworkLoadBalancer DeleteNetworkPeer CreateNetworkACL RenameNetworkACL CreateNetworkAddressSet RenameNetworkAddressSet CreateNetworkIntegration RenameNetworkIntegration CreateNetworkZone CreateNetworkZoneRecord CreateNetwork RenameNetwork CreateNetworkForward CreateNetworkLoadBalancer CreateNetworkPeer UpdateNetworkACL UpdateNetworkAddressSet UpdateNetworkIntegration UpdateNetworkZone UpdateNetworkZoneRecord UpdateNetwork UpdateNetworkForward UpdateNetworkLoadBalancer UpdateNetworkPeer
-               GetAPIVersions GetCertificateFingerprints GetCertificate GetCluster GetClusterGroups GetClusterGroup GetClusterMemberNames GetClusterMember GetClusterMemberState GetMetadataConfiguration GetProjectAccess GetProjectState GetServerResources GetWarningUUIDs GetWarning)
+               GetAPIVersions GetCertificateFingerprints GetCertificate GetCluster GetClusterGroups GetClusterGroup GetClusterMemberNames GetClusterMember GetClusterMemberState GetMetadataConfiguration GetProjectAccess GetProjectState GetServerResources GetWarningUUIDs GetWarning
+               UpdateServer CreateCertificate UpdateCertificate DeleteCertificate UpdateCluster UpdateClusterCertificate CreateClusterGroup RenameClusterGroup UpdateClusterGroup DeleteClusterGroup CreateClusterMember RenameClusterMember UpdateClusterMember DeleteClusterMember UpdateClusterMemberState CreateProfile RenameProfile UpdateProfile DeleteProfile CreateProject RenameProject UpdateProject DeleteProject UpdateWarning DeleteWarning)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
              "partial" => 6,
-             "complete" => 97
+             "complete" => 122
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -286,6 +295,9 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     assert audit["entries"]
            |> Enum.filter(& &1["behavior_complete"])
            |> Enum.map(&{&1["pair"], &1["completion_record"]}) == [
+             {"DELETE /1.0/certificates/{}", "b10_delete_certificates_one_v1"},
+             {"DELETE /1.0/cluster/groups/{}", "b10_delete_cluster_groups_one_v1"},
+             {"DELETE /1.0/cluster/members/{}", "b10_delete_cluster_members_one_v1"},
              {"DELETE /1.0/images/{}", "b01_delete_image_v1"},
              {"DELETE /1.0/instances/{}", "b01_delete_instance_v1"},
              {"DELETE /1.0/instances/{}/snapshots/{}", "b01_delete_instance_snapshot_v1"},
@@ -301,6 +313,9 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
               "b09_delete_networks_one_load_balancers_one_v1"},
              {"DELETE /1.0/networks/{}/peers/{}", "b09_delete_networks_one_peers_one_v1"},
              {"DELETE /1.0/operations/{}", "b01_cancel_operation_v1"},
+             {"DELETE /1.0/profiles/{}", "b10_delete_profiles_one_v1"},
+             {"DELETE /1.0/projects/{}", "b10_delete_projects_one_v1"},
+             {"DELETE /1.0/warnings/{}", "b10_delete_warnings_one_v1"},
              {"GET /", "b10_root_v1"},
              {"GET /1.0", "b02_discovery_v1"},
              {"GET /1.0/certificates", "b10_certificates_v1"},
@@ -360,6 +375,12 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/warnings", "b10_warnings_v1"},
              {"GET /1.0/warnings/{}", "b10_warnings_one_v1"},
              {"PATCH /1.0/instances/{}", "b04_instance_patch_v1"},
+             {"POST /1.0/certificates", "b10_post_certificates_v1"},
+             {"POST /1.0/cluster/groups", "b10_post_cluster_groups_v1"},
+             {"POST /1.0/cluster/groups/{}", "b10_post_cluster_groups_one_v1"},
+             {"POST /1.0/cluster/members", "b10_post_cluster_members_v1"},
+             {"POST /1.0/cluster/members/{}", "b10_post_cluster_members_one_v1"},
+             {"POST /1.0/cluster/members/{}/state", "b10_post_cluster_members_one_state_v1"},
              {"POST /1.0/instances/{}/exec", "b03_exec_v1"},
              {"POST /1.0/instances/{}/snapshots", "b01_create_instance_snapshot_v1"},
              {"POST /1.0/network-acls", "b09_post_network_acls_v1"},
@@ -375,6 +396,16 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"POST /1.0/networks/{}/forwards", "b09_post_networks_one_forwards_v1"},
              {"POST /1.0/networks/{}/load-balancers", "b09_post_networks_one_load_balancers_v1"},
              {"POST /1.0/networks/{}/peers", "b09_post_networks_one_peers_v1"},
+             {"POST /1.0/profiles", "b10_post_profiles_v1"},
+             {"POST /1.0/profiles/{}", "b10_post_profiles_one_v1"},
+             {"POST /1.0/projects", "b10_post_projects_v1"},
+             {"POST /1.0/projects/{}", "b10_post_projects_one_v1"},
+             {"PUT /1.0", "b10_put_server_v1"},
+             {"PUT /1.0/certificates/{}", "b10_put_certificates_one_v1"},
+             {"PUT /1.0/cluster", "b10_put_cluster_v1"},
+             {"PUT /1.0/cluster/certificate", "b10_put_cluster_certificate_v1"},
+             {"PUT /1.0/cluster/groups/{}", "b10_put_cluster_groups_one_v1"},
+             {"PUT /1.0/cluster/members/{}", "b10_put_cluster_members_one_v1"},
              {"PUT /1.0/instances/{}", "b01_update_instance_v1"},
              {"PUT /1.0/instances/{}/state", "b01_update_instance_state_v1"},
              {"PUT /1.0/network-acls/{}", "b09_put_network_acls_one_v1"},
@@ -386,7 +417,10 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"PUT /1.0/networks/{}/forwards/{}", "b09_put_networks_one_forwards_one_v1"},
              {"PUT /1.0/networks/{}/load-balancers/{}",
               "b09_put_networks_one_load_balancers_one_v1"},
-             {"PUT /1.0/networks/{}/peers/{}", "b09_put_networks_one_peers_one_v1"}
+             {"PUT /1.0/networks/{}/peers/{}", "b09_put_networks_one_peers_one_v1"},
+             {"PUT /1.0/profiles/{}", "b10_put_profiles_one_v1"},
+             {"PUT /1.0/projects/{}", "b10_put_projects_one_v1"},
+             {"PUT /1.0/warnings/{}", "b10_put_warnings_one_v1"}
            ]
 
     assert for(%{"status" => "certified", "id" => id} <- audit["stream_contracts"], do: id) ==
@@ -403,6 +437,8 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     discovery = ["completion_records", "b02_discovery_v1"]
     network_update = ["completion_records", "b09_put_networks_one_v1"]
     peer_create = ["completion_records", "b09_post_networks_one_peers_v1"]
+    certificates = ["completion_records", "b10_post_certificates_v1"]
+    cluster_update = ["completion_records", "b10_put_cluster_v1"]
     events = ["completion_records", "b03_events_v1"]
     socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
     head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
@@ -499,6 +535,16 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
           {update_in(audit, peer_create ++ ["evidence_kinds"], &Map.delete(&1, "peer_guard")),
            "stale completion evidence kinds"},
           {put_in(audit, network_update ++ ["kind"], "read_contract"), "missing completion case"},
+          # A synchronous record with an operation-returning method proves its lifecycle.
+          {update_in(audit, certificates ++ ["cases"], &Map.delete(&1, "running")),
+           "missing completion case"},
+          {update_in(audit, certificates ++ ["methods"], &(&1 -- ["CreateCertificateToken"])),
+           "stale completion methods"},
+          {update_in(
+             audit,
+             cluster_update ++ ["evidence_kinds"],
+             &Map.delete(&1, "admin_guards")
+           ), "stale completion evidence kinds"},
           {%{audit | "behavior_complete" => true}, ""},
           {%{audit | "complete_port" => true}, ""}
         ] do

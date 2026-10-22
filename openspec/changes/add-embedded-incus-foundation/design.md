@@ -164,7 +164,10 @@ listed method whose result is an operation, so the mixed `POST /1.0/certificates
 row (sync `CreateCertificate`, async `CreateCertificateToken`) proves both. The
 harness gains an asynchronous path reusing the B01 `/wait` composition. Guarded
 fields (`token`, cluster join fields, `failure_domain`) are rejected before
-dispatch without their extensions, compared with the pinned client.
+dispatch without their extensions, compared with the pinned client. The four
+rows whose every method returns an operation (`PUT /1.0/cluster`, cluster member
+create and state, project rename) use the existing `async_mutation` record kind,
+since they have no synchronous success to record.
 
 Each PR updates the ledgers, closure ledger, backlog, client docs and generated
 coverage, and stops if new transport infrastructure is needed. Task 3.9,

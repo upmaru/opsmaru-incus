@@ -320,36 +320,40 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateCertificateToken",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateClusterGroup",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateClusterMember",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateImage",
@@ -559,18 +563,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateProject",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateStoragePool",
@@ -718,27 +724,30 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteClusterGroup",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteClusterMember",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteImage",
@@ -933,36 +942,40 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteProfile",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteProject",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteProjectForce",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteStoragePool",
@@ -1051,9 +1064,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.ExecInstance",
@@ -2765,18 +2779,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.RenameClusterMember",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.RenameImageAlias",
@@ -2859,18 +2875,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.RenameProject",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.RenameStoragePoolVolume",
@@ -2923,54 +2941,60 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateCluster",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateClusterCertificate",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateClusterGroup",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateClusterMember",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateClusterMemberState",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateImage",
@@ -3134,27 +3158,30 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateProject",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateServer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateStoragePool",
@@ -3206,9 +3233,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UseProject",
@@ -3511,36 +3539,40 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateCertificateToken",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateClusterGroup",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateClusterMember",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateImage",
@@ -3750,18 +3782,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateProject",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateStoragePool",
@@ -3909,27 +3943,30 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteClusterGroup",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteClusterMember",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteImage",
@@ -4124,36 +4161,40 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteProfile",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteProject",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteProjectForce",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteStoragePool",
@@ -4242,9 +4283,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.Disconnect",
@@ -6172,18 +6214,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.RenameClusterMember",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.RenameImageAlias",
@@ -6266,18 +6310,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.RenameProject",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.RenameStoragePoolVolume",
@@ -6330,54 +6376,60 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateCluster",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateClusterCertificate",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateClusterGroup",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateClusterMember",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateClusterMemberState",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateImage",
@@ -6541,27 +6593,30 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateProject",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateServer",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateStoragePool",
@@ -6613,9 +6668,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B10 administrative write. The endpoint row is complete under a reviewed b10 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and guarded fields (token, cluster join fields, failure_domain) reject before dispatch. The trust-token certificate bootstrap from an untrusted client is certified. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UseProject",
