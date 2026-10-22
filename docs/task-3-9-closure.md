@@ -1220,9 +1220,11 @@ status (1239 partial / 41 missing) are unchanged.
   and root discovery in total).
 - [x] The shared `ModelSamples` generator now covers timestamps, floats, `uint16`,
   maps keyed by named string types and alias models (`Access` is a list,
-  `MetadataConfig` a nested map). List-shaped models answer `:empty` with `[]`;
-  corrupt samples break the first field whatever its type. Comparisons treat an
-  empty sent collection as equal to Go's `omitempty`-dropped field.
+  `MetadataConfig` a nested map). Samples are populated at every depth (no
+  generated collection is empty); the one self-referencing field, a GPU card's
+  SR-IOV `vfs`, is left out rather than sent empty. List-shaped models answer
+  `:empty` with `[]`; corrupt samples break the first field whatever its type.
+  Comparisons still require every sent field, with no empty-collection exception.
 - Approved exclusions (2026-10-22): names-only `filter` (certificates, cluster
   members) and cluster forwarding.
 

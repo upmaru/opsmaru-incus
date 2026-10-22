@@ -523,9 +523,6 @@ defmodule Opsmaru.Incus.InspectionContractTest do
 
   # Every field the fixture sent survives in the native DTO at every depth; the
   # DTO may add zero-valued fields the fixture omitted.
-  # Go omitempty drops an empty collection, which is that field's zero value.
-  defp sent?(nil, sent) when sent in [[], %{}], do: true
-
   defp sent?(native, sent) when is_map(sent),
     do: is_map(native) and Enum.all?(sent, fn {key, value} -> sent?(native[key], value) end)
 
