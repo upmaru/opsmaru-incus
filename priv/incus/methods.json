@@ -4662,6 +4662,130 @@
       "guards": [],
       "reference_kind": "rest",
       "operation_id": "api_get"
+    },
+    {
+      "name": "PatchServer",
+      "verb": "PATCH",
+      "path": "/1.0",
+      "params": [],
+      "query": {},
+      "extension": null,
+      "body": "ServerPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "server_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchCertificate",
+      "verb": "PATCH",
+      "path": "/1.0/certificates/{fingerprint}",
+      "params": [
+        "fingerprint"
+      ],
+      "query": {},
+      "extension": "certificate_update",
+      "body": "CertificatePut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "certificate_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchClusterGroup",
+      "verb": "PATCH",
+      "path": "/1.0/cluster/groups/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "clustering_groups",
+      "body": "ClusterGroupPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "cluster_group_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchClusterMember",
+      "verb": "PATCH",
+      "path": "/1.0/cluster/members/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "clustering_edit_roles",
+      "body": "ClusterMemberPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [
+        {
+          "field": "failure_domain",
+          "extension": "clustering_failure_domains"
+        }
+      ],
+      "reference_kind": "rest",
+      "operation_id": "cluster_member_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchImageAlias",
+      "verb": "PATCH",
+      "path": "/1.0/images/aliases/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "ImageAliasesEntryPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "images_alias_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchInstanceMetadata",
+      "verb": "PATCH",
+      "path": "/1.0/instances/{name}/metadata",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "container_edit_metadata",
+      "body": "ImageMetadata",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "instance_metadata_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchWarning",
+      "verb": "PATCH",
+      "path": "/1.0/warnings/{UUID}",
+      "params": [
+        "UUID"
+      ],
+      "query": {},
+      "extension": [
+        "warnings"
+      ],
+      "body": "WarningPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "warning_patch",
+      "conditional": true
     }
   ]
 }

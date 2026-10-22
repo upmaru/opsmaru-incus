@@ -130,7 +130,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "128 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "135 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -147,12 +147,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                GetNetworkACLNames GetNetworkACL GetNetworkAddressSetNames GetNetworkAddressSet GetNetworkAllocations GetNetworkIntegrationNames GetNetworkIntegration GetNetworkZoneNames GetNetworkZone GetNetworkZoneRecords GetNetworkZoneRecord GetNetworkForwards GetNetworkForward GetNetworkLeases GetNetworkLoadBalancerAddresses GetNetworkLoadBalancer GetNetworkLoadBalancerState GetNetworkPeers GetNetworkPeer GetNetworkState
                DeleteNetworkACL DeleteNetworkAddressSet DeleteNetworkIntegration DeleteNetworkZone DeleteNetworkZoneRecord DeleteNetwork DeleteNetworkForward DeleteNetworkLoadBalancer DeleteNetworkPeer CreateNetworkACL RenameNetworkACL CreateNetworkAddressSet RenameNetworkAddressSet CreateNetworkIntegration RenameNetworkIntegration CreateNetworkZone CreateNetworkZoneRecord CreateNetwork RenameNetwork CreateNetworkForward CreateNetworkLoadBalancer CreateNetworkPeer UpdateNetworkACL UpdateNetworkAddressSet UpdateNetworkIntegration UpdateNetworkZone UpdateNetworkZoneRecord UpdateNetwork UpdateNetworkForward UpdateNetworkLoadBalancer UpdateNetworkPeer
                GetAPIVersions GetCertificateFingerprints GetCertificate GetCluster GetClusterGroups GetClusterGroup GetClusterMemberNames GetClusterMember GetClusterMemberState GetMetadataConfiguration GetProjectAccess GetProjectState GetServerResources GetWarningUUIDs GetWarning
-               UpdateServer CreateCertificate UpdateCertificate DeleteCertificate UpdateCluster UpdateClusterCertificate CreateClusterGroup RenameClusterGroup UpdateClusterGroup DeleteClusterGroup CreateClusterMember RenameClusterMember UpdateClusterMember DeleteClusterMember UpdateClusterMemberState CreateProfile RenameProfile UpdateProfile DeleteProfile CreateProject RenameProject UpdateProject DeleteProject UpdateWarning DeleteWarning)
+               UpdateServer CreateCertificate UpdateCertificate DeleteCertificate UpdateCluster UpdateClusterCertificate CreateClusterGroup RenameClusterGroup UpdateClusterGroup DeleteClusterGroup CreateClusterMember RenameClusterMember UpdateClusterMember DeleteClusterMember UpdateClusterMemberState CreateProfile RenameProfile UpdateProfile DeleteProfile CreateProject RenameProject UpdateProject DeleteProject UpdateWarning DeleteWarning
+               PatchServer PatchCertificate PatchClusterGroup PatchClusterMember PatchImageAlias PatchInstanceMetadata PatchWarning)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
-             "partial" => 6,
-             "complete" => 122
+             "partial" => 2,
+             "complete" => 133
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -374,7 +375,18 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/storage-pools/{}/volumes/{}/{}", "b02_storage_volume_v1"},
              {"GET /1.0/warnings", "b10_warnings_v1"},
              {"GET /1.0/warnings/{}", "b10_warnings_one_v1"},
+             {"PATCH /1.0", "b05_patch_server_v1"},
+             {"PATCH /1.0/certificates/{}", "b05_patch_certificates_one_v1"},
+             {"PATCH /1.0/cluster/groups/{}", "b05_patch_cluster_groups_one_v1"},
+             {"PATCH /1.0/cluster/members/{}", "b05_patch_cluster_members_one_v1"},
+             {"PATCH /1.0/images/aliases/{}", "b05_patch_images_aliases_one_v1"},
+             {"PATCH /1.0/images/{}", "b05_patch_images_one_v1"},
              {"PATCH /1.0/instances/{}", "b04_instance_patch_v1"},
+             {"PATCH /1.0/instances/{}/metadata", "b05_patch_instances_one_metadata_v1"},
+             {"PATCH /1.0/instances/{}/snapshots/{}", "b05_patch_instances_one_snapshots_one_v1"},
+             {"PATCH /1.0/profiles/{}", "b05_patch_profiles_one_v1"},
+             {"PATCH /1.0/projects/{}", "b05_patch_projects_one_v1"},
+             {"PATCH /1.0/warnings/{}", "b05_patch_warnings_one_v1"},
              {"POST /1.0/certificates", "b10_post_certificates_v1"},
              {"POST /1.0/cluster/groups", "b10_post_cluster_groups_v1"},
              {"POST /1.0/cluster/groups/{}", "b10_post_cluster_groups_one_v1"},
@@ -439,6 +451,8 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     peer_create = ["completion_records", "b09_post_networks_one_peers_v1"]
     certificates = ["completion_records", "b10_post_certificates_v1"]
     cluster_update = ["completion_records", "b10_put_cluster_v1"]
+    server_patch = ["completion_records", "b05_patch_server_v1"]
+    snapshot_patch = ["completion_records", "b05_patch_instances_one_snapshots_one_v1"]
     events = ["completion_records", "b03_events_v1"]
     socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
     head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
@@ -545,6 +559,16 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              cluster_update ++ ["evidence_kinds"],
              &Map.delete(&1, "admin_guards")
            ), "stale completion evidence kinds"},
+          # A conditional PATCH proves its own result kind: empty sync or accepted /wait.
+          {update_in(audit, server_patch ++ ["cases"], &Map.delete(&1, "empty_sync")),
+           "missing completion case"},
+          {update_in(audit, snapshot_patch ++ ["cases"], &Map.delete(&1, "running")),
+           "missing completion case"},
+          {update_in(
+             audit,
+             server_patch ++ ["cases"],
+             &Map.put(&1, "restore_rejection", ["rest_patch"])
+           ), "missing completion case"},
           {%{audit | "behavior_complete" => true}, ""},
           {%{audit | "complete_port" => true}, ""}
         ] do
