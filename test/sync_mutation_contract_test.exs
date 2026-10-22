@@ -1,16 +1,20 @@
 defmodule Opsmaru.Incus.SyncMutationContractTest do
-  @moduledoc "B09 synchronous write contracts compared with the named pinned Go methods."
+  @moduledoc "B09/B10 write contracts compared with the named pinned Go methods."
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Connection, Context, Error, Server}
+  alias Opsmaru.Incus.{Connection, Context, Error, Operation, RequestContext, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, ModelSamples, TLSIdentity, WireComparison}
   @driver Path.expand("../.integration/sync-mutation-driver", __DIR__)
 
   # B09 PR 2: every synchronous network write (create, rename, update, delete).
-  @names ~w(CreateNetwork RenameNetwork UpdateNetwork DeleteNetwork CreateNetworkACL RenameNetworkACL UpdateNetworkACL DeleteNetworkACL CreateNetworkAddressSet RenameNetworkAddressSet UpdateNetworkAddressSet DeleteNetworkAddressSet CreateNetworkIntegration RenameNetworkIntegration UpdateNetworkIntegration DeleteNetworkIntegration CreateNetworkZone UpdateNetworkZone DeleteNetworkZone CreateNetworkZoneRecord UpdateNetworkZoneRecord DeleteNetworkZoneRecord CreateNetworkForward UpdateNetworkForward DeleteNetworkForward CreateNetworkLoadBalancer UpdateNetworkLoadBalancer DeleteNetworkLoadBalancer CreateNetworkPeer UpdateNetworkPeer DeleteNetworkPeer)
-  @methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
-           |> Enum.filter(&(&1["name"] in @names))
-  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer)
+  @b09 ~w(CreateNetwork RenameNetwork UpdateNetwork DeleteNetwork CreateNetworkACL RenameNetworkACL UpdateNetworkACL DeleteNetworkACL CreateNetworkAddressSet RenameNetworkAddressSet UpdateNetworkAddressSet DeleteNetworkAddressSet CreateNetworkIntegration RenameNetworkIntegration UpdateNetworkIntegration DeleteNetworkIntegration CreateNetworkZone UpdateNetworkZone DeleteNetworkZone CreateNetworkZoneRecord UpdateNetworkZoneRecord DeleteNetworkZoneRecord CreateNetworkForward UpdateNetworkForward DeleteNetworkForward CreateNetworkLoadBalancer UpdateNetworkLoadBalancer DeleteNetworkLoadBalancer CreateNetworkPeer UpdateNetworkPeer DeleteNetworkPeer)
+  # B10 PR 2: every administrative write, synchronous or accepted as an operation.
+  @b10 ~w(UpdateServer CreateCertificate CreateCertificateToken UpdateCertificate DeleteCertificate UpdateCluster UpdateClusterCertificate CreateClusterGroup RenameClusterGroup UpdateClusterGroup DeleteClusterGroup CreateClusterMember RenameClusterMember UpdateClusterMember DeleteClusterMember DeletePendingClusterMember UpdateClusterMemberState CreateProfile RenameProfile UpdateProfile DeleteProfile CreateProject RenameProject UpdateProject DeleteProject DeleteProjectForce UpdateWarning DeleteWarning)
+  @all_methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
+  @methods Enum.filter(@all_methods, &(&1["name"] in (@b09 ++ @b10)))
+  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings)
+  @uuid "01234567-89ab-cdef-0123-456789abcdef"
+  @url "/1.0/operations/" <> @uuid
   @etag "\"before\""
 
   setup_all do
@@ -22,8 +26,8 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 31
-    assert Enum.all?(@methods, &(&1["result"] == "sync"))
+    assert length(@methods) == 59
+    assert Enum.all?(@methods, &(&1["result"] in ["sync", "operation"]))
     :ok
   end
 
@@ -35,7 +39,7 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     %{root: root}
   end
 
-  for method <- @methods, transport <- [:unix, :https] do
+  for method <- @methods, method["result"] == "sync", transport <- [:unix, :https] do
     test "#{method["name"]} #{transport} synchronous write matches native request, result and rejection",
          %{root: root} do
       method = unquote(Macro.escape(method))
@@ -44,7 +48,73 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       for outcome <- [:sync, 400, 403, 404, 409, 412, :eof, :malformed],
           do: compare(root, identity, method, outcome)
 
+      # An unset force flag sends no force query, as in the pinned client.
+      if "force" in method["params"], do: compare(root, identity, method, :sync, false)
       preflight(root, identity, method)
+    end
+  end
+
+  for method <- @methods, method["result"] == "operation", transport <- [:unix, :https] do
+    test "#{method["name"]} #{transport} asynchronous write matches native request, operation and wait",
+         %{root: root} do
+      method = unquote(Macro.escape(method))
+      identity = identity(root, unquote(transport))
+
+      # Accepted, then native /wait running, completed, failed and cancelled snapshots.
+      waits = for code <- [103, 200, 400, 401], do: {:wait, code}
+
+      for outcome <- waits ++ [:bad_operation, 400, 403, 404, 409, 412, :eof, :malformed],
+          do: compare(root, identity, method, outcome)
+
+      preflight(root, identity, method)
+    end
+  end
+
+  for transport <- [:unix, :https] do
+    test "#{transport} guarded administrative fields reject before dispatch", %{root: root} do
+      identity = identity(root, unquote(transport))
+
+      for method <- @methods, method["name"] in @b10, guard <- method["guards"] do
+        others = for other <- method["guards"], other != guard, do: other["field"]
+        guarded(root, identity, method, guard, Map.drop(body(method), others))
+      end
+    end
+
+    test "#{transport} untrusted clients bootstrap trust with a trust token", %{root: root} do
+      identity = identity(root, unquote(transport))
+      method = Enum.find(@methods, &(&1["name"] == "CreateCertificate"))
+
+      body = %{
+        "name" => "fixture-client",
+        "type" => "client",
+        "trust_token" => "fixture-trust-token"
+      }
+
+      for outcome <- [:sync, 403] do
+        fixture = backend(root, identity, fn _ -> reply(outcome) end, @extensions, "untrusted")
+        expected = oracle(root, fixture, identity, method, %{}, body)
+        context = Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end)
+
+        # Discovery reports the untrusted client; the trust-token request still dispatches.
+        assert {:ok, client} = Incus.connect(client(fixture, identity, []).connection, context)
+        assert client.server.auth == "untrusted"
+        actual = call(client, method, normalized(expected, method, body))
+        assert [%{method: "GET"}, native, %{method: "GET"}, local] = HTTPFixture.requests(fixture)
+        assert WireComparison.request(native) == WireComparison.request(local)
+        assert Jason.decode!(local.body)["trust_token"] == "fixture-trust-token"
+
+        case outcome do
+          :sync ->
+            refute expected["error"]
+            assert {:ok, %{type: "sync", http_status: 200}} = actual
+
+          403 ->
+            assert expected["error_status"] == 403
+
+            assert {:error, %Error{kind: :native, http_status: 403, message: message}} = actual
+            assert expected["error"] == message
+        end
+      end
     end
   end
 
@@ -78,19 +148,49 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     end
   end
 
-  defp compare(root, identity, method, outcome) do
-    fixture = backend(root, identity, fn _ -> reply(outcome) end)
+  defp compare(root, identity, method, outcome, force \\ true) do
+    fixture = backend(root, identity, &respond(outcome, &1))
+
     body = body(method)
-    expected = oracle(root, fixture, identity, method, args(method), body)
+    args = args(method, force)
+    expected = oracle(root, fixture, identity, method, args, body)
     client = client(fixture, identity, @extensions)
-    actual = call(client, method, normalized(expected, method, body))
+
+    actual =
+      Incus.call(client, method["name"], args, opts(method, normalized(expected, method, body)))
+
     assert [%{method: "GET"}, native, local] = HTTPFixture.requests(fixture)
     assert local.method == method["verb"]
     assert WireComparison.request(native) == WireComparison.request(local)
     query = URI.decode_query(URI.parse(local.target).query || "")
-    assert query == %{"project" => "fixture scope", "target" => "member/a"}
+
+    assert Map.take(query, ~w(project target)) == %{
+             "project" => "fixture scope",
+             "target" => "member/a"
+           }
+
     if method["verb"] == "PUT", do: assert(local.headers["if-match"] == @etag)
 
+    case outcome do
+      {:wait, code} ->
+        refute expected["error"]
+        accepted(root, fixture, identity, client, actual, expected, code)
+
+      _ ->
+        check(outcome, actual, expected, client)
+    end
+  end
+
+  # An accepted write answers its own /wait with the requested snapshot.
+  defp respond({:wait, code}, request) do
+    if String.ends_with?(URI.parse(request.target).path, "/wait"),
+      do: envelope(200, "sync", snapshot(code)),
+      else: envelope(202, "async", snapshot(103))
+  end
+
+  defp respond(outcome, _request), do: reply(outcome)
+
+  defp check(outcome, actual, expected, client) do
     case outcome do
       :sync ->
         refute expected["error"]
@@ -108,8 +208,95 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       # A dispatched write whose reply is lost or malformed may have taken effect.
       lost when lost in [:eof, :malformed] ->
         assert expected["error"]
-        assert {:error, %Error{kind: :uncertain}} = actual
+        assert {:error, %Error{kind: :uncertain, operation: nil}} = actual
+
+      # Acceptance with an unusable operation keeps its identity and is never replayed.
+      :bad_operation ->
+        assert expected["error"]
+        assert {:error, %Error{kind: :uncertain, operation: @url}} = actual
     end
+  end
+
+  # The accepted operation binds to its connection; native /wait reports its outcome.
+  defp accepted(root, fixture, identity, client, actual, expected, code) do
+    assert {:ok, reply} = actual
+    assert {reply.type, reply.http_status, reply.operation} == {"async", 202, @url}
+    assert reply.connection == client.connection and reply.identity == :verified
+    assert {:ok, operation} = Operation.from_response(client, reply)
+    assert operation.client == client and operation.url == @url
+    refute Operation.completed?(operation)
+    assert reply.metadata.data == snapshot(103)
+    assert Map.take(hd(expected["outputs"]), Map.keys(snapshot(103))) == snapshot(103)
+
+    timeout = if code == 103, do: 0, else: 1
+    wait = Enum.find(@all_methods, &(&1["name"] == "GetOperationWait"))
+
+    expected =
+      oracle(root, fixture, identity, wait, %{"uuid" => @uuid, "timeout" => timeout}, nil)
+
+    assert {:ok, waited} =
+             Incus.call(client, "GetOperationWait", %{"uuid" => @uuid, "timeout" => timeout})
+
+    assert [_, _, _, %{method: "GET"}, native_wait, local_wait] = HTTPFixture.requests(fixture)
+    assert WireComparison.request(native_wait) == WireComparison.request(local_wait)
+    assert URI.parse(local_wait.target).path == @url <> "/wait"
+    assert waited.metadata.data == snapshot(code)
+    assert Map.take(hd(expected["outputs"]), Map.keys(snapshot(code))) == snapshot(code)
+    current = %{operation | response: waited}
+    assert Operation.completed?(current) == (code != 103)
+    assert Operation.successful?(current) == (code == 200)
+
+    # Local deadline and cancellation end only the local wait; the handle is unchanged.
+    for kind <- [:deadline, :canceled] do
+      context = RequestContext.new!(timeout: 30_000)
+
+      context =
+        if kind == :deadline,
+          do: %{context | deadline: System.monotonic_time(:millisecond) - 1},
+          else: context
+
+      if kind == :canceled, do: RequestContext.cancel(context)
+
+      assert {:error, %Error{kind: ^kind}} =
+               Incus.call(Incus.with_context(client, context), "GetOperationWait", %{
+                 "uuid" => @uuid,
+                 "timeout" => 1
+               })
+
+      assert operation.url == @url and operation.client.connection.request_context == nil
+    end
+
+    assert length(HTTPFixture.requests(fixture)) == 6
+  end
+
+  # Without the guard's extension, or with a required value unmet, both clients
+  # reject before sending the write.
+  defp guarded(root, identity, method, %{"extension" => extension}, body) do
+    extensions = @extensions -- [extension]
+
+    fixture =
+      backend(root, identity, fn _ -> flunk("guarded write was dispatched") end, extensions)
+
+    expected = oracle(root, fixture, identity, method, args(method), body)
+    assert expected["error"] =~ extension
+
+    assert {:error, %Error{kind: :unsupported_extension, extension: ^extension}} =
+             call(client(fixture, identity, extensions), method, body)
+
+    # Only the pinned client's server discovery reached the fixture.
+    assert [%{method: "GET", target: "/1.0"}] = HTTPFixture.requests(fixture)
+  end
+
+  defp guarded(root, identity, method, %{"field" => field, "equals" => value}, body) do
+    body = Map.put(body, field, not value)
+    fixture = backend(root, identity, fn _ -> flunk("guarded write was dispatched") end)
+    expected = oracle(root, fixture, identity, method, args(method), body)
+    assert expected["error"]
+
+    assert {:error, %Error{kind: :invalid_body}} =
+             call(client(fixture, identity, @extensions), method, body)
+
+    assert [%{method: "GET", target: "/1.0"}] = HTTPFixture.requests(fixture)
   end
 
   # Invalid input, unready hosts and missing extensions reject before any I/O.
@@ -179,9 +366,22 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   defp body(%{"name" => "CreateNetworkPeer", "body" => model}),
     do: %{ModelSamples.generate(model) | "type" => "local"}
 
+  # A plain certificate addition is not a token request; that guard has its own test.
+  defp body(%{"name" => "CreateCertificate", "body" => model}),
+    do: %{ModelSamples.generate(model) | "token" => false}
+
   defp body(%{"body" => model}), do: ModelSamples.generate(model)
 
-  defp args(method), do: Map.new(method["params"], &{&1, "fixture /" <> &1})
+  # The pinned client leaves legal parameters unescaped, so they carry no reserved characters.
+  defp args(method, force \\ true),
+    do:
+      Map.new(method["params"], fn
+        "force" -> {"force", force}
+        param -> {param, legal(method, param) <> param}
+      end)
+
+  defp legal(method, param),
+    do: if(param in Map.get(method, "legal_params", []), do: "fixture-", else: "fixture /")
 
   defp oracle(root, fixture, identity, method, args, body) do
     values =
@@ -211,18 +411,43 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       body: %{type: "sync", status_code: 200, metadata: %{}}
     }
 
+  defp reply(:bad_operation), do: envelope(202, "async", %{"status_code" => "bad"})
+
   defp reply(:eof), do: %{upgrade: fn _, _ -> :ok end}
   defp reply(:malformed), do: %{status: 200, body: "malformed"}
 
   defp reply(code),
     do: %{status: code, body: %{type: "error", error_code: code, error: "native write rejection"}}
 
+  defp envelope(status, type, data),
+    do: %{
+      status: status,
+      headers: %{"ETag" => "\"lifecycle\""},
+      body: %{
+        type: type,
+        status_code: if(type == "async", do: 100, else: 200),
+        operation: if(type == "async", do: @url, else: ""),
+        metadata: data
+      }
+    }
+
+  defp snapshot(code),
+    do: %{
+      "id" => @uuid,
+      "status_code" => code,
+      "status" =>
+        %{103 => "Running", 200 => "Success", 400 => "Failure", 401 => "Cancelled"}[code],
+      "err" => %{400 => "fixture failure", 401 => "operation canceled"}[code] || "",
+      "may_cancel" => true,
+      "metadata" => %{"fixture" => "retained"}
+    }
+
   defp identity(_root, :unix), do: nil
 
   defp identity(root, :https),
     do: TLSIdentity.generate(root, "sync-#{System.unique_integer([:positive])}", "localhost")
 
-  defp backend(root, identity, handler, extensions \\ @extensions) do
+  defp backend(root, identity, handler, extensions \\ @extensions, auth \\ "trusted") do
     options =
       if identity,
         do: [
@@ -245,12 +470,18 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
        options ++
          [
            handler: fn request ->
-             if URI.parse(request.target).path == "/1.0",
+             # Discovery only: PUT /1.0 is the UpdateServer write under test.
+             if request.method == "GET" and URI.parse(request.target).path == "/1.0",
                do: %{
                  status: 200,
                  body: %{
                    type: "sync",
-                   metadata: %{api_version: "1.0", api_extensions: extensions, environment: %{}}
+                   metadata: %{
+                     api_version: "1.0",
+                     api_extensions: extensions,
+                     auth: auth,
+                     environment: %{}
+                   }
                  }
                },
                else: handler.(request)

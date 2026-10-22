@@ -382,7 +382,14 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
         do: ~w(discovery_required_fields discovery_version),
         else: []
 
-    Enum.uniq(@record_cases[record["kind"]] ++ derived ++ discovery)
+    # A synchronous write record listing an operation-returning method also proves
+    # acceptance and the native /wait lifecycle; other kinds name their own.
+    async =
+      if record["kind"] == "sync_mutation" and Enum.any?(methods, &(&1["result"] == "operation")),
+        do: ~w(accepted_identity running completed failed cancelled local_lifetime),
+        else: []
+
+    Enum.uniq(@record_cases[record["kind"]] ++ derived ++ discovery ++ async)
   end
 
   # Mirrors the client: explicit conditional descriptors and empty-sync PATCH require an ETag.

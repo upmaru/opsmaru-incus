@@ -23,7 +23,7 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     assert manifest["inventory_complete"] == false
     assert manifest["complete_port"] == false
     assert manifest["catalogue_contracts"] == ~w(query extension guards body model result)
-    assert length(manifest["entries"]) == 103
+    assert length(manifest["entries"]) == 128
     pairs = Enum.map(manifest["entries"], &pair/1)
     assert length(Enum.uniq(pairs)) == length(pairs), "duplicate endpoint pair"
     native_pairs = MapSet.new(native["pairs"], &normalize/1)

@@ -320,11 +320,11 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 103 pairs are currently in the checked
-evidence manifest. Ninety-seven are complete under reviewed completion records:
+pairs plus 46 query/access variants; 128 pairs are currently in the checked
+evidence manifest. 122 are complete under reviewed completion records:
 native wait, events, exec, seven single-method B01 mutations, conditional instance
-PATCH, all twenty B02 inspection rows, 51 B09 network rows and fifteen B10
-administrative reads. The other 6 are partial. It retains remaining copy/stream/model/helper scope without
+PATCH, all twenty B02 inspection rows, 51 B09 network rows and all forty B10
+administrative rows. The other 6 are partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
@@ -534,6 +534,17 @@ real daemon; this is a recorded approved difference.
 `GET /` and returns the server's supported API version paths, for example
 `["/1.0"]`. The pinned Go client has no such method; the request is sent exactly
 as `GET /` with no project or target, and non-string entries are rejected.
+
+Administrative writes (server, certificate, cluster, cluster group and member,
+profile, project and warning) are `Incus.call/4` methods. `UpdateCluster`,
+`CreateClusterMember`, `UpdateClusterMemberState`, `RenameProject` and
+`CreateCertificateToken` return an accepted operation, observed through native
+`/wait`; the others are synchronous. Guarded fields are refused before dispatch
+as in the pinned client: cluster join fields need `clustering_join`, a member
+`failure_domain` needs `clustering_failure_domains`, and `CreateCertificateToken`
+requires `token: true`. A client the server does not yet trust bootstraps trust
+with `CreateCertificate` and a `trust_token` body; discovery reports
+`auth: "untrusted"` and the request is sent unchanged.
 
 The typed native long-poll methods `GetOperationWait` and `GetOperationWaitSecret`
 (`Incus.call/4`) are separate from polling. `timeout` must be an integer in

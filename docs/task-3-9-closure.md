@@ -1228,3 +1228,33 @@ status (1239 partial / 41 missing) are unchanged.
 - Approved exclusions (2026-10-22): names-only `filter` (certificates, cluster
   members) and cluster forwarding.
 
+
+## B10 administrative completion (PR 2: writes)
+
+Approved 2026-10-22. The 25 B10 write rows (server, certificates, cluster,
+cluster certificate, groups and members, member state, profiles, projects and
+warnings; 28 methods, 5 of them asynchronous) are complete and join the selected
+manifest (103 -> 128 pairs). All 40 B10 rows are now complete. Task 3.9,
+`complete_port` and every Go declaration status (1239 partial / 41 missing) are
+unchanged.
+
+- [x] `sync_mutation_contract_test.exs` now covers 59 write methods. Each
+  synchronous write is compared as in B09; an unset `force` flag is also compared
+  (no force query). Each asynchronous write is compared with the named Go method
+  through acceptance, operation binding and native `/wait` running, completed,
+  failed and cancelled snapshots, then local deadline and cancellation of the wait
+  with the handle unchanged. Unusable acceptance keeps the operation identity and
+  is never replayed.
+- [x] Guarded fields reject before dispatch, compared with the pinned client:
+  each cluster join field without `clustering_join`, `failure_domain` without
+  `clustering_failure_domains`, and `CreateCertificateToken` with `token: false`.
+- [x] The trust-token bootstrap (`POST /1.0/certificates?public`) is certified:
+  discovery reports `auth: "untrusted"`, and `CreateCertificate` with a
+  `trust_token` body is sent and answered (success and native 403) as in the
+  pinned client on both transports.
+- [x] Four rows whose every method is asynchronous use `async_mutation` records.
+  The mixed `POST /1.0/certificates` row stays `sync_mutation`; the validator
+  derives the acceptance and `/wait` cases for any `sync_mutation` record that
+  lists an operation-returning method, with negative tests.
+- Approved exclusion (2026-10-22): cluster forwarding. Real-daemon administrative
+  effects remain separately recorded.
