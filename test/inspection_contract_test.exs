@@ -11,14 +11,19 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   @b02_storage ~w(GetProjectNames GetProjectsWithFilter GetProfileNames GetProfilesWithFilter GetProfilesAllProjects GetProfilesAllProjectsWithFilter GetNetworkNames GetNetworksWithFilter GetNetworksAllProjects GetNetworksAllProjectsWithFilter GetStoragePoolNames GetStoragePoolsWithFilter GetStoragePoolVolumesWithFilter GetStoragePoolVolumesFull GetStoragePoolVolumesFullWithFilter GetStoragePoolVolumeNames GetStoragePoolVolumesAllProjects GetStoragePoolVolumesWithFilterAllProjects GetStoragePoolVolumesFullAllProjects GetStoragePoolVolumesFullWithFilterAllProjects GetStoragePoolVolumeNamesAllProjects GetStoragePoolVolumeFull)
   # B09 PR 1: every read method mapped to the network rows.
   @b09 ~w(GetNetworkACLNames GetNetworkACLs GetNetworkACLsAllProjects GetNetworkACL GetNetworkAddressSetNames GetNetworkAddressSets GetNetworkAddressSetsAllProjects GetNetworkAddressSet GetNetworkAllocations GetNetworkAllocationsAllProjects GetNetworkIntegrationNames GetNetworkIntegrations GetNetworkIntegration GetNetworkZoneNames GetNetworkZones GetNetworkZonesAllProjects GetNetworkZone GetNetworkZoneRecords GetNetworkZoneRecordNames GetNetworkZoneRecord GetNetworkForwards GetNetworkForwardAddresses GetNetworkForward GetNetworkLeases GetNetworkLoadBalancerAddresses GetNetworkLoadBalancers GetNetworkLoadBalancer GetNetworkLoadBalancerState GetNetworkPeers GetNetworkPeerNames GetNetworkPeer GetNetworkState)
+  # B10 PR 1: every read method mapped to the administrative rows.
+  @b10 ~w(GetCertificateFingerprints GetCertificates GetCertificatesWithFilter GetCertificate GetCluster GetClusterGroups GetClusterGroupNames GetClusterGroup GetClusterMemberNames GetClusterMembers GetClusterMembersWithFilter GetClusterMember GetClusterMemberState GetMetadataConfiguration GetProjectAccess GetProjectState GetServerResources GetWarningUUIDs GetWarnings GetWarning)
   @methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
-           |> Enum.filter(&(&1["name"] in (@names ++ @b02 ++ @b02_storage ++ @b09)))
+           |> Enum.filter(&(&1["name"] in (@names ++ @b02 ++ @b02_storage ++ @b09 ++ @b10)))
   # Models without a hand-written sample get a schema-driven one (ModelSamples).
-  @generated ~w(NetworkACL NetworkAddressSet NetworkAllocations NetworkForward NetworkIntegration NetworkLease NetworkLoadBalancer NetworkLoadBalancerState NetworkPeer NetworkState NetworkZone NetworkZoneRecord)
+  @generated ~w(NetworkACL NetworkAddressSet NetworkAllocations NetworkForward NetworkIntegration NetworkLease NetworkLoadBalancer NetworkLoadBalancerState NetworkPeer NetworkState NetworkZone NetworkZoneRecord Access Certificate Cluster ClusterGroup ClusterMember ClusterMemberState MetadataConfiguration ProjectState Resources Warning)
   # Discovery is a public helper, not a named Go GetServer DTO comparison.
   @discovery %{"name" => "connect", "params" => [], "result" => "discovery", "model" => "Server"}
-  @contracts @methods ++ [@discovery]
-  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects networks_all_projects profiles_all_projects storage_volume_full storage_volumes_all_projects network_acl network_acls_all_projects network_address_set network_allocations network_dns network_dns_records network_forward network_integrations network_leases network_load_balancer network_load_balancer_state network_peer network_state network_zones_all_projects)
+  # Root API version discovery has no named Go method; it is compared through RawQuery.
+  @root Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
+        |> Enum.find(&(&1["name"] == "GetAPIVersions"))
+  @contracts @methods ++ [@discovery, @root]
+  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects networks_all_projects profiles_all_projects storage_volume_full storage_volumes_all_projects network_acl network_acls_all_projects network_address_set network_allocations network_dns network_dns_records network_forward network_integrations network_leases network_load_balancer network_load_balancer_state network_peer network_state network_zones_all_projects cluster_member_state clustering clustering_groups metadata_configuration project_access project_usage resources warnings)
   @driver Path.expand("../.integration/inspection-driver", __DIR__)
 
   setup_all do
@@ -30,7 +35,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 91
+    assert length(@methods) == 111
     :ok
   end
 
@@ -181,12 +186,18 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       })
 
     input =
-      if method == @discovery,
-        do:
+      case method do
+        @discovery ->
           input
           |> Map.drop([:action, :args])
-          |> Map.merge(%{method: "GET", path: "/1.0?project=fixture+scope&target=member%2Fa"}),
-        else: input
+          |> Map.merge(%{method: "GET", path: "/1.0?project=fixture+scope&target=member%2Fa"})
+
+        @root ->
+          input |> Map.drop([:action, :args]) |> Map.merge(%{method: "GET", path: "/"})
+
+        _ ->
+          input
+      end
 
     file = Path.join(root, "oracle.json")
     File.write!(file, Jason.encode!(input))
@@ -195,17 +206,24 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     expected = Jason.decode!(out)
     actual = invoke(client, method)
     requests = HTTPFixture.requests(fixture)
-    if method != @discovery, do: assert(length(requests) == 3)
-    assert [native, local] = if(method == @discovery, do: requests, else: tl(requests))
+    raw? = method in [@discovery, @root]
+    if not raw?, do: assert(length(requests) == 3)
+    assert [native, local] = if(raw?, do: requests, else: tl(requests))
     assert local.method == "GET"
     assert WireComparison.request(local) == WireComparison.request(native)
-    query = URI.decode_query(URI.parse(local.target).query)
-    assert query["target"] == "member/a"
 
-    # all-projects suppresses the connection project, as in the pinned client.
-    if method["query"]["all-projects"],
-      do: assert(query["all-projects"] == "true" and not Map.has_key?(query, "project")),
-      else: assert(query["project"] == "fixture scope")
+    if method == @root do
+      # The unversioned root takes no project or target, as the daemon serves it.
+      assert local.target == "/"
+    else
+      query = URI.decode_query(URI.parse(local.target).query)
+      assert query["target"] == "member/a"
+
+      # all-projects suppresses the connection project, as in the pinned client.
+      if method["query"]["all-projects"],
+        do: assert(query["all-projects"] == "true" and not Map.has_key?(query, "project")),
+        else: assert(query["project"] == "fixture scope")
+    end
 
     assert_result(actual, expected, client, method, outcome)
   end
@@ -227,6 +245,9 @@ defmodule Opsmaru.Incus.InspectionContractTest do
 
       method == @discovery ->
         discovery_result(actual, expected, client, outcome)
+
+      method == @root ->
+        root_result(actual, expected, client, outcome)
 
       outcome in [:corrupt, :corrupt_backup, :grouped, :nested] ->
         assert expected["error"]
@@ -270,7 +291,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
 
     assert decoded == payload
     # The native typed DTO drops unknown fields; lossless retention is independent evidence.
-    known = fn data -> Map.delete(data, "future_field") end
+    known = fn data -> if is_map(data), do: Map.delete(data, "future_field"), else: data end
 
     if listed? do
       native = ordered(hd(expected["outputs"]), method)
@@ -370,6 +391,23 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     end
   end
 
+  # Versions are bounded strings; RawQuery returns the raw list, the client validates it.
+  defp root_result(actual, native, client, outcome) do
+    refute native["error"]
+    assert native["response"]["metadata"] == metadata(@root, outcome)
+
+    if outcome == :corrupt do
+      assert {:error, %Error{kind: :invalid_model}} = actual
+    else
+      assert {:ok, reply} = actual
+      assert reply.metadata == metadata(@root, outcome)
+      assert reply.connection == client.connection and reply.identity == :verified
+    end
+  end
+
+  defp metadata(@root, :populated), do: ["/1.0"]
+  defp metadata(@root, :empty), do: []
+  defp metadata(@root, :corrupt), do: ["/1.0", 1]
   defp metadata(@discovery, :missing), do: %{}
   defp metadata(@discovery, :empty), do: %{"api_version" => "1.0", "api_extensions" => []}
   defp metadata(@discovery, :version), do: %{sample("Server") | "api_version" => "2.0"}
@@ -380,6 +418,10 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   defp metadata(%{"result" => result}, :empty)
        when result in ~w(list names project_names project_urls),
        do: []
+
+  # A list-shaped (alias) model's empty answer is an empty list.
+  defp metadata(%{"model" => model}, :empty) when model in @generated,
+    do: if(is_list(ModelSamples.generate(model)), do: [], else: %{})
 
   defp metadata(_, :empty), do: %{}
 
@@ -517,11 +559,16 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     fields = ModelSamples.fields(model)
 
     case Enum.find(fields, &(&1["type"] == "string")) do
+      # An alias model (a list or map) is corrupted as a whole.
+      _ when fields == [] ->
+        "invalid"
+
       %{"name" => name} ->
         %{sample(model) | name => 7}
 
+      # Otherwise the first field (a collection, struct or alias) becomes a string.
       nil ->
-        %{"name" => name} = Enum.find(fields, &String.starts_with?(&1["type"], ["map[", "[]"]))
+        %{"name" => name} = hd(fields)
         %{sample(model) | name => "invalid"}
     end
   end
@@ -623,8 +670,10 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       else: Map.put(base, "stateful", false)
   end
 
-  defp sample(model) when model in @generated,
-    do: Map.put(ModelSamples.generate(model), "future_field", %{})
+  defp sample(model) when model in @generated do
+    data = ModelSamples.generate(model)
+    if is_map(data), do: Map.put(data, "future_field", %{}), else: data
+  end
 
   defp sample(model) do
     base = %{

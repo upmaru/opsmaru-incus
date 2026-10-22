@@ -129,6 +129,47 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: B10 administrative completion (2026-10-22)
+
+Complete all 40 B10 rows (server, root discovery, certificates, cluster, cluster
+groups and members, projects, profiles, resources, metadata and warnings) under
+reviewed completion records. They map 48 catalogue methods: 20 reads, 23
+synchronous writes and 5 asynchronous writes (`CreateCertificateToken`,
+`CreateClusterMember`, `UpdateClusterMemberState`, `RenameProject`,
+`UpdateCluster`). No B10 row is linked to a stream contract.
+
+User decisions (2026-10-22):
+
+- Add a typed root-discovery helper for `GET /`, which the pinned client does
+  not implement (`connect/2` reads `GET /1.0`). It returns the server's
+  supported API version paths, with bounded result validation. Evidence is
+  unchanged Go RawQuery transport plus independent fixtures on both transports;
+  there is no named Go method to compare.
+- Certify `POST /1.0/certificates?public`, the trust-token bootstrap, as a
+  supported view: the same `CreateCertificate` request with a `trust_token`
+  body, sent by a client whose certificate the server does not yet trust.
+- Approved exclusions: `filter` on the names-only certificate and cluster member
+  views (filtering stays certified on the recursion `WithFilter` methods), and
+  cluster forwarding beyond host project/target routing.
+
+PR 1 — 14 read rows plus root discovery under `read_contract` records, through
+the inspection contract test and schema-driven samples. `GetServerResources`,
+`GetMetadataConfiguration`, cluster, certificate, project access/state and
+warning models use the shared `ModelSamples` generator.
+
+PR 2 — 25 write rows under `sync_mutation` records, through the sync-mutation
+contract test. The validator derives the asynchronous cases (accepted identity,
+native `/wait` running/completed/failed/cancelled and local lifetime) from any
+listed method whose result is an operation, so the mixed `POST /1.0/certificates`
+row (sync `CreateCertificate`, async `CreateCertificateToken`) proves both. The
+harness gains an asynchronous path reusing the B01 `/wait` composition. Guarded
+fields (`token`, cluster join fields, `failure_domain`) are rejected before
+dispatch without their extensions, compared with the pinned client.
+
+Each PR updates the ledgers, closure ledger, backlog, client docs and generated
+coverage, and stops if new transport infrastructure is needed. Task 3.9,
+`complete_port` and every Go declaration status are unchanged.
+
 #### Approved slice: B09 network completion (2026-10-21)
 
 Complete 51 of the 53 B09 rows (networks, ACLs, address sets, allocations,

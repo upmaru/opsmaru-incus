@@ -232,27 +232,37 @@ defmodule Opsmaru.Incus do
   def request_path(connection, path) when is_binary(path) do
     uri = URI.parse(path)
 
-    if valid_request_path?(path, uri) do
-      query = URI.query_decoder(uri.query || "") |> Enum.to_list()
+    cond do
+      # Root API version discovery is unversioned; the daemon takes no project or target.
+      path == "/" ->
+        {:ok, "/"}
 
-      project =
-        if Enum.any?(query, fn {key, value} -> key == "all-projects" and value != "" end),
-          do: nil,
-          else: connection.project
+      valid_request_path?(path, uri) ->
+        versioned_path(connection, uri)
 
-      with {:ok, query} <- select(query, "project", project),
-           {:ok, query} <- select(query, "target", connection.member) do
-        query = URI.encode_query(query)
-        {:ok, uri.path <> if(query == "", do: "", else: "?" <> query)}
-      end
-    else
-      {:error, :invalid_path}
+      true ->
+        {:error, :invalid_path}
     end
   rescue
     _ -> {:error, :invalid_path}
   end
 
   def request_path(_, _), do: {:error, :invalid_path}
+
+  defp versioned_path(connection, uri) do
+    query = URI.query_decoder(uri.query || "") |> Enum.to_list()
+
+    project =
+      if Enum.any?(query, fn {key, value} -> key == "all-projects" and value != "" end),
+        do: nil,
+        else: connection.project
+
+    with {:ok, query} <- select(query, "project", project),
+         {:ok, query} <- select(query, "target", connection.member) do
+      query = URI.encode_query(query)
+      {:ok, uri.path <> if(query == "", do: "", else: "?" <> query)}
+    end
+  end
 
   defp valid_request_path?(path, uri),
     do:
