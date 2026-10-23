@@ -130,7 +130,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "148 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "159 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -149,12 +149,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                GetAPIVersions GetCertificateFingerprints GetCertificate GetCluster GetClusterGroups GetClusterGroup GetClusterMemberNames GetClusterMember GetClusterMemberState GetMetadataConfiguration GetProjectAccess GetProjectState GetServerResources GetWarningUUIDs GetWarning
                UpdateServer CreateCertificate UpdateCertificate DeleteCertificate UpdateCluster UpdateClusterCertificate CreateClusterGroup RenameClusterGroup UpdateClusterGroup DeleteClusterGroup CreateClusterMember RenameClusterMember UpdateClusterMember DeleteClusterMember UpdateClusterMemberState CreateProfile RenameProfile UpdateProfile DeleteProfile CreateProject RenameProject UpdateProject DeleteProject UpdateWarning DeleteWarning
                PatchServer PatchCertificate PatchClusterGroup PatchClusterMember PatchImageAlias PatchInstanceMetadata PatchWarning
-               PatchNetworkACL PatchNetworkAddressSet PatchNetworkIntegration PatchNetworkZone PatchNetworkZoneRecord PatchNetwork PatchNetworkForward PatchNetworkLoadBalancer PatchNetworkPeer PatchStoragePool PatchStoragePoolBucket PatchStoragePoolVolume PatchStoragePoolVolumeSnapshot)
+               PatchNetworkACL PatchNetworkAddressSet PatchNetworkIntegration PatchNetworkZone PatchNetworkZoneRecord PatchNetwork PatchNetworkForward PatchNetworkLoadBalancer PatchNetworkPeer PatchStoragePool PatchStoragePoolBucket PatchStoragePoolVolume PatchStoragePoolVolumeSnapshot
+               GetStoragePoolBucketNames GetStoragePoolBucket GetStoragePoolBucketKeyNames GetStoragePoolBucketKey GetStoragePoolResources GetStoragePoolVolumeTypeNames GetStorageVolumeBitmaps GetStorageVolumeBitmap GetStoragePoolVolumeSnapshotNames GetStoragePoolVolumeSnapshot GetStoragePoolVolumeState)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
              "partial" => 2,
-             "complete" => 146
+             "complete" => 157
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -372,8 +373,26 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/resources", "b10_resources_v1"},
              {"GET /1.0/storage-pools", "b02_storage_pools_v1"},
              {"GET /1.0/storage-pools/{}", "b02_storage_pool_v1"},
+             {"GET /1.0/storage-pools/{}/buckets", "b08_storage_pools_one_buckets_v1"},
+             {"GET /1.0/storage-pools/{}/buckets/{}", "b08_storage_pools_one_buckets_one_v1"},
+             {"GET /1.0/storage-pools/{}/buckets/{}/keys",
+              "b08_storage_pools_one_buckets_one_keys_v1"},
+             {"GET /1.0/storage-pools/{}/buckets/{}/keys/{}",
+              "b08_storage_pools_one_buckets_one_keys_one_v1"},
+             {"GET /1.0/storage-pools/{}/resources", "b08_storage_pools_one_resources_v1"},
              {"GET /1.0/storage-pools/{}/volumes", "b02_storage_volumes_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}", "b08_storage_pools_one_volumes_one_v1"},
              {"GET /1.0/storage-pools/{}/volumes/{}/{}", "b02_storage_volume_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/bitmaps",
+              "b08_storage_pools_one_volumes_one_one_bitmaps_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/bitmaps/{}",
+              "b08_storage_pools_one_volumes_one_one_bitmaps_one_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/snapshots",
+              "b08_storage_pools_one_volumes_one_one_snapshots_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/snapshots/{}",
+              "b08_storage_pools_one_volumes_one_one_snapshots_one_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/state",
+              "b08_storage_pools_one_volumes_one_one_state_v1"},
              {"GET /1.0/warnings", "b10_warnings_v1"},
              {"GET /1.0/warnings/{}", "b10_warnings_one_v1"},
              {"PATCH /1.0", "b05_patch_server_v1"},

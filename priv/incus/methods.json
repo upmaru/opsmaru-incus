@@ -5036,6 +5036,84 @@
       "reference_kind": "rest",
       "operation_id": "storage_pool_volumes_type_snapshot_patch",
       "conditional": true
+    },
+    {
+      "name": "GetStoragePoolVolumeTypeNames",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volType}",
+      "params": [
+        "pool",
+        "volType"
+      ],
+      "query": {},
+      "extension": "storage",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "storage_pool_volumes_type_get"
+    },
+    {
+      "name": "GetStoragePoolVolumesByType",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volType}",
+      "params": [
+        "pool",
+        "volType"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": [
+        "storage"
+      ],
+      "body": null,
+      "model": "StorageVolume",
+      "result": "list",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "storage_pool_volumes_type_get_recursion1"
+    },
+    {
+      "name": "GetStoragePoolVolumesByTypeFull",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volType}",
+      "params": [
+        "pool",
+        "volType"
+      ],
+      "query": {
+        "recursion": "2"
+      },
+      "extension": [
+        "storage_volume_full"
+      ],
+      "body": null,
+      "model": "StorageVolumeFull",
+      "result": "list",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "storage_pool_volumes_type_get_recursion2"
+    },
+    {
+      "name": "GetStorageVolumeBitmap",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{pool}/volumes/{volumeType}/{volumeName}/bitmaps/{bitmapName}",
+      "params": [
+        "pool",
+        "volumeType",
+        "volumeName",
+        "bitmapName"
+      ],
+      "query": {},
+      "extension": "storage_volume_nbd",
+      "body": null,
+      "model": "StorageVolumeBitmap",
+      "result": "model",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "storage_pool_volume_type_bitmap_get"
     }
   ]
 }

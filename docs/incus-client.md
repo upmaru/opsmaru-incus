@@ -285,7 +285,7 @@ the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
 close/error/EOF semantics apply. This does not expose an arbitrary dialer or
 an OIDC adapter.
 
-The checked manifest currently has 294 JSON descriptors (268 named-Go methods and 26 REST-specific descriptors: 25 PATCH methods and `GetAPIVersions`), 1239 partial
+The checked manifest currently has 298 JSON descriptors (268 named-Go methods and 30 REST-specific descriptors: 25 PATCH methods, four storage reads and `GetAPIVersions`), 1239 partial
 reference mappings and 41 missing declarations out of 1,280. Native Incus
 method evidence is scoped to that implementation; OCI and SimpleStreams each
 have 20 partial concrete method mappings and none missing; full protocol/option
@@ -320,11 +320,11 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 148 pairs are currently in the checked
-evidence manifest. 146 are complete under reviewed completion records:
+pairs plus 46 query/access variants; 159 pairs are currently in the checked
+evidence manifest. 157 are complete under reviewed completion records:
 native wait, events, exec, seven single-method B01 mutations, conditional instance
 PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10
-administrative rows and all 24 B05 PATCH rows. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
+administrative rows, all 24 B05 PATCH rows and eleven B08 storage reads. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
@@ -781,6 +781,20 @@ snapshot types are an approved exclusion. The daemon does not check If-Match on
 forward, load balancer, peer or bucket PATCH; the ETag is still required and
 sent. Network peer PATCH is a full replace in the daemon, not a merge, so send
 every field you want to keep.
+
+Storage reads the pinned client lacks are REST descriptors called through
+`Incus.call/4`:
+
+- `GetStoragePoolVolumeTypeNames`, `GetStoragePoolVolumesByType` and
+  `GetStoragePoolVolumesByTypeFull` (`pool` and `volType` arguments) list
+  the volumes of one type as names, volumes and full volumes.
+- `GetStorageVolumeBitmap` (`pool`, `volumeType`, `volumeName` and
+  `bitmapName`) reads one bitmap.
+
+The volume type is passed through unchanged. Bucket, bucket key, pool resource,
+volume snapshot, bitmap and volume state reads are compared with the pinned
+client for every daemon volume type (custom, container, virtual-machine,
+image).
 
 The `initial_mutation_lifecycle_v1` fixture scope covers eight existing B01 methods:
 CreateInstance, UpdateInstance (including a separate restore body),

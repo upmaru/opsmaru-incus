@@ -1315,3 +1315,30 @@ unchanged.
   the daemon's full replace and documented. Approved exclusions (2026-10-23):
   unconditional PATCH, non-custom volume snapshot types and cluster forwarding.
   Real-daemon merge semantics remain separately recorded.
+
+## B08 stream-free storage completion (PR 1: reads)
+
+Approved 2026-10-24. Eleven stream-free B08 read rows are complete under
+reviewed `read_contract` records: buckets, bucket, bucket keys, bucket key, pool
+resources, volumes by type, bitmaps, bitmap, volume snapshots, volume snapshot
+and volume state. They map 25 methods. The selected manifest grows 148 -> 159
+pairs (157 complete), and confirmed typed implementation gaps fall 11 -> 9. The
+17 stream-free write rows follow in PR 2. Task 3.9, `complete_port` and every Go
+declaration status (1239 partial / 41 missing) are unchanged.
+
+- [x] Four new REST descriptors cover reads the pinned client lacks:
+  `GetStoragePoolVolumeTypeNames`, `GetStoragePoolVolumesByType` and
+  `GetStoragePoolVolumesByTypeFull` for `GET /volumes/{type}`, and
+  `GetStorageVolumeBitmap`. The inspection contract test compares them with
+  unchanged Go RawQuery on both transports. The independent cases are
+  populated, empty, corrupt, 403/404, bound, readiness and lifetime.
+- [x] The 21 named read methods are compared with the pinned client through the
+  inspection contract test (132 named methods plus discovery, root discovery and
+  the four storage REST reads). Schema-driven samples cover bucket, bucket key,
+  pool resource, bitmap, volume snapshot and volume state models.
+- [x] The volume type is a pass-through path argument. Every method that takes
+  one is also compared for custom, container, virtual-machine and image volumes,
+  so no volume type exclusion is recorded.
+- Approved exclusions (2026-10-24): `filter` and `all-projects` on the
+  names-only bucket view, and cluster forwarding. The collection volume POST is
+  deferred to the stream-linked volume create row.
