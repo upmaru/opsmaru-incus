@@ -6,12 +6,13 @@ defmodule Opsmaru.Incus.PatchContractTest do
   alias Opsmaru.TestSupport.{HTTPFixture, ModelSamples, TLSIdentity, WireComparison}
   @driver Path.expand("../.integration/patch-contract-driver", __DIR__)
 
-  # B05 PR 1: the four existing descriptors plus administrative, image alias and
-  # instance metadata PATCH. The pinned client has no PATCH method.
-  @b05 ~w(PatchProject PatchProfile PatchImage PatchInstanceSnapshot PatchServer PatchCertificate PatchClusterGroup PatchClusterMember PatchImageAlias PatchInstanceMetadata PatchWarning)
+  # B05: the four earlier descriptors, administrative, image alias and instance
+  # metadata PATCH (PR 1), then network and custom-volume storage PATCH (PR 2). The
+  # pinned client has no PATCH method.
+  @b05 ~w(PatchProject PatchProfile PatchImage PatchInstanceSnapshot PatchServer PatchCertificate PatchClusterGroup PatchClusterMember PatchImageAlias PatchInstanceMetadata PatchWarning PatchNetworkACL PatchNetworkAddressSet PatchNetworkIntegration PatchNetworkZone PatchNetworkZoneRecord PatchNetwork PatchNetworkForward PatchNetworkLoadBalancer PatchNetworkPeer PatchStoragePool PatchStoragePoolBucket PatchStoragePoolVolume PatchStoragePoolVolumeSnapshot)
   @all_methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
   @methods Enum.filter(@all_methods, &(&1["name"] in @b05))
-  @extensions ~w(projects snapshot_expiry certificate_update clustering_groups clustering_edit_roles clustering_failure_domains container_edit_metadata warnings)
+  @extensions ~w(projects snapshot_expiry certificate_update clustering_groups clustering_edit_roles clustering_failure_domains container_edit_metadata warnings network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer storage storage_buckets storage_api_volume_snapshots)
   @etag "\"before\""
   @uuid "01234567-89ab-cdef-0123-456789abcdef"
   @url "/1.0/operations/" <> @uuid
@@ -33,7 +34,7 @@ defmodule Opsmaru.Incus.PatchContractTest do
           do: method["name"]
 
     assert Enum.sort(rest) == Enum.sort(["PatchInstance" | @b05])
-    assert length(@methods) == 11 and Enum.all?(@methods, &(&1["conditional"] == true))
+    assert length(@methods) == 24 and Enum.all?(@methods, &(&1["conditional"] == true))
     :ok
   end
 

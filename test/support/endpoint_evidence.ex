@@ -23,7 +23,7 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     assert manifest["inventory_complete"] == false
     assert manifest["complete_port"] == false
     assert manifest["catalogue_contracts"] == ~w(query extension guards body model result)
-    assert length(manifest["entries"]) == 135
+    assert length(manifest["entries"]) == 148
     pairs = Enum.map(manifest["entries"], &pair/1)
     assert length(Enum.uniq(pairs)) == length(pairs), "duplicate endpoint pair"
     native_pairs = MapSet.new(native["pairs"], &normalize/1)
@@ -219,7 +219,8 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
 
         assert typed?, "missing typed evidence"
         method = methods[name]
-        assert pair(method) == pair(row), "method/endpoint mismatch"
+        # A custom-subtype method maps to its documented {type} row, as in the inventory.
+        assert pair(method) in [pair(row), custom_pair(row, method)], "method/endpoint mismatch"
         assert Enum.all?(~w(query extension guards body model result), &Map.has_key?(method, &1))
 
         if recursion = method["query"]["recursion"] do
@@ -235,6 +236,12 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
   end
 
   defp pair(row), do: normalize(row["verb"] <> " " <> row["path"])
+
+  defp custom_pair(row, method) do
+    if String.contains?(method["path"], "/volumes/custom/"),
+      do: String.replace(pair(row), "/volumes/{}/", "/volumes/custom/", global: false),
+      else: pair(row)
+  end
 
   defp normalize(pair, strip_query \\ true) do
     pair = if strip_query, do: hd(String.split(pair, "?", parts: 2)), else: pair
