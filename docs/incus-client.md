@@ -765,8 +765,8 @@ on); a member `failure_domain` still needs `clustering_failure_domains`. All
 return HTTP 200 empty sync success. A caller ETag is always required, even though
 the daemon does not check If-Match on warning PATCH. The four earlier PATCH
 methods and these seven are complete under reviewed `b05_*` records, compared
-with Go RawQuery for empty, one-field, every-field, explicit-null and
-unknown-field bodies. Unconditional PATCH and cluster forwarding are approved
+with Go RawQuery for empty, one-field, every-field, cleared (`false`, empty or
+zero), explicit-null and unknown-field bodies. Unconditional PATCH and cluster forwarding are approved
 exclusions, and real-daemon merge semantics remain separately recorded.
 
 The `initial_mutation_lifecycle_v1` fixture scope covers eight existing B01 methods:

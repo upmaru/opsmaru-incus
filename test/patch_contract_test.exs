@@ -168,8 +168,9 @@ defmodule Opsmaru.Incus.PatchContractTest do
     end
   end
 
-  # Empty, one field, every field (schema-generated at every depth), explicit nulls
-  # and an unknown field: PATCH sends exactly what the caller supplied.
+  # Empty, one field, every field (schema-generated at every depth), every field
+  # cleared, explicit nulls and an unknown field: PATCH sends exactly what the
+  # caller supplied.
   defp bodies(method) do
     body = body(method)
     [{field, value} | _] = Enum.sort(body)
@@ -178,10 +179,21 @@ defmodule Opsmaru.Incus.PatchContractTest do
       %{},
       %{field => value},
       body,
+      Map.new(body, fn {key, value} -> {key, cleared(value)} end),
       Map.new(body, fn {key, _} -> {key, nil} end),
       Map.put(body, "future_field", false)
     ]
   end
+
+  # The value a caller sends to clear a setting: false, empty or zero. A cleared
+  # timestamp is Go's zero time, as clients send to remove an expiry.
+  defp cleared(true), do: false
+  defp cleared("2026-10-22T12:00:00Z"), do: "0001-01-01T00:00:00Z"
+  defp cleared(value) when is_binary(value), do: ""
+  defp cleared(value) when is_list(value), do: []
+  defp cleared(value) when is_map(value), do: %{}
+  defp cleared(value) when is_integer(value), do: 0
+  defp cleared(value) when is_float(value), do: 0.0
 
   defp body(%{"body" => model}), do: ModelSamples.generate(model)
 

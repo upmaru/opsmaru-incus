@@ -1274,8 +1274,8 @@ every Go declaration status (1239 partial / 41 missing) are unchanged.
   field guards of its pinned PUT counterpart. The pinned client has no PATCH
   method, so a new data-driven `patch_contract_test.exs` compares every B05
   method with unchanged Go RawQuery over Unix and mutual HTTPS. It covers empty,
-  one-field, every-field (schema-generated), explicit-null and unknown-field
-  bodies, path escaping, If-Match, routing, native empty sync success and native
+  one-field, every-field (schema-generated), cleared (every field `false`, empty
+  or zero), explicit-null and unknown-field bodies, path escaping, If-Match, routing, native empty sync success and native
   400/403/404/412.
 - [x] Instance snapshot PATCH is accepted as an operation and observed through
   native `/wait` running, completed, failed and cancelled snapshots, compared with
