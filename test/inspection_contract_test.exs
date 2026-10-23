@@ -457,14 +457,27 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     end
   end
 
-  # The native path built independently of the client, with host routing.
+  # The native path and query, fixed per descriptor (not derived from it), so a wrong
+  # descriptor path or recursion value fails the wire comparison. Host routing too.
   defp rest_path(method) do
-    path =
-      Enum.reduce(args(method), method["path"], fn {key, value}, path ->
-        String.replace(path, "{" <> key <> "}", value)
-      end)
+    pool = "/1.0/storage-pools/fixture-pool/volumes/" <> Map.get(method, "volume_type", "custom")
 
-    query = Map.merge(method["query"], %{"project" => "fixture scope", "target" => "member/a"})
+    {path, query} =
+      case method["name"] do
+        "GetStoragePoolVolumeTypeNames" ->
+          {pool, %{}}
+
+        "GetStoragePoolVolumesByType" ->
+          {pool, %{"recursion" => "1"}}
+
+        "GetStoragePoolVolumesByTypeFull" ->
+          {pool, %{"recursion" => "2"}}
+
+        "GetStorageVolumeBitmap" ->
+          {pool <> "/fixture-volumeName/bitmaps/fixture-bitmapName", %{}}
+      end
+
+    query = Map.merge(query, %{"project" => "fixture scope", "target" => "member/a"})
     path <> "?" <> URI.encode_query(query)
   end
 
