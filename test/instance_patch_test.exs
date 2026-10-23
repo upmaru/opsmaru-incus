@@ -106,7 +106,8 @@ defmodule Opsmaru.Incus.InstancePatchTest do
       |> Enum.filter(&(&1["reference_kind"] == "rest" and &1["verb"] == "PATCH"))
       |> Enum.map(& &1["name"])
 
-    assert Enum.sort(rest) == Enum.sort(Enum.map(@patches, & &1.method))
+    # The full PATCH descriptor set is asserted by the B05 patch contract test.
+    assert Enum.map(@patches, & &1.method) -- rest == []
     :ok
   end
 

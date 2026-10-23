@@ -70,6 +70,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** reads agree with the pinned client for populated/empty/corrupt results, native 403/404, routing, extensions and lifetime cleanup, and synchronous writes agree for request bodies, ETags and native rejection while lost or malformed replies are uncertain and never replayed
 - **AND** reviewed records list each completed row, selectors the pinned client does not send and cluster forwarding are approved exclusions, and the metrics and ACL log rows stay partial while S07 is open
 
+#### Scenario: Completed PATCH contracts
+
+- **WHEN** any B05 PATCH method is called over Unix or mutual HTTPS with a nonempty caller ETag
+- **THEN** the request (path, routing, If-Match and body field presence, including null, false, empty and unknown fields) agrees with unchanged pinned Go RawQuery transport, native empty synchronous success, accepted snapshot operations and native 400/403/404/412 are preserved, and lost or malformed replies are uncertain after one PATCH and never replayed
+- **AND** PATCH without an ETag, invalid bodies, empty path arguments, unready hosts, missing extensions and guarded fields reject before I/O, network peer PATCH is documented as the daemon's full replace, and unconditional PATCH, non-custom volume snapshot types and cluster forwarding are recorded approved exclusions
+
 #### Scenario: Completed administrative contracts
 
 - **WHEN** any B10 server, root discovery, certificate, cluster, project, profile, resource, metadata or warning method is called over Unix or mutual HTTPS

@@ -13,7 +13,7 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     "sync_cancellation" =>
       ~w(request routing binding native_403 native_404 malformed_reply authoritative_inspection may_cancel_denied single_delete completion_race lost_reply_identity),
     "conditional_patch" =>
-      ~w(request field_presence empty_sync routing native_400 native_403 native_404 native_412 restore_rejection response_loss_no_replay deadline cancellation preflight unconditional_rejection),
+      ~w(request field_presence routing native_400 native_403 native_404 native_412 response_loss_no_replay deadline cancellation preflight unconditional_rejection),
     "sync_mutation" =>
       ~w(request sync_success routing binding native_400 native_403 native_404 native_409 native_412 malformed_reply response_loss_no_replay preflight),
     "read_contract" =>
@@ -382,15 +382,34 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
         do: ~w(discovery_required_fields discovery_version),
         else: []
 
-    # A synchronous write record listing an operation-returning method also proves
-    # acceptance and the native /wait lifecycle; other kinds name their own.
+    # A synchronous write or conditional PATCH record listing an operation-returning
+    # method also proves acceptance and the native /wait lifecycle; other kinds name
+    # their own.
     async =
-      if record["kind"] == "sync_mutation" and Enum.any?(methods, &(&1["result"] == "operation")),
-        do: ~w(accepted_identity running completed failed cancelled local_lifetime),
-        else: []
+      if record["kind"] in ["sync_mutation", "conditional_patch"] and
+           Enum.any?(methods, &(&1["result"] == "operation")),
+         do: ~w(accepted_identity running completed failed cancelled local_lifetime),
+         else: []
 
-    Enum.uniq(@record_cases[record["kind"]] ++ derived ++ discovery ++ async)
+    Enum.uniq(
+      @record_cases[record["kind"]] ++ derived ++ discovery ++ async ++ patch(record, methods)
+    )
   end
+
+  # A conditional PATCH proves its empty synchronous result, and an instance body its
+  # native restore-mode rejection.
+  defp patch(%{"kind" => "conditional_patch"}, methods),
+    do:
+      for(
+        {case, needed?} <- [
+          {"empty_sync", &(&1["result"] == "empty_sync")},
+          {"restore_rejection", &(&1["body"] == "InstancePut")}
+        ],
+        Enum.any?(methods, needed?),
+        do: case
+      )
+
+  defp patch(_, _), do: []
 
   # Mirrors the client: explicit conditional descriptors and empty-sync PATCH require an ETag.
   defp conditional?(method), do: method["conditional"] == true or method["result"] == "empty_sync"

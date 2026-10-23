@@ -1258,3 +1258,36 @@ unchanged.
   lists an operation-returning method, with negative tests.
 - Approved exclusion (2026-10-22): cluster forwarding. Real-daemon administrative
   effects remain separately recorded.
+
+## B05 PATCH completion (PR 1: existing and administrative PATCH)
+
+Approved 2026-10-23. Eleven B05 rows are complete under reviewed
+`conditional_patch` records: the four earlier descriptors (`PatchProject`,
+`PatchProfile`, `PatchImage`, `PatchInstanceSnapshot`) and seven new REST
+descriptors for server, certificate, cluster group, cluster member, image alias,
+instance metadata and warning PATCH. The selected manifest grows 128 -> 135 pairs
+(133 complete), and confirmed typed implementation gaps fall 31 -> 24. The nine
+network and four storage PATCH rows follow in PR 2. Task 3.9, `complete_port` and
+every Go declaration status (1239 partial / 41 missing) are unchanged.
+
+- [x] Each new descriptor takes the path arguments, body model, extension and
+  field guards of its pinned PUT counterpart. The pinned client has no PATCH
+  method, so a new data-driven `patch_contract_test.exs` compares every B05
+  method with unchanged Go RawQuery over Unix and mutual HTTPS. It covers empty,
+  one-field, every-field (schema-generated), cleared (every field `false`, empty
+  or zero), explicit-null and unknown-field bodies, path escaping, If-Match, routing, native empty sync success and native
+  400/403/404/412.
+- [x] Instance snapshot PATCH is accepted as an operation and observed through
+  native `/wait` running, completed, failed and cancelled snapshots, compared with
+  the named Go `GetOperationWait`, with local wait deadline and cancellation.
+- [x] Independent fixtures prove that lost, malformed and wrong-kind replies are
+  uncertain after one PATCH, and that deadline and cancellation close the peer.
+  Preflight before I/O rejects a missing, empty, oversized, duplicate or injected
+  ETag (unconditional PATCH), an invalid body, empty path arguments, oversized
+  requests, unready hosts, missing extensions and a guarded `failure_domain`.
+- [x] The `conditional_patch` kind keeps its shared cases. `empty_sync`,
+  `restore_rejection` (instance bodies) and the acceptance/`/wait` cases are
+  derived from each method, with negative tests; the B04 record is unchanged.
+- The daemon does not check If-Match on warning PATCH; the ETag is still
+  required and sent. Approved exclusions (2026-10-23): unconditional PATCH and
+  cluster forwarding. Real-daemon merge semantics remain separately recorded.
