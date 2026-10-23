@@ -1291,3 +1291,27 @@ every Go declaration status (1239 partial / 41 missing) are unchanged.
 - The daemon does not check If-Match on warning PATCH; the ETag is still
   required and sent. Approved exclusions (2026-10-23): unconditional PATCH and
   cluster forwarding. Real-daemon merge semantics remain separately recorded.
+
+## B05 PATCH completion (PR 2: network and storage PATCH)
+
+Approved 2026-10-23. The remaining thirteen B05 rows are complete under reviewed
+`conditional_patch` records, so all 24 B05 rows are complete. Thirteen new REST
+descriptors cover network, ACL, address set, integration, zone, zone record,
+forward, load balancer and peer PATCH, plus storage pool, bucket, custom volume
+and custom volume snapshot PATCH. The selected manifest grows 135 -> 148 pairs
+(146 complete), and confirmed typed implementation gaps fall 24 -> 11. Task 3.9,
+`complete_port` and every Go declaration status (1239 partial / 41 missing) are
+unchanged.
+
+- [x] `patch_contract_test.exs` now covers all 24 B05 methods (192 tests) with the
+  same RawQuery comparison, cleared-value bodies, failure, lifetime and preflight
+  evidence as PR 1.
+- [x] Volume and volume snapshot PATCH map the literal custom subtype
+  (`catalogue_custom` rows with a recorded restriction). The evidence validator
+  accepts a custom-subtype method only on its own documented `{type}` row, with
+  negative tests.
+- The daemon does not check If-Match on forward, load balancer, peer or bucket
+  PATCH; the ETag is still required and sent. Network peer PATCH is certified as
+  the daemon's full replace and documented. Approved exclusions (2026-10-23):
+  unconditional PATCH, non-custom volume snapshot types and cluster forwarding.
+  Real-daemon merge semantics remain separately recorded.

@@ -285,7 +285,7 @@ the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
 close/error/EOF semantics apply. This does not expose an arbitrary dialer or
 an OIDC adapter.
 
-The checked manifest currently has 281 JSON descriptors (268 named-Go methods and thirteen REST-specific descriptors: twelve PATCH methods and `GetAPIVersions`), 1239 partial
+The checked manifest currently has 294 JSON descriptors (268 named-Go methods and 26 REST-specific descriptors: 25 PATCH methods and `GetAPIVersions`), 1239 partial
 reference mappings and 41 missing declarations out of 1,280. Native Incus
 method evidence is scoped to that implementation; OCI and SimpleStreams each
 have 20 partial concrete method mappings and none missing; full protocol/option
@@ -320,11 +320,11 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 135 pairs are currently in the checked
-evidence manifest. 133 are complete under reviewed completion records:
+pairs plus 46 query/access variants; 148 pairs are currently in the checked
+evidence manifest. 146 are complete under reviewed completion records:
 native wait, events, exec, seven single-method B01 mutations, conditional instance
 PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10
-administrative rows and eleven B05 PATCH rows. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
+administrative rows and all 24 B05 PATCH rows. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
@@ -768,6 +768,19 @@ methods and these seven are complete under reviewed `b05_*` records, compared
 with Go RawQuery for empty, one-field, every-field, cleared (`false`, empty or
 zero), explicit-null and unknown-field bodies. Unconditional PATCH and cluster forwarding are approved
 exclusions, and real-daemon merge semantics remain separately recorded.
+
+Network and storage PATCH follow the same rules: `PatchNetwork`,
+`PatchNetworkACL`, `PatchNetworkAddressSet`, `PatchNetworkIntegration`,
+`PatchNetworkZone`, `PatchNetworkZoneRecord`, `PatchNetworkForward`,
+`PatchNetworkLoadBalancer`, `PatchNetworkPeer`, `PatchStoragePool`,
+`PatchStoragePoolBucket`, `PatchStoragePoolVolume` and
+`PatchStoragePoolVolumeSnapshot`, each with its PUT counterpart's arguments,
+body, extension and guards. Volume and volume snapshot PATCH are custom-only (no
+volume type argument); the daemon rejects other types on volume PATCH, and other
+snapshot types are an approved exclusion. The daemon does not check If-Match on
+forward, load balancer, peer or bucket PATCH; the ETag is still required and
+sent. Network peer PATCH is a full replace in the daemon, not a merge, so send
+every field you want to keep.
 
 The `initial_mutation_lifecycle_v1` fixture scope covers eight existing B01 methods:
 CreateInstance, UpdateInstance (including a separate restore body),

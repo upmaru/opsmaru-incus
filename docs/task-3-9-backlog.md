@@ -28,19 +28,13 @@ including image suffix actions. Root discovery is a separately checked source
 anchor in `cmd/incusd/api.go:restServer`. All documented routes reconcile except
 `GET /1.0/instances/{name}/debug/repair`: `instances.go:instanceDebugRepairCmd`
 registers **POST**. One supplemental server row tracks that missing typed mutation.
-Thus there are **24 confirmed typed implementation gaps** (root discovery `GET /`
+Thus there are **11 confirmed typed implementation gaps** (root discovery `GET /`
 now has the typed `GetAPIVersions` descriptor), plus the equivalent
 collection-route decision. These are not a count of missing Go declarations. Raw HTTP support does not implement those typed contracts.
 No source file in the pinned module was modified.
 
 ## Exact implementation backlog
 
-- **13 PATCH pairs still lack typed methods (B05 PR 2):** network, forward, load
-  balancer, peer, ACL, address set, integration, zone and zone record; storage
-  pool, bucket, volume and volume snapshot. The conditional instance PATCH is B04.
-  Server, certificate, cluster group/member, image alias, instance metadata and
-  warning PATCH now have typed REST descriptors and, with the four earlier
-  project/profile/image/instance-snapshot methods, are complete under B05.
 - **2 HEAD pairs (B06):** instance files and storage-volume files.
 - **3 recorded exec output pairs (B07):** list, binary download and explicit delete.
 - **5 storage pairs (B08):** volume list by type, bitmap download, bucket backup
@@ -102,7 +96,7 @@ estimates of lines or commits. Split a batch into bounded slices before coding.
 | B02: Initial inspection certification | 20 | All twenty rows are **complete** under reviewed `b02_*` read records with every mapped method. Names-only filter/all-projects, `?public` views and cluster forwarding are approved exclusions; `GetOperationUUIDs` follows the daemon grouped response. |
 | B03: Exec and operation channel/wait scope | 4 | Native wait (`b03_native_wait_v1`) and events with S03 (`b03_events_v1`) are complete; `?public`, arbitrary/empty wait secrets and cluster forwarding are approved exclusions (2026-10-19). Exec with S01 (`b03_exec_v1`) is complete; recorded-output retrieval, cluster forwarding, arbitrary producers and tool capture policy are approved exclusions (2026-10-19). The operation WebSocket row stays partial while S02/S10 are open. Recorded output belongs to B07. |
 | B04: Instance PATCH contract certification | 1 | **Complete** (`b04_instance_patch_v1`): conditional InstancePut with caller ETag; unconditional PATCH and cluster forwarding are approved exclusions (2026-10-19). Daemon merge acceptance stays separate. |
-| B05: Conditional PATCH and remaining PATCH contracts | 24 | Eleven rows are **complete** under reviewed `b05_*` conditional-PATCH records: the four earlier descriptors plus new server, certificate, cluster group/member, image alias, instance metadata and warning descriptors, compared through Go RawQuery. Unconditional PATCH and cluster forwarding are approved exclusions (2026-10-23). The nine network and four storage PATCH rows follow in PR 2. PUT/raw-query success cannot close these rows. |
+| B05: Conditional PATCH and remaining PATCH contracts | 24 | All 24 rows are **complete** under reviewed `b05_*` conditional-PATCH records: the four earlier descriptors plus 20 new REST descriptors (server, certificate, cluster group/member, image alias, instance metadata, warning, nine network and four custom-volume storage PATCH), compared through Go RawQuery. Unconditional PATCH, non-custom volume snapshot types and cluster forwarding are approved exclusions (2026-10-23); network peer PATCH is certified as the daemon's full replace. PUT/raw-query success cannot close these rows. |
 | B06: File metadata HEAD | 2 | Implement instance and volume metadata-only typed helpers with header fidelity, empty body, rejection and bounded cleanup evidence on both transports. |
 | B07: Recorded exec output | 3 | Implement typed list, acknowledged binary download and explicit delete. Verify identity/path isolation, missing output, bounds and uncertain deletion; never imply automatic deletion. |
 | B08: Storage endpoint contracts | 49 | Certify the exact catalogue/helpers for each assigned row; implement by-type volume list, bitmap download and bucket backup list/get/rename. Reconcile equivalent collection POST, custom restrictions and recursion views; add evidence for declared fields/errors/lifetimes only. |
@@ -160,7 +154,7 @@ No exhaustive cross-product of every possible field/error is required.
 - [x] Preserve the ten fixture-verified inspection scopes and existing bounded slices.
 - [ ] Finish B01–B12: implement/verify the required contracts or record explicit approvals.
 - [ ] Finish S01–S12 certification within the existing approved host/protocol boundaries.
-- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. 133 rows (three B03, seven B01, B04, twenty B02, 51 B09, all forty B10 and eleven B05) plus S01/S03 are complete.
+- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. 146 rows (three B03, seven B01, B04, twenty B02, 51 B09, all forty B10 and all 24 B05) plus S01/S03 are complete.
 - [ ] Independently review and pass canonical/reference/platform/immutable-consumer checks for closing slices.
 
 Installed OCI/delta converters, explicitly opted-in isolated real-Incus acceptance

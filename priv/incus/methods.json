@@ -4786,6 +4786,256 @@
       "reference_kind": "rest",
       "operation_id": "warning_patch",
       "conditional": true
+    },
+    {
+      "name": "PatchNetworkACL",
+      "verb": "PATCH",
+      "path": "/1.0/network-acls/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_acl"
+      ],
+      "body": "NetworkACLPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "network_acl_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchNetworkAddressSet",
+      "verb": "PATCH",
+      "path": "/1.0/network-address-sets/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_address_set"
+      ],
+      "body": "NetworkAddressSetPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "network_address_set_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchNetworkIntegration",
+      "verb": "PATCH",
+      "path": "/1.0/network-integrations/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_integrations"
+      ],
+      "body": "NetworkIntegrationPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "network_integration_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchNetworkZone",
+      "verb": "PATCH",
+      "path": "/1.0/network-zones/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_dns"
+      ],
+      "body": "NetworkZonePut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "network_zone_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchNetworkZoneRecord",
+      "verb": "PATCH",
+      "path": "/1.0/network-zones/{zone}/records/{name}",
+      "params": [
+        "zone",
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "network_dns_records"
+      ],
+      "body": "NetworkZoneRecordPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "network_zone_record_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchNetwork",
+      "verb": "PATCH",
+      "path": "/1.0/networks/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "network",
+      "body": "NetworkPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "network_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchNetworkForward",
+      "verb": "PATCH",
+      "path": "/1.0/networks/{networkName}/forwards/{listenAddress}",
+      "params": [
+        "networkName",
+        "listenAddress"
+      ],
+      "query": {},
+      "extension": [
+        "network_forward"
+      ],
+      "body": "NetworkForwardPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "network_forward_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchNetworkLoadBalancer",
+      "verb": "PATCH",
+      "path": "/1.0/networks/{networkName}/load-balancers/{listenAddress}",
+      "params": [
+        "networkName",
+        "listenAddress"
+      ],
+      "query": {},
+      "extension": "network_load_balancer",
+      "body": "NetworkLoadBalancerPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "network_load_balancer_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchNetworkPeer",
+      "verb": "PATCH",
+      "path": "/1.0/networks/{networkName}/peers/{peerName}",
+      "params": [
+        "networkName",
+        "peerName"
+      ],
+      "query": {},
+      "extension": [
+        "network_peer"
+      ],
+      "body": "NetworkPeerPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "network_peer_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchStoragePool",
+      "verb": "PATCH",
+      "path": "/1.0/storage-pools/{name}",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": [
+        "storage"
+      ],
+      "body": "StoragePoolPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "storage_pool_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchStoragePoolBucket",
+      "verb": "PATCH",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}",
+      "params": [
+        "poolName",
+        "bucketName"
+      ],
+      "query": {},
+      "extension": "storage_buckets",
+      "body": "StorageBucketPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "storage_pool_bucket_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchStoragePoolVolume",
+      "verb": "PATCH",
+      "path": "/1.0/storage-pools/{pool}/volumes/custom/{name}",
+      "params": [
+        "pool",
+        "name"
+      ],
+      "query": {},
+      "extension": "storage",
+      "body": "StorageVolumePut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [
+        {
+          "field": "restore",
+          "extension": "storage_api_volume_snapshots"
+        }
+      ],
+      "reference_kind": "rest",
+      "operation_id": "storage_pool_volume_type_patch",
+      "conditional": true
+    },
+    {
+      "name": "PatchStoragePoolVolumeSnapshot",
+      "verb": "PATCH",
+      "path": "/1.0/storage-pools/{pool}/volumes/custom/{volumeName}/snapshots/{snapshotName}",
+      "params": [
+        "pool",
+        "volumeName",
+        "snapshotName"
+      ],
+      "query": {},
+      "extension": "storage_api_volume_snapshots",
+      "body": "StorageVolumeSnapshotPut",
+      "model": null,
+      "result": "empty_sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "storage_pool_volumes_type_snapshot_patch",
+      "conditional": true
     }
   ]
 }

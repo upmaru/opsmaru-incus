@@ -130,7 +130,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "135 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "148 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -148,12 +148,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                DeleteNetworkACL DeleteNetworkAddressSet DeleteNetworkIntegration DeleteNetworkZone DeleteNetworkZoneRecord DeleteNetwork DeleteNetworkForward DeleteNetworkLoadBalancer DeleteNetworkPeer CreateNetworkACL RenameNetworkACL CreateNetworkAddressSet RenameNetworkAddressSet CreateNetworkIntegration RenameNetworkIntegration CreateNetworkZone CreateNetworkZoneRecord CreateNetwork RenameNetwork CreateNetworkForward CreateNetworkLoadBalancer CreateNetworkPeer UpdateNetworkACL UpdateNetworkAddressSet UpdateNetworkIntegration UpdateNetworkZone UpdateNetworkZoneRecord UpdateNetwork UpdateNetworkForward UpdateNetworkLoadBalancer UpdateNetworkPeer
                GetAPIVersions GetCertificateFingerprints GetCertificate GetCluster GetClusterGroups GetClusterGroup GetClusterMemberNames GetClusterMember GetClusterMemberState GetMetadataConfiguration GetProjectAccess GetProjectState GetServerResources GetWarningUUIDs GetWarning
                UpdateServer CreateCertificate UpdateCertificate DeleteCertificate UpdateCluster UpdateClusterCertificate CreateClusterGroup RenameClusterGroup UpdateClusterGroup DeleteClusterGroup CreateClusterMember RenameClusterMember UpdateClusterMember DeleteClusterMember UpdateClusterMemberState CreateProfile RenameProfile UpdateProfile DeleteProfile CreateProject RenameProject UpdateProject DeleteProject UpdateWarning DeleteWarning
-               PatchServer PatchCertificate PatchClusterGroup PatchClusterMember PatchImageAlias PatchInstanceMetadata PatchWarning)
+               PatchServer PatchCertificate PatchClusterGroup PatchClusterMember PatchImageAlias PatchInstanceMetadata PatchWarning
+               PatchNetworkACL PatchNetworkAddressSet PatchNetworkIntegration PatchNetworkZone PatchNetworkZoneRecord PatchNetwork PatchNetworkForward PatchNetworkLoadBalancer PatchNetworkPeer PatchStoragePool PatchStoragePoolBucket PatchStoragePoolVolume PatchStoragePoolVolumeSnapshot)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
              "partial" => 2,
-             "complete" => 133
+             "complete" => 146
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -384,8 +385,26 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"PATCH /1.0/instances/{}", "b04_instance_patch_v1"},
              {"PATCH /1.0/instances/{}/metadata", "b05_patch_instances_one_metadata_v1"},
              {"PATCH /1.0/instances/{}/snapshots/{}", "b05_patch_instances_one_snapshots_one_v1"},
+             {"PATCH /1.0/network-acls/{}", "b05_patch_network_acls_one_v1"},
+             {"PATCH /1.0/network-address-sets/{}", "b05_patch_network_address_sets_one_v1"},
+             {"PATCH /1.0/network-integrations/{}", "b05_patch_network_integrations_one_v1"},
+             {"PATCH /1.0/network-zones/{}", "b05_patch_network_zones_one_v1"},
+             {"PATCH /1.0/network-zones/{}/records/{}",
+              "b05_patch_network_zones_one_records_one_v1"},
+             {"PATCH /1.0/networks/{}", "b05_patch_networks_one_v1"},
+             {"PATCH /1.0/networks/{}/forwards/{}", "b05_patch_networks_one_forwards_one_v1"},
+             {"PATCH /1.0/networks/{}/load-balancers/{}",
+              "b05_patch_networks_one_load_balancers_one_v1"},
+             {"PATCH /1.0/networks/{}/peers/{}", "b05_patch_networks_one_peers_one_v1"},
              {"PATCH /1.0/profiles/{}", "b05_patch_profiles_one_v1"},
              {"PATCH /1.0/projects/{}", "b05_patch_projects_one_v1"},
+             {"PATCH /1.0/storage-pools/{}", "b05_patch_storage_pools_one_v1"},
+             {"PATCH /1.0/storage-pools/{}/buckets/{}",
+              "b05_patch_storage_pools_one_buckets_one_v1"},
+             {"PATCH /1.0/storage-pools/{}/volumes/{}/{}",
+              "b05_patch_storage_pools_one_volumes_one_one_v1"},
+             {"PATCH /1.0/storage-pools/{}/volumes/{}/{}/snapshots/{}",
+              "b05_patch_storage_pools_one_volumes_one_one_snapshots_one_v1"},
              {"PATCH /1.0/warnings/{}", "b05_patch_warnings_one_v1"},
              {"POST /1.0/certificates", "b10_post_certificates_v1"},
              {"POST /1.0/cluster/groups", "b10_post_cluster_groups_v1"},
@@ -760,6 +779,12 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
           {%{second | "method" => "AbsentMethod"}, "missing catalogue method"},
           {%{second | "method" => "GetImage"}, "method/endpoint mismatch"},
           {Map.put(second, "variants", ["GetImage"]), "method/endpoint mismatch"},
+          # A custom-subtype method maps only to its own documented {type} row.
+          {%{
+             second
+             | "method" => "PatchStoragePoolVolume",
+               "evidence" => second["evidence"] ++ ["rest_patch"]
+           }, "method/endpoint mismatch"},
           {%{second | "clients" => ["absent"]}, "missing client link"},
           {%{second | "evidence" => ["absent"]}, "missing evidence link"},
           {Map.delete(%{second | "status" => "complete"}, "completion_record"),
@@ -770,6 +795,17 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
       assert_raise ExUnit.AssertionError, ~r/#{message}/, fn ->
         EndpointEvidence.validate!(%{@manifest | "entries" => [first, row | rest]}, native)
       end
+    end
+
+    volume = Enum.find(@manifest["entries"], &(&1["method"] == "PatchStoragePoolVolume"))
+
+    entries =
+      Enum.map(@manifest["entries"], fn row ->
+        if row == volume, do: %{row | "method" => "PatchStoragePoolVolumeSnapshot"}, else: row
+      end)
+
+    assert_raise ExUnit.AssertionError, ~r/method\/endpoint mismatch/, fn ->
+      EndpointEvidence.validate!(%{@manifest | "entries" => entries}, native)
     end
 
     evidence =
