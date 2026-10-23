@@ -70,6 +70,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** reads agree with the pinned client for populated/empty/corrupt results, native 403/404, routing, extensions and lifetime cleanup, and synchronous writes agree for request bodies, ETags and native rejection while lost or malformed replies are uncertain and never replayed
 - **AND** reviewed records list each completed row, selectors the pinned client does not send and cluster forwarding are approved exclusions, and the metrics and ACL log rows stay partial while S07 is open
 
+#### Scenario: Completed stream-free storage contracts
+
+- **WHEN** any stream-free B08 storage pool, bucket, bucket key, resource, volume state, snapshot, bitmap or rebuild method is called over Unix or mutual HTTPS, for any daemon volume type
+- **THEN** reads agree with the pinned client (or, for list-by-type and the single bitmap read, with unchanged RawQuery transport) for populated/empty/corrupt results, native 403/404, routing and extensions. Synchronous, model-returning and asynchronous writes agree for request bodies, ETags, results, accepted operations and native rejection. Lost or malformed write replies are uncertain and never replayed
+- **AND** the collection volume POST stays partial until it is reconciled with volume create, and names-only bucket selectors and cluster forwarding are recorded approved exclusions
+
 #### Scenario: Completed PATCH contracts
 
 - **WHEN** any B05 PATCH method is called over Unix or mutual HTTPS with a nonempty caller ETag
