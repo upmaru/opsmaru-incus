@@ -130,7 +130,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "176 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "195 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -151,12 +151,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                PatchServer PatchCertificate PatchClusterGroup PatchClusterMember PatchImageAlias PatchInstanceMetadata PatchWarning
                PatchNetworkACL PatchNetworkAddressSet PatchNetworkIntegration PatchNetworkZone PatchNetworkZoneRecord PatchNetwork PatchNetworkForward PatchNetworkLoadBalancer PatchNetworkPeer PatchStoragePool PatchStoragePoolBucket PatchStoragePoolVolume PatchStoragePoolVolumeSnapshot
                GetStoragePoolBucketNames GetStoragePoolBucket GetStoragePoolBucketKeyNames GetStoragePoolBucketKey GetStoragePoolResources GetStoragePoolVolumeTypeNames GetStorageVolumeBitmaps GetStorageVolumeBitmap GetStoragePoolVolumeSnapshotNames GetStoragePoolVolumeSnapshot GetStoragePoolVolumeState
-               DeleteStoragePool DeleteStoragePoolBucket DeleteStoragePoolBucketKey DeleteStoragePoolVolume DeleteStorageVolumeBitmap DeleteStoragePoolVolumeSnapshot CreateStoragePool CreateStoragePoolBucketKey CreateStorageVolumeBitmap RebuildStoragePoolVolume CreateStoragePoolVolumeSnapshot RenameStoragePoolVolumeSnapshot UpdateStoragePool UpdateStoragePoolBucket UpdateStoragePoolBucketKey UpdateStoragePoolVolume UpdateStoragePoolVolumeSnapshot)
+               DeleteStoragePool DeleteStoragePoolBucket DeleteStoragePoolBucketKey DeleteStoragePoolVolume DeleteStorageVolumeBitmap DeleteStoragePoolVolumeSnapshot CreateStoragePool CreateStoragePoolBucketKey CreateStorageVolumeBitmap RebuildStoragePoolVolume CreateStoragePoolVolumeSnapshot RenameStoragePoolVolumeSnapshot UpdateStoragePool UpdateStoragePoolBucket UpdateStoragePoolBucketKey UpdateStoragePoolVolume UpdateStoragePoolVolumeSnapshot
+               DeleteImageAlias DeleteInstanceConsoleLog DeleteInstanceLogfile GetImageAliases GetImageAlias GetInstanceAccess GetInstanceLogfiles GetInstanceMetadata CreateImageAlias RenameImageAlias RefreshImage CreateImageSecret CreateInstanceBitmap RebuildInstance UpdateImageAlias UpdateImage UpdateInstances UpdateInstanceMetadata UpdateInstanceSnapshot)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
              "partial" => 2,
-             "complete" => 174
+             "complete" => 193
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -302,8 +303,11 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"DELETE /1.0/certificates/{}", "b10_delete_certificates_one_v1"},
              {"DELETE /1.0/cluster/groups/{}", "b10_delete_cluster_groups_one_v1"},
              {"DELETE /1.0/cluster/members/{}", "b10_delete_cluster_members_one_v1"},
+             {"DELETE /1.0/images/aliases/{}", "b11_delete_images_aliases_one_v1"},
              {"DELETE /1.0/images/{}", "b01_delete_image_v1"},
              {"DELETE /1.0/instances/{}", "b01_delete_instance_v1"},
+             {"DELETE /1.0/instances/{}/console", "b11_delete_instances_one_console_v1"},
+             {"DELETE /1.0/instances/{}/logs/{}", "b11_delete_instances_one_logs_one_v1"},
              {"DELETE /1.0/instances/{}/snapshots/{}", "b01_delete_instance_snapshot_v1"},
              {"DELETE /1.0/network-acls/{}", "b09_delete_network_acls_one_v1"},
              {"DELETE /1.0/network-address-sets/{}", "b09_delete_network_address_sets_one_v1"},
@@ -343,9 +347,14 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/cluster/members/{}/state", "b10_cluster_members_one_state_v1"},
              {"GET /1.0/events", "b03_events_v1"},
              {"GET /1.0/images", "b02_images_v1"},
+             {"GET /1.0/images/aliases", "b11_images_aliases_v1"},
+             {"GET /1.0/images/aliases/{}", "b11_images_aliases_one_v1"},
              {"GET /1.0/images/{}", "b02_image_v1"},
              {"GET /1.0/instances", "b02_instances_v1"},
              {"GET /1.0/instances/{}", "b02_instance_v1"},
+             {"GET /1.0/instances/{}/access", "b11_instances_one_access_v1"},
+             {"GET /1.0/instances/{}/logs", "b11_instances_one_logs_v1"},
+             {"GET /1.0/instances/{}/metadata", "b11_instances_one_metadata_v1"},
              {"GET /1.0/instances/{}/snapshots", "b02_instance_snapshots_v1"},
              {"GET /1.0/instances/{}/snapshots/{}", "b02_instance_snapshot_v1"},
              {"GET /1.0/instances/{}/state", "b02_instance_state_v1"},
@@ -443,7 +452,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"POST /1.0/cluster/members", "b10_post_cluster_members_v1"},
              {"POST /1.0/cluster/members/{}", "b10_post_cluster_members_one_v1"},
              {"POST /1.0/cluster/members/{}/state", "b10_post_cluster_members_one_state_v1"},
+             {"POST /1.0/images/aliases", "b11_post_images_aliases_v1"},
+             {"POST /1.0/images/aliases/{}", "b11_post_images_aliases_one_v1"},
+             {"POST /1.0/images/{}/refresh", "b11_post_images_one_refresh_v1"},
+             {"POST /1.0/images/{}/secret", "b11_post_images_one_secret_v1"},
+             {"POST /1.0/instances/{}/bitmaps", "b11_post_instances_one_bitmaps_v1"},
              {"POST /1.0/instances/{}/exec", "b03_exec_v1"},
+             {"POST /1.0/instances/{}/rebuild", "b11_post_instances_one_rebuild_v1"},
              {"POST /1.0/instances/{}/snapshots", "b01_create_instance_snapshot_v1"},
              {"POST /1.0/network-acls", "b09_post_network_acls_v1"},
              {"POST /1.0/network-acls/{}", "b09_post_network_acls_one_v1"},
@@ -479,7 +494,12 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"PUT /1.0/cluster/certificate", "b10_put_cluster_certificate_v1"},
              {"PUT /1.0/cluster/groups/{}", "b10_put_cluster_groups_one_v1"},
              {"PUT /1.0/cluster/members/{}", "b10_put_cluster_members_one_v1"},
+             {"PUT /1.0/images/aliases/{}", "b11_put_images_aliases_one_v1"},
+             {"PUT /1.0/images/{}", "b11_put_images_one_v1"},
+             {"PUT /1.0/instances", "b11_put_instances_v1"},
              {"PUT /1.0/instances/{}", "b01_update_instance_v1"},
+             {"PUT /1.0/instances/{}/metadata", "b11_put_instances_one_metadata_v1"},
+             {"PUT /1.0/instances/{}/snapshots/{}", "b11_put_instances_one_snapshots_one_v1"},
              {"PUT /1.0/instances/{}/state", "b01_update_instance_state_v1"},
              {"PUT /1.0/network-acls/{}", "b09_put_network_acls_one_v1"},
              {"PUT /1.0/network-address-sets/{}", "b09_put_network_address_sets_one_v1"},

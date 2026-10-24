@@ -320,11 +320,12 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 176 pairs are currently in the checked
-evidence manifest. 174 are complete under reviewed completion records:
+pairs plus 46 query/access variants; 195 pairs are currently in the checked
+evidence manifest. 193 are complete under reviewed completion records:
 native wait, events, exec, seven single-method B01 mutations, conditional instance
 PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10
-administrative rows, all 24 B05 PATCH rows and 28 stream-free B08 storage rows. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
+administrative rows, all 24 B05 PATCH rows, 28 stream-free B08 storage rows and
+all nineteen stream-free B11 instance and image rows. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
@@ -803,6 +804,21 @@ created `StorageBucketKey` model, which the client decodes; a reply it cannot
 decode is uncertain. `UpdateStoragePoolVolume` with a `restore` field needs
 `storage_api_volume_snapshots`, as in the pinned client. Bitmap create and
 delete are synchronous.
+
+The stream-free instance and image calls work the same way:
+
+- image alias create, rename, update, get, list and delete
+- image update, refresh and secret
+- instance access, log file names, metadata get and update
+- console log delete, log file delete and instance bitmap create
+- instance rebuild and snapshot update
+
+Image refresh, image secret, instance rebuild and snapshot update return an
+accepted operation. `CreateImageSecret` returns the secret in the operation
+metadata, which `Inspect` never shows. `UpdateInstances` (`PUT /1.0/instances`)
+changes the state of every instance in the connection's project at once, as an
+accepted operation. Whether a tool may expose it is a separate policy decision.
+The public `?public` alias view is not supported.
 
 The `initial_mutation_lifecycle_v1` fixture scope covers eight existing B01 methods:
 CreateInstance, UpdateInstance (including a separate restore body),

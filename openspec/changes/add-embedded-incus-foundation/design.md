@@ -129,6 +129,44 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: B11 stream-free instance and image completion (2026-10-24)
+
+Complete all 19 B11 rows that have no stream contract, in one PR, under reviewed
+completion records. The 23 B11 rows linked to open stream contracts stay partial.
+
+- Reads (5 rows, 6 methods) use `read_contract` records through the inspection
+  contract test and schema-driven `ModelSamples`:
+  - image aliases (names and list) and an image alias
+  - instance access
+  - instance log file names
+  - instance metadata
+- Writes (14 rows, 14 methods) use the sync-mutation contract test:
+  - Nine synchronous writes use `sync_mutation` records: image alias create,
+    rename, update and delete; image update; instance metadata update; console
+    log delete; log file delete; instance bitmap create.
+  - Five asynchronous writes use `async_mutation` records with native `/wait`
+    evidence: image refresh, image secret, instance rebuild, instance snapshot
+    update and the project-wide `UpdateInstances` state change.
+- `CreateImageSecret` returns the secret in its operation metadata. Response
+  and operation values already redact their payload in `Inspect`; the test
+  asserts the secret is not shown.
+
+User decisions (2026-10-24):
+
+- Certify `UpdateInstances` (`PUT /1.0/instances`) as an ordinary
+  asynchronous write. Whether tools may expose a project-wide state change is
+  a separate tool-policy decision.
+- Approved exclusions:
+  - the untrusted `GET /1.0/images/aliases/{name}?public` view, for
+    verified-identity connections only, consistent with earlier slices
+  - cluster forwarding beyond host project/target routing
+- One PR for all 19 rows: the selected manifest grows 176 -> 195 pairs (193
+  complete).
+
+The PR updates the ledgers, closure ledger, backlog, client docs and generated
+coverage. Task 3.9, `complete_port` and every Go declaration status are
+unchanged.
+
 #### Approved slice: B08 stream-free storage completion (2026-10-24)
 
 Complete 28 of the 29 B08 rows that have no stream contract, under reviewed
