@@ -13,17 +13,28 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   @b09 ~w(GetNetworkACLNames GetNetworkACLs GetNetworkACLsAllProjects GetNetworkACL GetNetworkAddressSetNames GetNetworkAddressSets GetNetworkAddressSetsAllProjects GetNetworkAddressSet GetNetworkAllocations GetNetworkAllocationsAllProjects GetNetworkIntegrationNames GetNetworkIntegrations GetNetworkIntegration GetNetworkZoneNames GetNetworkZones GetNetworkZonesAllProjects GetNetworkZone GetNetworkZoneRecords GetNetworkZoneRecordNames GetNetworkZoneRecord GetNetworkForwards GetNetworkForwardAddresses GetNetworkForward GetNetworkLeases GetNetworkLoadBalancerAddresses GetNetworkLoadBalancers GetNetworkLoadBalancer GetNetworkLoadBalancerState GetNetworkPeers GetNetworkPeerNames GetNetworkPeer GetNetworkState)
   # B10 PR 1: every read method mapped to the administrative rows.
   @b10 ~w(GetCertificateFingerprints GetCertificates GetCertificatesWithFilter GetCertificate GetCluster GetClusterGroups GetClusterGroupNames GetClusterGroup GetClusterMemberNames GetClusterMembers GetClusterMembersWithFilter GetClusterMember GetClusterMemberState GetMetadataConfiguration GetProjectAccess GetProjectState GetServerResources GetWarningUUIDs GetWarnings GetWarning)
-  @methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
-           |> Enum.filter(&(&1["name"] in (@names ++ @b02 ++ @b02_storage ++ @b09 ++ @b10)))
+  # B08 PR 1: every named read method mapped to the stream-free storage read rows.
+  @b08 ~w(GetStoragePoolBucketNames GetStoragePoolBuckets GetStoragePoolBucketsWithFilter GetStoragePoolBucketsAllProjects GetStoragePoolBucketsWithFilterAllProjects GetStoragePoolBucketsFull GetStoragePoolBucketsFullWithFilter GetStoragePoolBucketsFullAllProjects GetStoragePoolBucketsFullWithFilterAllProjects GetStoragePoolBucket GetStoragePoolBucketFull GetStoragePoolBucketKeyNames GetStoragePoolBucketKeys GetStoragePoolBucketKey GetStoragePoolResources GetStorageVolumeBitmaps GetStorageVolumeBitmapNames GetStoragePoolVolumeSnapshotNames GetStoragePoolVolumeSnapshots GetStoragePoolVolumeSnapshot GetStoragePoolVolumeState)
+  @catalogue Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
+  @methods Enum.filter(
+             @catalogue,
+             &(&1["name"] in (@names ++ @b02 ++ @b02_storage ++ @b09 ++ @b10 ++ @b08))
+           )
   # Models without a hand-written sample get a schema-driven one (ModelSamples).
-  @generated ~w(NetworkACL NetworkAddressSet NetworkAllocations NetworkForward NetworkIntegration NetworkLease NetworkLoadBalancer NetworkLoadBalancerState NetworkPeer NetworkState NetworkZone NetworkZoneRecord Access Certificate Cluster ClusterGroup ClusterMember ClusterMemberState MetadataConfiguration ProjectState Resources Warning)
+  @generated ~w(NetworkACL NetworkAddressSet NetworkAllocations NetworkForward NetworkIntegration NetworkLease NetworkLoadBalancer NetworkLoadBalancerState NetworkPeer NetworkState NetworkZone NetworkZoneRecord Access Certificate Cluster ClusterGroup ClusterMember ClusterMemberState MetadataConfiguration ProjectState Resources Warning StorageBucket StorageBucketFull StorageBucketKey ResourcesStoragePool StorageVolumeBitmap StorageVolumeSnapshot StorageVolumeState)
   # Discovery is a public helper, not a named Go GetServer DTO comparison.
   @discovery %{"name" => "connect", "params" => [], "result" => "discovery", "model" => "Server"}
   # Root API version discovery has no named Go method; it is compared through RawQuery.
-  @root Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
-        |> Enum.find(&(&1["name"] == "GetAPIVersions"))
-  @contracts @methods ++ [@discovery, @root]
-  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects networks_all_projects profiles_all_projects storage_volume_full storage_volumes_all_projects network_acl network_acls_all_projects network_address_set network_allocations network_dns network_dns_records network_forward network_integrations network_leases network_load_balancer network_load_balancer_state network_peer network_state network_zones_all_projects cluster_member_state clustering clustering_groups metadata_configuration project_access project_usage resources warnings)
+  @root Enum.find(@catalogue, &(&1["name"] == "GetAPIVersions"))
+  # B08 reads the pinned client lacks (volumes of one type, one bitmap), also RawQuery.
+  @rest Enum.filter(
+          @catalogue,
+          &(&1["name"] in ~w(GetStoragePoolVolumeTypeNames GetStoragePoolVolumesByType GetStoragePoolVolumesByTypeFull GetStorageVolumeBitmap))
+        )
+  @contracts @methods ++ [@discovery, @root] ++ @rest
+  # The volume type is a pass-through path argument, compared for every daemon type.
+  @volume_types ~w(custom container virtual-machine image)
+  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects networks_all_projects profiles_all_projects storage_volume_full storage_volumes_all_projects network_acl network_acls_all_projects network_address_set network_allocations network_dns network_dns_records network_forward network_integrations network_leases network_load_balancer network_load_balancer_state network_peer network_state network_zones_all_projects cluster_member_state clustering clustering_groups metadata_configuration project_access project_usage resources warnings storage_buckets storage_buckets_all_projects storage_bucket_full storage_volume_nbd storage_api_volume_snapshots storage_volume_state)
   @driver Path.expand("../.integration/inspection-driver", __DIR__)
 
   setup_all do
@@ -35,7 +46,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 111
+    assert length(@methods) == 132 and length(@rest) == 4
     :ok
   end
 
@@ -57,6 +68,9 @@ defmodule Opsmaru.Incus.InspectionContractTest do
 
       for outcome <- [:populated, :empty, :corrupt, 403, 404],
           do: compare(root, identity, method, outcome)
+
+      for type <- volume_types(method),
+          do: compare(root, identity, Map.put(method, "volume_type", type), :populated)
 
       if method == @discovery do
         for outcome <- [:missing, :version], do: compare(root, identity, method, outcome)
@@ -195,6 +209,11 @@ defmodule Opsmaru.Incus.InspectionContractTest do
         @root ->
           input |> Map.drop([:action, :args]) |> Map.merge(%{method: "GET", path: "/"})
 
+        %{"reference_kind" => "rest"} ->
+          input
+          |> Map.drop([:action, :args])
+          |> Map.merge(%{method: "GET", path: rest_path(method)})
+
         _ ->
           input
       end
@@ -206,7 +225,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     expected = Jason.decode!(out)
     actual = invoke(client, method)
     requests = HTTPFixture.requests(fixture)
-    raw? = method in [@discovery, @root]
+    raw? = method == @discovery or method["reference_kind"] == "rest"
     if not raw?, do: assert(length(requests) == 3)
     assert [native, local] = if(raw?, do: requests, else: tl(requests))
     assert local.method == "GET"
@@ -248,6 +267,9 @@ defmodule Opsmaru.Incus.InspectionContractTest do
 
       method == @root ->
         root_result(actual, expected, client, outcome)
+
+      method["reference_kind"] == "rest" ->
+        rest_result(actual, expected, client, method, outcome)
 
       outcome in [:corrupt, :corrupt_backup, :grouped, :nested] ->
         assert expected["error"]
@@ -405,6 +427,64 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     end
   end
 
+  # RawQuery returns the raw envelope; the client's decoded result matches the fixture.
+  defp rest_result(actual, native, client, method, outcome) do
+    refute native["error"]
+    assert native["response"]["metadata"] == metadata(method, outcome)
+    assert native["etag"] == "\"read-etag\""
+
+    cond do
+      outcome in [:corrupt, :corrupt_backup, :grouped] ->
+        assert {:error, %Error{kind: :invalid_model}} = actual
+
+      method["result"] == "names" ->
+        assert {:ok, reply} = actual
+        assert reply.metadata == names(method, outcome)
+        assert reply.connection == client.connection and reply.identity == :verified
+
+      true ->
+        assert {:ok, reply} = actual
+        assert reply.connection == client.connection and reply.identity == :verified
+        assert reply.etag == "\"read-etag\""
+        data = metadata(method, outcome)
+
+        decoded =
+          if method["result"] == "list",
+            do: Enum.map(reply.metadata, & &1.data),
+            else: reply.metadata.data
+
+        assert decoded == data
+    end
+  end
+
+  # The native path and query, fixed per descriptor (not derived from it), so a wrong
+  # descriptor path or recursion value fails the wire comparison. Host routing too.
+  defp rest_path(method) do
+    pool = "/1.0/storage-pools/fixture-pool/volumes/" <> Map.get(method, "volume_type", "custom")
+
+    {path, query} =
+      case method["name"] do
+        "GetStoragePoolVolumeTypeNames" ->
+          {pool, %{}}
+
+        "GetStoragePoolVolumesByType" ->
+          {pool, %{"recursion" => "1"}}
+
+        "GetStoragePoolVolumesByTypeFull" ->
+          {pool, %{"recursion" => "2"}}
+
+        "GetStorageVolumeBitmap" ->
+          {pool <> "/fixture-volumeName/bitmaps/fixture-bitmapName", %{}}
+      end
+
+    query = Map.merge(query, %{"project" => "fixture scope", "target" => "member/a"})
+    path <> "?" <> URI.encode_query(query)
+  end
+
+  defp volume_types(method) do
+    if Enum.any?(method["params"], &(&1 in ~w(volType volumeType))), do: @volume_types, else: []
+  end
+
   defp metadata(@root, :populated), do: ["/1.0"]
   defp metadata(@root, :empty), do: []
   defp metadata(@root, :corrupt), do: ["/1.0", 1]
@@ -426,8 +506,10 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   defp metadata(_, :empty), do: %{}
 
   defp metadata(%{"result" => "names"} = method, outcome) do
+    values = args(method)
+
     prefix =
-      String.replace(method["path"], ~r/\{[^}]+\}/, &("fixture-" <> String.slice(&1, 1..-2//1)))
+      String.replace(method["path"], ~r/\{[^}]+\}/, &values[String.slice(&1, 1..-2//1)])
 
     prefix = URI.encode(prefix)
 
@@ -715,7 +797,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
         method["params"],
         &{&1,
          case &1 do
-           "volType" -> "custom"
+           type when type in ~w(volType volumeType) -> Map.get(method, "volume_type", "custom")
            "instance_type" -> "container"
            "filters" -> ["name=fixture", "status=Running"]
            key -> "fixture-" <> key

@@ -2201,9 +2201,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucketBackupFile",
@@ -2220,117 +2221,130 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucketKey",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucketKeyNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucketKeys",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucketNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBuckets",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucketsAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucketsFull",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucketsFullAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucketsFullWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucketsFullWithFilterAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucketsWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolBucketsWithFilterAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolNames",
@@ -2347,9 +2361,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolume",
@@ -2423,36 +2438,40 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumeSnapshotNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumeSnapshots",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumeState",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStoragePoolVolumes",
@@ -2596,18 +2615,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStorageVolumeBitmaps",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetStorageVolumeFile",
@@ -5626,9 +5647,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucketBackupFile",
@@ -5645,117 +5667,130 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucketKey",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucketKeyNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucketKeys",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucketNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBuckets",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucketsAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucketsFull",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucketsFullAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucketsFullWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucketsFullWithFilterAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucketsWithFilter",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolBucketsWithFilterAllProjects",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolNames",
@@ -5772,9 +5807,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolume",
@@ -5848,36 +5884,40 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumeSnapshotNames",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumeSnapshots",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumeState",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStoragePoolVolumes",
@@ -6021,18 +6061,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStorageVolumeBitmaps",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage inspection. The endpoint row is complete under a reviewed b08 read record: every mapped names, list, full, filter, all-projects and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup), for every daemon volume type. Names-only filter/all-projects and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetStorageVolumeFile",

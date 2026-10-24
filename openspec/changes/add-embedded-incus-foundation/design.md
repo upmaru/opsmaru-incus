@@ -129,6 +129,72 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: B08 stream-free storage completion (2026-10-24)
+
+Complete 28 of the 29 B08 rows that have no stream contract, under reviewed
+completion records: storage pools, buckets and bucket keys, pool resources,
+volume state, volume snapshots and bitmaps, and volume rebuild. The 20 B08 rows
+linked to open stream contracts (S04, S06, S08, S09, S10) stay partial.
+
+- Reads (11 rows, 25 methods) use `read_contract` records through the inspection
+  contract test and schema-driven `ModelSamples`.
+- Writes (17 rows, 17 methods) use the sync-mutation contract test.
+  Synchronous writes use `sync_mutation` records. The four asynchronous rows
+  (volume snapshot create, rename and delete, and volume rebuild) use
+  `async_mutation` records with native `/wait` evidence.
+- `CreateStoragePoolBucketKey` returns a `StorageBucketKey` model. Its
+  synchronous result is compared field by field with the pinned client, so the
+  harness gains a model-result path.
+- Bitmap create and delete are empty synchronous responses in both the daemon
+  and the pinned client, although the REST document lists delete as an
+  operation.
+
+User decisions (2026-10-24):
+
+- The volume type is a pass-through path argument. Every method that takes one
+  is compared with the pinned client for each daemon type (custom, container,
+  virtual-machine and image), so no volume type exclusion is recorded.
+- Add four typed REST descriptors where the pinned client has no method:
+  `GetStoragePoolVolumeTypeNames`, `GetStoragePoolVolumesByType` and
+  `GetStoragePoolVolumesByTypeFull` for `GET /1.0/storage-pools/{pool}/volumes/{type}`
+  (names, recursion=1, recursion=2), and `GetStorageVolumeBitmap` for the single
+  bitmap read.
+  - Evidence is unchanged Go RawQuery transport plus independent fixtures.
+  - Each descriptor takes the extension of the matching pinned method:
+    `storage` and `storage_volume_full` for the lists, and
+    `storage_volume_nbd` for the bitmap.
+- Defer `POST /1.0/storage-pools/{pool}/volumes`. It is the same daemon handler
+  as the typed create path, which takes the type from the body, and the pinned
+  client never sends it. The row stays partial until it is reconciled with the
+  stream-linked volume create row.
+- Approved exclusions:
+  - `filter` and `all-projects` on the names-only bucket view, since the
+    pinned client has no names method that sends them; filtering stays
+    certified on the recursion methods
+  - cluster forwarding beyond host project/target routing
+
+PR 1 — 11 read rows:
+
+- Rows: buckets, bucket, bucket keys, bucket key, pool resources, volumes by
+  type, bitmaps, bitmap, volume snapshots, volume snapshot and volume state.
+- Ledgers: the selected manifest grows 148 -> 159 pairs (157 complete), and
+  confirmed typed gaps fall 11 -> 9.
+
+PR 2 — 17 write rows:
+
+- Pools: create, update and delete.
+- Buckets: update and delete.
+- Bucket keys: create, update and delete.
+- Volumes: update and delete.
+- Bitmaps: create and delete.
+- Volume snapshots: create, rename, update and delete.
+- Volumes: rebuild.
+- Ledgers: the manifest grows 159 -> 176 pairs (174 complete).
+
+Each PR updates the ledgers, closure ledger, backlog, client docs and generated
+coverage. Task 3.9, `complete_port` and every Go declaration status are
+unchanged.
+
 #### Approved slice: B05 PATCH completion (2026-10-23)
 
 Complete all 24 B05 PATCH rows under reviewed `conditional_patch` records, one
