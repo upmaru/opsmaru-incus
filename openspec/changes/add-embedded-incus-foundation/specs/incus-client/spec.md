@@ -70,6 +70,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** reads agree with the pinned client for populated/empty/corrupt results, native 403/404, routing, extensions and lifetime cleanup, and synchronous writes agree for request bodies, ETags and native rejection while lost or malformed replies are uncertain and never replayed
 - **AND** reviewed records list each completed row, selectors the pinned client does not send and cluster forwarding are approved exclusions, and the metrics and ACL log rows stay partial while S07 is open
 
+#### Scenario: Completed stream-free instance and image contracts
+
+- **WHEN** any stream-free B11 image alias, image, instance access, log, metadata, console log, bitmap, rebuild, snapshot or project-wide instance state method is called over Unix or mutual HTTPS
+- **THEN** reads agree with the pinned client for populated/empty/corrupt results, native 403/404, routing and extensions. Synchronous and asynchronous writes agree for request bodies, ETags, accepted operations and native rejection. Lost or malformed write replies are uncertain and never replayed. A returned image secret is never shown by `Inspect`
+- **AND** the public alias view and cluster forwarding are recorded approved exclusions
+
 #### Scenario: Completed stream-free storage contracts
 
 - **WHEN** any stream-free B08 storage pool, bucket, bucket key, resource, volume state, snapshot, bitmap or rebuild method is called over Unix or mutual HTTPS, for any daemon volume type
