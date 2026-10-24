@@ -1394,7 +1394,7 @@ declaration status (1239 partial / 41 missing) are unchanged.
   use schema-driven samples for image aliases, instance access and metadata.
 - [x] The sync-mutation contract test now covers 90 write methods. The pinned
   `DeleteInstanceConsoleLog` takes an unused trailing argument, which the
-  oracle passes as nil. Every accepted write now also asserts that operation
+  oracle passes from the catalogue's `oracle_trailing`. Every accepted write now also asserts that operation
   metadata (an image secret, for one) never appears in `Inspect` output.
 - [x] `UpdateInstances` is certified as an ordinary asynchronous write
   (approved). Whether tools may expose it is a separate tool-policy decision.

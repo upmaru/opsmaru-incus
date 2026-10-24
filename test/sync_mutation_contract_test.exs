@@ -18,8 +18,6 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   @all_methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
   @methods Enum.filter(@all_methods, &(&1["name"] in (@b09 ++ @b10 ++ @b08 ++ @b11)))
   @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings storage storage_buckets storage_volume_nbd storage_api_volume_snapshots storage_volumes_rebuild console container_log_delete image_force_refresh instances_rebuild container_edit_metadata snapshot_expiry)
-  # Pinned methods with a trailing argument they ignore, which the oracle passes as nil.
-  @unused_args %{"DeleteInstanceConsoleLog" => [nil]}
   @uuid "01234567-89ab-cdef-0123-456789abcdef"
   @url "/1.0/operations/" <> @uuid
   @etag "\"before\""
@@ -450,9 +448,10 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     do: if(param in Map.get(method, "legal_params", []), do: "fixture-", else: "fixture /")
 
   defp oracle(root, fixture, identity, method, args, body) do
+    # Trailing pinned arguments the catalogue records, such as unused console log options.
     values =
       Enum.map(method["params"], &args[&1]) ++
-        Map.get(@unused_args, method["name"], []) ++
+        Map.get(method, "oracle_trailing", []) ++
         if(body, do: [body], else: []) ++
         if(method["verb"] == "PUT", do: [@etag], else: [])
 
