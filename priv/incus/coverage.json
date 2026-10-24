@@ -583,9 +583,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateStoragePoolBucket",
@@ -630,9 +631,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateStoragePoolVolume",
@@ -677,9 +679,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateStorageVolumeBackup",
@@ -705,9 +708,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateStorageVolumeFile",
@@ -982,18 +986,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteStoragePoolBucket",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteStoragePoolBucketBackup",
@@ -1009,27 +1015,30 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteStoragePoolVolume",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteStoragePoolVolumeSnapshot",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteStorageVolumeBackup",
@@ -1045,9 +1054,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteStorageVolumeFile",
@@ -2782,9 +2792,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.RefreshImage",
@@ -2925,9 +2936,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.RenameStorageVolumeBackup",
@@ -3209,45 +3221,50 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateStoragePoolBucket",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateStoragePoolBucketKey",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateStoragePoolVolume",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateStoragePoolVolumeSnapshot",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateWarning",
@@ -3823,9 +3840,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateStoragePoolBucket",
@@ -3870,9 +3888,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateStoragePoolVolume",
@@ -3917,9 +3936,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateStorageVolumeBackup",
@@ -3945,9 +3965,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateStorageVolumeFile",
@@ -4222,18 +4243,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteStoragePoolBucket",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteStoragePoolBucketBackup",
@@ -4249,27 +4272,30 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteStoragePoolVolume",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteStoragePoolVolumeSnapshot",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteStorageVolumeBackup",
@@ -4285,9 +4311,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteStorageVolumeFile",
@@ -6238,9 +6265,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.RefreshImage",
@@ -6381,9 +6409,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.RenameStorageVolumeBackup",
@@ -6665,45 +6694,50 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateStoragePoolBucket",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateStoragePoolBucketKey",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateStoragePoolVolume",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateStoragePoolVolumeSnapshot",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B08 storage write. The endpoint row is complete under a reviewed b08 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success, a returned bucket key model or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS for every daemon volume type; lost, malformed or corrupt replies are uncertain and never replayed; invalid bodies, unready hosts, missing extensions and a guarded volume restore reject before dispatch. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateWarning",

@@ -320,11 +320,11 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 159 pairs are currently in the checked
-evidence manifest. 157 are complete under reviewed completion records:
+pairs plus 46 query/access variants; 176 pairs are currently in the checked
+evidence manifest. 174 are complete under reviewed completion records:
 native wait, events, exec, seven single-method B01 mutations, conditional instance
 PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10
-administrative rows, all 24 B05 PATCH rows and eleven B08 storage reads. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
+administrative rows, all 24 B05 PATCH rows and 28 stream-free B08 storage rows. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
@@ -795,6 +795,14 @@ The volume type is passed through unchanged. Bucket, bucket key, pool resource,
 volume snapshot, bitmap and volume state reads are compared with the pinned
 client for every daemon volume type (custom, container, virtual-machine,
 image).
+
+Storage writes follow the same contract. The asynchronous ones return an
+accepted operation, observed through native `/wait`: volume snapshot create,
+rename and delete, and volume rebuild. `CreateStoragePoolBucketKey` returns the
+created `StorageBucketKey` model, which the client decodes; a reply it cannot
+decode is uncertain. `UpdateStoragePoolVolume` with a `restore` field needs
+`storage_api_volume_snapshots`, as in the pinned client. Bitmap create and
+delete are synchronous.
 
 The `initial_mutation_lifecycle_v1` fixture scope covers eight existing B01 methods:
 CreateInstance, UpdateInstance (including a separate restore body),

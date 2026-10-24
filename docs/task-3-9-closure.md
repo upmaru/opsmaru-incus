@@ -1342,3 +1342,37 @@ declaration status (1239 partial / 41 missing) are unchanged.
 - Approved exclusions (2026-10-24): `filter` and `all-projects` on the
   names-only bucket view, and cluster forwarding. The collection volume POST is
   deferred to the stream-linked volume create row.
+
+## B08 stream-free storage completion (PR 2: writes)
+
+Approved 2026-10-24. The 17 stream-free B08 write rows are complete:
+
+- 13 under `sync_mutation` records and 4 under `async_mutation` records
+- pools: create, update and delete
+- buckets: update and delete
+- bucket keys: create, update and delete
+- volumes: update and delete
+- bitmaps: create and delete
+- volume snapshots: create, rename, update and delete
+- volumes: rebuild
+
+With PR 1, 28 of the 29 stream-free B08 rows are complete. The collection volume
+POST stays partial until it is reconciled with volume create. The selected
+manifest grows 159 -> 176 pairs (174 complete). Task 3.9, `complete_port` and
+every Go declaration status (1239 partial / 41 missing) are unchanged.
+
+- [x] `sync_mutation_contract_test.exs` now covers 76 write methods. Each storage
+  write is compared with the named Go method as in B09/B10. The four
+  asynchronous writes add acceptance and native `/wait`. Every method that takes
+  a volume type is also compared for custom, container, virtual-machine and
+  image volumes.
+- [x] `CreateStoragePoolBucketKey` answers with a schema-generated
+  `StorageBucketKey`, compared field by field with the pinned DTO. A corrupt
+  model leaves the write uncertain. An empty request model (rebuild) is rejected
+  as a non-map body in preflight.
+- [x] A volume `restore` without `storage_api_volume_snapshots` is refused before
+  dispatch, as the pinned client refuses it.
+- The pinned `UpdateStoragePoolVolumeSnapshot` uses `queryOperation` but accepts
+  the daemon's empty synchronous reply, and so does the client. Approved
+  exclusion (2026-10-24): cluster forwarding. Real-daemon storage effects remain
+  separately recorded.
