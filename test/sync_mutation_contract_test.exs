@@ -10,9 +10,12 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   @b09 ~w(CreateNetwork RenameNetwork UpdateNetwork DeleteNetwork CreateNetworkACL RenameNetworkACL UpdateNetworkACL DeleteNetworkACL CreateNetworkAddressSet RenameNetworkAddressSet UpdateNetworkAddressSet DeleteNetworkAddressSet CreateNetworkIntegration RenameNetworkIntegration UpdateNetworkIntegration DeleteNetworkIntegration CreateNetworkZone UpdateNetworkZone DeleteNetworkZone CreateNetworkZoneRecord UpdateNetworkZoneRecord DeleteNetworkZoneRecord CreateNetworkForward UpdateNetworkForward DeleteNetworkForward CreateNetworkLoadBalancer UpdateNetworkLoadBalancer DeleteNetworkLoadBalancer CreateNetworkPeer UpdateNetworkPeer DeleteNetworkPeer)
   # B10 PR 2: every administrative write, synchronous or accepted as an operation.
   @b10 ~w(UpdateServer CreateCertificate CreateCertificateToken UpdateCertificate DeleteCertificate UpdateCluster UpdateClusterCertificate CreateClusterGroup RenameClusterGroup UpdateClusterGroup DeleteClusterGroup CreateClusterMember RenameClusterMember UpdateClusterMember DeleteClusterMember DeletePendingClusterMember UpdateClusterMemberState CreateProfile RenameProfile UpdateProfile DeleteProfile CreateProject RenameProject UpdateProject DeleteProject DeleteProjectForce UpdateWarning DeleteWarning)
+  # B08 PR 2: every stream-free storage write (pools, buckets and keys, volumes,
+  # bitmaps, volume snapshots and rebuild).
+  @b08 ~w(CreateStoragePool UpdateStoragePool DeleteStoragePool UpdateStoragePoolBucket DeleteStoragePoolBucket CreateStoragePoolBucketKey UpdateStoragePoolBucketKey DeleteStoragePoolBucketKey UpdateStoragePoolVolume DeleteStoragePoolVolume CreateStorageVolumeBitmap DeleteStorageVolumeBitmap CreateStoragePoolVolumeSnapshot RenameStoragePoolVolumeSnapshot UpdateStoragePoolVolumeSnapshot DeleteStoragePoolVolumeSnapshot RebuildStoragePoolVolume)
   @all_methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
-  @methods Enum.filter(@all_methods, &(&1["name"] in (@b09 ++ @b10)))
-  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings)
+  @methods Enum.filter(@all_methods, &(&1["name"] in (@b09 ++ @b10 ++ @b08)))
+  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings storage storage_buckets storage_volume_nbd storage_api_volume_snapshots storage_volumes_rebuild)
   @uuid "01234567-89ab-cdef-0123-456789abcdef"
   @url "/1.0/operations/" <> @uuid
   @etag "\"before\""
@@ -26,8 +29,8 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 59
-    assert Enum.all?(@methods, &(&1["result"] in ["sync", "operation"]))
+    assert length(@methods) == 76
+    assert Enum.all?(@methods, &(&1["result"] in ["sync", "model", "operation"]))
     :ok
   end
 
@@ -39,7 +42,10 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     %{root: root}
   end
 
-  for method <- @methods, method["result"] == "sync", transport <- [:unix, :https] do
+  # The volume type is a pass-through path argument, compared for every daemon type.
+  @volume_types ~w(custom container virtual-machine image)
+
+  for method <- @methods, method["result"] in ["sync", "model"], transport <- [:unix, :https] do
     test "#{method["name"]} #{transport} synchronous write matches native request, result and rejection",
          %{root: root} do
       method = unquote(Macro.escape(method))
@@ -50,6 +56,12 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
 
       # An unset force flag sends no force query, as in the pinned client.
       if "force" in method["params"], do: compare(root, identity, method, :sync, false)
+      # A returned model that the pinned DTO rejects leaves the write uncertain.
+      if method["result"] == "model", do: compare(root, identity, method, :corrupt)
+
+      for type <- volume_types(method),
+          do: compare(root, identity, Map.put(method, "volume_type", type), :sync)
+
       preflight(root, identity, method)
     end
   end
@@ -66,6 +78,9 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       for outcome <- waits ++ [:bad_operation, 400, 403, 404, 409, 412, :eof, :malformed],
           do: compare(root, identity, method, outcome)
 
+      for type <- volume_types(method),
+          do: compare(root, identity, Map.put(method, "volume_type", type), {:wait, 200})
+
       preflight(root, identity, method)
     end
   end
@@ -78,6 +93,16 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
         others = for other <- method["guards"], other != guard, do: other["field"]
         guarded(root, identity, method, guard, Map.drop(body(method), others))
       end
+    end
+
+    test "#{transport} guarded storage fields reject before dispatch", %{root: root} do
+      identity = identity(root, unquote(transport))
+      methods = for method <- @methods, method["name"] in @b08, method["guards"] != [], do: method
+      assert Enum.map(methods, & &1["name"]) == ["UpdateStoragePoolVolume"]
+
+      for method <- methods,
+          guard <- method["guards"],
+          do: guarded(root, identity, method, guard, body(method))
     end
 
     test "#{transport} untrusted clients bootstrap trust with a trust token", %{root: root} do
@@ -149,7 +174,7 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   end
 
   defp compare(root, identity, method, outcome, force \\ true) do
-    fixture = backend(root, identity, &respond(outcome, &1))
+    fixture = backend(root, identity, &respond(outcome, method, &1))
 
     body = body(method)
     args = args(method, force)
@@ -177,26 +202,41 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
         accepted(root, fixture, identity, client, actual, expected, code)
 
       _ ->
-        check(outcome, actual, expected, client)
+        check(outcome, actual, expected, client, method)
     end
   end
 
   # An accepted write answers its own /wait with the requested snapshot.
-  defp respond({:wait, code}, request) do
+  defp respond({:wait, code}, _method, request) do
     if String.ends_with?(URI.parse(request.target).path, "/wait"),
       do: envelope(200, "sync", snapshot(code)),
       else: envelope(202, "async", snapshot(103))
   end
 
-  defp respond(outcome, _request), do: reply(outcome)
+  # A model-returning write answers with a schema-generated (or corrupted) model.
+  defp respond(outcome, %{"result" => "model", "model" => model}, _request)
+       when outcome in [:sync, :corrupt],
+       do: envelope(200, "sync", if(outcome == :sync, do: model(model), else: corrupt(model)))
 
-  defp check(outcome, actual, expected, client) do
+  defp respond(outcome, _method, _request), do: reply(outcome)
+
+  defp check(outcome, actual, expected, client, method) do
     case outcome do
       :sync ->
         refute expected["error"]
         assert {:ok, reply} = actual
         assert {reply.type, reply.http_status} == {"sync", 200}
         assert reply.connection == client.connection and reply.identity == :verified
+
+        # A returned model is decoded and agrees with the pinned DTO field by field.
+        if method["result"] == "model" do
+          assert reply.metadata.data == model(method["model"])
+          assert sent?(hd(expected["outputs"]), model(method["model"]))
+        end
+
+      :corrupt ->
+        assert expected["error"]
+        assert {:error, %Error{kind: :uncertain}} = actual
 
       code when is_integer(code) ->
         assert {:error,
@@ -305,8 +345,12 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     client = client(fixture, identity, @extensions)
 
     if method["body"] do
-      [{field, _} | _] = Enum.sort(body(method))
-      invalid = Map.put(body(method), field, %{"invalid" => self()})
+      # An empty model (rebuild) has no field to break, so its body is not a map.
+      invalid =
+        case Enum.sort(body(method)) do
+          [] -> "invalid"
+          [{field, _} | _] -> Map.put(body(method), field, %{"invalid" => self()})
+        end
 
       assert {:error, %Error{kind: :invalid_body}} =
                Incus.call(client, method["name"], args(method), opts(method, invalid))
@@ -377,8 +421,24 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     do:
       Map.new(method["params"], fn
         "force" -> {"force", force}
+        param when param in ~w(volType volumeType) -> {param, volume_type(method, param)}
         param -> {param, legal(method, param) <> param}
       end)
+
+  defp volume_type(method, param), do: Map.get(method, "volume_type", "fixture /" <> param)
+
+  defp volume_types(method) do
+    if Enum.any?(method["params"], &(&1 in ~w(volType volumeType))), do: @volume_types, else: []
+  end
+
+  defp model(model), do: ModelSamples.generate(model)
+
+  # The first string field becomes a number, which the pinned DTO rejects.
+  defp corrupt(model) do
+    sample = model(model)
+    [{field, _} | _] = Enum.filter(Enum.sort(sample), fn {_, value} -> is_binary(value) end)
+    %{sample | field => 7}
+  end
 
   defp legal(method, param),
     do: if(param in Map.get(method, "legal_params", []), do: "fixture-", else: "fixture /")

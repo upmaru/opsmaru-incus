@@ -130,7 +130,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "159 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "176 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -150,12 +150,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                UpdateServer CreateCertificate UpdateCertificate DeleteCertificate UpdateCluster UpdateClusterCertificate CreateClusterGroup RenameClusterGroup UpdateClusterGroup DeleteClusterGroup CreateClusterMember RenameClusterMember UpdateClusterMember DeleteClusterMember UpdateClusterMemberState CreateProfile RenameProfile UpdateProfile DeleteProfile CreateProject RenameProject UpdateProject DeleteProject UpdateWarning DeleteWarning
                PatchServer PatchCertificate PatchClusterGroup PatchClusterMember PatchImageAlias PatchInstanceMetadata PatchWarning
                PatchNetworkACL PatchNetworkAddressSet PatchNetworkIntegration PatchNetworkZone PatchNetworkZoneRecord PatchNetwork PatchNetworkForward PatchNetworkLoadBalancer PatchNetworkPeer PatchStoragePool PatchStoragePoolBucket PatchStoragePoolVolume PatchStoragePoolVolumeSnapshot
-               GetStoragePoolBucketNames GetStoragePoolBucket GetStoragePoolBucketKeyNames GetStoragePoolBucketKey GetStoragePoolResources GetStoragePoolVolumeTypeNames GetStorageVolumeBitmaps GetStorageVolumeBitmap GetStoragePoolVolumeSnapshotNames GetStoragePoolVolumeSnapshot GetStoragePoolVolumeState)
+               GetStoragePoolBucketNames GetStoragePoolBucket GetStoragePoolBucketKeyNames GetStoragePoolBucketKey GetStoragePoolResources GetStoragePoolVolumeTypeNames GetStorageVolumeBitmaps GetStorageVolumeBitmap GetStoragePoolVolumeSnapshotNames GetStoragePoolVolumeSnapshot GetStoragePoolVolumeState
+               DeleteStoragePool DeleteStoragePoolBucket DeleteStoragePoolBucketKey DeleteStoragePoolVolume DeleteStorageVolumeBitmap DeleteStoragePoolVolumeSnapshot CreateStoragePool CreateStoragePoolBucketKey CreateStorageVolumeBitmap RebuildStoragePoolVolume CreateStoragePoolVolumeSnapshot RenameStoragePoolVolumeSnapshot UpdateStoragePool UpdateStoragePoolBucket UpdateStoragePoolBucketKey UpdateStoragePoolVolume UpdateStoragePoolVolumeSnapshot)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
              "partial" => 2,
-             "complete" => 157
+             "complete" => 174
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -318,6 +319,17 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"DELETE /1.0/operations/{}", "b01_cancel_operation_v1"},
              {"DELETE /1.0/profiles/{}", "b10_delete_profiles_one_v1"},
              {"DELETE /1.0/projects/{}", "b10_delete_projects_one_v1"},
+             {"DELETE /1.0/storage-pools/{}", "b08_delete_storage_pools_one_v1"},
+             {"DELETE /1.0/storage-pools/{}/buckets/{}",
+              "b08_delete_storage_pools_one_buckets_one_v1"},
+             {"DELETE /1.0/storage-pools/{}/buckets/{}/keys/{}",
+              "b08_delete_storage_pools_one_buckets_one_keys_one_v1"},
+             {"DELETE /1.0/storage-pools/{}/volumes/{}/{}",
+              "b08_delete_storage_pools_one_volumes_one_one_v1"},
+             {"DELETE /1.0/storage-pools/{}/volumes/{}/{}/bitmaps/{}",
+              "b08_delete_storage_pools_one_volumes_one_one_bitmaps_one_v1"},
+             {"DELETE /1.0/storage-pools/{}/volumes/{}/{}/snapshots/{}",
+              "b08_delete_storage_pools_one_volumes_one_one_snapshots_one_v1"},
              {"DELETE /1.0/warnings/{}", "b10_delete_warnings_one_v1"},
              {"GET /", "b10_root_v1"},
              {"GET /1.0", "b02_discovery_v1"},
@@ -450,6 +462,17 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"POST /1.0/profiles/{}", "b10_post_profiles_one_v1"},
              {"POST /1.0/projects", "b10_post_projects_v1"},
              {"POST /1.0/projects/{}", "b10_post_projects_one_v1"},
+             {"POST /1.0/storage-pools", "b08_post_storage_pools_v1"},
+             {"POST /1.0/storage-pools/{}/buckets/{}/keys",
+              "b08_post_storage_pools_one_buckets_one_keys_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}/bitmaps",
+              "b08_post_storage_pools_one_volumes_one_one_bitmaps_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}/rebuild",
+              "b08_post_storage_pools_one_volumes_one_one_rebuild_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}/snapshots",
+              "b08_post_storage_pools_one_volumes_one_one_snapshots_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}/snapshots/{}",
+              "b08_post_storage_pools_one_volumes_one_one_snapshots_one_v1"},
              {"PUT /1.0", "b10_put_server_v1"},
              {"PUT /1.0/certificates/{}", "b10_put_certificates_one_v1"},
              {"PUT /1.0/cluster", "b10_put_cluster_v1"},
@@ -470,6 +493,14 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"PUT /1.0/networks/{}/peers/{}", "b09_put_networks_one_peers_one_v1"},
              {"PUT /1.0/profiles/{}", "b10_put_profiles_one_v1"},
              {"PUT /1.0/projects/{}", "b10_put_projects_one_v1"},
+             {"PUT /1.0/storage-pools/{}", "b08_put_storage_pools_one_v1"},
+             {"PUT /1.0/storage-pools/{}/buckets/{}", "b08_put_storage_pools_one_buckets_one_v1"},
+             {"PUT /1.0/storage-pools/{}/buckets/{}/keys/{}",
+              "b08_put_storage_pools_one_buckets_one_keys_one_v1"},
+             {"PUT /1.0/storage-pools/{}/volumes/{}/{}",
+              "b08_put_storage_pools_one_volumes_one_one_v1"},
+             {"PUT /1.0/storage-pools/{}/volumes/{}/{}/snapshots/{}",
+              "b08_put_storage_pools_one_volumes_one_one_snapshots_one_v1"},
              {"PUT /1.0/warnings/{}", "b10_put_warnings_one_v1"}
            ]
 
