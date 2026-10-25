@@ -23,7 +23,7 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     assert manifest["inventory_complete"] == false
     assert manifest["complete_port"] == false
     assert manifest["catalogue_contracts"] == ~w(query extension guards body model result)
-    assert length(manifest["entries"]) == 195
+    assert length(manifest["entries"]) == 199
     pairs = Enum.map(manifest["entries"], &pair/1)
     assert length(Enum.uniq(pairs)) == length(pairs), "duplicate endpoint pair"
     native_pairs = MapSet.new(native["pairs"], &normalize/1)
@@ -48,7 +48,7 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
           assert row["clients"] != [] and row["evidence"] != [], "missing client/evidence links"
           clients!(manifest, row)
           cache = evidence!(manifest, row, cache)
-          method!(methods, native["pairs"], row)
+          method!(methods, native, row)
           cache
         end
       end)
@@ -205,7 +205,9 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     tests
   end
 
-  defp method!(methods, native_pairs, row) do
+  defp method!(methods, native, row) do
+    native_pairs = native["pairs"]
+
     if row["method"] do
       assert "call" in row["clients"]
 
@@ -219,8 +221,11 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
 
         assert typed?, "missing typed evidence"
         method = methods[name]
-        # A custom-subtype method maps to its documented {type} row, as in the inventory.
-        assert pair(method) in [pair(row), custom_pair(row, method)], "method/endpoint mismatch"
+        # A custom-subtype method maps to its documented {type} row, as in the inventory;
+        # a reconciled row names the registered server route its method is sent to.
+        assert pair(method) in [pair(row), custom_pair(row, method), server_pair(row, native)],
+               "method/endpoint mismatch"
+
         assert Enum.all?(~w(query extension guards body model result), &Map.has_key?(method, &1))
 
         if recursion = method["query"]["recursion"] do
@@ -236,6 +241,17 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
   end
 
   defp pair(row), do: normalize(row["verb"] <> " " <> row["path"])
+
+  defp server_pair(%{"server_route" => route}, native) do
+    pair = normalize(route)
+
+    assert Enum.any?(native["server_routes"], &(normalize(&1["pair"]) == pair)),
+           "unregistered server route"
+
+    pair
+  end
+
+  defp server_pair(row, _native), do: pair(row)
 
   defp custom_pair(row, method) do
     if String.contains?(method["path"], "/volumes/custom/"),

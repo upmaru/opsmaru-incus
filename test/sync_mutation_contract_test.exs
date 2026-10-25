@@ -15,9 +15,11 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   @b08 ~w(CreateStoragePool UpdateStoragePool DeleteStoragePool UpdateStoragePoolBucket DeleteStoragePoolBucket CreateStoragePoolBucketKey UpdateStoragePoolBucketKey DeleteStoragePoolBucketKey UpdateStoragePoolVolume DeleteStoragePoolVolume CreateStorageVolumeBitmap DeleteStorageVolumeBitmap CreateStoragePoolVolumeSnapshot RenameStoragePoolVolumeSnapshot UpdateStoragePoolVolumeSnapshot DeleteStoragePoolVolumeSnapshot RebuildStoragePoolVolume)
   # B11: every stream-free instance and image write.
   @b11 ~w(CreateImageAlias RenameImageAlias UpdateImageAlias DeleteImageAlias UpdateImage RefreshImage CreateImageSecret UpdateInstanceMetadata DeleteInstanceConsoleLog DeleteInstanceLogfile CreateInstanceBitmap RebuildInstance UpdateInstanceSnapshot UpdateInstances)
+  # B07/B12 writes the pinned client lacks, compared through unchanged Go RawQuery.
+  @rest ~w(DeleteInstanceExecOutput RepairInstance)
   @all_methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
-  @methods Enum.filter(@all_methods, &(&1["name"] in (@b09 ++ @b10 ++ @b08 ++ @b11)))
-  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings storage storage_buckets storage_volume_nbd storage_api_volume_snapshots storage_volumes_rebuild console container_log_delete image_force_refresh instances_rebuild container_edit_metadata snapshot_expiry)
+  @methods Enum.filter(@all_methods, &(&1["name"] in (@b09 ++ @b10 ++ @b08 ++ @b11 ++ @rest)))
+  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings storage storage_buckets storage_volume_nbd storage_api_volume_snapshots storage_volumes_rebuild console container_log_delete image_force_refresh instances_rebuild container_edit_metadata snapshot_expiry container_exec_recording instances_debug_repair)
   @uuid "01234567-89ab-cdef-0123-456789abcdef"
   @url "/1.0/operations/" <> @uuid
   @etag "\"before\""
@@ -31,7 +33,7 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 90
+    assert length(@methods) == 92
     assert Enum.all?(@methods, &(&1["result"] in ["sync", "model", "operation"]))
     :ok
   end
@@ -367,6 +369,14 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
 
     assert {:error, %Error{kind: :host_not_ready}} = call(unready, method, body(method))
 
+    # A recorded output name must be one safe path segment.
+    if method["name"] == "DeleteInstanceExecOutput" do
+      for name <- ["", ".", "..", "dir/exec.stdout"] do
+        assert {:error, %Error{kind: :invalid_arguments}} =
+                 Incus.call(client, method["name"], %{args(method) | "filename" => name})
+      end
+    end
+
     for extension <- List.wrap(method["extension"]) do
       missing = %{client | server: %Server{api_extensions: List.delete(@extensions, extension)}}
 
@@ -389,6 +399,8 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   # generated field must survive Go's decoding at every depth, so a field the DTO
   # drops cannot silently shrink the every-field coverage.
   defp normalized(_expected, %{"body" => nil}, _body), do: nil
+  # RawQuery sends the body as given; there is no typed DTO to normalize it.
+  defp normalized(_expected, %{"reference_kind" => "rest"}, body), do: body
 
   defp normalized(expected, method, body) do
     decoded = Enum.at(expected["normalized_args"], length(method["params"]))
@@ -421,13 +433,24 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   defp body(%{"body" => model}), do: ModelSamples.generate(model)
 
   # The pinned client leaves legal parameters unescaped, so they carry no reserved characters.
-  defp args(method, force \\ true),
-    do:
-      Map.new(method["params"], fn
-        "force" -> {"force", force}
-        param when param in ~w(volType volumeType) -> {param, volume_type(method, param)}
-        param -> {param, legal(method, param) <> param}
-      end)
+  defp args(method, force \\ true) do
+    exec_output? = method["name"] == "DeleteInstanceExecOutput"
+
+    Map.new(method["params"], fn
+      "force" ->
+        {"force", force}
+
+      param when param in ~w(volType volumeType) ->
+        {param, volume_type(method, param)}
+
+      # A recorded output name is one path segment (no slash).
+      "filename" when exec_output? ->
+        {"filename", "exec output.stdout"}
+
+      param ->
+        {param, legal(method, param) <> param}
+    end)
+  end
 
   defp volume_type(method, param), do: Map.get(method, "volume_type", "fixture /" <> param)
 
@@ -447,6 +470,26 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   defp legal(method, param),
     do: if(param in Map.get(method, "legal_params", []), do: "fixture-", else: "fixture /")
 
+  # REST-only writes: the native path is fixed per descriptor, not derived from it.
+  defp oracle(root, fixture, identity, %{"reference_kind" => "rest"} = method, _args, body) do
+    path =
+      case method["name"] do
+        "DeleteInstanceExecOutput" ->
+          "/1.0/instances/fixture%20%2Fname/logs/exec-output/exec%20output.stdout"
+
+        "RepairInstance" ->
+          "/1.0/instances/fixture%20%2Fname/debug/repair"
+      end
+
+    input =
+      Map.merge(native_connection(fixture, identity), %{
+        action: "RawQuery",
+        args: [method["verb"], path <> "?project=fixture+scope&target=member%2Fa", body, ""]
+      })
+
+    run_oracle(root, input)
+  end
+
   defp oracle(root, fixture, identity, method, args, body) do
     # Trailing pinned arguments the catalogue records, such as unused console log options.
     values =
@@ -463,6 +506,10 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
         target: "member/a"
       })
 
+    run_oracle(root, input)
+  end
+
+  defp run_oracle(root, input) do
     file = Path.join(root, "oracle.json")
     File.write!(file, Jason.encode!(input))
     {out, status} = System.cmd(@driver, [file], stderr_to_stdout: true)

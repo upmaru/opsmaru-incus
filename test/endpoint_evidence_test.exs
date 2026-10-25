@@ -130,7 +130,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "195 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "199 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -152,12 +152,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                PatchNetworkACL PatchNetworkAddressSet PatchNetworkIntegration PatchNetworkZone PatchNetworkZoneRecord PatchNetwork PatchNetworkForward PatchNetworkLoadBalancer PatchNetworkPeer PatchStoragePool PatchStoragePoolBucket PatchStoragePoolVolume PatchStoragePoolVolumeSnapshot
                GetStoragePoolBucketNames GetStoragePoolBucket GetStoragePoolBucketKeyNames GetStoragePoolBucketKey GetStoragePoolResources GetStoragePoolVolumeTypeNames GetStorageVolumeBitmaps GetStorageVolumeBitmap GetStoragePoolVolumeSnapshotNames GetStoragePoolVolumeSnapshot GetStoragePoolVolumeState
                DeleteStoragePool DeleteStoragePoolBucket DeleteStoragePoolBucketKey DeleteStoragePoolVolume DeleteStorageVolumeBitmap DeleteStoragePoolVolumeSnapshot CreateStoragePool CreateStoragePoolBucketKey CreateStorageVolumeBitmap RebuildStoragePoolVolume CreateStoragePoolVolumeSnapshot RenameStoragePoolVolumeSnapshot UpdateStoragePool UpdateStoragePoolBucket UpdateStoragePoolBucketKey UpdateStoragePoolVolume UpdateStoragePoolVolumeSnapshot
-               DeleteImageAlias DeleteInstanceConsoleLog DeleteInstanceLogfile GetImageAliases GetImageAlias GetInstanceAccess GetInstanceLogfiles GetInstanceMetadata CreateImageAlias RenameImageAlias RefreshImage CreateImageSecret CreateInstanceBitmap RebuildInstance UpdateImageAlias UpdateImage UpdateInstances UpdateInstanceMetadata UpdateInstanceSnapshot)
+               DeleteImageAlias DeleteInstanceConsoleLog DeleteInstanceLogfile GetImageAliases GetImageAlias GetInstanceAccess GetInstanceLogfiles GetInstanceMetadata CreateImageAlias RenameImageAlias RefreshImage CreateImageSecret CreateInstanceBitmap RebuildInstance UpdateImageAlias UpdateImage UpdateInstances UpdateInstanceMetadata UpdateInstanceSnapshot
+               GetInstanceExecOutputNames DeleteInstanceExecOutput RepairInstance)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
              "partial" => 2,
-             "complete" => 193
+             "complete" => 197
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -307,6 +308,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"DELETE /1.0/images/{}", "b01_delete_image_v1"},
              {"DELETE /1.0/instances/{}", "b01_delete_instance_v1"},
              {"DELETE /1.0/instances/{}/console", "b11_delete_instances_one_console_v1"},
+             {"DELETE /1.0/instances/{}/logs/exec-output/{}", "b07_delete_exec_output_one_v1"},
              {"DELETE /1.0/instances/{}/logs/{}", "b11_delete_instances_one_logs_one_v1"},
              {"DELETE /1.0/instances/{}/snapshots/{}", "b01_delete_instance_snapshot_v1"},
              {"DELETE /1.0/network-acls/{}", "b09_delete_network_acls_one_v1"},
@@ -353,7 +355,10 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/instances", "b02_instances_v1"},
              {"GET /1.0/instances/{}", "b02_instance_v1"},
              {"GET /1.0/instances/{}/access", "b11_instances_one_access_v1"},
+             {"GET /1.0/instances/{}/debug/repair", "b12_debug_repair_v1"},
              {"GET /1.0/instances/{}/logs", "b11_instances_one_logs_v1"},
+             {"GET /1.0/instances/{}/logs/exec-output", "b07_exec_output_v1"},
+             {"GET /1.0/instances/{}/logs/exec-output/{}", "b07_exec_output_one_v1"},
              {"GET /1.0/instances/{}/metadata", "b11_instances_one_metadata_v1"},
              {"GET /1.0/instances/{}/snapshots", "b02_instance_snapshots_v1"},
              {"GET /1.0/instances/{}/snapshots/{}", "b02_instance_snapshot_v1"},
@@ -542,6 +547,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     cluster_update = ["completion_records", "b10_put_cluster_v1"]
     server_patch = ["completion_records", "b05_patch_server_v1"]
     snapshot_patch = ["completion_records", "b05_patch_instances_one_snapshots_one_v1"]
+    download = ["completion_records", "b07_exec_output_one_v1"]
     events = ["completion_records", "b03_events_v1"]
     socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
     head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
@@ -648,6 +654,9 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              cluster_update ++ ["evidence_kinds"],
              &Map.delete(&1, "admin_guards")
            ), "stale completion evidence kinds"},
+          # A byte download proves its sink, bounds and that it never deletes.
+          {update_in(audit, download ++ ["cases"], &Map.delete(&1, "no_implicit_delete")),
+           "missing completion case"},
           # A conditional PATCH proves its own result kind: empty sync or accepted /wait.
           {update_in(audit, server_patch ++ ["cases"], &Map.delete(&1, "empty_sync")),
            "missing completion case"},
@@ -660,6 +669,36 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            ), "missing completion case"},
           {%{audit | "behavior_complete" => true}, ""},
           {%{audit | "complete_port" => true}, ""}
+        ] do
+      assert_raise ExUnit.AssertionError, ~r/#{message}/, fn ->
+        EndpointInventory.validate!(changed, native)
+      end
+    end
+
+    # The reconciled repair row maps the registered POST method; the server-only POST
+    # completes only through that record.
+    [supplemental] = audit["supplemental_server_entries"]
+    repair = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/instances/{}/debug/repair"))
+
+    for {changed, message} <- [
+          {%{
+             audit
+             | "supplemental_server_entries" => [Map.delete(supplemental, "completion_record")]
+           }, "unsupported completion claim"},
+          {%{
+             audit
+             | "supplemental_server_entries" => [
+                 %{supplemental | "classification" => "missing_typed"}
+               ]
+           }, "misleading classification"},
+          {%{
+             audit
+             | "entries" =>
+                 Enum.map(
+                   audit["entries"],
+                   &if(&1 == repair, do: %{&1 | "methods" => []}, else: &1)
+                 )
+           }, "stale method mapping"}
         ] do
       assert_raise ExUnit.AssertionError, ~r/#{message}/, fn ->
         EndpointInventory.validate!(changed, native)

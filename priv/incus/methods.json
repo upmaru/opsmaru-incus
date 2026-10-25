@@ -5114,6 +5114,55 @@
       "guards": [],
       "reference_kind": "rest",
       "operation_id": "storage_pool_volume_type_bitmap_get"
+    },
+    {
+      "name": "GetInstanceExecOutputNames",
+      "verb": "GET",
+      "path": "/1.0/instances/{name}/logs/exec-output",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "container_exec_recording",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "instance_exec-outputs_get"
+    },
+    {
+      "name": "DeleteInstanceExecOutput",
+      "verb": "DELETE",
+      "path": "/1.0/instances/{name}/logs/exec-output/{filename}",
+      "params": [
+        "name",
+        "filename"
+      ],
+      "query": {},
+      "extension": "container_exec_recording",
+      "body": null,
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "instance_exec-output_delete"
+    },
+    {
+      "name": "RepairInstance",
+      "verb": "POST",
+      "path": "/1.0/instances/{name}/debug/repair",
+      "params": [
+        "name"
+      ],
+      "query": {},
+      "extension": "instances_debug_repair",
+      "body": "InstanceDebugRepairPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "instance_debug_repair_post"
     }
   ]
 }

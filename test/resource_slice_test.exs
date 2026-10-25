@@ -371,8 +371,9 @@ defmodule Opsmaru.Incus.ResourceSliceTest do
   end
 
   defp backend(root, response) do
+    # Every catalogue method's extensions, REST-only descriptors included.
     extensions =
-      @definitions
+      @catalogue
       |> Enum.flat_map(fn method ->
         List.wrap(method["extension"]) ++
           Enum.flat_map(method["guards"], &List.wrap(&1["extension"]))
