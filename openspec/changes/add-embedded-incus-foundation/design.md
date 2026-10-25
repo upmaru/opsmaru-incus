@@ -129,6 +129,57 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: B07 recorded exec output and B12 debug repair (2026-10-25)
+
+Complete the three B07 rows and the B12 row, plus the supplemental
+`POST /1.0/instances/{name}/debug/repair` server row, in one PR. These are the
+last stream-free rows apart from the deferred collection volume POST.
+
+B07 recorded exec output (`container_exec_recording`). The pinned client has
+only private helpers, which `ExecInstance` uses in record-output mode and which
+delete each file automatically after fetching it. This client never deletes
+implicitly.
+
+- `GetInstanceExecOutputNames`: a REST descriptor listing the recorded output
+  files of an instance (`GET /logs/exec-output`, names result).
+- `Opsmaru.Incus.Streams.instance_exec_output/4`: a helper that streams one
+  recorded file (`GET /logs/exec-output/{filename}`) to an acknowledged sink,
+  within the connection's response bound, like `instance_logfile/4`.
+- `DeleteInstanceExecOutput`: a REST descriptor for the explicit delete (empty
+  synchronous result). A lost or malformed reply is uncertain and never
+  replayed.
+
+B12 debug repair (`instances_debug_repair`). The REST document lists
+`GET /1.0/instances/{name}/debug/repair`, but the daemon registers only `POST`,
+with an `InstanceDebugRepairPost` body (`action`) and an empty synchronous
+result.
+
+- `RepairInstance`: a REST descriptor for the typed `POST`, certified against
+  the daemon route under a `sync_mutation` record.
+- The documented `GET` is never sent. Its row completes under the same record,
+  with the `GET` view recorded as an approved source discrepancy (exclusion).
+- The validator learns to complete the supplemental `POST` server row through
+  that record.
+
+User decisions (2026-10-25):
+
+- Evidence: list, delete and repair are compared through unchanged Go
+  RawQuery. The download is covered by independent fixtures: path and identity
+  isolation, missing output, response bound, native errors and lifetime
+  cleanup. The pinned `ExecInstance` record-output path is not driven.
+- B12: add the typed `POST` and record the documented `GET` as an approved
+  source discrepancy.
+- File names: the client rejects only empty, slash and dot-segment names
+  before I/O. The daemon's own record-output name rule and its native 400 stay
+  authoritative.
+- Approved exclusion: cluster forwarding beyond host project/target routing.
+
+The selected manifest grows 195 -> 199 pairs (197 complete), and confirmed typed
+implementation gaps fall 9 -> 5 (the two B06 HEAD pairs and three bucket backup
+pairs remain). The PR updates the ledgers, closure ledger, backlog, client docs
+and generated coverage. Task 3.9, `complete_port` and every Go declaration
+status are unchanged.
+
 #### Approved slice: B11 stream-free instance and image completion (2026-10-24)
 
 Complete all 19 B11 rows that have no stream contract, in one PR, under reviewed

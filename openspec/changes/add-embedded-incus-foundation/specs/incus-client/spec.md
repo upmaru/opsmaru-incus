@@ -70,6 +70,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** reads agree with the pinned client for populated/empty/corrupt results, native 403/404, routing, extensions and lifetime cleanup, and synchronous writes agree for request bodies, ETags and native rejection while lost or malformed replies are uncertain and never replayed
 - **AND** reviewed records list each completed row, selectors the pinned client does not send and cluster forwarding are approved exclusions, and the metrics and ACL log rows stay partial while S07 is open
 
+#### Scenario: Recorded exec output and debug repair
+
+- **WHEN** a caller lists, downloads or deletes an instance's recorded exec output, or requests a debug repair, over Unix or mutual HTTPS
+- **THEN** the list, delete and repair requests agree with unchanged Go RawQuery transport. The download streams one file to an acknowledged sink within the response bound, with native errors and lifetime cleanup preserved. Deletion only happens when the caller asks for it. Lost or malformed write replies are uncertain and never replayed
+- **AND** unsafe file names are rejected before I/O, repair is only ever sent as the daemon's registered POST, and the documented GET is recorded as an approved source discrepancy
+
 #### Scenario: Completed stream-free instance and image contracts
 
 - **WHEN** any stream-free B11 image alias, image, instance access, log, metadata, console log, bitmap, rebuild, snapshot or project-wide instance state method is called over Unix or mutual HTTPS
