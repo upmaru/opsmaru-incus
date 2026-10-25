@@ -1376,3 +1376,28 @@ every Go declaration status (1239 partial / 41 missing) are unchanged.
   the daemon's empty synchronous reply, and so does the client. Approved
   exclusion (2026-10-24): cluster forwarding. Real-daemon storage effects remain
   separately recorded.
+
+## B11 stream-free instance and image completion
+
+Approved 2026-10-24. All 19 B11 rows without a stream contract are complete:
+
+- 5 read rows (6 methods) under `read_contract` records
+- 9 synchronous writes under `sync_mutation` records
+- 5 asynchronous writes under `async_mutation` records (image refresh, image
+  secret, instance rebuild, instance snapshot update and `UpdateInstances`)
+
+The selected manifest grows 176 -> 195 pairs (193 complete). The 23
+stream-linked B11 rows stay partial. Task 3.9, `complete_port` and every Go
+declaration status (1239 partial / 41 missing) are unchanged.
+
+- [x] The inspection contract test now covers 138 named methods. The B11 reads
+  use schema-driven samples for image aliases, instance access and metadata.
+- [x] The sync-mutation contract test now covers 90 write methods. The pinned
+  `DeleteInstanceConsoleLog` takes an unused trailing argument, which the
+  oracle passes from the catalogue's `oracle_trailing`. Every accepted write now also asserts that operation
+  metadata (an image secret, for one) never appears in `Inspect` output.
+- [x] `UpdateInstances` is certified as an ordinary asynchronous write
+  (approved). Whether tools may expose it is a separate tool-policy decision.
+- Approved exclusions (2026-10-24): the untrusted `?public` alias view and
+  cluster forwarding. Real-daemon instance and image effects remain separately
+  recorded.

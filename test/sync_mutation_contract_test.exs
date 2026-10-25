@@ -13,9 +13,11 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   # B08 PR 2: every stream-free storage write (pools, buckets and keys, volumes,
   # bitmaps, volume snapshots and rebuild).
   @b08 ~w(CreateStoragePool UpdateStoragePool DeleteStoragePool UpdateStoragePoolBucket DeleteStoragePoolBucket CreateStoragePoolBucketKey UpdateStoragePoolBucketKey DeleteStoragePoolBucketKey UpdateStoragePoolVolume DeleteStoragePoolVolume CreateStorageVolumeBitmap DeleteStorageVolumeBitmap CreateStoragePoolVolumeSnapshot RenameStoragePoolVolumeSnapshot UpdateStoragePoolVolumeSnapshot DeleteStoragePoolVolumeSnapshot RebuildStoragePoolVolume)
+  # B11: every stream-free instance and image write.
+  @b11 ~w(CreateImageAlias RenameImageAlias UpdateImageAlias DeleteImageAlias UpdateImage RefreshImage CreateImageSecret UpdateInstanceMetadata DeleteInstanceConsoleLog DeleteInstanceLogfile CreateInstanceBitmap RebuildInstance UpdateInstanceSnapshot UpdateInstances)
   @all_methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
-  @methods Enum.filter(@all_methods, &(&1["name"] in (@b09 ++ @b10 ++ @b08)))
-  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings storage storage_buckets storage_volume_nbd storage_api_volume_snapshots storage_volumes_rebuild)
+  @methods Enum.filter(@all_methods, &(&1["name"] in (@b09 ++ @b10 ++ @b08 ++ @b11)))
+  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings storage storage_buckets storage_volume_nbd storage_api_volume_snapshots storage_volumes_rebuild console container_log_delete image_force_refresh instances_rebuild container_edit_metadata snapshot_expiry)
   @uuid "01234567-89ab-cdef-0123-456789abcdef"
   @url "/1.0/operations/" <> @uuid
   @etag "\"before\""
@@ -29,7 +31,7 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 76
+    assert length(@methods) == 90
     assert Enum.all?(@methods, &(&1["result"] in ["sync", "model", "operation"]))
     :ok
   end
@@ -266,6 +268,8 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     assert operation.client == client and operation.url == @url
     refute Operation.completed?(operation)
     assert reply.metadata.data == snapshot(103)
+    # Operation metadata (an image secret, for one) never appears in Inspect output.
+    refute inspect(reply) =~ "retained" or inspect(operation) =~ "retained"
     assert Map.take(hd(expected["outputs"]), Map.keys(snapshot(103))) == snapshot(103)
 
     timeout = if code == 103, do: 0, else: 1
@@ -444,8 +448,10 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     do: if(param in Map.get(method, "legal_params", []), do: "fixture-", else: "fixture /")
 
   defp oracle(root, fixture, identity, method, args, body) do
+    # Trailing pinned arguments the catalogue records, such as unused console log options.
     values =
       Enum.map(method["params"], &args[&1]) ++
+        Map.get(method, "oracle_trailing", []) ++
         if(body, do: [body], else: []) ++
         if(method["verb"] == "PUT", do: [@etag], else: [])
 

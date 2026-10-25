@@ -117,9 +117,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image inspection. The endpoint row is complete under a reviewed b11 read record: every mapped names, list and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). The public alias view and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/ImageServer.GetImageAliasArchitectures",
@@ -135,9 +136,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image inspection. The endpoint row is complete under a reviewed b11 read record: every mapped names, list and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). The public alias view and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/ImageServer.GetImageAliasType",
@@ -153,9 +155,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image inspection. The endpoint row is complete under a reviewed b11 read record: every mapped names, list and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). The public alias view and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/ImageServer.GetImageFile",
@@ -369,18 +372,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateImageSecret",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateInstance",
@@ -417,9 +422,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.CreateInstanceFile",
@@ -769,9 +775,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteInstance",
@@ -798,9 +805,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteInstanceFile",
@@ -816,9 +824,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.DeleteInstanceSnapshot",
@@ -1283,9 +1292,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image inspection. The endpoint row is complete under a reviewed b11 read record: every mapped names, list and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). The public alias view and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceBackup",
@@ -1395,18 +1405,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image inspection. The endpoint row is complete under a reviewed b11 read record: every mapped names, list and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). The public alias view and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceMetadata",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image inspection. The endpoint row is complete under a reviewed b11 read record: every mapped names, list and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). The public alias view and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.GetInstanceNBDConn",
@@ -2774,9 +2786,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.RebuildInstanceFromImage",
@@ -2802,9 +2815,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.RenameClusterGroup",
@@ -2831,9 +2845,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.RenameInstance",
@@ -3034,18 +3049,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateImageAlias",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateInstance",
@@ -3063,18 +3080,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateInstanceSnapshot",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateInstanceState",
@@ -3092,9 +3111,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/interface_method/InstanceServer.UpdateNetwork",
@@ -3626,18 +3646,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateImageSecret",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateInstance",
@@ -3674,9 +3696,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.CreateInstanceFile",
@@ -4026,9 +4049,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteInstance",
@@ -4055,9 +4079,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteInstanceFile",
@@ -4073,9 +4098,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.DeleteInstanceSnapshot",
@@ -4597,9 +4623,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image inspection. The endpoint row is complete under a reviewed b11 read record: every mapped names, list and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). The public alias view and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetImageAliasArchitectures",
@@ -4615,9 +4642,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image inspection. The endpoint row is complete under a reviewed b11 read record: every mapped names, list and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). The public alias view and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetImageAliasType",
@@ -4633,9 +4661,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image inspection. The endpoint row is complete under a reviewed b11 read record: every mapped names, list and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). The public alias view and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetImageFile",
@@ -4720,9 +4749,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image inspection. The endpoint row is complete under a reviewed b11 read record: every mapped names, list and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). The public alias view and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceBackup",
@@ -4832,18 +4862,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image inspection. The endpoint row is complete under a reviewed b11 read record: every mapped names, list and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). The public alias view and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceMetadata",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/inspection_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image inspection. The endpoint row is complete under a reviewed b11 read record: every mapped names, list and get method compared with the named Go method on Unix/mutual HTTPS using schema-generated samples (populated/empty/corrupt results, native 403/404, routing/binding, applicable ETags, declared extensions before dispatch, response/readiness bounds and deadline/cancellation peer cleanup). The public alias view and cluster forwarding are approved exclusions. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.GetInstanceNBDConn",
@@ -6247,9 +6279,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.RebuildInstanceFromImage",
@@ -6275,9 +6308,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.RenameClusterGroup",
@@ -6304,9 +6338,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.RenameInstance",
@@ -6507,18 +6542,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateImageAlias",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateInstance",
@@ -6536,18 +6573,20 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateInstanceSnapshot",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateInstanceState",
@@ -6565,9 +6604,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
-      "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
+      "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolIncus.UpdateNetwork",

@@ -15,13 +15,15 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   @b10 ~w(GetCertificateFingerprints GetCertificates GetCertificatesWithFilter GetCertificate GetCluster GetClusterGroups GetClusterGroupNames GetClusterGroup GetClusterMemberNames GetClusterMembers GetClusterMembersWithFilter GetClusterMember GetClusterMemberState GetMetadataConfiguration GetProjectAccess GetProjectState GetServerResources GetWarningUUIDs GetWarnings GetWarning)
   # B08 PR 1: every named read method mapped to the stream-free storage read rows.
   @b08 ~w(GetStoragePoolBucketNames GetStoragePoolBuckets GetStoragePoolBucketsWithFilter GetStoragePoolBucketsAllProjects GetStoragePoolBucketsWithFilterAllProjects GetStoragePoolBucketsFull GetStoragePoolBucketsFullWithFilter GetStoragePoolBucketsFullAllProjects GetStoragePoolBucketsFullWithFilterAllProjects GetStoragePoolBucket GetStoragePoolBucketFull GetStoragePoolBucketKeyNames GetStoragePoolBucketKeys GetStoragePoolBucketKey GetStoragePoolResources GetStorageVolumeBitmaps GetStorageVolumeBitmapNames GetStoragePoolVolumeSnapshotNames GetStoragePoolVolumeSnapshots GetStoragePoolVolumeSnapshot GetStoragePoolVolumeState)
+  # B11: every read method mapped to the stream-free instance and image rows.
+  @b11 ~w(GetImageAliases GetImageAliasNames GetImageAlias GetInstanceAccess GetInstanceLogfiles GetInstanceMetadata)
   @catalogue Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
   @methods Enum.filter(
              @catalogue,
-             &(&1["name"] in (@names ++ @b02 ++ @b02_storage ++ @b09 ++ @b10 ++ @b08))
+             &(&1["name"] in (@names ++ @b02 ++ @b02_storage ++ @b09 ++ @b10 ++ @b08 ++ @b11))
            )
   # Models without a hand-written sample get a schema-driven one (ModelSamples).
-  @generated ~w(NetworkACL NetworkAddressSet NetworkAllocations NetworkForward NetworkIntegration NetworkLease NetworkLoadBalancer NetworkLoadBalancerState NetworkPeer NetworkState NetworkZone NetworkZoneRecord Access Certificate Cluster ClusterGroup ClusterMember ClusterMemberState MetadataConfiguration ProjectState Resources Warning StorageBucket StorageBucketFull StorageBucketKey ResourcesStoragePool StorageVolumeBitmap StorageVolumeSnapshot StorageVolumeState)
+  @generated ~w(NetworkACL NetworkAddressSet NetworkAllocations NetworkForward NetworkIntegration NetworkLease NetworkLoadBalancer NetworkLoadBalancerState NetworkPeer NetworkState NetworkZone NetworkZoneRecord Access Certificate Cluster ClusterGroup ClusterMember ClusterMemberState MetadataConfiguration ProjectState Resources Warning StorageBucket StorageBucketFull StorageBucketKey ResourcesStoragePool StorageVolumeBitmap StorageVolumeSnapshot StorageVolumeState ImageAliasesEntry ImageMetadata)
   # Discovery is a public helper, not a named Go GetServer DTO comparison.
   @discovery %{"name" => "connect", "params" => [], "result" => "discovery", "model" => "Server"}
   # Root API version discovery has no named Go method; it is compared through RawQuery.
@@ -34,7 +36,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   @contracts @methods ++ [@discovery, @root] ++ @rest
   # The volume type is a pass-through path argument, compared for every daemon type.
   @volume_types ~w(custom container virtual-machine image)
-  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects networks_all_projects profiles_all_projects storage_volume_full storage_volumes_all_projects network_acl network_acls_all_projects network_address_set network_allocations network_dns network_dns_records network_forward network_integrations network_leases network_load_balancer network_load_balancer_state network_peer network_state network_zones_all_projects cluster_member_state clustering clustering_groups metadata_configuration project_access project_usage resources warnings storage_buckets storage_buckets_all_projects storage_bucket_full storage_volume_nbd storage_api_volume_snapshots storage_volume_state)
+  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects networks_all_projects profiles_all_projects storage_volume_full storage_volumes_all_projects network_acl network_acls_all_projects network_address_set network_allocations network_dns network_dns_records network_forward network_integrations network_leases network_load_balancer network_load_balancer_state network_peer network_state network_zones_all_projects cluster_member_state clustering clustering_groups metadata_configuration project_access project_usage resources warnings storage_buckets storage_buckets_all_projects storage_bucket_full storage_volume_nbd storage_api_volume_snapshots storage_volume_state instance_access container_edit_metadata)
   @driver Path.expand("../.integration/inspection-driver", __DIR__)
 
   setup_all do
@@ -46,7 +48,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 132 and length(@rest) == 4
+    assert length(@methods) == 138 and length(@rest) == 4
     :ok
   end
 
