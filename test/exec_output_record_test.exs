@@ -104,6 +104,51 @@ defmodule Opsmaru.Incus.ExecOutputRecordTest do
       assert length(HTTPFixture.requests(fixture)) == 2
     end
 
+    test "#{transport} cancelling a running recorded output download stops the sink and closes the peer",
+         %{root: root} do
+      identity = identity(root, unquote(transport))
+      parent = self()
+      tag = make_ref()
+
+      # The peer streams chunks until the client closes the socket.
+      fixture =
+        backend(root, identity, fn _ ->
+          %{
+            upgrade: fn transport, socket ->
+              :ok =
+                transport.send(
+                  socket,
+                  "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n" <>
+                    "Content-Length: 10000000\r\n\r\n"
+                )
+
+              send(parent, {tag, :closed, stream_until_closed(transport, socket)})
+            end
+          }
+        end)
+
+      context = RequestContext.new!(timeout: 30_000)
+      scoped = Incus.with_context(client(fixture, identity), context)
+
+      task =
+        Task.async(fn ->
+          Streams.instance_exec_output(scoped, "vm one", "exec output.stdout", fn chunk ->
+            send(parent, {tag, :chunk, chunk})
+            :ok
+          end)
+        end)
+
+      assert_receive {^tag, :chunk, _}, 10_000
+      RequestContext.cancel(context)
+      assert {:error, %Error{kind: :canceled}} = Task.await(task, 10_000)
+      assert_receive {^tag, :closed, {:error, _}}, 10_000
+
+      # Once the download returns, the sink is never called again.
+      flush_chunks(tag)
+      refute_receive {^tag, :chunk, _}, 200
+      assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+    end
+
     test "#{transport} unsafe names and a missing extension reject before I/O", %{root: root} do
       identity = identity(root, unquote(transport))
       fixture = backend(root, identity, fn _ -> flunk("rejected download was dispatched") end)
@@ -126,6 +171,26 @@ defmodule Opsmaru.Incus.ExecOutputRecordTest do
                Streams.instance_exec_output(missing, "vm one", "exec.stdout", fn _ -> :ok end)
 
       assert HTTPFixture.requests(fixture) == []
+    end
+  end
+
+  defp stream_until_closed(transport, socket) do
+    case transport.send(socket, "chunk") do
+      :ok ->
+        Process.sleep(20)
+        stream_until_closed(transport, socket)
+
+      error ->
+        error
+    end
+  end
+
+  # Drop chunks delivered before the download returned.
+  defp flush_chunks(tag) do
+    receive do
+      {^tag, :chunk, _} -> flush_chunks(tag)
+    after
+      0 -> :ok
     end
   end
 

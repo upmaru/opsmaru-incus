@@ -1422,7 +1422,8 @@ last stream-free rows apart from the deferred collection volume POST.
   independent fixtures prove:
   - the exact path and routing, with no implicit delete
   - native 400/403/404
-  - the byte bound, deadline and cancellation
+  - the byte bound, deadline, and cancellation both before and mid-stream (the
+    sink is never called again and the peer sees the socket close)
   - unsafe names and a missing extension rejected before I/O
 - [x] `RepairInstance` sends the daemon's registered POST, compared through Go
   RawQuery. The documented GET row lists it through an approved reconciliation,
