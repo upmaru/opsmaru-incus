@@ -70,6 +70,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** reads agree with the pinned client for populated/empty/corrupt results, native 403/404, routing, extensions and lifetime cleanup, and synchronous writes agree for request bodies, ETags and native rejection while lost or malformed replies are uncertain and never replayed
 - **AND** reviewed records list each completed row, selectors the pinned client does not send and cluster forwarding are approved exclusions, and the metrics and ACL log rows stay partial while S07 is open
 
+#### Scenario: Certified auxiliary byte streams
+
+- **WHEN** a caller downloads metrics, a network ACL log, an instance log file, the console log, debug memory or a metadata template, or lists, uploads or deletes a metadata template, over Unix or mutual HTTPS
+- **THEN** requests, selectors, routing and bytes agree with the named pinned Go method; native errors are preserved; byte, chunk and deadline bounds hold; and mid-stream cancellation or caller loss closes the peer and stops the sink. A lost upload reply is uncertain and never replayed
+- **AND** S07 is certified by a single reviewed record, and the console type selector and cluster forwarding are recorded approved exclusions
+
 #### Scenario: Recorded exec output and debug repair
 
 - **WHEN** a caller lists, downloads or deletes an instance's recorded exec output, or requests a debug repair, over Unix or mutual HTTPS

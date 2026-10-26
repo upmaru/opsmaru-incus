@@ -129,6 +129,57 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: S07 auxiliary byte stream certification (2026-10-26)
+
+Certify stream contract S07 and complete the 8 rows linked only to it, in one PR,
+under a single reviewed record (a stream contract is certified by exactly one
+record). The rows and their helpers:
+
+- `GET /1.0/metrics`: `metrics/2`
+- `GET /1.0/network-acls/{name}/log`: `network_acl_log/3`
+- `GET /1.0/instances/{name}/logs/{filename}`: `instance_logfile/4`
+- `GET /1.0/instances/{name}/console`: `instance_console_log/3`
+- `GET /1.0/instances/{name}/debug/memory`: `instance_debug_memory/4`
+- instance metadata templates:
+  - `GET` lists names (`GetInstanceTemplateFiles`) or downloads one by `path`
+    (`instance_template_file/4`)
+  - `POST` uploads one (`create_instance_template_file/4`)
+  - `DELETE` removes one (`DeleteInstanceTemplateFile`)
+
+A new `byte_stream` record kind names the S07 cases. The validator still derives
+extension guards from the two listed catalogue methods.
+
+- Each download is compared with the named pinned Go method on Unix and mutual
+  HTTPS, covering:
+  - the request: path, exact selectors (`path`, `format`) and project/target
+    routing
+  - the bytes delivered to an acknowledged sink
+  - native error envelopes
+  - byte, chunk and deadline bounds
+  - mid-stream cancellation and caller loss, which close the peer and stop the
+    sink
+  - no host file writes
+- The template upload is compared for its body bytes and headers. A lost
+  upload reply is uncertain and never replayed.
+- The template list and delete use the inspection and sync-mutation contract
+  tests.
+
+The existing `streams_test.exs` evidence covers most of this on Unix, so the
+slice extends it to both transports and adds mid-stream cancellation.
+
+User decisions (2026-10-26):
+
+- Approved exclusions:
+  - the console `type` selector (`log`/`vga` screenshot), which the pinned
+    client never sends; the helper keeps downloading the text console log
+  - cluster forwarding beyond host project/target routing
+- One PR. The selected manifest grows 199 -> 207 pairs (205 complete), and the
+  certified stream contracts become S01, S03 and S07.
+
+The PR updates the ledgers, closure ledger, backlog, client docs and generated
+coverage. Task 3.9, `complete_port` and every Go declaration status are
+unchanged.
+
 #### Approved slice: B07 recorded exec output and B12 debug repair (2026-10-25)
 
 Complete the three B07 rows and the B12 row, plus the supplemental
