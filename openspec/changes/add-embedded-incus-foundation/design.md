@@ -146,11 +146,10 @@ gaps fall 5 -> 3, leaving only the bucket backup pairs.
   headers through the shared `FileHeaders` parser, which is already compared
   with the pinned `GetInstanceFile` header parsing. An unexpected body is
   rejected.
-- The pinned client has no HEAD or volume file method:
-  - Instance read, create and delete are compared with the named pinned
-    methods.
-  - Volume read, create and delete keep the file variants reference driver.
-  - HEAD is evidenced by independent fixtures.
+- Instance and volume read, create and delete are compared with the named
+  pinned methods (`GetInstanceFile`, `GetStorageVolumeFile` and their create and
+  delete counterparts) through a dedicated files reference driver. The pinned
+  client has no HEAD method, so HEAD is evidenced by independent fixtures.
 - Every helper runs on Unix and mutual TLS (the fixture requires a client
   certificate). The contract covers:
   - file, directory and symlink types

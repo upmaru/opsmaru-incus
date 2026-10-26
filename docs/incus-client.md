@@ -320,14 +320,14 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 207 pairs are currently in the checked
-evidence manifest. 205 are complete under reviewed completion records:
+pairs plus 46 query/access variants; 215 pairs are currently in the checked
+evidence manifest. 213 are complete under reviewed completion records:
 native wait, events, exec, seven single-method B01 mutations, conditional instance
 PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10
 administrative rows, all 24 B05 PATCH rows, 28 stream-free B08 storage rows and
 all nineteen stream-free B11 instance and image rows, all three B07 recorded exec
-output rows, the B12 debug repair row and the eight S07 auxiliary byte stream
-rows. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
+output rows, the B12 debug repair row, the eight S07 auxiliary byte stream
+rows and the eight S04 file transfer rows. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
@@ -849,6 +849,20 @@ Cancelling the request context or losing the caller mid-stream closes the
 socket and stops the sink. A lost template upload reply is uncertain and never
 replayed. The console log helper downloads the text log only; the console
 `type` selector (such as the `vga` screenshot) is not supported.
+
+Instance and storage volume files are certified as stream contract S04:
+
+- `Files.read/4` and `Files.volume_read/6` stream a file's bytes to an
+  acknowledged sink with its parsed owner, group, mode and type. A directory's
+  entries come back as metadata, and a symlink's target as bytes.
+- `Files.create/5` and `Files.volume_create/7` upload a file, directory or
+  symlink with owner, group, mode and write mode (`overwrite` or `append`).
+- `DeleteInstanceFile` and `Files.volume_delete/5` delete one.
+- `Files.head/3` and `Files.volume_head/5` send a native `HEAD`. They return
+  the same parsed metadata plus the modification time and, for a file, its
+  size, with no body. The pinned client has no HEAD method.
+- The volume type is passed through unchanged.
+- Agent-mode file access (`/1.0/files` inside an instance) is not supported.
 
 `RepairInstance` (`name`, body `%{"action" => "rebuild-config-volume"}`,
 `instances_debug_repair`) sends the daemon's registered
