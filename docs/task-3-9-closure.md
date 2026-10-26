@@ -1492,7 +1492,10 @@ The two HEAD rows were the B06 gaps.
   (`Transfer.head/3`). They return parsed metadata (owner, group, mode, type,
   modification time and, for files, size) through the shared `FileHeaders`
   parser, which is already compared with the pinned header parsing. A HEAD
-  rejection keeps its HTTP status. A body is rejected.
+  rejection keeps its HTTP status. A response with body bytes, an early close
+  and invalid metadata fail with their own kind (`:transfer`,
+  `:invalid_file_headers`), never `:uncertain`. A handler's own error now keeps
+  its kind for reads too.
 - [x] A new files reference driver invokes the pinned `GetInstanceFile`,
   `CreateInstanceFile`, `DeleteInstanceFile`, `GetStorageVolumeFile`,
   `CreateStorageVolumeFile` and `DeleteStorageVolumeFile` over Unix or mutual

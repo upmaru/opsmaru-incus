@@ -120,6 +120,25 @@ defmodule Opsmaru.Incus.FileTransferContractTest do
       end
     end
 
+    test "#{transport} S04 HEAD rejects a body, early close and invalid metadata without uncertainty",
+         %{root: root} do
+      identity = identity(root, unquote(transport))
+      common = ["X-Incus-type: file", "X-Incus-uid: 1000"]
+
+      for target <- targets(),
+          {raw, kind} <- [
+            # A HEAD response carrying body bytes is a protocol failure.
+            {[head_response(200, ["Content-Length: 5" | common]), "hello"], :transfer},
+            {"HTTP/1.1 200 OK\r\nX-Incus-type: fi", :transfer},
+            {head_response(200, ["X-Incus-mode: " <> String.duplicate("7", 17_000) | common]),
+             :invalid_file_headers}
+          ] do
+        fixture = backend(root, identity, fn _ -> %{raw: raw} end)
+        assert {:error, %Error{kind: ^kind}} = head(client(fixture, identity), target)
+        assert [%{method: "HEAD"}] = HTTPFixture.requests(fixture)
+      end
+    end
+
     test "#{transport} S04 native errors are preserved with one request on each side", %{
       root: root
     } do
