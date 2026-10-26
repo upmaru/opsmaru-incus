@@ -23,6 +23,11 @@ defmodule Opsmaru.Incus.Transfer do
     do: run(client, "POST", path, headers, source, sink)
 
   @doc false
+  # Native HEAD: headers only. An error status carries no body (HTTP HEAD), so only
+  # the status is native.
+  def head(client, path, handler), do: run(client, "HEAD", path, [], nil, {:events, handler})
+
+  @doc false
   def download_events(client, path, handler, headers \\ []),
     do: run(client, "GET", path, headers, nil, {:events, handler})
 
@@ -212,10 +217,17 @@ defmodule Opsmaru.Incus.Transfer do
            result: result
          }}
 
+      # A handler's own error (such as invalid file headers) keeps its kind.
+      {:error, %Error{} = error} ->
+        {:error, error}
+
       {:error, kind} ->
         failed(acc.method, kind)
     end
   end
+
+  defp finish(%{method: "HEAD", status: status}, _sink) when status >= 400,
+    do: {:error, %Error{kind: :native, http_status: status}}
 
   defp finish(acc, sink) when not is_nil(sink) and acc.status in 200..299,
     do: {:ok, %__MODULE__{http_status: acc.status, headers: acc.headers, bytes: acc.bytes}}
@@ -258,7 +270,7 @@ defmodule Opsmaru.Incus.Transfer do
   end
 
   defp failed(method, kind),
-    do: {:error, %Error{kind: if(method == "GET", do: kind, else: :uncertain)}}
+    do: {:error, %Error{kind: if(method in ["GET", "HEAD"], do: kind, else: :uncertain)}}
 
   defp now, do: System.monotonic_time(:millisecond)
   defp remaining(deadline), do: max(0, deadline - now())

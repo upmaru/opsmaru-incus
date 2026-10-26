@@ -1470,3 +1470,50 @@ Go declaration status (1239 partial / 41 missing) are unchanged.
   remove the caller-loss case and the stream link.
 - Approved exclusions (2026-10-26): the console `type` selector and cluster
   forwarding. Real-daemon stream contents remain separately recorded.
+
+## S04 file transfer certification with B06 HEAD
+
+Approved 2026-10-26. Stream contract S04 is certified by the single reviewed
+record `s04_file_transfer_v1`. That record completes all 8 S04 rows:
+
+- instance files: read, create, delete and HEAD
+- custom volume files: read, create, delete and HEAD
+
+The two HEAD rows were the B06 gaps.
+
+- The selected manifest grows 207 -> 215 pairs (213 complete).
+- Confirmed typed implementation gaps fall 5 -> 3, leaving only the bucket
+  backup pairs.
+- The certified stream contracts are now S01, S03, S04 and S07.
+- Task 3.9, `complete_port` and every Go declaration status (1239 partial / 41
+  missing) are unchanged.
+
+- [x] New `Files.head/3` and `Files.volume_head/5` send a native HEAD
+  (`Transfer.head/3`). They return parsed metadata (owner, group, mode, type,
+  modification time and, for files, size) through the shared `FileHeaders`
+  parser, which is already compared with the pinned header parsing. A HEAD
+  rejection keeps its HTTP status. A response with body bytes, an early close
+  and invalid metadata fail with their own kind (`:transfer`,
+  `:invalid_file_headers`), never `:uncertain`. A handler's own error now keeps
+  its kind for reads too.
+- [x] A new files reference driver invokes the pinned `GetInstanceFile`,
+  `CreateInstanceFile`, `DeleteInstanceFile`, `GetStorageVolumeFile`,
+  `CreateStorageVolumeFile` and `DeleteStorageVolumeFile` over Unix or mutual
+  TLS.
+- [x] `file_transfer_contract_test.exs` runs every S04 operation on Unix and
+  mutual TLS (the fixture requires a client certificate). It covers:
+  - instance files and all four volume types
+  - file, directory and symlink reads (bytes, entries and metadata)
+  - creates with type, write mode, uid, gid and mode headers
+  - deletes, including a lost reply that is never replayed
+  - HEAD metadata with no body
+  - native 400/403/404
+  - byte and upload bounds and the deadline
+  - mid-stream cancellation and caller loss
+  - extension guards and invalid options rejected before I/O
+
+  Breaking the mode header encoding made the create comparison fail, so the
+  test does catch header errors. A new `file_transfer` record kind names the
+  cases, with negative tests.
+- Approved exclusions (2026-10-26): agent-mode file access and cluster
+  forwarding. Real-daemon file effects remain separately recorded.

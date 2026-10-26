@@ -47,7 +47,7 @@ hashes/differences, missing typed implementations and finite B01–B12/S01–S12
 obligations. `classification_complete=true` means no unclassified source rows,
 not verified behavior. Its `completion_records` are the only source of
 `behavior_complete=true` rows and certified stream contracts. `endpoint-evidence.json`
-is the selected 207-pair evidence ledger (205 complete) with fixture-verified inspection scopes. See
+is the selected 215-pair evidence ledger (213 complete) with fixture-verified inspection scopes. See
 [`task-3-9-backlog.md`](../../docs/task-3-9-backlog.md) for counts and exits.
 The canonical endpoint test uses Go's standard AST parser and the existing YAML
 parser against the unchanged pin; Go is development-only and never a sidecar.

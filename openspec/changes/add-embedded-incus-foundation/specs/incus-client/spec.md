@@ -70,6 +70,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** reads agree with the pinned client for populated/empty/corrupt results, native 403/404, routing, extensions and lifetime cleanup, and synchronous writes agree for request bodies, ETags and native rejection while lost or malformed replies are uncertain and never replayed
 - **AND** reviewed records list each completed row, selectors the pinned client does not send and cluster forwarding are approved exclusions, and the metrics and ACL log rows stay partial while S07 is open
 
+#### Scenario: Certified file transfer
+
+- **WHEN** a caller reads, creates, deletes or inspects (HEAD) an instance or custom volume file, directory or symlink over Unix or mutual HTTPS
+- **THEN** requests, path selectors, routing, ownership/mode/type/write-mode headers and bytes agree with the pinned client where it has a method. HEAD returns parsed metadata with no body. Native errors are preserved; byte and deadline bounds hold; and mid-stream cancellation or caller loss closes the peer. Lost upload or delete replies are uncertain and never replayed
+- **AND** S04 is certified by a single reviewed record, and agent-mode file access and cluster forwarding are recorded approved exclusions
+
 #### Scenario: Certified auxiliary byte streams
 
 - **WHEN** a caller downloads metrics, a network ACL log, an instance log file, the console log, debug memory or a metadata template, or lists, uploads or deletes a metadata template, over Unix or mutual HTTPS
