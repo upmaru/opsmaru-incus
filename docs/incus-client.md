@@ -320,13 +320,14 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 199 pairs are currently in the checked
-evidence manifest. 197 are complete under reviewed completion records:
+pairs plus 46 query/access variants; 207 pairs are currently in the checked
+evidence manifest. 205 are complete under reviewed completion records:
 native wait, events, exec, seven single-method B01 mutations, conditional instance
 PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10
 administrative rows, all 24 B05 PATCH rows, 28 stream-free B08 storage rows and
 all nineteen stream-free B11 instance and image rows, all three B07 recorded exec
-output rows and the B12 debug repair row. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
+output rows, the B12 debug repair row and the eight S07 auxiliary byte stream
+rows. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
@@ -830,6 +831,24 @@ implicitly, unlike the pinned client's `ExecInstance`:
 - `DeleteInstanceExecOutput` (`name`, `filename`) deletes a file only when
   called.
 - File names must be one path segment (not empty, `.`, `..` or containing `/`).
+
+The `Opsmaru.Incus.Streams` byte helpers are certified as stream contract S07:
+
+- `metrics/2`
+- `network_acl_log/3`
+- `instance_logfile/4`
+- `instance_console_log/3`
+- `instance_debug_memory/4`
+- `instance_template_file/4`
+- `create_instance_template_file/4`
+
+They are certified together with the `GetInstanceTemplateFiles` and
+`DeleteInstanceTemplateFile` calls. Each download delivers raw bytes to an
+acknowledged sink within the connection's byte, chunk and deadline bounds.
+Cancelling the request context or losing the caller mid-stream closes the
+socket and stops the sink. A lost template upload reply is uncertain and never
+replayed. The console log helper downloads the text log only; the console
+`type` selector (such as the `vga` screenshot) is not supported.
 
 `RepairInstance` (`name`, body `%{"action" => "rebuild-config-volume"}`,
 `instances_debug_repair`) sends the daemon's registered

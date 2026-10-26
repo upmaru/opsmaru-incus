@@ -16,6 +16,8 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
       ~w(request field_presence routing native_400 native_403 native_404 native_412 response_loss_no_replay deadline cancellation preflight unconditional_rejection),
     "sync_mutation" =>
       ~w(request sync_success routing binding native_400 native_403 native_404 native_409 native_412 malformed_reply response_loss_no_replay preflight),
+    "byte_stream" =>
+      ~w(request populated routing exact_selectors acknowledged_sink native_400 native_403 native_404 byte_bounds chunk_bounds deadline cancellation caller_loss no_host_files upload response_loss_no_replay preflight template_list template_delete),
     "binary_download" =>
       ~w(request populated routing native_400 native_403 native_404 byte_bounds deadline cancellation acknowledged_sink no_implicit_delete preflight),
     "read_contract" =>

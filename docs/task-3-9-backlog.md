@@ -119,7 +119,7 @@ the Incus REST document and remain in the completion gate.
 | S04: Files | Certify file/directory/symlink, uid/gid/mode, overwrite/append, path/routing, binary bounds and native failures; HEAD remains B06. | Acknowledged host sources/sinks; no implicit host files. |
 | S05: Image binary handoff | Enumerate supported unified/split/compression/header/token modes; link existing private-token/copy/uncertainty evidence and identify uncovered cases. | Host-owned sources/sinks/staging; no implicit tools. |
 | S06: Archives | Enumerate instance/volume/bucket import/export/direct POST, name/pool/config/device and ISO modes; reconcile existing fixtures and remaining transport/failure evidence. | No implicit host filesystem state. |
-| S07: Auxiliary byte streams | Certify each mapped metrics/log/console-log/template/debug-memory helper including exact selectors, headers, native failures and cleanup. | Recorded output remains B07; repair remains B12. |
+| S07: Auxiliary byte streams | **Certified** by `s07_byte_streams_v1` (2026-10-26): metrics, ACL log, instance log file, console log, debug memory and metadata template list/download/upload/delete on both transports, with exact selectors, headers, native failures, byte/chunk/deadline bounds and mid-stream cancellation and caller-loss cleanup. The console `type` selector and cluster forwarding are approved exclusions. | Recorded output remains B07; repair remains B12. |
 | S08: Raw SFTP/NBD | Certify instance/volume path, instance reuse and volume writable options, 101/coalesced bytes, half-close and bounds against existing evidence; retain approved oracle byte-loss difference. | Raw NBD payload protocol is caller-owned. |
 | S09: Typed SFTP | Link existing v3 subset packet/status/fragment/bounds/owner/uncertainty evidence and explicit unsupported-operation rejection. | Approved init/extensions/open/read/write/close subset; no full pkg/sftp requirement. |
 | S10: Copy/migration | Enumerate existing local/pull/push/relay instance/snapshot/volume/image combinations, approved address/channel sets, remote wait and no-replay cleanup; resolve any unsupported options explicitly. | Host approves origins; preserve source and target identities; no following arbitrary addresses. |
@@ -152,7 +152,7 @@ No exhaustive cross-product of every possible field/error is required.
 - [x] Preserve the ten fixture-verified inspection scopes and existing bounded slices.
 - [ ] Finish B01–B12: implement/verify the required contracts or record explicit approvals.
 - [ ] Finish S01–S12 certification within the existing approved host/protocol boundaries.
-- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. 197 rows (three B03, seven B01, B04, twenty B02, 51 B09, all forty B10, all 24 B05, 28 stream-free B08, nineteen stream-free B11, all three B07 and B12) plus S01/S03 are complete.
+- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. 205 rows (three B03, seven B01, B04, twenty B02, 51 B09, all forty B10, all 24 B05, 28 stream-free B08, nineteen stream-free B11, all three B07, B12 and the eight S07 rows) plus S01/S03/S07 are complete.
 - [ ] Independently review and pass canonical/reference/platform/immutable-consumer checks for closing slices.
 
 Installed OCI/delta converters, explicitly opted-in isolated real-Incus acceptance

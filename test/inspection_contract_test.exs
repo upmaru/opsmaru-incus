@@ -17,10 +17,13 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   @b08 ~w(GetStoragePoolBucketNames GetStoragePoolBuckets GetStoragePoolBucketsWithFilter GetStoragePoolBucketsAllProjects GetStoragePoolBucketsWithFilterAllProjects GetStoragePoolBucketsFull GetStoragePoolBucketsFullWithFilter GetStoragePoolBucketsFullAllProjects GetStoragePoolBucketsFullWithFilterAllProjects GetStoragePoolBucket GetStoragePoolBucketFull GetStoragePoolBucketKeyNames GetStoragePoolBucketKeys GetStoragePoolBucketKey GetStoragePoolResources GetStorageVolumeBitmaps GetStorageVolumeBitmapNames GetStoragePoolVolumeSnapshotNames GetStoragePoolVolumeSnapshots GetStoragePoolVolumeSnapshot GetStoragePoolVolumeState)
   # B11: every read method mapped to the stream-free instance and image rows.
   @b11 ~w(GetImageAliases GetImageAliasNames GetImageAlias GetInstanceAccess GetInstanceLogfiles GetInstanceMetadata)
+  # S07: the metadata template names list.
+  @s07 ~w(GetInstanceTemplateFiles)
   @catalogue Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
   @methods Enum.filter(
              @catalogue,
-             &(&1["name"] in (@names ++ @b02 ++ @b02_storage ++ @b09 ++ @b10 ++ @b08 ++ @b11))
+             &(&1["name"] in (@names ++
+                                @b02 ++ @b02_storage ++ @b09 ++ @b10 ++ @b08 ++ @b11 ++ @s07))
            )
   # Models without a hand-written sample get a schema-driven one (ModelSamples).
   @generated ~w(NetworkACL NetworkAddressSet NetworkAllocations NetworkForward NetworkIntegration NetworkLease NetworkLoadBalancer NetworkLoadBalancerState NetworkPeer NetworkState NetworkZone NetworkZoneRecord Access Certificate Cluster ClusterGroup ClusterMember ClusterMemberState MetadataConfiguration ProjectState Resources Warning StorageBucket StorageBucketFull StorageBucketKey ResourcesStoragePool StorageVolumeBitmap StorageVolumeSnapshot StorageVolumeState ImageAliasesEntry ImageMetadata)
@@ -49,7 +52,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 138 and length(@rest) == 5
+    assert length(@methods) == 139 and length(@rest) == 5
     :ok
   end
 
@@ -281,6 +284,12 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       method["result"] in ["names", "project_names", "project_urls"] ->
         names_result(actual, expected, client, method, outcome)
 
+      method["result"] == "strings" ->
+        assert {:ok, reply} = actual
+        assert reply.connection == client.connection and reply.identity == :verified
+        assert reply.metadata == metadata(method, outcome)
+        assert hd(expected["outputs"]) == reply.metadata
+
       true ->
         model_result(actual, expected, client, method, outcome)
     end
@@ -491,6 +500,12 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     if Enum.any?(method["params"], &(&1 in ~w(volType volumeType))), do: @volume_types, else: []
   end
 
+  # Template names are plain strings; a non-string entry is rejected.
+  defp metadata(%{"name" => "GetInstanceTemplateFiles"}, :populated),
+    do: ["hostname.tpl", "hosts tpl"]
+
+  defp metadata(%{"name" => "GetInstanceTemplateFiles"}, :corrupt), do: ["hostname.tpl", 1]
+
   defp metadata(@root, :populated), do: ["/1.0"]
   defp metadata(@root, :empty), do: []
   defp metadata(@root, :corrupt), do: ["/1.0", 1]
@@ -502,7 +517,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   defp metadata(%{"name" => "GetOperationUUIDs"}, :empty), do: %{}
 
   defp metadata(%{"result" => result}, :empty)
-       when result in ~w(list names project_names project_urls),
+       when result in ~w(list names project_names project_urls strings),
        do: []
 
   # A list-shaped (alias) model's empty answer is an empty list.
