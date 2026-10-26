@@ -1517,3 +1517,32 @@ The two HEAD rows were the B06 gaps.
   cases, with negative tests.
 - Approved exclusions (2026-10-26): agent-mode file access and cluster
   forwarding. Real-daemon file effects remain separately recorded.
+
+## S06 backup and archive certification (PR 1: backup control plane)
+
+Approved 2026-10-26. PR 1 adds contract evidence for the S06 backup control
+plane. No row completes and S06 stays open until PR 2 adds the archive streams
+and certifies it. Task 3.9, `complete_port` and every Go declaration status
+(1239 partial / 41 missing) are unchanged.
+
+- [x] Four REST descriptors cover bucket backup calls the pinned client lacks:
+  `GetStoragePoolBucketBackupNames`, `GetStoragePoolBucketBackups`,
+  `GetStoragePoolBucketBackup` and the asynchronous
+  `RenameStoragePoolBucketBackup`. The three missing-typed rows become
+  `catalogue`, so no confirmed typed implementation gap remains (3 -> 0).
+- [x] The inspection contract test now covers 145 named methods plus the
+  bucket backup REST reads, with fixed native paths. It includes instance and
+  custom volume backup names, lists and gets.
+- [x] The sync-mutation contract test now covers 103 write methods. It adds:
+  - instance and custom volume backup create, rename and delete
+  - bucket backup create and delete
+  - the REST bucket backup rename
+  - JSON bucket creation
+
+  Bodies are schema-driven, and accepted operations use native `/wait`. The
+  pinned `CreateStoragePoolBucket` returns the created key only with
+  `storage_buckets_create_credentials`, so the fixture advertises it. For
+  REST-only writes, `RawQuery` decodes no operation; only named methods also
+  reject an unusable acceptance.
+- Approved exclusion: cluster forwarding. Export, direct backup POST, imports,
+  ISO and the certification of all 19 rows follow in PR 2.
