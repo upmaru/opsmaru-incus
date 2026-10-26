@@ -17,8 +17,13 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   @b11 ~w(CreateImageAlias RenameImageAlias UpdateImageAlias DeleteImageAlias UpdateImage RefreshImage CreateImageSecret UpdateInstanceMetadata DeleteInstanceConsoleLog DeleteInstanceLogfile CreateInstanceBitmap RebuildInstance UpdateInstanceSnapshot UpdateInstances)
   # B07/B12 writes the pinned client lacks, compared through unchanged Go RawQuery.
   @rest ~w(DeleteInstanceExecOutput RepairInstance)
+  # S07: the metadata template delete.
+  @s07 ~w(DeleteInstanceTemplateFile)
   @all_methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
-  @methods Enum.filter(@all_methods, &(&1["name"] in (@b09 ++ @b10 ++ @b08 ++ @b11 ++ @rest)))
+  @methods Enum.filter(
+             @all_methods,
+             &(&1["name"] in (@b09 ++ @b10 ++ @b08 ++ @b11 ++ @rest ++ @s07))
+           )
   @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings storage storage_buckets storage_volume_nbd storage_api_volume_snapshots storage_volumes_rebuild console container_log_delete image_force_refresh instances_rebuild container_edit_metadata snapshot_expiry container_exec_recording instances_debug_repair)
   @uuid "01234567-89ab-cdef-0123-456789abcdef"
   @url "/1.0/operations/" <> @uuid
@@ -33,7 +38,7 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 92
+    assert length(@methods) == 93
     assert Enum.all?(@methods, &(&1["result"] in ["sync", "model", "operation"]))
     :ok
   end

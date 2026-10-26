@@ -1435,3 +1435,38 @@ last stream-free rows apart from the deferred collection volume POST.
   native paths.
 - Approved exclusion (2026-10-25): cluster forwarding. Real-daemon recorded
   output and repair effects remain separately recorded.
+
+## S07 auxiliary byte stream certification
+
+Approved 2026-10-26. Stream contract S07 is certified by the single reviewed
+record `s07_byte_streams_v1`. That record completes the 8 rows linked only to
+S07:
+
+- metrics
+- network ACL log
+- instance log file
+- console log
+- debug memory
+- metadata templates: list, download, upload and delete
+
+The selected manifest grows 199 -> 207 pairs (205 complete), and the certified
+stream contracts are now S01, S03 and S07. Task 3.9, `complete_port` and every
+Go declaration status (1239 partial / 41 missing) are unchanged.
+
+- [x] A new `byte_stream_contract_test.exs` runs every S07 helper on Unix and
+  mutual TLS against the pinned streams driver. The fixture requires a client
+  certificate, which the streams driver now presents:
+  - request path, exact selectors (`path`, `format`) and project/target routing
+  - the bytes delivered to an acknowledged sink
+  - template upload body bytes and content type
+  - native 400/403/404 with one request on each side
+  - byte, chunk and deadline bounds
+  - mid-stream cancellation and caller loss: the peer sees the socket close
+    and the sink is never called again
+  - a lost upload reply is uncertain and never replayed
+- [x] The template list (`GetInstanceTemplateFiles`, a strings result) and delete
+  (`DeleteInstanceTemplateFile`) join the inspection and sync-mutation contract
+  tests. A new `byte_stream` record kind names the S07 cases. Negative tests
+  remove the caller-loss case and the stream link.
+- Approved exclusions (2026-10-26): the console `type` selector and cluster
+  forwarding. Real-daemon stream contents remain separately recorded.

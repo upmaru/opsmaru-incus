@@ -470,7 +470,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/streams.ex",
       "evidence": [
-        "test/streams_test.exs"
+        "test/streams_test.exs",
+        "test/byte_stream_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -1339,7 +1340,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/streams.ex",
       "evidence": [
-        "test/streams_test.exs"
+        "test/streams_test.exs",
+        "test/byte_stream_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -1348,7 +1350,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/streams.ex",
       "evidence": [
-        "test/streams_test.exs"
+        "test/streams_test.exs",
+        "test/byte_stream_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -1396,7 +1399,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/streams.ex",
       "evidence": [
-        "test/streams_test.exs"
+        "test/streams_test.exs",
+        "test/byte_stream_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -1496,7 +1500,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/streams.ex",
       "evidence": [
-        "test/streams_test.exs"
+        "test/streams_test.exs",
+        "test/byte_stream_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -1604,7 +1609,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/streams.ex",
       "evidence": [
-        "test/streams_test.exs"
+        "test/streams_test.exs",
+        "test/byte_stream_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -1633,7 +1639,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/streams.ex",
       "evidence": [
-        "test/streams_test.exs"
+        "test/streams_test.exs",
+        "test/byte_stream_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3744,7 +3751,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/streams.ex",
       "evidence": [
-        "test/streams_test.exs"
+        "test/streams_test.exs",
+        "test/byte_stream_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -4796,7 +4804,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/streams.ex",
       "evidence": [
-        "test/streams_test.exs"
+        "test/streams_test.exs",
+        "test/byte_stream_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -4805,7 +4814,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/streams.ex",
       "evidence": [
-        "test/streams_test.exs"
+        "test/streams_test.exs",
+        "test/byte_stream_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -4853,7 +4863,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/streams.ex",
       "evidence": [
-        "test/streams_test.exs"
+        "test/streams_test.exs",
+        "test/byte_stream_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -4953,7 +4964,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/streams.ex",
       "evidence": [
-        "test/streams_test.exs"
+        "test/streams_test.exs",
+        "test/byte_stream_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -5061,7 +5073,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/streams.ex",
       "evidence": [
-        "test/streams_test.exs"
+        "test/streams_test.exs",
+        "test/byte_stream_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -5090,7 +5103,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/streams.ex",
       "evidence": [
-        "test/streams_test.exs"
+        "test/streams_test.exs",
+        "test/byte_stream_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },

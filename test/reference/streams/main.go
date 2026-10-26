@@ -23,6 +23,9 @@ type Input struct {
 	Socket     string `json:"socket"`
 	URL        string `json:"url"`
 	ServerCert string `json:"server_cert"`
+	TLSCA      string `json:"tls_ca"`
+	ClientCert string `json:"client_cert"`
+	ClientKey  string `json:"client_key"`
 	Project    string `json:"project"`
 	Target     string `json:"target"`
 	Action     string `json:"action"`
@@ -53,7 +56,9 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	args := &incus.ConnectionArgs{SkipGetServer: true, SkipGetEvents: true, TLSServerCert: input.ServerCert}
+	// Client credentials are optional, so mutual TLS fixtures can require them.
+	args := &incus.ConnectionArgs{SkipGetServer: true, SkipGetEvents: true, TLSServerCert: input.ServerCert,
+		TLSCA: input.TLSCA, TLSClientCert: input.ClientCert, TLSClientKey: input.ClientKey}
 	var client incus.InstanceServer
 	if input.Socket != "" {
 		client, err = incus.ConnectIncusUnixWithContext(ctx, input.Socket, args)

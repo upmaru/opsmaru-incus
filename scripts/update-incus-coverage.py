@@ -46,7 +46,7 @@ for name in ['CopyInstance','CopyInstanceSnapshot','CopyStoragePoolVolume']:
  helpers[name]=('lib/opsmaru/incus/copy.ex',['test/copy_test.exs','test/migration_test.exs'])
 helpers['CopyInstance'][1].append('test/copy_guards_test.exs')
 for name in ['GetMetrics','GetNetworkACLLogfile','GetInstanceLogfile','GetInstanceConsoleLog','GetInstanceTemplateFile','CreateInstanceTemplateFile','GetInstanceDebugMemory']:
- helpers[name]=('lib/opsmaru/incus/streams.ex',['test/streams_test.exs'])
+ helpers[name]=('lib/opsmaru/incus/streams.ex',['test/streams_test.exs','test/byte_stream_contract_test.exs'])
 for name in ['CopyInstance','CopyInstanceSnapshot','CopyStoragePoolVolume','MoveStoragePoolVolume']:
  helpers.setdefault(name, ('lib/opsmaru/incus/copy.ex', []))[1].append('test/copy_negotiation_reference_test.exs')
 for name in ['CreateInstanceFromImage','RebuildInstanceFromImage']:

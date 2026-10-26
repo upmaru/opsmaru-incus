@@ -130,7 +130,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "199 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "207 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -153,12 +153,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                GetStoragePoolBucketNames GetStoragePoolBucket GetStoragePoolBucketKeyNames GetStoragePoolBucketKey GetStoragePoolResources GetStoragePoolVolumeTypeNames GetStorageVolumeBitmaps GetStorageVolumeBitmap GetStoragePoolVolumeSnapshotNames GetStoragePoolVolumeSnapshot GetStoragePoolVolumeState
                DeleteStoragePool DeleteStoragePoolBucket DeleteStoragePoolBucketKey DeleteStoragePoolVolume DeleteStorageVolumeBitmap DeleteStoragePoolVolumeSnapshot CreateStoragePool CreateStoragePoolBucketKey CreateStorageVolumeBitmap RebuildStoragePoolVolume CreateStoragePoolVolumeSnapshot RenameStoragePoolVolumeSnapshot UpdateStoragePool UpdateStoragePoolBucket UpdateStoragePoolBucketKey UpdateStoragePoolVolume UpdateStoragePoolVolumeSnapshot
                DeleteImageAlias DeleteInstanceConsoleLog DeleteInstanceLogfile GetImageAliases GetImageAlias GetInstanceAccess GetInstanceLogfiles GetInstanceMetadata CreateImageAlias RenameImageAlias RefreshImage CreateImageSecret CreateInstanceBitmap RebuildInstance UpdateImageAlias UpdateImage UpdateInstances UpdateInstanceMetadata UpdateInstanceSnapshot
-               GetInstanceExecOutputNames DeleteInstanceExecOutput RepairInstance)
+               GetInstanceExecOutputNames DeleteInstanceExecOutput RepairInstance
+               GetInstanceTemplateFiles DeleteInstanceTemplateFile)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
              "partial" => 2,
-             "complete" => 197
+             "complete" => 205
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -310,6 +311,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"DELETE /1.0/instances/{}/console", "b11_delete_instances_one_console_v1"},
              {"DELETE /1.0/instances/{}/logs/exec-output/{}", "b07_delete_exec_output_one_v1"},
              {"DELETE /1.0/instances/{}/logs/{}", "b11_delete_instances_one_logs_one_v1"},
+             {"DELETE /1.0/instances/{}/metadata/templates", "s07_byte_streams_v1"},
              {"DELETE /1.0/instances/{}/snapshots/{}", "b01_delete_instance_snapshot_v1"},
              {"DELETE /1.0/network-acls/{}", "b09_delete_network_acls_one_v1"},
              {"DELETE /1.0/network-address-sets/{}", "b09_delete_network_address_sets_one_v1"},
@@ -355,17 +357,23 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/instances", "b02_instances_v1"},
              {"GET /1.0/instances/{}", "b02_instance_v1"},
              {"GET /1.0/instances/{}/access", "b11_instances_one_access_v1"},
+             {"GET /1.0/instances/{}/console", "s07_byte_streams_v1"},
+             {"GET /1.0/instances/{}/debug/memory", "s07_byte_streams_v1"},
              {"GET /1.0/instances/{}/debug/repair", "b12_debug_repair_v1"},
              {"GET /1.0/instances/{}/logs", "b11_instances_one_logs_v1"},
              {"GET /1.0/instances/{}/logs/exec-output", "b07_exec_output_v1"},
              {"GET /1.0/instances/{}/logs/exec-output/{}", "b07_exec_output_one_v1"},
+             {"GET /1.0/instances/{}/logs/{}", "s07_byte_streams_v1"},
              {"GET /1.0/instances/{}/metadata", "b11_instances_one_metadata_v1"},
+             {"GET /1.0/instances/{}/metadata/templates", "s07_byte_streams_v1"},
              {"GET /1.0/instances/{}/snapshots", "b02_instance_snapshots_v1"},
              {"GET /1.0/instances/{}/snapshots/{}", "b02_instance_snapshot_v1"},
              {"GET /1.0/instances/{}/state", "b02_instance_state_v1"},
              {"GET /1.0/metadata/configuration", "b10_metadata_configuration_v1"},
+             {"GET /1.0/metrics", "s07_byte_streams_v1"},
              {"GET /1.0/network-acls", "b09_network_acls_v1"},
              {"GET /1.0/network-acls/{}", "b09_network_acls_one_v1"},
+             {"GET /1.0/network-acls/{}/log", "s07_byte_streams_v1"},
              {"GET /1.0/network-address-sets", "b09_network_address_sets_v1"},
              {"GET /1.0/network-address-sets/{}", "b09_network_address_sets_one_v1"},
              {"GET /1.0/network-allocations", "b09_network_allocations_v1"},
@@ -463,6 +471,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"POST /1.0/images/{}/secret", "b11_post_images_one_secret_v1"},
              {"POST /1.0/instances/{}/bitmaps", "b11_post_instances_one_bitmaps_v1"},
              {"POST /1.0/instances/{}/exec", "b03_exec_v1"},
+             {"POST /1.0/instances/{}/metadata/templates", "s07_byte_streams_v1"},
              {"POST /1.0/instances/{}/rebuild", "b11_post_instances_one_rebuild_v1"},
              {"POST /1.0/instances/{}/snapshots", "b01_create_instance_snapshot_v1"},
              {"POST /1.0/network-acls", "b09_post_network_acls_v1"},
@@ -530,7 +539,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            ]
 
     assert for(%{"status" => "certified", "id" => id} <- audit["stream_contracts"], do: id) ==
-             ["S01", "S03"]
+             ["S01", "S03", "S07"]
 
     refute audit["behavior_complete"] or audit["complete_port"]
     wait = ["completion_records", "b03_native_wait_v1"]
@@ -548,6 +557,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     server_patch = ["completion_records", "b05_patch_server_v1"]
     snapshot_patch = ["completion_records", "b05_patch_instances_one_snapshots_one_v1"]
     download = ["completion_records", "b07_exec_output_one_v1"]
+    byte_streams = ["completion_records", "s07_byte_streams_v1"]
     events = ["completion_records", "b03_events_v1"]
     socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
     head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
@@ -654,6 +664,11 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              cluster_update ++ ["evidence_kinds"],
              &Map.delete(&1, "admin_guards")
            ), "stale completion evidence kinds"},
+          # S07 certification needs mid-stream cleanup and the stream link itself.
+          {update_in(audit, byte_streams ++ ["cases"], &Map.delete(&1, "caller_loss")),
+           "missing completion case"},
+          {put_in(audit, byte_streams ++ ["stream_contracts"], []),
+           "unsupported certification claim"},
           # A byte download proves its sink, bounds and that it never deletes.
           {update_in(audit, download ++ ["cases"], &Map.delete(&1, "no_implicit_delete")),
            "missing completion case"},
