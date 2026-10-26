@@ -129,6 +129,69 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: S06 backup and archive certification (2026-10-26)
+
+Certify stream contract S06 under a single reviewed record and complete the 19
+rows linked only to S06:
+
+- instance, custom volume and bucket backups: list, get, create, rename,
+  delete and export
+- bucket creation, whose archive mode is bucket import
+
+Certifying S06 also covers its archive modes on the two rows shared with S10:
+
+- instance backup import on `POST /1.0/instances`
+- volume import, including ISO, on `POST /1.0/storage-pools/{pool}/volumes/{type}`
+
+Those two rows then wait only on S10.
+
+User decisions (2026-10-26):
+
+- Add typed REST descriptors for the bucket backup calls the pinned client
+  lacks, compared through unchanged Go RawQuery plus fixtures:
+  - `GetStoragePoolBucketBackupNames`
+  - `GetStoragePoolBucketBackups` (recursion=1)
+  - `GetStoragePoolBucketBackup`
+  - `RenameStoragePoolBucketBackup` (an accepted operation)
+
+  These close the last three confirmed typed implementation gaps (3 -> 0).
+- Certify every S06 obligation now, including the shared import and ISO modes.
+- Two PRs. Rows linked to S06 complete only once S06 is certified.
+
+PR 1: backup control plane, with rows still partial.
+
+- The list, get, create, rename and delete calls for instance, volume and
+  bucket backups, plus JSON bucket creation, join the inspection and
+  sync-mutation contract tests on Unix and mutual HTTPS. They are compared with
+  the named pinned methods, or with RawQuery for the new descriptors.
+- Coverage includes schema-driven bodies (expiry, compression, instance-only
+  and optimized-storage options), accepted operations with native `/wait`,
+  native errors and lost replies.
+- The three missing-typed bucket backup rows become `catalogue`. No row
+  completes and S06 stays open.
+
+PR 2: archive streams and certification.
+
+- Export downloads for instance, volume and bucket backups.
+- Direct backup POST to a sink (`backup_stream`).
+- Imports:
+  - instance backup import, with name, pool, config and device overrides
+  - volume import and ISO
+  - bucket import
+- All on both transports, compared with the pinned `GetInstanceBackupFile`,
+  `CreateInstanceBackupStream`, `CreateInstanceFromBackup` and their volume and
+  bucket counterparts. Coverage includes byte and deadline bounds, mid-stream
+  cancellation and caller loss, uncertain lost uploads that are never
+  replayed, and no implicit host files.
+- An `archive` record kind certifies S06 and completes all 19 rows. The selected
+  manifest grows 215 -> 234 pairs (232 complete), and the certified stream
+  contracts become S01, S03, S04, S06 and S07.
+
+Approved exclusion: cluster forwarding beyond host project/target routing. Each
+PR updates the ledgers, closure ledger, backlog, client docs and generated
+coverage. Task 3.9, `complete_port` and every Go declaration status are
+unchanged.
+
 #### Approved slice: S04 file transfer certification with B06 HEAD (2026-10-26)
 
 Certify stream contract S04 under a single reviewed record and complete its 8
