@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.ByteStreamContractTest do
   @moduledoc """
-  S07 auxiliary byte stream contracts on Unix and verified TLS, compared with the
+  S07 auxiliary byte stream contracts on Unix and mutual TLS, compared with the
   pinned client's unchanged typed stream methods through the streams driver.
   """
   use ExUnit.Case, async: false
@@ -346,7 +346,12 @@ defmodule Opsmaru.Incus.ByteStreamContractTest do
     |> Map.merge(%{"project" => "ops", "target" => "node-2", "read_limit" => 1_048_577})
     |> Map.merge(
       if identity,
-        do: %{"url" => endpoint.url, "server_cert" => File.read!(identity.certfile)},
+        do: %{
+          "url" => endpoint.url,
+          "tls_ca" => File.read!(identity.cafile),
+          "client_cert" => File.read!(identity.certfile),
+          "client_key" => File.read!(identity.keyfile)
+        },
         else: %{"socket" => endpoint.socket}
     )
   end
@@ -371,12 +376,21 @@ defmodule Opsmaru.Incus.ByteStreamContractTest do
   defp identity(root, :https),
     do: TLSIdentity.generate(root, "s07-#{System.unique_integer([:positive])}", "localhost")
 
-  # The pinned streams driver presents no client certificate, so the TLS fixture
-  # verifies the server identity only.
+  # Mutual TLS: the fixture requires and verifies a client certificate from both the
+  # pinned client and ours.
   defp backend(root, identity, handler) do
     options =
       if identity,
-        do: [transport: :ssl, certfile: identity.certfile, keyfile: identity.keyfile],
+        do: [
+          transport: :ssl,
+          certfile: identity.certfile,
+          keyfile: identity.keyfile,
+          peer_options: [
+            cacertfile: identity.cafile,
+            verify: :verify_peer,
+            fail_if_no_peer_cert: true
+          ]
+        ],
         else: [
           transport: :gen_tcp,
           path: Path.join(root, "s#{System.unique_integer([:positive])}")

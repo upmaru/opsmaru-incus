@@ -1454,7 +1454,8 @@ stream contracts are now S01, S03 and S07. Task 3.9, `complete_port` and every
 Go declaration status (1239 partial / 41 missing) are unchanged.
 
 - [x] A new `byte_stream_contract_test.exs` runs every S07 helper on Unix and
-  verified TLS against the pinned streams driver:
+  mutual TLS against the pinned streams driver. The fixture requires a client
+  certificate, which the streams driver now presents:
   - request path, exact selectors (`path`, `format`) and project/target routing
   - the bytes delivered to an acknowledged sink
   - template upload body bytes and content type
