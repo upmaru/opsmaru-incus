@@ -10475,6 +10475,7 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
+        "test/resource_slice_test.exs",
         "test/nested_models_reference_test.exs"
       ],
       "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."

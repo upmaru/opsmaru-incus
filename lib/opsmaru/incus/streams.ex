@@ -9,6 +9,7 @@ defmodule Opsmaru.Incus.Streams do
   - `instance_template_file/4` (GetInstanceTemplateFile)
   - `create_instance_template_file/4` (CreateInstanceTemplateFile)
   - `instance_debug_memory/4` (GetInstanceDebugMemory)
+  - `instance_exec_output/4` (recorded exec output; private in the pinned client)
 
   Every download delivers bounded binary chunks to an explicitly acknowledged
   `sink/1` that returns `:ok`; the template-file upload reads a host
@@ -54,6 +55,26 @@ defmodule Opsmaru.Incus.Streams do
       Transfer.download(
         client,
         "/1.0/instances/" <> escape(name) <> "/logs/" <> escape(filename),
+        sink
+      )
+    end
+  end
+
+  @doc """
+  Recorded exec output: stream
+  `GET /1.0/instances/{name}/logs/exec-output/{filename}` to `sink/1` after
+  checking the native `container_exec_recording` extension. The pinned client
+  keeps this private: its `ExecInstance` fetches each recorded file and then
+  deletes it. This helper never deletes; call `DeleteInstanceExecOutput`
+  explicitly. The file name must be one path segment (not `.` or `..`).
+  """
+  def instance_exec_output(client, name, filename, sink) when is_function(sink, 1) do
+    with :ok <- Incus.require_extension(client, "container_exec_recording"),
+         :ok <- segment(name),
+         :ok <- file_segment(filename) do
+      Transfer.download(
+        client,
+        "/1.0/instances/" <> escape(name) <> "/logs/exec-output/" <> escape(filename),
         sink
       )
     end
@@ -135,6 +156,15 @@ defmodule Opsmaru.Incus.Streams do
 
   # Elixir's form encoding matches Go's url.QueryEscape (space -> "+").
   defp form(value), do: URI.encode_query([{"path", value}]) |> String.replace_prefix("path=", "")
+
+  defp file_segment(value) when value in [".", ".."],
+    do: {:error, %Error{kind: :invalid_arguments}}
+
+  defp file_segment(value) do
+    if is_binary(value) and String.contains?(value, "/"),
+      do: {:error, %Error{kind: :invalid_arguments}},
+      else: segment(value)
+  end
 
   defp segment(value),
     do:

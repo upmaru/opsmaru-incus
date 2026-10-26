@@ -28,15 +28,16 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   @discovery %{"name" => "connect", "params" => [], "result" => "discovery", "model" => "Server"}
   # Root API version discovery has no named Go method; it is compared through RawQuery.
   @root Enum.find(@catalogue, &(&1["name"] == "GetAPIVersions"))
-  # B08 reads the pinned client lacks (volumes of one type, one bitmap), also RawQuery.
+  # Reads the pinned client lacks (B08 volumes of one type and one bitmap, B07 recorded
+  # exec output names), also compared through RawQuery.
   @rest Enum.filter(
           @catalogue,
-          &(&1["name"] in ~w(GetStoragePoolVolumeTypeNames GetStoragePoolVolumesByType GetStoragePoolVolumesByTypeFull GetStorageVolumeBitmap))
+          &(&1["name"] in ~w(GetStoragePoolVolumeTypeNames GetStoragePoolVolumesByType GetStoragePoolVolumesByTypeFull GetStorageVolumeBitmap GetInstanceExecOutputNames))
         )
   @contracts @methods ++ [@discovery, @root] ++ @rest
   # The volume type is a pass-through path argument, compared for every daemon type.
   @volume_types ~w(custom container virtual-machine image)
-  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects networks_all_projects profiles_all_projects storage_volume_full storage_volumes_all_projects network_acl network_acls_all_projects network_address_set network_allocations network_dns network_dns_records network_forward network_integrations network_leases network_load_balancer network_load_balancer_state network_peer network_state network_zones_all_projects cluster_member_state clustering clustering_groups metadata_configuration project_access project_usage resources warnings storage_buckets storage_buckets_all_projects storage_bucket_full storage_volume_nbd storage_api_volume_snapshots storage_volume_state instance_access container_edit_metadata)
+  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects networks_all_projects profiles_all_projects storage_volume_full storage_volumes_all_projects network_acl network_acls_all_projects network_address_set network_allocations network_dns network_dns_records network_forward network_integrations network_leases network_load_balancer network_load_balancer_state network_peer network_state network_zones_all_projects cluster_member_state clustering clustering_groups metadata_configuration project_access project_usage resources warnings storage_buckets storage_buckets_all_projects storage_bucket_full storage_volume_nbd storage_api_volume_snapshots storage_volume_state instance_access container_edit_metadata container_exec_recording)
   @driver Path.expand("../.integration/inspection-driver", __DIR__)
 
   setup_all do
@@ -48,7 +49,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 138 and length(@rest) == 4
+    assert length(@methods) == 138 and length(@rest) == 5
     :ok
   end
 
@@ -477,6 +478,9 @@ defmodule Opsmaru.Incus.InspectionContractTest do
 
         "GetStorageVolumeBitmap" ->
           {pool <> "/fixture-volumeName/bitmaps/fixture-bitmapName", %{}}
+
+        "GetInstanceExecOutputNames" ->
+          {"/1.0/instances/fixture-name/logs/exec-output", %{}}
       end
 
     query = Map.merge(query, %{"project" => "fixture scope", "target" => "member/a"})

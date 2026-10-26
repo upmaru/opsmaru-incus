@@ -285,7 +285,7 @@ the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
 close/error/EOF semantics apply. This does not expose an arbitrary dialer or
 an OIDC adapter.
 
-The checked manifest currently has 298 JSON descriptors (268 named-Go methods and 30 REST-specific descriptors: 25 PATCH methods, four storage reads and `GetAPIVersions`), 1239 partial
+The checked manifest currently has 301 JSON descriptors (268 named-Go methods and 33 REST-specific descriptors: 25 PATCH methods, four storage reads, recorded exec output list and delete, debug repair and `GetAPIVersions`), 1239 partial
 reference mappings and 41 missing declarations out of 1,280. Native Incus
 method evidence is scoped to that implementation; OCI and SimpleStreams each
 have 20 partial concrete method mappings and none missing; full protocol/option
@@ -320,12 +320,13 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 195 pairs are currently in the checked
-evidence manifest. 193 are complete under reviewed completion records:
+pairs plus 46 query/access variants; 199 pairs are currently in the checked
+evidence manifest. 197 are complete under reviewed completion records:
 native wait, events, exec, seven single-method B01 mutations, conditional instance
 PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10
 administrative rows, all 24 B05 PATCH rows, 28 stream-free B08 storage rows and
-all nineteen stream-free B11 instance and image rows. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
+all nineteen stream-free B11 instance and image rows, all three B07 recorded exec
+output rows and the B12 debug repair row. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
@@ -819,6 +820,21 @@ metadata, which `Inspect` never shows. `UpdateInstances` (`PUT /1.0/instances`)
 changes the state of every instance in the connection's project at once, as an
 accepted operation. Whether a tool may expose it is a separate policy decision.
 The public `?public` alias view is not supported.
+
+Recorded exec output (`container_exec_recording`) is never fetched or deleted
+implicitly, unlike the pinned client's `ExecInstance`:
+
+- `GetInstanceExecOutputNames` (`name`) lists an instance's recorded files.
+- `Opsmaru.Incus.Streams.instance_exec_output/4` streams one file to an
+  acknowledged sink within the connection's response bound.
+- `DeleteInstanceExecOutput` (`name`, `filename`) deletes a file only when
+  called.
+- File names must be one path segment (not empty, `.`, `..` or containing `/`).
+
+`RepairInstance` (`name`, body `%{"action" => "rebuild-config-volume"}`,
+`instances_debug_repair`) sends the daemon's registered
+`POST /1.0/instances/{name}/debug/repair`. The REST document lists this route
+as GET, but the client never sends it that way.
 
 The `initial_mutation_lifecycle_v1` fixture scope covers eight existing B01 methods:
 CreateInstance, UpdateInstance (including a separate restore body),

@@ -28,7 +28,7 @@ including image suffix actions. Root discovery is a separately checked source
 anchor in `cmd/incusd/api.go:restServer`. All documented routes reconcile except
 `GET /1.0/instances/{name}/debug/repair`: `instances.go:instanceDebugRepairCmd`
 registers **POST**. One supplemental server row tracks that missing typed mutation.
-Thus there are **9 confirmed typed implementation gaps** (root discovery `GET /`
+Thus there are **5 confirmed typed implementation gaps** (root discovery `GET /`
 now has the typed `GetAPIVersions` descriptor), plus the equivalent
 collection-route decision. These are not a count of missing Go declarations. Raw HTTP support does not implement those typed contracts.
 No source file in the pinned module was modified.
@@ -36,11 +36,9 @@ No source file in the pinned module was modified.
 ## Exact implementation backlog
 
 - **2 HEAD pairs (B06):** instance files and storage-volume files.
-- **3 recorded exec output pairs (B07):** list, binary download and explicit delete.
 - **3 storage pairs (B08):** bucket backup list/get/rename. Custom-volume backup
   methods already exist and are not absent. Volume list by type and the single
   bitmap read now have typed REST descriptors.
-- **1 actual repair mutation (B12):** `POST /1.0/instances/{name}/debug/repair`.
 
 The corrected per-view parameter audit identifies **28 distinct endpoint/selector
 gaps across 20 implemented routes**. The original route-wide check reported nine:
@@ -98,12 +96,12 @@ estimates of lines or commits. Split a batch into bounded slices before coding.
 | B04: Instance PATCH contract certification | 1 | **Complete** (`b04_instance_patch_v1`): conditional InstancePut with caller ETag; unconditional PATCH and cluster forwarding are approved exclusions (2026-10-19). Daemon merge acceptance stays separate. |
 | B05: Conditional PATCH and remaining PATCH contracts | 24 | All 24 rows are **complete** under reviewed `b05_*` conditional-PATCH records: the four earlier descriptors plus 20 new REST descriptors (server, certificate, cluster group/member, image alias, instance metadata, warning, nine network and four custom-volume storage PATCH), compared through Go RawQuery. Unconditional PATCH, non-custom volume snapshot types and cluster forwarding are approved exclusions (2026-10-23); network peer PATCH is certified as the daemon's full replace. PUT/raw-query success cannot close these rows. |
 | B06: File metadata HEAD | 2 | Implement instance and volume metadata-only typed helpers with header fidelity, empty body, rejection and bounded cleanup evidence on both transports. |
-| B07: Recorded exec output | 3 | Implement typed list, acknowledged binary download and explicit delete. Verify identity/path isolation, missing output, bounds and uncertain deletion; never imply automatic deletion. |
+| B07: Recorded exec output | 3 | All 3 rows are **complete** (2026-10-25): `GetInstanceExecOutputNames` and `DeleteInstanceExecOutput` REST descriptors (RawQuery evidence) and the `Streams.instance_exec_output/4` bounded download helper (`binary_download` record, independent fixtures); deletion is only explicit. Original exit: Implement typed list, acknowledged binary download and explicit delete. Verify identity/path isolation, missing output, bounds and uncertain deletion; never imply automatic deletion. |
 | B08: Storage endpoint contracts | 49 | Eleven stream-free read rows are **complete** under reviewed `b08_*` read records (buckets, bucket keys, pool resources, volumes by type, bitmaps, volume snapshots and state), for every daemon volume type; list-by-type and the single bitmap read use new REST descriptors (RawQuery evidence). Names-only bucket selectors and cluster forwarding are approved exclusions (2026-10-24). The 17 stream-free write rows are also **complete** under `b08_*` sync- and async-mutation records (pools, buckets and keys, volumes, bitmaps, volume snapshots and rebuild), for every daemon volume type; the collection volume POST is deferred to volume create. Certify the exact catalogue/helpers for each remaining row; implement bucket backup list/get/rename. Reconcile equivalent collection POST, custom restrictions and recursion views; add evidence for declared fields/errors/lifetimes only. |
 | B09: Network endpoint contracts | 53 | 51 rows are **complete**: twenty reads under `b09_*` read records and 31 synchronous writes under `b09_*` sync-mutation records, with every mapped method. Selectors the pinned client does not send and cluster forwarding are approved exclusions (2026-10-21). Metrics and the ACL log stay partial while S07 is open. PATCH rows remain B05. |
 | B10: Administrative endpoint contracts | 40 | All 40 rows are **complete**: fifteen reads under reviewed `b10_*` read records, including root discovery through the new typed `GetAPIVersions` helper (RawQuery evidence), and 25 writes under `b10_*` sync- and async-mutation records, with the trust-token certificate bootstrap certified. Names-only filter and cluster forwarding are approved exclusions (2026-10-22). PATCH rows remain B05. |
 | B11: Remaining instance/image contracts | 42 | All 19 stream-free rows are **complete** under reviewed `b11_*` read, sync- and async-mutation records (image aliases, image update/refresh/secret, instance access, logs, metadata, console log delete, bitmaps, rebuild, snapshot update and the project-wide `UpdateInstances`). The public alias view and cluster forwarding are approved exclusions (2026-10-24). The 23 stream-linked rows remain: Certify assigned instance/snapshot/backup/image/alias typed/helper scopes, including listed body modes. Verify supported fields/selectors, result/error/identity/ETag and bounds; copy/streams have additional S-contract obligations. |
-| B12: Pinned source reconciliation | 1 | Keep the documented GET debug repair mismatch and actual POST registered route linked. Design a typed mutation contract against the server POST or obtain explicit scope approval; never implement a repair mutation as a GET. |
+| B12: Pinned source reconciliation | 1 | **Complete** (2026-10-25): the typed `RepairInstance` POST (RawQuery evidence) completes the documented GET row, whose GET view is an approved source discrepancy that is never sent, and the supplemental POST server row. Original exit: Keep the documented GET debug repair mismatch and actual POST registered route linked. Design a typed mutation contract against the server POST or obtain explicit scope approval; never implement a repair mutation as a GET. |
 
 ## Streaming and non-REST obligations
 
@@ -154,7 +152,7 @@ No exhaustive cross-product of every possible field/error is required.
 - [x] Preserve the ten fixture-verified inspection scopes and existing bounded slices.
 - [ ] Finish B01–B12: implement/verify the required contracts or record explicit approvals.
 - [ ] Finish S01–S12 certification within the existing approved host/protocol boundaries.
-- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. 193 rows (three B03, seven B01, B04, twenty B02, 51 B09, all forty B10, all 24 B05, 28 stream-free B08 and nineteen stream-free B11) plus S01/S03 are complete.
+- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. 197 rows (three B03, seven B01, B04, twenty B02, 51 B09, all forty B10, all 24 B05, 28 stream-free B08, nineteen stream-free B11, all three B07 and B12) plus S01/S03 are complete.
 - [ ] Independently review and pass canonical/reference/platform/immutable-consumer checks for closing slices.
 
 Installed OCI/delta converters, explicitly opted-in isolated real-Incus acceptance

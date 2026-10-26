@@ -1401,3 +1401,37 @@ declaration status (1239 partial / 41 missing) are unchanged.
 - Approved exclusions (2026-10-24): the untrusted `?public` alias view and
   cluster forwarding. Real-daemon instance and image effects remain separately
   recorded.
+
+## B07 recorded exec output and B12 debug repair
+
+Approved 2026-10-25. The three B07 rows and the B12 row are complete. So is the
+supplemental `POST /1.0/instances/{name}/debug/repair` server row. These are the
+last stream-free rows apart from the deferred collection volume POST.
+
+- The selected manifest grows 195 -> 199 pairs (197 complete).
+- Confirmed typed implementation gaps fall 9 -> 5. The two B06 HEAD pairs and
+  three bucket backup pairs remain.
+- Task 3.9, `complete_port` and every Go declaration status (1239 partial / 41
+  missing) are unchanged.
+
+- [x] `GetInstanceExecOutputNames` and `DeleteInstanceExecOutput` are REST
+  descriptors, compared through unchanged Go RawQuery on both transports. The
+  delete rejects empty, `.`, `..` and slash names before dispatch.
+- [x] `Streams.instance_exec_output/4` streams one recorded file to an
+  acknowledged sink. A new `binary_download` record kind covers it. Its
+  independent fixtures prove:
+  - the exact path and routing, with no implicit delete
+  - native 400/403/404
+  - the byte bound, deadline, and cancellation both before and mid-stream (the
+    sink is never called again and the peer sees the socket close)
+  - unsafe names and a missing extension rejected before I/O
+- [x] `RepairInstance` sends the daemon's registered POST, compared through Go
+  RawQuery. The documented GET row lists it through an approved reconciliation,
+  with its GET view excluded (never sent). The validator now completes a
+  supplemental server row only through that record, and the evidence validator
+  accepts a manifest row's `server_route` only when it is a registered server
+  route. Negative tests cover both.
+- [x] The write harness gains a RawQuery path for REST-only writes, with fixed
+  native paths.
+- Approved exclusion (2026-10-25): cluster forwarding. Real-daemon recorded
+  output and repair effects remain separately recorded.

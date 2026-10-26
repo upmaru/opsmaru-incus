@@ -16,12 +16,18 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
       ~w(request field_presence routing native_400 native_403 native_404 native_412 response_loss_no_replay deadline cancellation preflight unconditional_rejection),
     "sync_mutation" =>
       ~w(request sync_success routing binding native_400 native_403 native_404 native_409 native_412 malformed_reply response_loss_no_replay preflight),
+    "binary_download" =>
+      ~w(request populated routing native_400 native_403 native_404 byte_bounds deadline cancellation acknowledged_sink no_implicit_delete preflight),
     "read_contract" =>
       ~w(request populated empty corrupt native_403 native_404 routing binding response_bound readiness deadline cancellation),
     "live_exec" =>
       ~w(collected non_waiting interactive record_output user_group_cwd_size empty_output routing upgrade_targets extension_guards control_frames control_range native_400 native_403 native_404 accepted_identity response_loss_no_replay stream_negotiation invalid_stream_metadata pending_status missing_channels redaction preflight stdin_chunking blocked_stdin deadline cancellation owner_loss sink_limit running_failed close_barrier_abrupt peer_closure)
   }
   @evidence_kinds ~w(named_go_differential raw_query_transport independent_fixture)
+  # A documented route the daemon does not register, reconciled to the route it does
+  # (approved source discrepancy): the row maps the registered method, never sent as
+  # the documented verb.
+  @reconciled %{"GET /1.0/instances/{}/debug/repair" => "POST /1.0/instances/{}/debug/repair"}
 
   # Classification and link integrity, plus reviewed completion-record consistency.
   # Records name their evidence; the canonical check runs the actual tests.
@@ -76,7 +82,7 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
 
     anchor!(audit["baseline_evidence"])
     for row <- rows, do: row!(row, methods, audit, server, selected_rows)
-    extras!(audit, server, keys)
+    extras!(audit, server, keys, methods)
     links!(audit)
     completion!(audit, selected, Map.new(methods, &{&1["name"], &1}))
     :ok
@@ -87,7 +93,11 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     exact = Enum.filter(methods, &(normalize(&1["verb"] <> " " <> &1["path"]) == key))
     custom = Enum.filter(methods, &(custom_pair(&1) == key and &1 not in exact))
     linked = exact ++ custom
-    assert row["methods"] == Enum.map(linked, & &1["name"]), "stale method mapping"
+
+    reconciled =
+      Enum.filter(methods, &(normalize(&1["verb"] <> " " <> &1["path"]) == @reconciled[key]))
+
+    assert row["methods"] == Enum.map(linked ++ reconciled, & &1["name"]), "stale method mapping"
     helper_ids = for {id, helper} <- audit["helpers"], helper["pair"] == key, do: id
     assert Enum.sort(row["helpers"]) == Enum.sort(helper_ids), "stale helper mapping"
 
@@ -190,7 +200,7 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     end
   end
 
-  defp extras!(audit, server, keys) do
+  defp extras!(audit, server, keys, methods) do
     extras = audit["supplemental_server_entries"]
 
     assert Enum.map(extras, & &1["pair"]) == Enum.sort(Map.keys(server) -- keys),
@@ -198,8 +208,24 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
 
     for row <- extras do
       assert row["server"] == server[row["pair"]]
-      assert row["classification"] == "missing_typed" and row["behavior_complete"] == false
+      typed = for m <- methods, normalize(m["verb"] <> " " <> m["path"]) == row["pair"], do: m
+
+      assert row["classification"] == if(typed == [], do: "missing_typed", else: "catalogue"),
+             "misleading classification"
+
       assert audit["backlog"][row["backlog"]]["exit"] not in [nil, ""]
+
+      # A server-only route completes only through the record of the documented row
+      # reconciled to it, which must list its typed methods.
+      if row["behavior_complete"] do
+        record = audit["completion_records"][row["completion_record"]]
+        assert record && typed != [], "unsupported completion claim"
+
+        assert Enum.all?(typed, &(&1["name"] in record["methods"])),
+               "unsupported completion claim"
+      else
+        assert is_nil(row["completion_record"]), "unsupported completion claim"
+      end
     end
   end
 
