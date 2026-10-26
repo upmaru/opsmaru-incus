@@ -129,6 +129,59 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: S04 file transfer certification with B06 HEAD (2026-10-26)
+
+Certify stream contract S04 under a single reviewed record and complete its 8
+rows in one PR:
+
+- instance files: read, create, delete and HEAD
+- custom volume files: read, create, delete and HEAD
+
+The two HEAD rows are the B06 gaps. With them, confirmed typed implementation
+gaps fall 5 -> 3, leaving only the bucket backup pairs.
+
+- New typed helpers `Opsmaru.Incus.Files.head/3` and `volume_head/5` send a
+  native `HEAD /files?path=...`. They return the parsed file metadata (owner,
+  group, mode, type, modification time and, for files, size) from the response
+  headers through the shared `FileHeaders` parser, which is already compared
+  with the pinned `GetInstanceFile` header parsing. An unexpected body is
+  rejected.
+- The pinned client has no HEAD or volume file method:
+  - Instance read, create and delete are compared with the named pinned
+    methods.
+  - Volume read, create and delete keep the file variants reference driver.
+  - HEAD is evidenced by independent fixtures.
+- Every helper runs on Unix and mutual TLS (the fixture requires a client
+  certificate). The contract covers:
+  - file, directory and symlink types
+  - uid, gid and mode
+  - overwrite and append write modes
+  - path selector and project/target routing
+  - binary bytes to an acknowledged sink and directory entries as metadata
+  - native 400/403/404
+  - byte and deadline bounds
+  - mid-stream cancellation and caller loss
+  - lost upload or delete replies, which are uncertain and never replayed
+  - preflight extension guards (`file_delete`, `directory_manipulation`,
+    `file_symlinks`, `file_append`)
+- A `file_transfer` record kind names the S04 cases. As decided for B08, every
+  volume type is passed through unchanged.
+
+User decisions (2026-10-26):
+
+- Add typed HEAD helpers evidenced by independent fixtures and the shared header
+  parser.
+- Approved exclusions:
+  - agent-mode file access (`/1.0/files` on an incus-agent connection), since
+    this library talks to the daemon only
+  - cluster forwarding beyond host project/target routing
+- One PR: the selected manifest grows 207 -> 215 pairs (213 complete), and the
+  certified stream contracts become S01, S03, S04 and S07.
+
+The PR updates the ledgers, closure ledger, backlog, client docs and generated
+coverage. Task 3.9, `complete_port` and every Go declaration status are
+unchanged.
+
 #### Approved slice: S07 auxiliary byte stream certification (2026-10-26)
 
 Certify stream contract S07 and complete the 8 rows linked only to it, in one PR,
