@@ -130,7 +130,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "234 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "239 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -156,12 +156,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                GetInstanceExecOutputNames DeleteInstanceExecOutput RepairInstance
                GetInstanceTemplateFiles DeleteInstanceTemplateFile
                DeleteInstanceFile
-               GetInstanceBackupNames GetInstanceBackup CreateInstanceBackup RenameInstanceBackup DeleteInstanceBackup GetStorageVolumeBackups GetStorageVolumeBackup CreateStorageVolumeBackup RenameStorageVolumeBackup DeleteStorageVolumeBackup GetStoragePoolBucketBackupNames GetStoragePoolBucketBackup CreateStoragePoolBucketBackup RenameStoragePoolBucketBackup DeleteStoragePoolBucketBackup CreateStoragePoolBucket)
+               GetInstanceBackupNames GetInstanceBackup CreateInstanceBackup RenameInstanceBackup DeleteInstanceBackup GetStorageVolumeBackups GetStorageVolumeBackup CreateStorageVolumeBackup RenameStorageVolumeBackup DeleteStorageVolumeBackup GetStoragePoolBucketBackupNames GetStoragePoolBucketBackup CreateStoragePoolBucketBackup RenameStoragePoolBucketBackup DeleteStoragePoolBucketBackup CreateStoragePoolBucket
+               RenameInstance RenameInstanceSnapshot CreateStoragePoolVolume RenameStoragePoolVolume CreateStoragePoolVolumeInCollection)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
-             "partial" => 2,
-             "complete" => 232
+             "partial" => 1,
+             "complete" => 238
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -489,6 +490,8 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"POST /1.0/images/aliases/{}", "b11_post_images_aliases_one_v1"},
              {"POST /1.0/images/{}/refresh", "b11_post_images_one_refresh_v1"},
              {"POST /1.0/images/{}/secret", "b11_post_images_one_secret_v1"},
+             {"POST /1.0/instances", "s10_migration_v1"},
+             {"POST /1.0/instances/{}", "s10_migration_v1"},
              {"POST /1.0/instances/{}/backups", "s06_archives_v1"},
              {"POST /1.0/instances/{}/backups/{}", "s06_archives_v1"},
              {"POST /1.0/instances/{}/bitmaps", "b11_post_instances_one_bitmaps_v1"},
@@ -497,6 +500,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"POST /1.0/instances/{}/metadata/templates", "s07_byte_streams_v1"},
              {"POST /1.0/instances/{}/rebuild", "b11_post_instances_one_rebuild_v1"},
              {"POST /1.0/instances/{}/snapshots", "b01_create_instance_snapshot_v1"},
+             {"POST /1.0/instances/{}/snapshots/{}", "s10_migration_v1"},
              {"POST /1.0/network-acls", "b09_post_network_acls_v1"},
              {"POST /1.0/network-acls/{}", "b09_post_network_acls_one_v1"},
              {"POST /1.0/network-address-sets", "b09_post_network_address_sets_v1"},
@@ -520,6 +524,9 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"POST /1.0/storage-pools/{}/buckets/{}/backups/{}", "s06_archives_v1"},
              {"POST /1.0/storage-pools/{}/buckets/{}/keys",
               "b08_post_storage_pools_one_buckets_one_keys_v1"},
+             {"POST /1.0/storage-pools/{}/volumes", "s10_migration_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}", "s10_migration_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}", "s10_migration_v1"},
              {"POST /1.0/storage-pools/{}/volumes/{}/{}/backups", "s06_archives_v1"},
              {"POST /1.0/storage-pools/{}/volumes/{}/{}/backups/{}", "s06_archives_v1"},
              {"POST /1.0/storage-pools/{}/volumes/{}/{}/bitmaps",
@@ -568,7 +575,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            ]
 
     assert for(%{"status" => "certified", "id" => id} <- audit["stream_contracts"], do: id) ==
-             ["S01", "S03", "S04", "S06", "S07"]
+             ["S01", "S03", "S04", "S06", "S07", "S10"]
 
     refute audit["behavior_complete"] or audit["complete_port"]
     wait = ["completion_records", "b03_native_wait_v1"]
@@ -589,6 +596,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     byte_streams = ["completion_records", "s07_byte_streams_v1"]
     file_transfer = ["completion_records", "s04_file_transfer_v1"]
     archives = ["completion_records", "s06_archives_v1"]
+    migration = ["completion_records", "s10_migration_v1"]
     events = ["completion_records", "b03_events_v1"]
     socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
     head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
@@ -702,6 +710,17 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            "missing completion evidence"},
           {update_in(audit, archives ++ ["helpers"], &List.delete(&1, "bucket_import")),
            "stale completion helpers"},
+          # S10 certification needs the relay differences, cancellation evidence, its
+          # helpers and approved differences.
+          {update_in(audit, migration ++ ["cases"], &Map.delete(&1, "relay_differences")),
+           "missing completion case"},
+          {update_in(audit, migration ++ ["cases", "remote_cancel"], fn _ -> [] end),
+           "missing completion evidence"},
+          {update_in(audit, migration ++ ["helpers"], &List.delete(&1, "volume_import")),
+           "stale completion helpers"},
+          {update_in(audit, migration ++ ["approved_differences"], fn [first | rest] ->
+             [Map.delete(first, "approved") | rest]
+           end), "unapproved exclusion"},
           # S04 certification needs the HEAD body check and its helpers.
           {update_in(audit, file_transfer ++ ["cases"], &Map.delete(&1, "head_no_body")),
            "missing completion case"},
@@ -780,14 +799,15 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
       EndpointInventory.validate!(changed, native)
     end
 
-    # Instance creation stays partial while its archive and migration contracts are open.
-    create = Enum.find(audit["entries"], &(&1["pair"] == "POST /1.0/instances"))
-    record = get_in(audit, update)
+    # Image creation stays partial while its image binary handoff contract (S05) is
+    # open, even though S10 is certified.
+    create = Enum.find(audit["entries"], &(&1["pair"] == "POST /1.0/images"))
+    record = get_in(audit, migration)
 
     changed =
       audit
-      |> put_in(update ++ ["rows"], record["rows"] ++ [create["pair"]])
-      |> put_in(update ++ ["methods"], record["methods"] ++ ["CreateInstance"])
+      |> put_in(migration ++ ["rows"], record["rows"] ++ [create["pair"]])
+      |> put_in(migration ++ ["methods"], record["methods"] ++ ["CreateImage"])
       |> Map.update!("entries", fn entries ->
         Enum.map(
           entries,
@@ -795,7 +815,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
             do:
               Map.merge(create, %{
                 "behavior_complete" => true,
-                "completion_record" => "b01_update_instance_v1"
+                "completion_record" => "s10_migration_v1"
               }),
             else: &1
           )
@@ -809,7 +829,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     # Selected rows cannot drop or claim completion independently of the full ledger.
     for {verb, pair, status} <- [
           {"GET", "/1.0/operations/{id}/wait", "partial"},
-          {"POST", "/1.0/instances", "complete"}
+          {"GET", "/1.0/operations/{id}/websocket", "complete"}
         ] do
       entries =
         Enum.map(@manifest["entries"], fn row ->

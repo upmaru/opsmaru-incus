@@ -4318,6 +4318,38 @@
       "guards": []
     },
     {
+      "name": "CreateStoragePoolVolumeInCollection",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{poolName}/volumes",
+      "params": [
+        "poolName"
+      ],
+      "query": {},
+      "extension": "storage",
+      "body": "StorageVolumesPost",
+      "model": null,
+      "result": "sync",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "storage_pool_volumes_post"
+    },
+    {
+      "name": "CreateStoragePoolVolumeInCollectionFromMigration",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{poolName}/volumes",
+      "params": [
+        "poolName"
+      ],
+      "query": {},
+      "extension": null,
+      "body": "StorageVolumesPost",
+      "model": null,
+      "result": "operation",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "storage_pool_volumes_post"
+    },
+    {
       "name": "GetServerResources",
       "verb": "GET",
       "path": "/1.0/resources",

@@ -1629,3 +1629,55 @@ and certifies it. Task 3.9, `complete_port` and every Go declaration status
 - Approved exclusions: cluster forwarding and advertised-address fallback.
   Relay, remote wait and cancel, lost copy replies, the collection volume POST
   descriptor and the certification of all five rows follow in PR 2.
+
+## S10 copy and migration certification (PR 2: copy orchestration)
+
+Approved 2026-10-27. PR 2 certifies S10 under `s10_migration_v1` (kind
+`migration`) and completes six rows:
+
+- `POST /1.0/instances`, with its S06 import modes
+- `POST /1.0/instances/{name}` and `POST /1.0/instances/{name}/snapshots/{snapshot}`
+- `POST /1.0/storage-pools/{pool}/volumes/{type}` and
+  `POST /1.0/storage-pools/{pool}/volumes/{type}/{volume}`
+- the collection `POST /1.0/storage-pools/{pool}/volumes`, deferred by B08
+
+The selected manifest grows 234 -> 239 pairs (238 complete). The certified
+stream contracts become S01, S03, S04, S06, S07 and S10. Task 3.9,
+`complete_port` and every Go declaration status (1239 partial / 41 missing) are
+unchanged.
+
+- [x] Two REST descriptors, `CreateStoragePoolVolumeInCollection` (synchronous)
+  and `CreateStoragePoolVolumeInCollectionFromMigration` (accepted operation),
+  call the collection route with the volume type in the body. They are compared
+  through unchanged Go RawQuery in the sync-mutation contract test, including
+  the copy and migration source bodies. The row is reclassified from
+  `equivalent_route` to `catalogue` (307 descriptors, 39 REST).
+- [x] `test/copy_contract_test.exs` drives the unchanged pinned `CopyInstance`,
+  `CopyInstanceSnapshot` and `CopyStoragePoolVolume` through a new
+  `copycontract` driver. On Unix and mutual HTTPS, relay agrees on every source
+  and target request, the channels opened (`control`, `fs`, plus `criu` for live
+  instances and stateful snapshots) and the bytes relayed each way. A relay probe
+  that asked the target to pull instead of push fails it.
+- [x] Remote pull and push copies (HTTPS) agree with the pinned remote operation
+  on wait success and failure. Cancellation agrees where the pinned client sends
+  one DELETE. Unix pull and push reject before any request without an approved
+  HTTPS origin.
+- [x] Lost or malformed first and second replies are uncertain, send no further
+  request and keep the accepted handle without cancellation, for every kind:
+  relay on both transports, and pull and push on HTTPS.
+- [x] `MigrateInstance` pool, project and member moves agree with the pinned
+  client.
+- Approved differences (2026-10-27), shown by tests:
+  - Relay needs identical channel sets; the pinned client relays a source
+    superset.
+  - A channel that fails to open fails the relay; the pinned client skips it.
+  - Relay is an explicit `Migration.relay/2` call.
+  - `wait_target`/`cancel_target` act on the destination. The pinned push
+    `RemoteOperation` tracks the source migrate operation. Its volume copies
+    track none, because `tryCreateStoragePoolVolume` and
+    `tryMigrateStoragePoolVolume` shadow their result.
+  - The pinned client may wrap a failure as its multi-address attempt result.
+- Approved exclusions (2026-10-27): cluster forwarding beyond host project and
+  target routing, and advertised-address fallback. Deployed-cluster, real CRIU
+  and real-daemon copy acceptance stay separately recorded. Image copy is
+  certified with S05, and the operation WebSocket row waits on S02.

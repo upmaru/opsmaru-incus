@@ -285,7 +285,7 @@ the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
 close/error/EOF semantics apply. This does not expose an arbitrary dialer or
 an OIDC adapter.
 
-The checked manifest currently has 305 JSON descriptors (268 named-Go methods and 37 REST-specific descriptors: 25 PATCH methods, four storage reads, recorded exec output list and delete, debug repair, four bucket backup calls and `GetAPIVersions`), 1239 partial
+The checked manifest currently has 307 JSON descriptors (268 named-Go methods and 39 REST-specific descriptors: 25 PATCH methods, four storage reads, recorded exec output list and delete, debug repair, four bucket backup calls, two collection volume creates and `GetAPIVersions`), 1239 partial
 reference mappings and 41 missing declarations out of 1,280. Native Incus
 method evidence is scoped to that implementation; OCI and SimpleStreams each
 have 20 partial concrete method mappings and none missing; full protocol/option
@@ -320,15 +320,16 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 234 pairs are currently in the checked
-evidence manifest. 232 are complete under reviewed completion records:
-native wait, events, exec, seven single-method B01 mutations, conditional instance
+pairs plus 46 query/access variants; 239 pairs are currently in the checked
+evidence manifest. 238 are complete under reviewed completion records:
+native wait, events, exec, all eight B01 mutations, conditional instance
 PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10
 administrative rows, all 24 B05 PATCH rows, 28 stream-free B08 storage rows and
 all nineteen stream-free B11 instance and image rows, all three B07 recorded exec
 output rows, the B12 debug repair row, the eight S07 auxiliary byte stream
-rows, the eight S04 file transfer rows and the nineteen S06 backup and archive
-rows. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
+rows, the eight S04 file transfer rows, the nineteen S06 backup and archive
+rows and the six S10 copy and migration rows. The operation WebSocket row is
+partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
@@ -897,8 +898,8 @@ plane above and these archive helpers:
   address only custom volumes.
 - No helper reads or writes a host file; callers own every source and sink.
 
-Copy and migration (stream contract S10) is not yet certified. Its typed
-control plane has contract evidence on Unix and mutual HTTPS (S10 PR 1):
+Copy and migration are certified as stream contract S10, on Unix and mutual
+HTTPS:
 
 - `RenameInstance`, `RenameInstanceSnapshot` and `RenameStoragePoolVolume`
   rename; the instance and snapshot renames reject `migration: true` before
@@ -906,17 +907,35 @@ control plane has contract evidence on Unix and mutual HTTPS (S10 PR 1):
 - `MigrateInstance`, `MigrateInstanceSnapshot` and `MigrateStoragePoolVolume`
   require `migration: true`. `MigrateInstance` checks `instance_only`, `pool`,
   `project` and `allow_inconsistent` against their extensions before dispatch,
-  and a custom volume snapshot (`volume/snapshot`) migrates through its
-  snapshot path only with `storage_api_remote_volume_snapshot_copy`.
+  and moves an instance to another pool, project or target member. A custom
+  volume snapshot (`volume/snapshot`) migrates through its snapshot path only
+  with `storage_api_remote_volume_snapshot_copy`.
 - `CreateStoragePoolVolume` (synchronous) and
   `CreateStoragePoolVolumeFromMigration` create a volume, including a local
-  copy or a pull or push migration target.
-- `CreateInstance` migration and copy sources (pull with `control`, `fs` and
-  `criu` secrets, push, and local copy) agree with the pinned client, and an
-  `instance_only` source requires `container_only_migration`.
+  copy or a pull or push migration target. The pinned client never uses the
+  collection route `POST /1.0/storage-pools/{pool}/volumes`; the REST
+  descriptors `CreateStoragePoolVolumeInCollection` and
+  `CreateStoragePoolVolumeInCollectionFromMigration` (`poolName`) send it with
+  the volume type in the body.
+- `Copy.instance/4`, `Copy.snapshot/5` and `Copy.volume/6` copy locally or by
+  pull, push or relay. Pull and push need the exact host-approved HTTPS origin;
+  advertised addresses are never tried. Live instances and stateful snapshots
+  also negotiate and relay the `criu` channel.
+- `Migration.relay/2` forwards every channel until EOF or its deadline. It
+  needs identical source and target channel sets, and a channel that fails to
+  open fails the relay and closes the others. The pinned client accepts a
+  source superset, skips a failed data channel and starts its relay inside
+  `Copy*`.
+- `Migration.wait_target/2` and `Migration.cancel_target/1` act on the
+  destination operation. In push mode the pinned `RemoteOperation` tracks the
+  source's migrate operation instead, and for volume copies it tracks none, so
+  its `CancelTarget` cannot cancel. Cancel the source explicitly with
+  `Operation.cancel/1` on `migration.source`.
+- A lost or malformed source or target reply is uncertain and is never
+  replayed. The handle already accepted (the source in pull and relay mode,
+  the target in push mode) is kept, and nothing is cancelled.
 
-Copy orchestration, relay and remote waits are certified separately, so these
-rows stay partial.
+Image copy is certified with S05, and the operation WebSocket row waits on S02.
 
 `RepairInstance` (`name`, body `%{"action" => "rebuild-config-volume"}`,
 `instances_debug_repair`) sends the daemon's registered

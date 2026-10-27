@@ -292,7 +292,8 @@
         "test/copy_test.exs",
         "test/migration_test.exs",
         "test/copy_guards_test.exs",
-        "test/copy_negotiation_reference_test.exs"
+        "test/copy_negotiation_reference_test.exs",
+        "test/copy_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -303,7 +304,8 @@
       "evidence": [
         "test/copy_test.exs",
         "test/migration_test.exs",
-        "test/copy_negotiation_reference_test.exs"
+        "test/copy_negotiation_reference_test.exs",
+        "test/copy_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -314,7 +316,8 @@
       "evidence": [
         "test/copy_test.exs",
         "test/migration_test.exs",
-        "test/copy_negotiation_reference_test.exs"
+        "test/copy_negotiation_reference_test.exs",
+        "test/copy_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3439,7 +3442,8 @@
       "elixir": "lib/opsmaru/incus/migration.ex",
       "evidence": [
         "test/migration_target_test.exs",
-        "test/copy_negotiation_reference_test.exs"
+        "test/copy_negotiation_reference_test.exs",
+        "test/copy_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3449,7 +3453,8 @@
       "elixir": "lib/opsmaru/incus/migration.ex",
       "evidence": [
         "test/migration_target_test.exs",
-        "test/copy_negotiation_reference_test.exs"
+        "test/copy_negotiation_reference_test.exs",
+        "test/copy_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3459,7 +3464,8 @@
       "elixir": "lib/opsmaru/incus/migration.ex",
       "evidence": [
         "test/copy_negotiation_reference_test.exs",
-        "test/migration_target_test.exs"
+        "test/migration_target_test.exs",
+        "test/copy_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3597,7 +3603,8 @@
         "test/copy_test.exs",
         "test/migration_test.exs",
         "test/copy_guards_test.exs",
-        "test/copy_negotiation_reference_test.exs"
+        "test/copy_negotiation_reference_test.exs",
+        "test/copy_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3608,7 +3615,8 @@
       "evidence": [
         "test/copy_test.exs",
         "test/migration_test.exs",
-        "test/copy_negotiation_reference_test.exs"
+        "test/copy_negotiation_reference_test.exs",
+        "test/copy_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3619,7 +3627,8 @@
       "evidence": [
         "test/copy_test.exs",
         "test/migration_test.exs",
-        "test/copy_negotiation_reference_test.exs"
+        "test/copy_negotiation_reference_test.exs",
+        "test/copy_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -7336,7 +7345,8 @@
       "elixir": "lib/opsmaru/incus/migration.ex",
       "evidence": [
         "test/migration_target_test.exs",
-        "test/copy_negotiation_reference_test.exs"
+        "test/copy_negotiation_reference_test.exs",
+        "test/copy_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -7346,7 +7356,8 @@
       "elixir": "lib/opsmaru/incus/migration.ex",
       "evidence": [
         "test/migration_target_test.exs",
-        "test/copy_negotiation_reference_test.exs"
+        "test/copy_negotiation_reference_test.exs",
+        "test/copy_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -7356,7 +7367,8 @@
       "elixir": "lib/opsmaru/incus/migration.ex",
       "evidence": [
         "test/copy_negotiation_reference_test.exs",
-        "test/migration_target_test.exs"
+        "test/migration_target_test.exs",
+        "test/copy_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -12171,7 +12183,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/model.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Native schema/differential model slice; optional/null and populated writable projections where cited. Remaining type-helper parity unverified."
     },
