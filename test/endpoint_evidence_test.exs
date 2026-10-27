@@ -130,7 +130,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "215 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "234 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -155,12 +155,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                DeleteImageAlias DeleteInstanceConsoleLog DeleteInstanceLogfile GetImageAliases GetImageAlias GetInstanceAccess GetInstanceLogfiles GetInstanceMetadata CreateImageAlias RenameImageAlias RefreshImage CreateImageSecret CreateInstanceBitmap RebuildInstance UpdateImageAlias UpdateImage UpdateInstances UpdateInstanceMetadata UpdateInstanceSnapshot
                GetInstanceExecOutputNames DeleteInstanceExecOutput RepairInstance
                GetInstanceTemplateFiles DeleteInstanceTemplateFile
-               DeleteInstanceFile)
+               DeleteInstanceFile
+               GetInstanceBackupNames GetInstanceBackup CreateInstanceBackup RenameInstanceBackup DeleteInstanceBackup GetStorageVolumeBackups GetStorageVolumeBackup CreateStorageVolumeBackup RenameStorageVolumeBackup DeleteStorageVolumeBackup GetStoragePoolBucketBackupNames GetStoragePoolBucketBackup CreateStoragePoolBucketBackup RenameStoragePoolBucketBackup DeleteStoragePoolBucketBackup CreateStoragePoolBucket)
              )
 
     assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
              "partial" => 2,
-             "complete" => 213
+             "complete" => 232
            }
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
@@ -309,6 +310,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"DELETE /1.0/images/aliases/{}", "b11_delete_images_aliases_one_v1"},
              {"DELETE /1.0/images/{}", "b01_delete_image_v1"},
              {"DELETE /1.0/instances/{}", "b01_delete_instance_v1"},
+             {"DELETE /1.0/instances/{}/backups/{}", "s06_archives_v1"},
              {"DELETE /1.0/instances/{}/console", "b11_delete_instances_one_console_v1"},
              {"DELETE /1.0/instances/{}/files", "s04_file_transfer_v1"},
              {"DELETE /1.0/instances/{}/logs/exec-output/{}", "b07_delete_exec_output_one_v1"},
@@ -332,10 +334,12 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"DELETE /1.0/storage-pools/{}", "b08_delete_storage_pools_one_v1"},
              {"DELETE /1.0/storage-pools/{}/buckets/{}",
               "b08_delete_storage_pools_one_buckets_one_v1"},
+             {"DELETE /1.0/storage-pools/{}/buckets/{}/backups/{}", "s06_archives_v1"},
              {"DELETE /1.0/storage-pools/{}/buckets/{}/keys/{}",
               "b08_delete_storage_pools_one_buckets_one_keys_one_v1"},
              {"DELETE /1.0/storage-pools/{}/volumes/{}/{}",
               "b08_delete_storage_pools_one_volumes_one_one_v1"},
+             {"DELETE /1.0/storage-pools/{}/volumes/{}/{}/backups/{}", "s06_archives_v1"},
              {"DELETE /1.0/storage-pools/{}/volumes/{}/{}/bitmaps/{}",
               "b08_delete_storage_pools_one_volumes_one_one_bitmaps_one_v1"},
              {"DELETE /1.0/storage-pools/{}/volumes/{}/{}/files", "s04_file_transfer_v1"},
@@ -360,6 +364,9 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/instances", "b02_instances_v1"},
              {"GET /1.0/instances/{}", "b02_instance_v1"},
              {"GET /1.0/instances/{}/access", "b11_instances_one_access_v1"},
+             {"GET /1.0/instances/{}/backups", "s06_archives_v1"},
+             {"GET /1.0/instances/{}/backups/{}", "s06_archives_v1"},
+             {"GET /1.0/instances/{}/backups/{}/export", "s06_archives_v1"},
              {"GET /1.0/instances/{}/console", "s07_byte_streams_v1"},
              {"GET /1.0/instances/{}/debug/memory", "s07_byte_streams_v1"},
              {"GET /1.0/instances/{}/debug/repair", "b12_debug_repair_v1"},
@@ -413,6 +420,9 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/storage-pools/{}", "b02_storage_pool_v1"},
              {"GET /1.0/storage-pools/{}/buckets", "b08_storage_pools_one_buckets_v1"},
              {"GET /1.0/storage-pools/{}/buckets/{}", "b08_storage_pools_one_buckets_one_v1"},
+             {"GET /1.0/storage-pools/{}/buckets/{}/backups", "s06_archives_v1"},
+             {"GET /1.0/storage-pools/{}/buckets/{}/backups/{}", "s06_archives_v1"},
+             {"GET /1.0/storage-pools/{}/buckets/{}/backups/{}/export", "s06_archives_v1"},
              {"GET /1.0/storage-pools/{}/buckets/{}/keys",
               "b08_storage_pools_one_buckets_one_keys_v1"},
              {"GET /1.0/storage-pools/{}/buckets/{}/keys/{}",
@@ -421,6 +431,9 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/storage-pools/{}/volumes", "b02_storage_volumes_v1"},
              {"GET /1.0/storage-pools/{}/volumes/{}", "b08_storage_pools_one_volumes_one_v1"},
              {"GET /1.0/storage-pools/{}/volumes/{}/{}", "b02_storage_volume_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/backups", "s06_archives_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/backups/{}", "s06_archives_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/backups/{}/export", "s06_archives_v1"},
              {"GET /1.0/storage-pools/{}/volumes/{}/{}/bitmaps",
               "b08_storage_pools_one_volumes_one_one_bitmaps_v1"},
              {"GET /1.0/storage-pools/{}/volumes/{}/{}/bitmaps/{}",
@@ -476,6 +489,8 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"POST /1.0/images/aliases/{}", "b11_post_images_aliases_one_v1"},
              {"POST /1.0/images/{}/refresh", "b11_post_images_one_refresh_v1"},
              {"POST /1.0/images/{}/secret", "b11_post_images_one_secret_v1"},
+             {"POST /1.0/instances/{}/backups", "s06_archives_v1"},
+             {"POST /1.0/instances/{}/backups/{}", "s06_archives_v1"},
              {"POST /1.0/instances/{}/bitmaps", "b11_post_instances_one_bitmaps_v1"},
              {"POST /1.0/instances/{}/exec", "b03_exec_v1"},
              {"POST /1.0/instances/{}/files", "s04_file_transfer_v1"},
@@ -500,8 +515,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"POST /1.0/projects", "b10_post_projects_v1"},
              {"POST /1.0/projects/{}", "b10_post_projects_one_v1"},
              {"POST /1.0/storage-pools", "b08_post_storage_pools_v1"},
+             {"POST /1.0/storage-pools/{}/buckets", "s06_archives_v1"},
+             {"POST /1.0/storage-pools/{}/buckets/{}/backups", "s06_archives_v1"},
+             {"POST /1.0/storage-pools/{}/buckets/{}/backups/{}", "s06_archives_v1"},
              {"POST /1.0/storage-pools/{}/buckets/{}/keys",
               "b08_post_storage_pools_one_buckets_one_keys_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}/backups", "s06_archives_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}/backups/{}", "s06_archives_v1"},
              {"POST /1.0/storage-pools/{}/volumes/{}/{}/bitmaps",
               "b08_post_storage_pools_one_volumes_one_one_bitmaps_v1"},
              {"POST /1.0/storage-pools/{}/volumes/{}/{}/files", "s04_file_transfer_v1"},
@@ -548,7 +568,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            ]
 
     assert for(%{"status" => "certified", "id" => id} <- audit["stream_contracts"], do: id) ==
-             ["S01", "S03", "S04", "S07"]
+             ["S01", "S03", "S04", "S06", "S07"]
 
     refute audit["behavior_complete"] or audit["complete_port"]
     wait = ["completion_records", "b03_native_wait_v1"]
@@ -568,6 +588,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     download = ["completion_records", "b07_exec_output_one_v1"]
     byte_streams = ["completion_records", "s07_byte_streams_v1"]
     file_transfer = ["completion_records", "s04_file_transfer_v1"]
+    archives = ["completion_records", "s06_archives_v1"]
     events = ["completion_records", "b03_events_v1"]
     socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
     head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
@@ -674,6 +695,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              cluster_update ++ ["evidence_kinds"],
              &Map.delete(&1, "admin_guards")
            ), "stale completion evidence kinds"},
+          # S06 certification needs ISO import, lost-reply evidence and its helpers.
+          {update_in(audit, archives ++ ["cases"], &Map.delete(&1, "iso_import")),
+           "missing completion case"},
+          {update_in(audit, archives ++ ["cases", "response_loss_no_replay"], fn _ -> [] end),
+           "missing completion evidence"},
+          {update_in(audit, archives ++ ["helpers"], &List.delete(&1, "bucket_import")),
+           "stale completion helpers"},
           # S04 certification needs the HEAD body check and its helpers.
           {update_in(audit, file_transfer ++ ["cases"], &Map.delete(&1, "head_no_body")),
            "missing completion case"},

@@ -1546,3 +1546,58 @@ and certifies it. Task 3.9, `complete_port` and every Go declaration status
   reject an unusable acceptance.
 - Approved exclusion: cluster forwarding. Export, direct backup POST, imports,
   ISO and the certification of all 19 rows follow in PR 2.
+
+## S06 backup and archive certification (PR 2: archive streams)
+
+Approved 2026-10-26. Stream contract S06 is certified by the single reviewed
+record `s06_archives_v1`. That record completes all 19 S06 rows:
+
+- instance, custom volume and bucket backups: list, get, create, rename,
+  delete and export
+- bucket creation, whose archive mode is bucket import
+
+It also certifies the import modes of the two rows shared with S10: instance
+backup import on `POST /1.0/instances` and volume and ISO import on
+`POST /1.0/storage-pools/{pool}/volumes/{type}`. Those rows stay partial until
+S10 is certified.
+
+- The selected manifest grows 215 -> 234 pairs (232 complete).
+- The certified stream contracts are now S01, S03, S04, S06 and S07.
+- Task 3.9, `complete_port` and every Go declaration status (1239 partial / 41
+  missing) are unchanged.
+
+- [x] A new archives reference driver invokes the pinned
+  `GetInstanceBackupFile`, `GetStorageVolumeBackupFile`,
+  `GetStoragePoolBucketBackupFile`, the three `*BackupStream` methods,
+  `CreateInstanceFromBackup`, `CreateStoragePoolVolumeFromBackup`,
+  `CreateStoragePoolVolumeFromISO` and `CreateStoragePoolBucketFromBackup` over
+  Unix or mutual TLS.
+- [x] `archive_contract_test.exs` runs every archive helper on Unix and mutual
+  TLS (the fixture requires a client certificate). It covers:
+  - export bytes for instance, bucket and all four volume types
+  - direct backup POST with schema-generated bodies, sent as the pinned client
+    normalizes them
+  - instance import with name, pool, config and device overrides (including
+    empty overrides), volume, ISO and bucket import, comparing headers, bytes
+    and the accepted operation
+  - routing with and without a target
+  - native 400/403/404
+  - byte and upload bounds and the deadline
+  - mid-stream cancellation and caller loss for exports and direct POST
+  - lost import and direct backup replies that are uncertain and never resent
+  - no implicit host files
+  - extension guards, the ISO name and invalid or oversized bodies rejected
+    before I/O
+
+  Renaming the pool override header made the import comparison fail, so the
+  test does catch header errors. The pinned volume methods address only custom
+  volumes, and the pinned instance and bucket exports and every pinned direct
+  backup POST omit the target; those cases are fixture-checked. Canceling a
+  direct backup POST is uncertain, like every canceled mutation.
+- [x] The control plane keeps its PR 1 evidence in the inspection and
+  sync-mutation contract tests. A new `archive` record kind names all cases,
+  with negative tests. Export, direct POST and import helpers are linked to
+  their rows.
+- Approved exclusion (2026-10-26): cluster forwarding beyond host project and
+  target routing. Real-daemon archive contents and restores remain separately
+  recorded.
