@@ -897,6 +897,27 @@ plane above and these archive helpers:
   address only custom volumes.
 - No helper reads or writes a host file; callers own every source and sink.
 
+Copy and migration (stream contract S10) is not yet certified. Its typed
+control plane has contract evidence on Unix and mutual HTTPS (S10 PR 1):
+
+- `RenameInstance`, `RenameInstanceSnapshot` and `RenameStoragePoolVolume`
+  rename; the instance and snapshot renames reject `migration: true` before
+  dispatch.
+- `MigrateInstance`, `MigrateInstanceSnapshot` and `MigrateStoragePoolVolume`
+  require `migration: true`. `MigrateInstance` checks `instance_only`, `pool`,
+  `project` and `allow_inconsistent` against their extensions before dispatch,
+  and a custom volume snapshot (`volume/snapshot`) migrates through its
+  snapshot path only with `storage_api_remote_volume_snapshot_copy`.
+- `CreateStoragePoolVolume` (synchronous) and
+  `CreateStoragePoolVolumeFromMigration` create a volume, including a local
+  copy or a pull or push migration target.
+- `CreateInstance` migration and copy sources (pull with `control`, `fs` and
+  `criu` secrets, push, and local copy) agree with the pinned client, and an
+  `instance_only` source requires `container_only_migration`.
+
+Copy orchestration, relay and remote waits are certified separately, so these
+rows stay partial.
+
 `RepairInstance` (`name`, body `%{"action" => "rebuild-config-volume"}`,
 `instances_debug_repair`) sends the daemon's registered
 `POST /1.0/instances/{name}/debug/repair`. The REST document lists this route

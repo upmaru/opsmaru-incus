@@ -21,12 +21,15 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   @s06 ~w(CreateInstanceBackup RenameInstanceBackup DeleteInstanceBackup CreateStorageVolumeBackup RenameStorageVolumeBackup DeleteStorageVolumeBackup CreateStoragePoolBucketBackup DeleteStoragePoolBucketBackup CreateStoragePoolBucket)
   # S07: the metadata template delete.
   @s07 ~w(DeleteInstanceTemplateFile)
+  # S10 PR 1: the instance, snapshot and custom volume rename and migration control
+  # plane, and volume creation as a copy or migration target.
+  @s10 ~w(RenameInstance MigrateInstance RenameInstanceSnapshot MigrateInstanceSnapshot CreateStoragePoolVolume CreateStoragePoolVolumeFromMigration RenameStoragePoolVolume MigrateStoragePoolVolume)
   @all_methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
   @methods Enum.filter(
              @all_methods,
-             &(&1["name"] in (@b09 ++ @b10 ++ @b08 ++ @b11 ++ @rest ++ @s07 ++ @s06))
+             &(&1["name"] in (@b09 ++ @b10 ++ @b08 ++ @b11 ++ @rest ++ @s07 ++ @s06 ++ @s10))
            )
-  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings storage storage_buckets storage_volume_nbd storage_api_volume_snapshots storage_volumes_rebuild console container_log_delete image_force_refresh instances_rebuild container_edit_metadata snapshot_expiry container_exec_recording instances_debug_repair container_backup custom_volume_backup storage_bucket_backup storage_buckets_create_credentials)
+  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings storage storage_buckets storage_volume_nbd storage_api_volume_snapshots storage_volumes_rebuild console container_log_delete image_force_refresh instances_rebuild container_edit_metadata snapshot_expiry container_exec_recording instances_debug_repair container_backup custom_volume_backup storage_bucket_backup storage_buckets_create_credentials container_only_migration instance_pool_move instance_project_move cluster_migration_inconsistent_copy storage_api_volume_rename storage_api_remote_volume_handling storage_api_remote_volume_snapshot_copy)
   @uuid "01234567-89ab-cdef-0123-456789abcdef"
   @url "/1.0/operations/" <> @uuid
   @etag "\"before\""
@@ -40,7 +43,7 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 103
+    assert length(@methods) == 111
     assert Enum.all?(@methods, &(&1["result"] in ["sync", "model", "operation"]))
     :ok
   end
@@ -114,6 +117,85 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       for method <- methods,
           guard <- method["guards"],
           do: guarded(root, identity, method, guard, body(method))
+    end
+
+    test "#{transport} guarded migration fields reject before dispatch", %{root: root} do
+      identity = identity(root, unquote(transport))
+      methods = for method <- @methods, method["name"] in @s10, method["guards"] != [], do: method
+
+      # The pinned client's own checks, so a dropped catalogue guard cannot pass unseen.
+      assert Map.new(methods, &{&1["name"], Enum.map(&1["guards"], fn g -> g["field"] end)}) ==
+               %{
+                 "RenameInstance" => ["migration"],
+                 "RenameInstanceSnapshot" => ["migration"],
+                 "MigrateInstance" => ~w(migration instance_only pool project allow_inconsistent),
+                 "MigrateInstanceSnapshot" => ["migration"],
+                 "MigrateStoragePoolVolume" => ["migration"]
+               }
+
+      # Each extension guard is checked alone; the migration flag stays as required.
+      for method <- methods, guard <- method["guards"] do
+        others =
+          for other <- method["guards"], other != guard, other["extension"], do: other["field"]
+
+        guarded(root, identity, method, guard, Map.drop(body(method), others))
+      end
+
+      # An instance-only copy or migration target needs container_only_migration.
+      create = Enum.find(@all_methods, &(&1["name"] == "CreateInstance"))
+      [{_, pull} | _] = instance_sources()
+      guarded(root, identity, create, hd(create["guards"]), pull)
+
+      # A volume snapshot migrates only with storage_api_remote_volume_snapshot_copy.
+      migrate = Enum.find(@methods, &(&1["name"] == "MigrateStoragePoolVolume"))
+      snapshot = %{body(migrate) | "name" => "fixture-volume/fixture-snapshot"}
+
+      guarded(
+        root,
+        identity,
+        migrate,
+        %{"extension" => "storage_api_remote_volume_snapshot_copy"},
+        snapshot
+      )
+    end
+
+    test "#{transport} copy and migration sources agree with the pinned client", %{root: root} do
+      identity = identity(root, unquote(transport))
+      create = Enum.find(@all_methods, &(&1["name"] == "CreateInstance"))
+      volume = Enum.find(@methods, &(&1["name"] == "CreateStoragePoolVolumeFromMigration"))
+      local = Enum.find(@methods, &(&1["name"] == "CreateStoragePoolVolume"))
+      migrate = Enum.find(@methods, &(&1["name"] == "MigrateStoragePoolVolume"))
+
+      for {_, body} <- instance_sources(),
+          outcome <- [{:wait, 200}, 400],
+          do: compare(root, identity, Map.put(create, "sample", body), outcome)
+
+      for {_, body} <- volume_sources(),
+          outcome <- [{:wait, 200}, 400],
+          do: compare(root, identity, Map.put(volume, "sample", body), outcome)
+
+      # A local volume copy is synchronous, for every daemon volume type.
+      for type <- @volume_types, outcome <- [:sync, 400] do
+        body = %{
+          "name" => "fixture-copy",
+          "type" => type,
+          "source" => %{
+            "type" => "copy",
+            "name" => "fixture-origin",
+            "pool" => "fixture-pool",
+            "project" => "fixture-project",
+            "location" => "member/b",
+            "volume_only" => true,
+            "refresh" => true
+          }
+        }
+
+        compare(root, identity, Map.put(local, "sample", body), outcome)
+      end
+
+      # A volume snapshot migrates through its snapshot path.
+      snapshot = %{body(migrate) | "name" => "fixture-volume/fixture-snapshot"}
+      compare(root, identity, Map.put(migrate, "sample", snapshot), {:wait, 200})
     end
 
     test "#{transport} untrusted clients bootstrap trust with a trust token", %{root: root} do
@@ -438,6 +520,14 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
 
   defp body(%{"body" => nil}), do: nil
 
+  # An explicit request body, such as a copy or migration source variant.
+  defp body(%{"sample" => body}), do: body
+
+  # A rename never asks for a migration; that guard has its own test.
+  defp body(%{"name" => name, "body" => model})
+       when name in ~w(RenameInstance RenameInstanceSnapshot),
+       do: %{ModelSamples.generate(model) | "migration" => false}
+
   # A local peer avoids the integration guard; that guard has its own test.
   defp body(%{"name" => "CreateNetworkPeer", "body" => model}),
     do: %{ModelSamples.generate(model) | "type" => "local"}
@@ -467,6 +557,75 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
         {param, legal(method, param) <> param}
     end)
   end
+
+  # Instance targets: a pull migration with live and CRIU channels, a push migration
+  # target refreshing an existing instance, and a local copy from another project.
+  defp instance_sources,
+    do: [
+      {:pull,
+       %{
+         "name" => "fixture-guest",
+         "type" => "container",
+         "source" => %{
+           "type" => "migration",
+           "mode" => "pull",
+           "operation" => "https://origin.example:8443/1.0/operations/" <> @uuid,
+           "certificate" => "fixture-certificate",
+           "secrets" => %{"control" => "c0", "fs" => "f0", "criu" => "k0"},
+           "live" => true,
+           "instance_only" => true,
+           "allow_inconsistent" => true
+         }
+       }},
+      {:push,
+       %{
+         "name" => "fixture-guest",
+         "type" => "virtual-machine",
+         "source" => %{
+           "type" => "migration",
+           "mode" => "push",
+           "refresh" => true,
+           "refresh_exclude_older" => true
+         }
+       }},
+      {:copy,
+       %{
+         "name" => "fixture-guest",
+         "type" => "container",
+         "profiles" => ["default"],
+         "source" => %{
+           "type" => "copy",
+           "source" => "fixture-origin/fixture-snapshot",
+           "project" => "fixture-project",
+           "base-image" => "fixture-image",
+           "refresh" => true
+         }
+       }}
+    ]
+
+  # Custom volume migration targets, pulled with explicit channels or pushed.
+  defp volume_sources,
+    do: [
+      {:pull,
+       %{
+         "name" => "fixture-volume",
+         "type" => "custom",
+         "source" => %{
+           "type" => "migration",
+           "mode" => "pull",
+           "operation" => "https://origin.example:8443/1.0/operations/" <> @uuid,
+           "certificate" => "fixture-certificate",
+           "secrets" => %{"control" => "c0", "fs" => "f0"},
+           "volume_only" => true
+         }
+       }},
+      {:push,
+       %{
+         "name" => "fixture-volume",
+         "type" => "custom",
+         "source" => %{"type" => "migration", "mode" => "push", "refresh" => true}
+       }}
+    ]
 
   defp volume_type(method, param), do: Map.get(method, "volume_type", "fixture /" <> param)
 

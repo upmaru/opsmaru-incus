@@ -1601,3 +1601,31 @@ S10 is certified.
 - Approved exclusion (2026-10-26): cluster forwarding beyond host project and
   target routing. Real-daemon archive contents and restores remain separately
   recorded.
+
+## S10 copy and migration certification (PR 1: migration control plane)
+
+Approved 2026-10-27. PR 1 adds contract evidence for the S10 migration control
+plane. No row completes and S10 stays open until PR 2 adds copy orchestration
+and certifies it. Task 3.9, `complete_port` and every Go declaration status
+(1239 partial / 41 missing) are unchanged.
+
+- [x] The sync-mutation contract test now covers 111 write methods. It adds
+  `RenameInstance`, `MigrateInstance`, `RenameInstanceSnapshot`,
+  `MigrateInstanceSnapshot`, `CreateStoragePoolVolume`,
+  `CreateStoragePoolVolumeFromMigration`, `RenameStoragePoolVolume` and
+  `MigrateStoragePoolVolume` on Unix and mutual HTTPS: schema-driven bodies,
+  native synchronous success or accepted operations with native `/wait`,
+  native 400/403/404/409/412, lost or malformed replies that are uncertain and
+  never replayed, and every daemon volume type for the volume rename.
+- [x] Guards reject before dispatch on both sides: the `migration` true/false
+  checks, `MigrateInstance` `instance_only`, `pool`, `project` and
+  `allow_inconsistent`, `CreateInstance` `instance_only`, and the custom volume
+  snapshot migration. The test pins the expected guard table, so a dropped
+  catalogue guard fails (probed by removing the `pool` guard).
+- [x] `CreateInstance` pull (live, with `control`, `fs` and `criu` secrets),
+  push (refresh) and local copy sources, custom volume pull and push targets,
+  local volume copy for every daemon volume type and the volume snapshot
+  migration path agree with the pinned client, accepted or rejected.
+- Approved exclusions: cluster forwarding and advertised-address fallback.
+  Relay, remote wait and cancel, lost copy replies, the collection volume POST
+  descriptor and the certification of all five rows follow in PR 2.
