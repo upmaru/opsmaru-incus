@@ -236,11 +236,21 @@ defmodule Opsmaru.Incus.CopyContractTest do
 
     log = start_supervised!({Agent, fn -> [] end}, id: make_ref())
 
-    source =
-      backend(root, identity, "source", source_channels, log, close_after: 150, refuse: refuse)
+    # The source closes each channel once the target's frame reached it; the target's
+    # operation completes only after the expected frames were relayed, so the pinned
+    # client cannot finish before its relay.
+    relayed =
+      if refuse || match?([source: _, target: _], channels),
+        do: 2,
+        else: 2 * length(source_channels)
+
+    source = backend(root, identity, "source", source_channels, log, close: true, refuse: refuse)
 
     target =
-      backend(root, identity, "target", target_channels, log, wait_delay: 600, refuse: refuse)
+      backend(root, identity, "target", target_channels, log,
+        await_frames: relayed,
+        refuse: refuse
+      )
 
     {result, relay} =
       case who do
@@ -267,7 +277,7 @@ defmodule Opsmaru.Incus.CopyContractTest do
           do: {request.method, request.target, Jason.decode!(request.body)}
         ),
       sockets: %{"source" => sockets(source), "target" => sockets(target)},
-      frames: Enum.sort(Agent.get(log, & &1)),
+      frames: frames(log),
       deletes:
         Enum.count(
           HTTPFixture.requests(source.fixture) ++ HTTPFixture.requests(target.fixture),
@@ -451,9 +461,15 @@ defmodule Opsmaru.Incus.CopyContractTest do
 
   defp respond(side, %{method: "POST"}, _path) do
     case side.opts[:reply] do
-      :lost -> %{raw: ""}
-      :malformed -> %{status: 200, body: "malformed"}
-      _ -> accepted(side.name, side.secrets)
+      :lost ->
+        %{raw: ""}
+
+      :malformed ->
+        %{status: 200, body: "malformed"}
+
+      _ ->
+        Agent.update(side.log, &[{:posted, side.name} | &1])
+        accepted(side.name, side.secrets)
     end
   end
 
@@ -464,7 +480,12 @@ defmodule Opsmaru.Incus.CopyContractTest do
     if String.ends_with?(path, "/websocket") do
       upgrade(side, request)
     else
-      Process.sleep(side.opts[:wait_delay] || 0)
+      # Only operation waits and polls settle; other reads (a parent instance) answer now.
+      if String.starts_with?(path, "/1.0/operations/") do
+        deadline = System.monotonic_time(:millisecond) + 3_000
+        settle(side.log, side.opts[:await_frames] || 0, deadline)
+      end
+
       %{status: 200, body: %{type: "sync", metadata: operation(side.name, side.opts[:outcome])}}
     end
   end
@@ -476,7 +497,8 @@ defmodule Opsmaru.Incus.CopyContractTest do
 
     if channel && channel != side.opts[:refuse],
       do: %{
-        upgrade: &channel(&1, &2, request, side.name, channel, side.log, side.opts[:close_after])
+        upgrade:
+          &channel(&1, &2, request, side.name, channel, side.log, side.opts[:close] || false)
       },
       else: %{status: 403, body: %{type: "error", error_code: 403, error: "refused"}}
   end
@@ -508,9 +530,24 @@ defmodule Opsmaru.Incus.CopyContractTest do
   defp operation(name, _),
     do: %{id: name, status: "Success", status_code: 200, err: "", may_cancel: false}
 
-  # One operation channel: complete the upgrade, send this side's frame, record every
-  # frame received, and (on the source) close after a delay so the relay ends.
-  defp channel(transport, socket, request, name, channel, log, close_after) do
+  # An operation answers only once both sides were asked (the pinned push copy issues
+  # its source request in the background) and the expected frames were relayed.
+  defp settle(log, frames, deadline) do
+    posted = Enum.count(Agent.get(log, & &1), &match?({:posted, _}, &1))
+
+    if (posted < 2 or length(frames(log)) < frames) and
+         System.monotonic_time(:millisecond) < deadline do
+      Process.sleep(10)
+      settle(log, frames, deadline)
+    end
+  end
+
+  defp frames(log), do: Enum.sort(for {_, _, _} = frame <- Agent.get(log, & &1), do: frame)
+
+  # One operation channel: complete the upgrade, send this side's frame and record every
+  # frame received. The source closes once the other side's frame arrived (or after a
+  # bound, when none comes), so the relay ends.
+  defp channel(transport, socket, request, name, channel, log, close) do
     accept = Base.encode64(:crypto.hash(:sha, request.headers["sec-websocket-key"] <> @guid))
 
     :ok =
@@ -521,17 +558,17 @@ defmodule Opsmaru.Incus.CopyContractTest do
         WebSocketFixture.frame(2, name <> ":" <> channel)
       ])
 
-    if close_after do
+    if close do
       spawn(fn ->
-        Process.sleep(close_after)
+        Process.sleep(1_500)
         transport.send(socket, WebSocketFixture.frame(8, <<1000::16>>))
       end)
     end
 
-    receive_frames(transport, socket, name, channel, log)
+    receive_frames(transport, socket, name, channel, log, close)
   end
 
-  defp receive_frames(transport, socket, name, channel, log) do
+  defp receive_frames(transport, socket, name, channel, log, close) do
     with {:ok, <<_::4, opcode::4, 1::1, length::7>>} <- transport.recv(socket, 2, 3_000),
          true <- length <= 125,
          {:ok, <<mask::binary-size(4), payload::binary-size(length)>>} <-
@@ -540,7 +577,8 @@ defmodule Opsmaru.Incus.CopyContractTest do
 
       if opcode in [1, 2] do
         Agent.update(log, &[{name, channel, data} | &1])
-        receive_frames(transport, socket, name, channel, log)
+        if close, do: transport.send(socket, WebSocketFixture.frame(8, <<1000::16>>))
+        receive_frames(transport, socket, name, channel, log, false)
       end
     end
   end
