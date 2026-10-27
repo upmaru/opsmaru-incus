@@ -129,6 +129,85 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: S10 copy and migration certification (2026-10-27)
+
+Certify stream contract S10 under a single reviewed record and complete the
+five rows that then have no open stream contract:
+
+- `POST /1.0/instances`, whose S06 import modes are already certified
+- instance rename and migration on `POST /1.0/instances/{name}`
+- snapshot rename and migration on `POST /1.0/instances/{name}/snapshots/{snapshot}`
+- volume create, migration target and import on
+  `POST /1.0/storage-pools/{pool}/volumes/{type}`
+- custom volume rename, move and migration on
+  `POST /1.0/storage-pools/{pool}/volumes/{type}/{volume}`
+
+The collection `POST /1.0/storage-pools/{pool}/volumes`, deferred by B08 to
+volume create, completes with them. The operation WebSocket row stays partial
+while S02 is open, and both image rows (`POST /1.0/images` and image export)
+stay partial while S05 is open.
+
+User decisions (2026-10-27):
+
+- Image copy is deferred to S05. S10 does not change `Images.copy`; its origin,
+  option validation and private, alias, profile, auto-update and relay
+  comparisons land with the image rows they complete.
+- Relay stays strict and fail-closed. Where it agrees with the pinned
+  `proxyMigration`, channel names and relayed bytes are compared. Three
+  differences are recorded as approved:
+  - source and target secret sets must be identical, where the pinned client
+    accepts a source superset
+  - a channel that fails to open closes every channel, where the pinned client
+    skips that data socket
+  - relay is an explicit `Migration.relay/2` call, not started inside `Copy.*`
+- Live instance and stateful snapshot migration use generic channel evidence:
+  `control`, `fs` and `criu` are host-approved channels negotiated and relayed
+  on both transports. Real CRIU acceptance stays a separate gate.
+- Add a typed REST descriptor for the collection volume POST, mirroring the
+  `CreateStoragePoolVolume` and `CreateStoragePoolVolumeFromMigration` bodies
+  and compared through unchanged Go RawQuery plus fixtures.
+- Two PRs. Rows linked to S10 complete only once S10 is certified.
+
+PR 1: migration control plane, with rows still partial.
+
+- `RenameInstance`, `MigrateInstance`, `RenameInstanceSnapshot`,
+  `MigrateInstanceSnapshot`, `CreateStoragePoolVolume`,
+  `CreateStoragePoolVolumeFromMigration`, `RenameStoragePoolVolume` and
+  `MigrateStoragePoolVolume` join the sync- and async-mutation contract tests on
+  Unix and mutual HTTPS, compared with the named pinned methods.
+- Coverage includes schema-driven bodies, the `migration` true/false guards and
+  every extension guard before dispatch (`instance_only`, pool and project
+  move, `allow_inconsistent`, volume rename, remote volume handling and
+  snapshot copy), accepted operations with native `/wait`, native
+  400/403/404/409 and lost or malformed replies that are uncertain and never
+  replayed.
+- `CreateInstance` migration and copy sources (pull, push and local copy) are
+  compared on both transports. No row completes and S10 stays open.
+
+PR 2: copy orchestration and certification.
+
+- `Copy.instance/4`, `Copy.snapshot/5` and `Copy.volume/6` in relay mode end
+  to end on both transports, compared with the pinned `Copy*` relay where the
+  behaviour agrees, plus the three recorded relay differences.
+- Remote pull and push copies with `wait_target` and `cancel_target` compared
+  with the pinned `RemoteOperation` `Wait` and `CancelTarget`.
+- Lost or malformed source and target replies are uncertain and never
+  replayed. A push whose source fails keeps the accepted target handle.
+- `MigrateInstance` pool, project and target-member moves, and live and
+  stateful negotiation and relay with `control`, `fs` and `criu`.
+- The collection volume POST descriptor.
+- A `migration` record kind certifies S10 and completes all five rows and the
+  collection POST. The selected manifest grows 234 -> 239 pairs (238
+  complete), and the certified stream contracts become S01, S03, S04, S06, S07
+  and S10.
+
+Approved exclusions: cluster forwarding beyond host project/target routing, and
+trying each address a server advertises. Pull and push use one host-approved
+origin. Deployed-cluster and real CRIU acceptance stay separately recorded. Each
+PR updates the ledgers, closure ledger, backlog, client docs and generated
+coverage. Task 3.9, `complete_port` and every Go declaration status are
+unchanged.
+
 #### Approved slice: S06 backup and archive certification (2026-10-26)
 
 Certify stream contract S06 under a single reviewed record and complete the 19

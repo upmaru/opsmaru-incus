@@ -70,6 +70,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** reads agree with the pinned client for populated/empty/corrupt results, native 403/404, routing, extensions and lifetime cleanup, and synchronous writes agree for request bodies, ETags and native rejection while lost or malformed replies are uncertain and never replayed
 - **AND** reviewed records list each completed row, selectors the pinned client does not send and cluster forwarding are approved exclusions, and the metrics and ACL log rows stay partial while S07 is open
 
+#### Scenario: Certified copy and migration
+
+- **WHEN** a caller renames or migrates an instance, snapshot or custom volume, creates a volume or migration target, or copies an instance, snapshot or volume locally or by pull, push or relay, over Unix or mutual HTTPS
+- **THEN** requests, bodies, guards, routing, accepted operations, relayed channels and remote waits agree with the pinned client, or with unchanged RawQuery transport for the collection volume POST it lacks. Native errors are preserved; pull and push use only the host-approved origin; lost or malformed source and target replies are uncertain and never replayed; and relay closes every channel when any channel fails
+- **AND** S10 is certified by a single reviewed record; identical relay secret sets, fail-closed relay and explicit relay are recorded approved differences; cluster forwarding and advertised-address fallback are recorded approved exclusions; and the operation WebSocket and image rows stay partial while S02 and S05 are open
+
 #### Scenario: Certified backups and archives
 
 - **WHEN** a caller lists, gets, creates, renames, deletes or exports an instance, custom volume or bucket backup, streams a direct backup, or imports an instance, volume, ISO or bucket archive, over Unix or mutual HTTPS

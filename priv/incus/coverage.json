@@ -394,7 +394,8 @@
       "evidence": [
         "test/resource_slice_test.exs",
         "test/mutation_lifecycle_test.exs",
-        "test/native_wait_reference_test.exs"
+        "test/native_wait_reference_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
@@ -653,7 +654,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -684,7 +686,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -2739,7 +2742,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/migration_test.exs"
+        "test/migration_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -2749,7 +2753,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/migration_test.exs"
+        "test/migration_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -2759,7 +2764,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/migration_test.exs"
+        "test/migration_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -2877,7 +2883,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -2895,7 +2902,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -2964,7 +2972,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -3690,7 +3699,8 @@
       "evidence": [
         "test/resource_slice_test.exs",
         "test/mutation_lifecycle_test.exs",
-        "test/native_wait_reference_test.exs"
+        "test/native_wait_reference_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Initial mutation lifecycle v1: bounded named-Go request/acceptance and direct native /wait running/success/failure composition over Unix/mutual HTTPS, including instance update/restore, applicable PUT ETags, native rejection, malformed/lost replies, retained identity and no replay. DeleteOperation is synchronous acknowledgement; public cancellation permission/race/lost-reply behavior has independent fixtures, not full Go Cancel parity. Broader bodies, source/state/extension/error/cluster variants and real-backend acceptance remain unverified; whole endpoints and declarations stay partial."
     },
@@ -3949,7 +3959,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -3980,7 +3991,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -6254,7 +6266,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/migration_test.exs"
+        "test/migration_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -6264,7 +6277,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/migration_test.exs"
+        "test/migration_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -6274,7 +6288,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/migration_test.exs"
+        "test/migration_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -6392,7 +6407,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -6410,7 +6426,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -6479,7 +6496,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
