@@ -1680,4 +1680,5 @@ unchanged.
 - Approved exclusions (2026-10-27): cluster forwarding beyond host project and
   target routing, and advertised-address fallback. Deployed-cluster, real CRIU
   and real-daemon copy acceptance stay separately recorded. Image copy is
-  certified with S05, and the operation WebSocket row waits on S02.
+  not certified here: it belongs to the still-open S05 contract, and the
+  operation WebSocket row waits on S02.

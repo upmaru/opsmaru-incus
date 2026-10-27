@@ -134,7 +134,11 @@ defmodule Opsmaru.Incus.CopyContractTest do
       native_target = HTTPFixture.requests(target.fixture)
       native_source = HTTPFixture.requests(source.fixture)
 
-      {source, target} = pair(root, identity, %{}, outcome)
+      # The source answers its own operation with the opposite outcome, so a wait on
+      # the wrong side reports the wrong result.
+      {source, target} =
+        pair(root, identity, %{}, %{"source" => opposite(outcome), "target" => outcome})
+
       assert {:ok, migration} = copy(kind, mode, source, target)
       assert migration.mode == mode
 
@@ -143,6 +147,7 @@ defmodule Opsmaru.Incus.CopyContractTest do
           assert native["completed"], inspect(native)
           assert {:ok, waited} = Migration.wait_target(migration, timeout: 2_000)
           assert Operation.successful?(waited.target)
+          assert waits(source) == [] and waits(target) != []
 
         :failure ->
           # The pinned client may wrap the failure as its multi-address attempt result
@@ -154,6 +159,7 @@ defmodule Opsmaru.Incus.CopyContractTest do
                    Migration.wait_target(migration, timeout: 2_000)
 
           assert Operation.data(%{migration.target | response: error.response})["err"] == "boom"
+          assert waits(source) == [] and waits(target) != []
 
         :cancel ->
           # The pinned RemoteOperation tracks the operation that drives the copy: the
@@ -357,7 +363,8 @@ defmodule Opsmaru.Incus.CopyContractTest do
       project: "fixture"
     }
 
-  # Source and target backends whose POST replies may be lost or malformed.
+  # Source and target backends whose POST replies may be lost or malformed, answering
+  # their operation with one outcome or, by side name, one each.
   defp pair(root, identity, replies, outcome \\ :success) do
     log = start_supervised!({Agent, fn -> [] end}, id: make_ref())
 
@@ -366,7 +373,7 @@ defmodule Opsmaru.Incus.CopyContractTest do
           do:
             backend(root, identity, name, ~w(control fs), log,
               reply: Map.get(replies, name, :accept),
-              outcome: outcome
+              outcome: if(is_map(outcome), do: Map.fetch!(outcome, name), else: outcome)
             )
 
     List.to_tuple(sides)
@@ -378,6 +385,20 @@ defmodule Opsmaru.Incus.CopyContractTest do
       for(
         request <- Map.fetch!(requests, String.to_atom(name)),
         request.method == "DELETE",
+        do: request.target
+      )
+
+  defp opposite(:success), do: :failure
+  defp opposite(:failure), do: :success
+  defp opposite(outcome), do: outcome
+
+  # The operation reads (waits and polls) a side received.
+  defp waits(side),
+    do:
+      for(
+        request <- HTTPFixture.requests(side.fixture),
+        request.method == "GET",
+        String.starts_with?(request.target, "/1.0/operations/"),
         do: request.target
       )
 

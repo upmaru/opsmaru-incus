@@ -935,7 +935,7 @@ HTTPS:
   replayed. The handle already accepted (the source in pull and relay mode,
   the target in push mode) is kept, and nothing is cancelled.
 
-Image copy is certified with S05, and the operation WebSocket row waits on S02.
+Image copy is not certified here: it belongs to the still-open S05 contract, and the operation WebSocket row waits on S02.
 
 `RepairInstance` (`name`, body `%{"action" => "rebuild-config-volume"}`,
 `instances_debug_repair`) sends the daemon's registered
