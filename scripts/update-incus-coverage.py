@@ -18,7 +18,7 @@ helpers = {
 for name in ['GetImageFile','GetImageAliasType','GetImageAliasArchitectures','GetImageSecret','CopyImage']:
  helpers[name]=('lib/opsmaru/incus/images.ex',['test/image_transfer_test.exs'])
 for name in ['GetInstanceFile','CreateInstanceFile','CreateInstanceFromBackup']:
- helpers[name]=('lib/opsmaru/incus/files.ex',['test/file_reference_test.exs'] + (['test/file_transfer_contract_test.exs'] if name != 'CreateInstanceFromBackup' else []))
+ helpers[name]=('lib/opsmaru/incus/files.ex',['test/file_reference_test.exs'] + (['test/file_transfer_contract_test.exs'] if name != 'CreateInstanceFromBackup' else ['test/archive_contract_test.exs']))
 for name in ['GetInstanceFileSFTPConn','GetInstanceNBDConn']:
  helpers[name]=('lib/opsmaru/incus/raw_channel.ex',['test/raw_channel_test.exs','test/native_upgrade_reference_test.exs','test/tls_stream_test.exs'])
 sftp_helpers = ['GetInstanceFileSFTP','GetStoragePoolVolumeFileSFTP']
@@ -76,7 +76,7 @@ models.add('ServerEnvironment')
 helpers['SendEvent']=('lib/opsmaru/incus/events.ex',['test/event_send_test.exs'])
 models.add('Event')
 for name in ['GetStorageVolumeFile','CreateStorageVolumeFile','DeleteStorageVolumeFile','GetInstanceBackupFile','GetStorageVolumeBackupFile','GetStoragePoolBucketBackupFile','CreateInstanceBackupStream','CreateStorageVolumeBackupStream','CreateStoragePoolBucketBackupStream','CreateStoragePoolVolumeFromBackup','CreateStoragePoolVolumeFromISO','CreateStoragePoolBucketFromBackup']:
- helpers[name]=('lib/opsmaru/incus/files.ex',['test/file_variants_reference_test.exs','test/backup_variants_test.exs'] + (['test/file_transfer_contract_test.exs'] if name.endswith('StorageVolumeFile') else []))
+ helpers[name]=('lib/opsmaru/incus/files.ex',['test/file_variants_reference_test.exs','test/backup_variants_test.exs'] + (['test/file_transfer_contract_test.exs'] if name.endswith('StorageVolumeFile') else ['test/archive_contract_test.exs']))
 for name in ['StatusCode.String','StatusCode.IsFinal','StatusCodeFromString']:
  helpers[name]=('lib/opsmaru/incus/status.ex',['test/model_helpers_reference_test.exs'])
 for name in ['GetStoragePoolVolumeFileSFTPConn','GetStoragePoolVolumeBlockNBDConn']:

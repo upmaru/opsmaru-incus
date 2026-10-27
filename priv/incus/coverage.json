@@ -413,7 +413,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -442,7 +443,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
-        "test/file_reference_test.exs"
+        "test/file_reference_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -620,7 +622,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -630,7 +633,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -659,7 +663,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -669,7 +674,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -707,7 +713,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -1316,7 +1323,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -2245,7 +2253,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -2621,7 +2630,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3699,7 +3709,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3728,7 +3739,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
-        "test/file_reference_test.exs"
+        "test/file_reference_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3906,7 +3918,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3916,7 +3929,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3945,7 +3959,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3955,7 +3970,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3993,7 +4009,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -4785,7 +4802,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -5740,7 +5758,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -6116,7 +6135,8 @@
       "elixir": "lib/opsmaru/incus/files.ex",
       "evidence": [
         "test/file_variants_reference_test.exs",
-        "test/backup_variants_test.exs"
+        "test/backup_variants_test.exs",
+        "test/archive_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },

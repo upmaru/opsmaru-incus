@@ -320,14 +320,15 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 215 pairs are currently in the checked
-evidence manifest. 213 are complete under reviewed completion records:
+pairs plus 46 query/access variants; 234 pairs are currently in the checked
+evidence manifest. 232 are complete under reviewed completion records:
 native wait, events, exec, seven single-method B01 mutations, conditional instance
 PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10
 administrative rows, all 24 B05 PATCH rows, 28 stream-free B08 storage rows and
 all nineteen stream-free B11 instance and image rows, all three B07 recorded exec
 output rows, the B12 debug repair row, the eight S07 auxiliary byte stream
-rows and the eight S04 file transfer rows. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
+rows, the eight S04 file transfer rows and the nineteen S06 backup and archive
+rows. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
@@ -352,8 +353,8 @@ it does not reconnect automatically. Opsmaru follows this local channel lifetime
 and keeps native operation identities available for host reconciliation. Neither
 stream EOF nor successful forwarding proves backend copy/migration completion.
 
-Direct backup POST comparisons use no selected member: the pinned Go helpers
-append project but omit target. Opsmaru retains the explicit member parameter
+Direct backup POST and instance and bucket export comparisons also run with no
+selected member: those pinned Go helpers append project but omit target. Opsmaru retains the explicit member parameter
 under the approved connection contract, checked independently by a wire fixture.
 Actual backend forwarding remains a real-Incus acceptance item.
 
@@ -874,6 +875,27 @@ for one backup, `name`:
 - `RenameStoragePoolBucketBackup`, which returns an accepted operation
 
 They require `storage_bucket_backup`.
+
+Backups and archives are certified as stream contract S06, with the control
+plane above and these archive helpers:
+
+- `Files.backup_download/4`, `Files.volume_backup_download/6` and
+  `Files.bucket_backup_download/5` stream a backup export to an acknowledged
+  sink.
+- `Files.backup_stream/4` sends a direct backup POST (`direct_backup`) for an
+  instance, volume or bucket and streams the archive to a sink. Its body is the
+  typed backup model. A canceled or lost direct backup is uncertain and is
+  never resent.
+- `Files.backup_import/3` imports an instance backup, with optional `name`,
+  `pool`, `config` and `devices` overrides, each behind its native extension.
+- `Files.volume_import/4` imports a custom volume backup, or an ISO with
+  `type: :iso` and a required `name`.
+- `Files.bucket_import/4` imports a bucket backup.
+- Imports stream caller chunks and return the accepted operation. A lost
+  import reply is uncertain and is never replayed.
+- The volume type is passed through unchanged; the pinned volume methods
+  address only custom volumes.
+- No helper reads or writes a host file; callers own every source and sink.
 
 `RepairInstance` (`name`, body `%{"action" => "rebuild-config-volume"}`,
 `instances_debug_repair`) sends the daemon's registered

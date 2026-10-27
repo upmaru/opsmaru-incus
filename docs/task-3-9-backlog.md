@@ -35,9 +35,9 @@ No source file in the pinned module was modified.
 
 ## Exact implementation backlog
 
-- **None remain.** The last three, bucket backup list/get/rename (B08), now have
-  typed REST descriptors (S06 PR 1, 2026-10-26). Their rows complete when S06 is
-  certified. Custom-volume backup methods already existed.
+- **None remain.** The last three, bucket backup list/get/rename (B08), have
+  typed REST descriptors (S06 PR 1, 2026-10-26) and are complete under
+  `s06_archives_v1` (S06 PR 2). Custom-volume backup methods already existed.
 
 The corrected per-view parameter audit identifies **28 distinct endpoint/selector
 gaps across 20 implemented routes**. The original route-wide check reported nine:
@@ -117,7 +117,7 @@ the Incus REST document and remain in the completion gate.
 | S03: Events and callbacks | **Certified** by `b03_events_v1`: type/all-projects/target selectors, native rejection, Event fields, capacity/callback/owner/caller-loss, bounds and peer closure on both transports. | Explicit listener ownership; native callback order is unspecified. |
 | S04: Files | **Certified** by `s04_file_transfer_v1` (2026-10-26): instance and volume file read/create/delete and the B06 HEAD helpers on both transports, every volume type. Agent-mode file access and cluster forwarding are approved exclusions. Original obligation: certify file/directory/symlink, uid/gid/mode, overwrite/append, path/routing, binary bounds and native failures; HEAD remains B06. | Acknowledged host sources/sinks; no implicit host files. |
 | S05: Image binary handoff | Enumerate supported unified/split/compression/header/token modes; link existing private-token/copy/uncertainty evidence and identify uncovered cases. | Host-owned sources/sinks/staging; no implicit tools. |
-| S06: Archives | PR 1 (2026-10-26) adds evidence for the backup control plane: instance, volume and bucket backup list/get/create/rename/delete and JSON bucket creation, with new bucket backup REST descriptors. Export, direct backup POST, imports and certification follow in PR 2; no S06 row is complete yet. Original obligation: Enumerate instance/volume/bucket import/export/direct POST, name/pool/config/device and ISO modes; reconcile existing fixtures and remaining transport/failure evidence. | No implicit host filesystem state. |
+| S06: Archives | **Certified** by `s06_archives_v1` (2026-10-26), completing all 19 S06 rows: instance, volume and bucket backup list/get/create/rename/delete/export, JSON bucket creation, direct backup POST and instance (name/pool/config/device), volume, ISO and bucket imports on both transports. The instance and volume import rows are shared with S10 and stay partial. Cluster forwarding is an approved exclusion. Original obligation: Enumerate instance/volume/bucket import/export/direct POST, name/pool/config/device and ISO modes; reconcile existing fixtures and remaining transport/failure evidence. | No implicit host filesystem state. |
 | S07: Auxiliary byte streams | **Certified** by `s07_byte_streams_v1` (2026-10-26): metrics, ACL log, instance log file, console log, debug memory and metadata template list/download/upload/delete on both transports, with exact selectors, headers, native failures, byte/chunk/deadline bounds and mid-stream cancellation and caller-loss cleanup. The console `type` selector and cluster forwarding are approved exclusions. | Recorded output remains B07; repair remains B12. |
 | S08: Raw SFTP/NBD | Certify instance/volume path, instance reuse and volume writable options, 101/coalesced bytes, half-close and bounds against existing evidence; retain approved oracle byte-loss difference. | Raw NBD payload protocol is caller-owned. |
 | S09: Typed SFTP | Link existing v3 subset packet/status/fragment/bounds/owner/uncertainty evidence and explicit unsupported-operation rejection. | Approved init/extensions/open/read/write/close subset; no full pkg/sftp requirement. |
@@ -151,7 +151,7 @@ No exhaustive cross-product of every possible field/error is required.
 - [x] Preserve the ten fixture-verified inspection scopes and existing bounded slices.
 - [ ] Finish B01–B12: implement/verify the required contracts or record explicit approvals.
 - [ ] Finish S01–S12 certification within the existing approved host/protocol boundaries.
-- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. 213 rows (three B03, seven B01, B04, twenty B02, 51 B09, all forty B10, all 24 B05, 28 stream-free B08, nineteen stream-free B11, all three B07, B12, the eight S07 rows and the eight S04 rows, including both B06 rows) plus S01/S03/S04/S07 are complete.
+- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. 232 rows (three B03, seven B01, B04, twenty B02, 51 B09, all forty B10, all 24 B05, 28 stream-free B08, nineteen stream-free B11, all three B07, B12, the eight S07 rows, the eight S04 rows, including both B06 rows, and the nineteen S06 rows) plus S01/S03/S04/S06/S07 are complete.
 - [ ] Independently review and pass canonical/reference/platform/immutable-consumer checks for closing slices.
 
 Installed OCI/delta converters, explicitly opted-in isolated real-Incus acceptance
