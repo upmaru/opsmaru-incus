@@ -235,14 +235,34 @@ defmodule Opsmaru.Incus.ArchiveContractTest do
             do: cleanup(root, identity, target, mode, call)
       end
 
-      # An oversized import stops before it completes and is never resent.
+      # The bound counts the whole upload: chunks that each fit but together exceed it
+      # stop before the fixture receives a complete body, and nothing is resent.
       for {target, opts, _} <- imports() do
         upload = backend(root, identity, fn _ -> accepted() end)
+        bound = byte_size(@bytes) - 1
+        assert Enum.all?(chunks(@bytes), &(byte_size(&1) <= bound))
 
-        assert {:error, %Error{}} =
-                 import(client(upload, identity, max_stream_bytes: 3), target, [@bytes], opts)
+        assert {:error, %Error{kind: :uncertain}} =
+                 import(
+                   client(upload, identity, max_stream_bytes: bound),
+                   target,
+                   chunks(@bytes),
+                   opts
+                 )
 
-        assert length(HTTPFixture.requests(upload)) <= 1
+        assert HTTPFixture.requests(upload) == []
+
+        exact = backend(root, identity, fn _ -> accepted() end)
+
+        assert {:ok, _} =
+                 import(
+                   client(exact, identity, max_stream_bytes: byte_size(@bytes)),
+                   target,
+                   chunks(@bytes),
+                   opts
+                 )
+
+        assert [%{body: @bytes}] = HTTPFixture.requests(exact)
       end
     end
 
@@ -279,36 +299,32 @@ defmodule Opsmaru.Incus.ArchiveContractTest do
 
     test "#{transport} S06 archives write no implicit host files", %{root: root} do
       identity = identity(root, unquote(transport))
-      before = {File.ls!(root), File.ls!(File.cwd!())}
 
-      for target <- exports() do
-        fixture = backend(root, identity, fn _ -> bytes_reply(@bytes) end)
-        assert {@bytes, {:ok, _}} = with_sink(&export(client(fixture, identity), target, &1))
+      # Every fixture socket and certificate exists before the first archive call.
+      exports =
+        for target <- exports(),
+            do:
+              {target, client(backend(root, identity, fn _ -> bytes_reply(@bytes) end), identity)}
+
+      imports =
+        for {target, opts, _} <- imports(),
+            do: {target, opts, client(backend(root, identity, fn _ -> accepted() end), identity)}
+
+      before = {tree(root), File.ls!(File.cwd!())}
+
+      for {target, client} <- exports do
+        assert {@bytes, {:ok, _}} = with_sink(&export(client, target, &1))
 
         assert {@bytes, {:ok, _}} =
                  with_sink(
-                   &Files.backup_stream(
-                     client(fixture, identity),
-                     resource(target),
-                     stream_body(target),
-                     &1
-                   )
+                   &Files.backup_stream(client, resource(target), stream_body(target), &1)
                  )
       end
 
-      for {target, opts, _} <- imports() do
-        fixture = backend(root, identity, fn _ -> accepted() end)
-        assert {:ok, _} = import(client(fixture, identity), target, [@bytes], opts)
-      end
+      for {target, opts, client} <- imports,
+          do: assert({:ok, _} = import(client, target, [@bytes], opts))
 
-      # Only the fixtures' own sockets and certificates appear; no archive is staged.
-      {files, cwd} = before
-      assert File.ls!(File.cwd!()) == cwd
-
-      assert Enum.all?(
-               File.ls!(root) -- files,
-               &(not String.contains?(&1, ["backup", "archive", ".tar"]))
-             )
+      assert {tree(root), File.ls!(File.cwd!())} == before
     end
 
     test "#{transport} S06 extension guards and invalid options reject before I/O", %{
@@ -592,6 +608,9 @@ defmodule Opsmaru.Incus.ArchiveContractTest do
       0 -> :ok
     end
   end
+
+  # Every path under a directory, recursively, so a nested or oddly named file shows.
+  defp tree(dir), do: Enum.sort(Path.wildcard(Path.join(dir, "**"), match_dot: true))
 
   defp chunks(""), do: []
   defp chunks(binary) when byte_size(binary) <= 512, do: [binary]
