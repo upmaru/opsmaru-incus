@@ -285,7 +285,7 @@ the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
 close/error/EOF semantics apply. This does not expose an arbitrary dialer or
 an OIDC adapter.
 
-The checked manifest currently has 301 JSON descriptors (268 named-Go methods and 33 REST-specific descriptors: 25 PATCH methods, four storage reads, recorded exec output list and delete, debug repair and `GetAPIVersions`), 1239 partial
+The checked manifest currently has 305 JSON descriptors (268 named-Go methods and 37 REST-specific descriptors: 25 PATCH methods, four storage reads, recorded exec output list and delete, debug repair, four bucket backup calls and `GetAPIVersions`), 1239 partial
 reference mappings and 41 missing declarations out of 1,280. Native Incus
 method evidence is scoped to that implementation; OCI and SimpleStreams each
 have 20 partial concrete method mappings and none missing; full protocol/option
@@ -863,6 +863,17 @@ Instance and storage volume files are certified as stream contract S04:
   size, with no body. The pinned client has no HEAD method.
 - The volume type is passed through unchanged.
 - Agent-mode file access (`/1.0/files` inside an instance) is not supported.
+
+Bucket backups the pinned client cannot list, read or rename are REST
+descriptors called through `Incus.call/4` with `poolName`, `bucketName` and,
+for one backup, `name`:
+
+- `GetStoragePoolBucketBackupNames`
+- `GetStoragePoolBucketBackups`
+- `GetStoragePoolBucketBackup`
+- `RenameStoragePoolBucketBackup`, which returns an accepted operation
+
+They require `storage_bucket_backup`.
 
 `RepairInstance` (`name`, body `%{"action" => "rebuild-config-volume"}`,
 `instances_debug_repair`) sends the daemon's registered

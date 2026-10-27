@@ -16,15 +16,17 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   # B11: every stream-free instance and image write.
   @b11 ~w(CreateImageAlias RenameImageAlias UpdateImageAlias DeleteImageAlias UpdateImage RefreshImage CreateImageSecret UpdateInstanceMetadata DeleteInstanceConsoleLog DeleteInstanceLogfile CreateInstanceBitmap RebuildInstance UpdateInstanceSnapshot UpdateInstances)
   # B07/B12 writes the pinned client lacks, compared through unchanged Go RawQuery.
-  @rest ~w(DeleteInstanceExecOutput RepairInstance)
+  @rest ~w(DeleteInstanceExecOutput RepairInstance RenameStoragePoolBucketBackup)
+  # S06 PR 1: the instance, custom volume and bucket backup control plane.
+  @s06 ~w(CreateInstanceBackup RenameInstanceBackup DeleteInstanceBackup CreateStorageVolumeBackup RenameStorageVolumeBackup DeleteStorageVolumeBackup CreateStoragePoolBucketBackup DeleteStoragePoolBucketBackup CreateStoragePoolBucket)
   # S07: the metadata template delete.
   @s07 ~w(DeleteInstanceTemplateFile)
   @all_methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
   @methods Enum.filter(
              @all_methods,
-             &(&1["name"] in (@b09 ++ @b10 ++ @b08 ++ @b11 ++ @rest ++ @s07))
+             &(&1["name"] in (@b09 ++ @b10 ++ @b08 ++ @b11 ++ @rest ++ @s07 ++ @s06))
            )
-  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings storage storage_buckets storage_volume_nbd storage_api_volume_snapshots storage_volumes_rebuild console container_log_delete image_force_refresh instances_rebuild container_edit_metadata snapshot_expiry container_exec_recording instances_debug_repair)
+  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings storage storage_buckets storage_volume_nbd storage_api_volume_snapshots storage_volumes_rebuild console container_log_delete image_force_refresh instances_rebuild container_edit_metadata snapshot_expiry container_exec_recording instances_debug_repair container_backup custom_volume_backup storage_bucket_backup storage_buckets_create_credentials)
   @uuid "01234567-89ab-cdef-0123-456789abcdef"
   @url "/1.0/operations/" <> @uuid
   @etag "\"before\""
@@ -38,7 +40,7 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 93
+    assert length(@methods) == 103
     assert Enum.all?(@methods, &(&1["result"] in ["sync", "model", "operation"]))
     :ok
   end
@@ -260,8 +262,9 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
         assert {:error, %Error{kind: :uncertain, operation: nil}} = actual
 
       # Acceptance with an unusable operation keeps its identity and is never replayed.
+      # RawQuery decodes no operation, so only a named pinned method rejects it too.
       :bad_operation ->
-        assert expected["error"]
+        if method["reference_kind"] != "rest", do: assert(expected["error"])
         assert {:error, %Error{kind: :uncertain, operation: @url}} = actual
     end
   end
@@ -277,7 +280,7 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     assert reply.metadata.data == snapshot(103)
     # Operation metadata (an image secret, for one) never appears in Inspect output.
     refute inspect(reply) =~ "retained" or inspect(operation) =~ "retained"
-    assert Map.take(hd(expected["outputs"]), Map.keys(snapshot(103))) == snapshot(103)
+    assert Map.take(accepted_operation(expected), Map.keys(snapshot(103))) == snapshot(103)
 
     timeout = if code == 103, do: 0, else: 1
     wait = Enum.find(@all_methods, &(&1["name"] == "GetOperationWait"))
@@ -318,6 +321,14 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     end
 
     assert length(HTTPFixture.requests(fixture)) == 6
+  end
+
+  # A named method returns the operation itself; RawQuery returns the native envelope.
+  defp accepted_operation(expected) do
+    case hd(expected["outputs"]) do
+      %{"type" => "async", "metadata" => operation} -> operation
+      operation -> operation
+    end
   end
 
   # Without the guard's extension, or with a required value unmet, both clients
@@ -484,6 +495,9 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
 
         "RepairInstance" ->
           "/1.0/instances/fixture%20%2Fname/debug/repair"
+
+        "RenameStoragePoolBucketBackup" ->
+          "/1.0/storage-pools/fixture%20%2FpoolName/buckets/fixture%20%2FbucketName/backups/fixture%20%2Fname"
       end
 
     input =

@@ -17,16 +17,19 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   @b08 ~w(GetStoragePoolBucketNames GetStoragePoolBuckets GetStoragePoolBucketsWithFilter GetStoragePoolBucketsAllProjects GetStoragePoolBucketsWithFilterAllProjects GetStoragePoolBucketsFull GetStoragePoolBucketsFullWithFilter GetStoragePoolBucketsFullAllProjects GetStoragePoolBucketsFullWithFilterAllProjects GetStoragePoolBucket GetStoragePoolBucketFull GetStoragePoolBucketKeyNames GetStoragePoolBucketKeys GetStoragePoolBucketKey GetStoragePoolResources GetStorageVolumeBitmaps GetStorageVolumeBitmapNames GetStoragePoolVolumeSnapshotNames GetStoragePoolVolumeSnapshots GetStoragePoolVolumeSnapshot GetStoragePoolVolumeState)
   # B11: every read method mapped to the stream-free instance and image rows.
   @b11 ~w(GetImageAliases GetImageAliasNames GetImageAlias GetInstanceAccess GetInstanceLogfiles GetInstanceMetadata)
+  # S06 PR 1: instance and custom volume backup reads.
+  @s06 ~w(GetInstanceBackupNames GetInstanceBackups GetInstanceBackup GetStorageVolumeBackupNames GetStorageVolumeBackups GetStorageVolumeBackup)
   # S07: the metadata template names list.
   @s07 ~w(GetInstanceTemplateFiles)
   @catalogue Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
   @methods Enum.filter(
              @catalogue,
              &(&1["name"] in (@names ++
-                                @b02 ++ @b02_storage ++ @b09 ++ @b10 ++ @b08 ++ @b11 ++ @s07))
+                                @b02 ++
+                                @b02_storage ++ @b09 ++ @b10 ++ @b08 ++ @b11 ++ @s07 ++ @s06))
            )
   # Models without a hand-written sample get a schema-driven one (ModelSamples).
-  @generated ~w(NetworkACL NetworkAddressSet NetworkAllocations NetworkForward NetworkIntegration NetworkLease NetworkLoadBalancer NetworkLoadBalancerState NetworkPeer NetworkState NetworkZone NetworkZoneRecord Access Certificate Cluster ClusterGroup ClusterMember ClusterMemberState MetadataConfiguration ProjectState Resources Warning StorageBucket StorageBucketFull StorageBucketKey ResourcesStoragePool StorageVolumeBitmap StorageVolumeSnapshot StorageVolumeState ImageAliasesEntry ImageMetadata)
+  @generated ~w(NetworkACL NetworkAddressSet NetworkAllocations NetworkForward NetworkIntegration NetworkLease NetworkLoadBalancer NetworkLoadBalancerState NetworkPeer NetworkState NetworkZone NetworkZoneRecord Access Certificate Cluster ClusterGroup ClusterMember ClusterMemberState MetadataConfiguration ProjectState Resources Warning StorageBucket StorageBucketFull StorageBucketKey ResourcesStoragePool StorageVolumeBitmap StorageVolumeSnapshot StorageVolumeState ImageAliasesEntry ImageMetadata InstanceBackup StorageVolumeBackup StorageBucketBackup)
   # Discovery is a public helper, not a named Go GetServer DTO comparison.
   @discovery %{"name" => "connect", "params" => [], "result" => "discovery", "model" => "Server"}
   # Root API version discovery has no named Go method; it is compared through RawQuery.
@@ -35,12 +38,12 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   # exec output names), also compared through RawQuery.
   @rest Enum.filter(
           @catalogue,
-          &(&1["name"] in ~w(GetStoragePoolVolumeTypeNames GetStoragePoolVolumesByType GetStoragePoolVolumesByTypeFull GetStorageVolumeBitmap GetInstanceExecOutputNames))
+          &(&1["name"] in ~w(GetStoragePoolVolumeTypeNames GetStoragePoolVolumesByType GetStoragePoolVolumesByTypeFull GetStorageVolumeBitmap GetInstanceExecOutputNames GetStoragePoolBucketBackupNames GetStoragePoolBucketBackups GetStoragePoolBucketBackup))
         )
   @contracts @methods ++ [@discovery, @root] ++ @rest
   # The volume type is a pass-through path argument, compared for every daemon type.
   @volume_types ~w(custom container virtual-machine image)
-  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects networks_all_projects profiles_all_projects storage_volume_full storage_volumes_all_projects network_acl network_acls_all_projects network_address_set network_allocations network_dns network_dns_records network_forward network_integrations network_leases network_load_balancer network_load_balancer_state network_peer network_state network_zones_all_projects cluster_member_state clustering clustering_groups metadata_configuration project_access project_usage resources warnings storage_buckets storage_buckets_all_projects storage_bucket_full storage_volume_nbd storage_api_volume_snapshots storage_volume_state instance_access container_edit_metadata container_exec_recording)
+  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects networks_all_projects profiles_all_projects storage_volume_full storage_volumes_all_projects network_acl network_acls_all_projects network_address_set network_allocations network_dns network_dns_records network_forward network_integrations network_leases network_load_balancer network_load_balancer_state network_peer network_state network_zones_all_projects cluster_member_state clustering clustering_groups metadata_configuration project_access project_usage resources warnings storage_buckets storage_buckets_all_projects storage_bucket_full storage_volume_nbd storage_api_volume_snapshots storage_volume_state instance_access container_edit_metadata container_exec_recording container_backup custom_volume_backup storage_bucket_backup)
   @driver Path.expand("../.integration/inspection-driver", __DIR__)
 
   setup_all do
@@ -52,7 +55,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 139 and length(@rest) == 5
+    assert length(@methods) == 145 and length(@rest) == 8
     :ok
   end
 
@@ -490,6 +493,17 @@ defmodule Opsmaru.Incus.InspectionContractTest do
 
         "GetInstanceExecOutputNames" ->
           {"/1.0/instances/fixture-name/logs/exec-output", %{}}
+
+        "GetStoragePoolBucketBackupNames" ->
+          {"/1.0/storage-pools/fixture-poolName/buckets/fixture-bucketName/backups", %{}}
+
+        "GetStoragePoolBucketBackups" ->
+          {"/1.0/storage-pools/fixture-poolName/buckets/fixture-bucketName/backups",
+           %{"recursion" => "1"}}
+
+        "GetStoragePoolBucketBackup" ->
+          {"/1.0/storage-pools/fixture-poolName/buckets/fixture-bucketName/backups/fixture-name",
+           %{}}
       end
 
     query = Map.merge(query, %{"project" => "fixture scope", "target" => "member/a"})

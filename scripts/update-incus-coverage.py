@@ -189,7 +189,15 @@ for entry in inv['entries']:
  elif entry['package']=='client' and entry['kind'] in ['method','interface_method'] and name in event_subscriptions:
   row.update(status='partial',elixir='lib/opsmaru/incus/events.ex',evidence=['test/event_contract_test.exs','test/event_listener_test.exs','test/web_socket_test.exs','test/tls_stream_test.exs'],note='Explicit owner-bound subscription. The GET /1.0/events endpoint row and S03 are complete under reviewed record b03_events_v1: type/all-projects selectors, host project/target routing, native 400/403/404 upgrade rejection and Event fields compared with the unchanged pinned client over Unix and verified mutual HTTPS, with independent listener, send, bound, lifetime and peer-closure evidence. The pinned shared per-project connection and asynchronous mutable listener are not reproduced; cluster forwarding and callback ordering are excluded. Endpoint completion is not Go declaration parity.')
  elif entry['package']=='shared/api' and entry['kind']=='type' and name in models:
-  evidence = ['test/resource_slice_test.exs'] if name in {m[key] for m in methods.values() for key in ['body','model'] if m[key]} else []
+  # resource_slice_test.exs runs only named Go methods; REST-only descriptors are
+  # exercised by the contract test for their verb.
+  named = [m for m in methods.values() if m.get('reference_kind') != 'rest']
+  rest = [m for m in methods.values() if m.get('reference_kind') == 'rest']
+  evidence = ['test/resource_slice_test.exs'] if name in {m[key] for m in named for key in ['body','model'] if m[key]} else []
+  for m in rest:
+   if name in (m['body'], m['model']):
+    test = {'GET': 'test/inspection_contract_test.exs', 'PATCH': 'test/patch_contract_test.exs'}.get(m['verb'], 'test/sync_mutation_contract_test.exs')
+    if test not in evidence: evidence.append(test)
   if name in writable_types or name.removesuffix('Put') in writable_types or name == 'StatusCode': evidence.append('test/model_helpers_reference_test.exs')
   if name in ['InstancePut','ProjectPut','ProfilePut','ImagePut','InstanceSnapshotPut']: evidence.append('test/instance_patch_test.exs')
   if name == 'ServerEnvironment': evidence.append('test/discovery_helpers_test.exs')

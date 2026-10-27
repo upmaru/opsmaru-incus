@@ -70,6 +70,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** reads agree with the pinned client for populated/empty/corrupt results, native 403/404, routing, extensions and lifetime cleanup, and synchronous writes agree for request bodies, ETags and native rejection while lost or malformed replies are uncertain and never replayed
 - **AND** reviewed records list each completed row, selectors the pinned client does not send and cluster forwarding are approved exclusions, and the metrics and ACL log rows stay partial while S07 is open
 
+#### Scenario: Certified backups and archives
+
+- **WHEN** a caller lists, gets, creates, renames, deletes or exports an instance, custom volume or bucket backup, streams a direct backup, or imports an instance, volume, ISO or bucket archive, over Unix or mutual HTTPS
+- **THEN** requests, bodies, routing, accepted operations and archive bytes agree with the pinned client, or with unchanged RawQuery transport for the bucket backup descriptors it lacks. Native errors are preserved; byte and deadline bounds hold; mid-stream cancellation or caller loss closes the peer; lost uploads are uncertain and never replayed; and no host file is written implicitly
+- **AND** S06 is certified by a single reviewed record covering its shared import modes, and cluster forwarding is a recorded approved exclusion
+
 #### Scenario: Certified file transfer
 
 - **WHEN** a caller reads, creates, deletes or inspects (HEAD) an instance or custom volume file, directory or symlink over Unix or mutual HTTPS

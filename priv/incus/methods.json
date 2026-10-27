@@ -5163,6 +5163,80 @@
       "guards": [],
       "reference_kind": "rest",
       "operation_id": "instance_debug_repair_post"
+    },
+    {
+      "name": "GetStoragePoolBucketBackupNames",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}/backups",
+      "params": [
+        "poolName",
+        "bucketName"
+      ],
+      "query": {},
+      "extension": "storage_bucket_backup",
+      "body": null,
+      "model": null,
+      "result": "names",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "storage_pool_buckets_backups_get"
+    },
+    {
+      "name": "GetStoragePoolBucketBackups",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}/backups",
+      "params": [
+        "poolName",
+        "bucketName"
+      ],
+      "query": {
+        "recursion": "1"
+      },
+      "extension": [
+        "storage_bucket_backup"
+      ],
+      "body": null,
+      "model": "StorageBucketBackup",
+      "result": "list",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "storage_pool_buckets_backups_get_recursion1"
+    },
+    {
+      "name": "GetStoragePoolBucketBackup",
+      "verb": "GET",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}/backups/{name}",
+      "params": [
+        "poolName",
+        "bucketName",
+        "name"
+      ],
+      "query": {},
+      "extension": "storage_bucket_backup",
+      "body": null,
+      "model": "StorageBucketBackup",
+      "result": "model",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "storage_pool_buckets_backup_get"
+    },
+    {
+      "name": "RenameStoragePoolBucketBackup",
+      "verb": "POST",
+      "path": "/1.0/storage-pools/{poolName}/buckets/{bucketName}/backups/{name}",
+      "params": [
+        "poolName",
+        "bucketName",
+        "name"
+      ],
+      "query": {},
+      "extension": "storage_bucket_backup",
+      "body": "StorageBucketBackupPost",
+      "model": null,
+      "result": "operation",
+      "guards": [],
+      "reference_kind": "rest",
+      "operation_id": "storage_pool_buckets_backup_post"
     }
   ]
 }
