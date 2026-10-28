@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.Images do
   @moduledoc "Native image transfers; host-owned sources/sinks and no mutation replay."
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Context, Error, Model, Transfer}
+  alias Opsmaru.Incus.{Context, Error, ImageCopy, Model, Operation, Transfer}
 
   def import(client, image, metadata_source, opts \\ []) do
     with {:ok, model} <- Model.decode("ImagesPost", Model.encode(image)),
@@ -120,25 +120,70 @@ defmodule Opsmaru.Incus.Images do
     if is_map(metadata), do: metadata["secret"]
   end
 
-  @doc "Copy using one explicit approved connection per side; no address fallback or replay."
+  @copy_options [
+    :mode,
+    :approved_origin,
+    :aliases,
+    :copy_aliases,
+    :public,
+    :auto_update,
+    :profiles,
+    :type,
+    :relay
+  ]
+
+  @doc """
+  Copy using one explicit approved connection per side; no address fallback or replay.
+
+  Returns the accepted native handles as an `ImageCopy` without waiting or cleanup;
+  `wait_copy/2` completes it. Pull and push need `:approved_origin`, the HTTPS origin
+  of the side the other backend connects to. A failure keeps every accepted handle in
+  `response.accepted` and cancels none.
+  """
   def copy(target, source, image, opts \\ []) do
     with :ok <- Context.authorize(target.context, target.connection),
          :ok <- Context.authorize(source.context, source.connection),
+         :ok <- copy_options(opts),
          false <- same_backend?(target, source),
          {:ok, image} <- Model.decode("Image", Model.encode(image)),
          :ok <- profile_override(target, opts) do
-      body = copy_body(image.data, opts)
+      image = image.data
+      aliases = copy_aliases(image, opts)
 
-      case opts[:mode] || "pull" do
-        "pull" -> pull(target, source, image.data, body, opts)
-        "push" -> push(target, source, image.data, body)
-        "relay" -> relay(target, source, image.data, body, opts)
-        _ -> {:error, %Error{kind: :unsupported_copy_mode}}
-      end
+      result =
+        case opts[:mode] || "pull" do
+          "pull" ->
+            with {:ok, url} <- copy_origin(source, opts[:approved_origin]),
+                 do: pull(target, source, image, aliases, url, opts)
+
+          "push" ->
+            with :ok <- Incus.require_extension(source, "images_push_relay"),
+                 {:ok, url} <- copy_origin(target, opts[:approved_origin]),
+                 do: push(target, source, image, aliases, url, opts)
+
+          "relay" ->
+            relay(target, source, image, aliases, opts)
+        end
+
+      with {:error, kind} when is_atom(kind) <- result, do: {:error, %Error{kind: kind}}
     else
       true -> {:error, %Error{kind: :same_backend}}
       {:error, %Error{} = error} -> {:error, error}
       {:error, kind} -> {:error, %Error{kind: kind}}
+    end
+  end
+
+  defp copy_options(opts) do
+    cond do
+      not (Keyword.keyword?(opts) and Keyword.keys(opts) -- @copy_options == [] and
+               length(opts) == length(Enum.uniq(Keyword.keys(opts)))) ->
+        {:error, :invalid_copy_options}
+
+      opts[:mode] not in [nil, "pull", "push", "relay"] ->
+        {:error, :unsupported_copy_mode}
+
+      true ->
+        :ok
     end
   end
 
@@ -150,115 +195,136 @@ defmodule Opsmaru.Incus.Images do
         one.connection.member == two.connection.member
 
   defp profile_override(target, opts) do
-    if Keyword.has_key?(opts, :profiles),
-      do: Incus.require_extension(target, "image_copy_profile"),
-      else: :ok
+    if is_nil(opts[:profiles]),
+      do: :ok,
+      else: Incus.require_extension(target, "image_copy_profile")
   end
 
-  defp copy_body(image, opts) do
-    aliases =
-      if opts[:copy_aliases],
-        do: (image["aliases"] || []) ++ (opts[:aliases] || []),
-        else: opts[:aliases] || []
-
-    %{
-      "public" => opts[:public] == true,
-      "auto_update" => opts[:auto_update] == true,
-      "aliases" => aliases,
-      "profiles" => opts[:profiles]
-    }
+  # As in the pinned client: the explicit aliases, or the image's own followed by them.
+  defp copy_aliases(image, opts) do
+    if opts[:copy_aliases] == true,
+      do: append(image["aliases"], opts[:aliases]),
+      else: opts[:aliases]
   end
 
-  defp origin(%{connection: %{transport: :https, address: uri}}), do: {:ok, URI.to_string(uri)}
-  defp origin(_), do: {:error, %Error{kind: :unreachable_copy_origin}}
+  defp append(base, nil), do: base
+  defp append(base, more), do: (base || []) ++ more
+
+  # The other backend connects to exactly the origin the host approved for this side.
+  defp copy_origin(client, approved) do
+    if client.connection.transport == :https and is_binary(approved) and
+         approved == URI.to_string(client.connection.address),
+       do: {:ok, approved},
+       else: {:error, :unapproved_copy_origin}
+  end
+
   defp certificate(client), do: (client.server.environment || %{})["certificate"] || ""
 
-  defp secret(source, image) do
+  defp pull(target, source, image, aliases, url, opts) do
+    case pull_secret(source, image) do
+      {:ok, secret, secret_op} ->
+        body = %{
+          "aliases" => aliases,
+          "auto_update" => opts[:auto_update] == true,
+          "public" => opts[:public] == true,
+          "profiles" => opts[:profiles],
+          "source" => %{
+            "type" => "image",
+            "mode" => "pull",
+            "protocol" => "incus",
+            "server" => url,
+            "certificate" => certificate(source),
+            "project" => source.connection.project || "default",
+            "fingerprint" => image["fingerprint"],
+            "secret" => secret,
+            "image_type" => opts[:type] || ""
+          }
+        }
+
+        # Servers without image_create_aliases get the aliases after the copy, as natively.
+        later = if Incus.has_extension?(target, "image_create_aliases"), do: [], else: aliases
+        copy = %ImageCopy{mode: "pull", source: secret_op, aliases: names(later)}
+        accept(copy, :target, target, "CreateImage", %{}, body)
+
+      {:error, error} ->
+        copy_failure(%ImageCopy{mode: "pull"}, error)
+    end
+  end
+
+  defp pull_secret(source, image) do
     if image["public"] == true do
       {:ok, nil, nil}
     else
-      secret_response(source, image["fingerprint"])
+      with {:ok, secret, response} <- secret_response(source, image["fingerprint"]),
+           {:ok, operation} <- bind(source, response),
+           do: {:ok, secret, operation}
     end
   end
 
-  defp pull(target, source, image, body, opts) do
-    with {:ok, url} <- origin(source), {:ok, secret, source_operation} <- secret(source, image) do
-      body =
-        Map.put(body, "source", %{
-          "type" => "image",
-          "mode" => "pull",
-          "protocol" => "incus",
-          "server" => url,
-          "certificate" => certificate(source),
-          "project" => source.connection.project || "default",
-          "fingerprint" => image["fingerprint"],
-          "secret" => secret,
-          "image_type" => opts[:type] || ""
-        })
+  defp push(target, source, image, aliases, url, opts) do
+    # The token request carries no profiles or auto_update, as natively; the export does.
+    body = %{
+      "aliases" => aliases,
+      "expires_at" => image["expires_at"],
+      "properties" => image["properties"],
+      "public" => opts[:public] == true,
+      "source" => %{"mode" => "push", "fingerprint" => image["fingerprint"]}
+    }
 
-      case Incus.call(target, "CreateImage", %{}, body: body) do
-        {:ok, accepted} ->
-          {:ok, %{source: source_operation, target: accepted, state: :accepted}}
+    with {:ok, copy} <-
+           accept(%ImageCopy{mode: "push"}, :target, target, "CreateImage", %{}, body) do
+      case token_secret(copy.target.response) do
+        secret when is_binary(secret) ->
+          export = %{
+            "target" => url,
+            "certificate" => certificate(target),
+            "secret" => secret,
+            "project" => target.connection.project || "default",
+            "profiles" => opts[:profiles]
+          }
 
-        {:error, error} ->
-          copy_error(error, :source, source_operation)
+          # A failed export keeps the token handle; the host cancels it explicitly.
+          accept(
+            copy,
+            :source,
+            source,
+            "ExportImage",
+            %{"fingerprint" => image["fingerprint"]},
+            export
+          )
+
+        _ ->
+          copy_failure(copy, %Error{kind: :uncertain, operation: copy.target.url})
       end
     end
   end
 
-  defp push(target, source, image, body) do
-    with :ok <- Incus.require_extension(source, "images_push_relay"),
-         {:ok, url} <- origin(target),
-         {:ok, token} <-
-           Incus.call(target, "CreateImage", %{},
-             body:
-               Map.merge(body, %{
-                 "properties" => image["properties"],
-                 "expires_at" => image["expires_at"],
-                 "source" => %{
-                   "mode" => "push",
-                   "fingerprint" => image["fingerprint"],
-                   "server" => "",
-                   "certificate" => "",
-                   "project" => "",
-                   "type" => ""
-                 }
-               })
-           ) do
-      secret = token_secret(token)
-
-      if is_binary(secret) do
-        case Incus.call(source, "ExportImage", %{"fingerprint" => image["fingerprint"]},
-               body: %{
-                 "target" => url,
-                 "certificate" => certificate(target),
-                 "secret" => secret,
-                 "project" => target.connection.project || "default",
-                 "profiles" => body["profiles"]
-               }
-             ) do
-          {:ok, exported} ->
-            {:ok, %{source: exported, target: token, state: :accepted}}
-
-          {:error, error} ->
-            copy_error(error, :target, token)
-        end
-      else
-        {:error, %Error{kind: :uncertain, response: token, operation: token.operation}}
-      end
+  defp accept(copy, side, client, method, args, body) do
+    with {:ok, response} <- Incus.call(client, method, args, body: body),
+         {:ok, operation} <- bind(client, response) do
+      {:ok, Map.put(copy, side, operation)}
+    else
+      {:error, error} -> copy_failure(copy, error)
     end
   end
 
-  defp copy_error(error, side, accepted) do
-    {:error,
-     %Error{
-       kind: if(error.kind == :uncertain, do: :uncertain, else: :copy_failed),
-       response: %{side => accepted, :error => error},
-       operation: error.operation || if(accepted, do: accepted.operation)
-     }}
+  # A reply that does not bind as an accepted operation may still have been accepted.
+  defp bind(client, response) do
+    case Operation.from_response(client, response) do
+      {:ok, operation} -> {:ok, operation}
+      {:error, error} -> {:error, %{error | kind: :uncertain}}
+    end
   end
 
-  defp relay(target, source, image, body, opts) do
+  defp copy_failure(copy, %Error{} = error),
+    do: {:error, %{error | response: %{accepted: copy, error: error}}}
+
+  defp copy_failure(copy, kind), do: copy_failure(copy, %Error{kind: kind})
+
+  defp names(nil), do: []
+  defp names(aliases), do: Enum.map(aliases, & &1["name"])
+
+  defp relay(target, source, image, aliases, opts) do
     # The host provides staging sinks and rewindable source factories. No fixed
     # state directory, tempfile generation, deletion or host CLI is introduced.
     adapter = opts[:relay]
@@ -272,17 +338,45 @@ defmodule Opsmaru.Incus.Images do
           do: Map.put(sinks, :rootfs, adapter[:rootfs_sink]),
           else: sinks
 
-      with {:ok, transfer} <- download(source, image["fingerprint"], sinks),
-           {:ok, upload_opts} <- relay_upload_options(adapter, image, transfer.result) do
-        import(target, body, adapter[:metadata_source].(), upload_opts)
-      end
+      # As natively: public, profiles and aliases; the aliases are applied again after.
+      body = %{
+        "public" => opts[:public] == true,
+        "profiles" => opts[:profiles],
+        "aliases" => aliases
+      }
+
+      copy = %ImageCopy{
+        mode: "relay",
+        aliases: names(aliases),
+        fingerprint: image["fingerprint"]
+      }
+
+      with {:ok, transfer} <- relay_download(copy, source, image, sinks),
+           {:ok, upload_opts} <- relay_upload_options(adapter, image, transfer.result),
+           do: relay_upload(copy, target, body, adapter[:metadata_source].(), upload_opts)
     else
       {:error, %Error{kind: :missing_relay_adapter}}
     end
   end
 
+  defp relay_download(copy, source, image, sinks) do
+    with {:error, error} <- download(source, image["fingerprint"], sinks),
+         do: copy_failure(copy, error)
+  end
+
+  defp relay_upload(copy, target, body, metadata, opts) do
+    with {:ok, response} <- import(target, body, metadata, opts),
+         {:ok, operation} <- bind(target, response) do
+      {:ok, %{copy | target: operation}}
+    else
+      {:error, error} -> copy_failure(copy, error)
+    end
+  end
+
   defp relay_upload_options(adapter, image, result) do
-    opts = [metadata_name: image["filename"] || result.names.metadata]
+    # The pinned relay names both parts after the image filename, empty when unset.
+    name = image["filename"] || ""
+    opts = [metadata_name: name]
 
     # Part presence distinguishes a split export even when rootfs is empty.
     # A saved rootfs must never become a metadata-only target mutation.
@@ -290,12 +384,7 @@ defmodule Opsmaru.Incus.Images do
       with true <- is_function(adapter[:rootfs_source], 0),
            rootfs <- adapter[:rootfs_source].(),
            true <- not is_nil(Enumerable.impl_for(rootfs)) do
-        {:ok,
-         Keyword.merge(opts,
-           rootfs: rootfs,
-           rootfs_name: image["filename"] || result.names.rootfs,
-           type: image["type"]
-         )}
+        {:ok, Keyword.merge(opts, rootfs: rootfs, rootfs_name: name, type: image["type"])}
       else
         _ -> {:error, %Error{kind: :missing_relay_adapter}}
       end
@@ -306,6 +395,73 @@ defmodule Opsmaru.Incus.Images do
     _ -> {:error, %Error{kind: :missing_relay_adapter}}
   catch
     _, _ -> {:error, %Error{kind: :missing_relay_adapter}}
+  end
+
+  @doc """
+  Wait for the operation that drives a copy, then perform the pinned cleanup.
+
+  The target drives pull and relay copies and the source export drives a push. Once
+  a push export reaches a final state, the target's token is cancelled, as natively.
+  Once a pull (against a server without `image_create_aliases`) or relay succeeds,
+  the requested aliases are created, as natively. A local deadline or read failure
+  performs no cleanup, so the copy may still run. Errors keep every handle in
+  `response.accepted`; nothing is replayed.
+  """
+  def wait_copy(copy, opts \\ [])
+
+  def wait_copy(%ImageCopy{mode: mode} = copy, opts) when mode in ["pull", "push", "relay"] do
+    side = if mode == "push", do: :source, else: :target
+
+    with true <-
+           Keyword.keyword?(opts) and Keyword.keys(opts) -- [:timeout, :poll_interval] == [],
+         %Operation{} = operation <- Map.fetch!(copy, side) do
+      case Operation.wait(operation, opts) do
+        {:ok, current} ->
+          copy = copy |> Map.put(side, current) |> cancel_token()
+          with :ok <- create_aliases(copy), do: {:ok, copy}
+
+        {:error, %Error{kind: :operation_failed} = error} ->
+          copy_failure(cancel_token(copy), error)
+
+        {:error, error} ->
+          copy_failure(copy, error)
+      end
+    else
+      false -> copy_failure(copy, :invalid_deadline)
+      _ -> copy_failure(copy, :invalid_copy)
+    end
+  end
+
+  def wait_copy(copy, _opts), do: copy_failure(copy, :invalid_copy)
+
+  # The pinned push ignores the token cancellation's result; the handle is kept.
+  defp cancel_token(%ImageCopy{mode: "push", target: %Operation{} = token} = copy) do
+    case Operation.cancel(token) do
+      {:ok, current} -> %{copy | target: current}
+      {:error, _} -> copy
+    end
+  end
+
+  defp cancel_token(copy), do: copy
+
+  defp create_aliases(%ImageCopy{aliases: []}), do: :ok
+
+  defp create_aliases(%ImageCopy{target: target} = copy) do
+    metadata = Operation.data(target)["metadata"]
+    fingerprint = copy.fingerprint || (is_map(metadata) && metadata["fingerprint"])
+
+    if is_binary(fingerprint) do
+      Enum.reduce_while(copy.aliases, :ok, fn name, :ok ->
+        case Incus.call(target.client, "CreateImageAlias", %{},
+               body: %{"name" => name, "target" => fingerprint}
+             ) do
+          {:ok, _} -> {:cont, :ok}
+          {:error, error} -> {:halt, copy_failure(copy, error)}
+        end
+      end)
+    else
+      copy_failure(copy, :invalid_copy_fingerprint)
+    end
   end
 
   defp compression(client, data) do
@@ -581,7 +737,7 @@ defmodule Opsmaru.Incus.Images do
   defp escape(value), do: URI.encode(value, &(URI.char_unreserved?(&1) or &1 in ~c"$&+:=@"))
 
   defp filename!(value) do
-    if is_binary(value) and byte_size(value) in 1..1024 and
+    if is_binary(value) and byte_size(value) in 0..1024 and
          not String.contains?(value, ["\r", "\n", <<0>>]),
        do: value,
        else: raise("invalid native filename")

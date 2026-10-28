@@ -74,7 +74,7 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 
 - **WHEN** a caller creates an image from an upload, a URL, an instance or snapshot, or a pull or push source, downloads or pushes an image export, or copies an image by pull, push or relay, over Unix or mutual HTTPS
 - **THEN** requests, bodies, headers, bytes, guards, accepted operations and copy waits agree with the pinned client. Native errors are preserved; unified, split and OCI exports keep their names, sizes and fingerprint checks; pull and push use only the host-approved origin; and lost or malformed source and target replies are uncertain and never replayed
-- **AND** S05 is certified by a single reviewed record; explicit copy cleanup through `Images.wait_copy/2`, with no implicit token cancellation, is a recorded approved difference; and the public documentation views, the local `/dev/incus/sock` download path, advertised-address fallback and cluster forwarding are recorded approved exclusions
+- **AND** S05 is certified by a single reviewed record; explicit copy cleanup through `Images.wait_copy/2`, with no implicit token cancellation, the push images_push_relay guard before any request and a relay wait that reports the native failure are recorded approved differences; and the public documentation views, the local `/dev/incus/sock` download path, advertised-address fallback and cluster forwarding are recorded approved exclusions
 
 #### Scenario: Certified copy and migration
 

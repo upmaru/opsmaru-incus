@@ -24,6 +24,8 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
       ~w(request populated routing native_400 native_403 native_404 backup_inspection backup_writes native_wait accepted_identity bucket_create export_bytes direct_backup instance_import import_overrides volume_import iso_import bucket_import acknowledged_sink byte_bounds upload_bounds deadline cancellation caller_loss no_host_files response_loss_no_replay preflight),
     "migration" =>
       ~w(request routing sync_success native_400 native_403 native_404 native_409 native_412 accepted_identity native_wait response_loss_no_replay rename migration_guards migration_sources instance_moves local_copy pull push relay relay_channels live_channels relay_differences relay_lifetime remote_wait remote_cancel approved_origin collection_route volume_types import_modes preflight),
+    "image_transfer" =>
+      ~w(request routing native_400 native_403 native_404 native_409 native_412 accepted_identity native_wait response_loss_no_replay image_sources uploads upload_headers split_images compression downloads host_sinks oci_exports fingerprint_checks push_export pull push relay remote_wait remote_cancel token_cleanup aliases local_deadline copy_differences copy_guards approved_origin preflight),
     "binary_download" =>
       ~w(request populated routing native_400 native_403 native_404 byte_bounds deadline cancellation acknowledged_sink no_implicit_delete preflight),
     "read_contract" =>

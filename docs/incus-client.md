@@ -320,15 +320,16 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 239 pairs are currently in the checked
-evidence manifest. 238 are complete under reviewed completion records:
+pairs plus 46 query/access variants; 242 pairs are currently in the checked
+evidence manifest. 241 are complete under reviewed completion records:
 native wait, events, exec, all eight B01 mutations, conditional instance
 PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10
 administrative rows, all 24 B05 PATCH rows, 28 stream-free B08 storage rows and
 all nineteen stream-free B11 instance and image rows, all three B07 recorded exec
 output rows, the B12 debug repair row, the eight S07 auxiliary byte stream
 rows, the eight S04 file transfer rows, the nineteen S06 backup and archive
-rows and the six S10 copy and migration rows. The operation WebSocket row is
+rows, the six S10 copy and migration rows and the three S05 image transfer
+rows. The operation WebSocket row is
 partial. It retains remaining copy/stream/model/helper scope without
 treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
@@ -935,11 +936,13 @@ HTTPS:
   replayed. The handle already accepted (the source in pull and relay mode,
   the target in push mode) is kept, and nothing is cancelled.
 
-Image copy is not certified here: it belongs to the still-open S05 contract, and the operation WebSocket row waits on S02.
+Image copy is certified with S05; the operation WebSocket row waits on S02.
 
-Image binary handoff (stream contract S05) is not yet certified. Its image
-creation, upload, download and push export control plane has contract evidence
-on Unix and mutual HTTPS (S05 PR 1):
+Image binary handoff (stream contract S05) is **certified** by
+`s05_image_transfer_v1` (2026-10-28). It completes image creation, upload and
+copy target (`POST /1.0/images`), image download
+(`GET /1.0/images/{fingerprint}/export`) and push export
+(`POST /1.0/images/{fingerprint}/export`) on Unix and mutual HTTPS:
 
 - `CreateImage` JSON bodies for every source kind agree with the pinned client:
   - a private image pull with a secret
@@ -962,9 +965,68 @@ on Unix and mutual HTTPS (S05 PR 1):
   export with only a metadata sink is refused before any byte is written.
 - `ExportImage` pushes to an approved target with aliases and profiles and
   requires `images_push_relay`.
+- `Images.copy(target, source, image, opts)` copies by pull (the default), push
+  or relay. It agrees with the pinned `CopyImage` on every request, body and
+  header: secrets, aliases (`copy_aliases` and explicit), profiles,
+  `auto_update`, `public` and the image type.
 
-Image copy and its explicit wait are certified separately, so these rows stay
-partial.
+  ```elixir
+  {:ok, copy} =
+    Images.copy(target, source, image,
+      mode: "pull",
+      approved_origin: "https://source.example:8443",
+      aliases: [%{"name" => "base"}]
+    )
+
+  {:ok, copy} = Images.wait_copy(copy, timeout: 600_000)
+  ```
+
+  Pull and push need `:approved_origin`, the exact HTTPS origin of the side the
+  other backend connects to (the source in pull mode, the target in push
+  mode). A Unix peer, a missing origin or any other origin is refused with
+  `:unapproved_copy_origin` before any request. Relay works over either
+  transport and stages bytes through the host's `:relay` adapter. A profile
+  override needs `image_copy_profile` on the target before any request.
+- `Images.copy/4` returns an `ImageCopy` with the bound `source` and `target`
+  operation handles and performs no cleanup:
+  - pull: `source` is the download secret (nil for a public image) and
+    `target` is the image creation
+  - push: `target` is the push token and `source` is the export
+  - relay: `target` is the upload
+- `Images.wait_copy/2` waits on the operation that drives the copy: the target
+  in pull and relay mode, the source export in push mode. It then performs the
+  pinned cleanup:
+  - once a push export is final, it cancels the token
+  - after a successful relay, or a pull against a target without
+    `image_create_aliases`, it creates the requested aliases
+
+  It agrees with the pinned `RemoteOperation.Wait` on success, failure and
+  cancellation; cancel the driving handle with `Operation.cancel/1`. A local
+  deadline performs no cleanup, because the copy may still be running.
+- A lost or malformed source, target or alias reply is uncertain and never
+  replayed. Every handle already accepted is kept in `response.accepted`, and
+  nothing is cancelled.
+
+Approved differences from the pinned client:
+
+- Cleanup is explicit in `wait_copy/2`, not inside `copy/4`.
+- When the push export fails, the token handle is kept and not cancelled;
+  cancel it with `Operation.cancel/1`.
+- A push to a source without `images_push_relay` is refused before the token
+  request. The pinned client creates the token, fails the export guard and
+  cancels the token.
+- A failed or cancelled relay is reported as the native failure. The pinned
+  relay reports success, because `remoteOperationError(msg, nil)` is nil.
+
+Approved exclusions:
+
+- the `?public` documentation views
+- the pinned `/dev/incus/sock` download path
+- trying each address a server advertises
+- cluster forwarding beyond host project and target routing
+
+Copies whose source is a SimpleStreams or OCI server stay with S12 and S11.
+Real-daemon image acceptance is separately recorded.
 
 `RepairInstance` (`name`, body `%{"action" => "rebuild-config-volume"}`,
 `instances_debug_repair`) sends the daemon's registered

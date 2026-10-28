@@ -99,7 +99,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/sync_mutation_contract_test.exs"
+        "test/sync_mutation_contract_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -283,7 +284,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/images.ex",
       "evidence": [
-        "test/image_transfer_test.exs"
+        "test/image_transfer_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -371,7 +373,8 @@
       "evidence": [
         "test/resource_slice_test.exs",
         "test/sync_mutation_contract_test.exs",
-        "test/image_contract_test.exs"
+        "test/image_contract_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -381,7 +384,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/sync_mutation_contract_test.exs"
+        "test/sync_mutation_contract_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
       "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
@@ -391,7 +395,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/sync_mutation_contract_test.exs"
+        "test/sync_mutation_contract_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
       "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
@@ -3596,7 +3601,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/images.ex",
       "evidence": [
-        "test/image_transfer_test.exs"
+        "test/image_transfer_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3684,7 +3690,8 @@
       "evidence": [
         "test/resource_slice_test.exs",
         "test/sync_mutation_contract_test.exs",
-        "test/image_contract_test.exs"
+        "test/image_contract_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -3694,7 +3701,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/sync_mutation_contract_test.exs"
+        "test/sync_mutation_contract_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
       "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
@@ -3704,7 +3712,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/sync_mutation_contract_test.exs"
+        "test/sync_mutation_contract_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
       "note": "B11 instance and image write. The endpoint row is complete under a reviewed b11 sync- or async-mutation record: schema-generated request bodies, PUT If-Match ETags, native synchronous success or accepted operations with native /wait running/completed/failed/cancelled snapshots, and native 400/403/404/409/412 compared with the named Go method on Unix/mutual HTTPS; lost or malformed replies are uncertain and never replayed; operation metadata such as an image secret is redacted from Inspect. Cluster forwarding is excluded and real-daemon effects remain separate. Endpoint completion is not Go declaration parity."
     },
@@ -4469,7 +4478,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/sync_mutation_contract_test.exs"
+        "test/sync_mutation_contract_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },

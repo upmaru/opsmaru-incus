@@ -224,6 +224,22 @@ Real-daemon image acceptance stays separately recorded. Each PR updates the
 ledgers, closure ledger, backlog, client docs and generated coverage. Task 3.9,
 `complete_port` and every Go declaration status are unchanged.
 
+User decisions during PR 2 (2026-10-28), recorded as approved differences:
+
+- A push to a source without `images_push_relay` is refused before the target
+  token request. The pinned client asks for the token, fails the `ExportImage`
+  guard and then cancels the token.
+- The pinned relay builds its failure with `remoteOperationError(msg, nil)`,
+  which returns nil, so a failed or cancelled relay upload reports success.
+  `Images.wait_copy/2` reports the native failure instead. Neither creates
+  aliases.
+
+PR 2 shape: `Images.copy/4` returns an `ImageCopy` with the bound `source` and
+`target` operation handles and takes `:approved_origin`, the exact HTTPS origin
+of the side the other backend connects to. Failures keep the accepted handles
+in `response.accepted`. A local wait deadline in `wait_copy/2` performs no
+cleanup, because the copy may still be running.
+
 #### Approved slice: S10 copy and migration certification (2026-10-27)
 
 Certify stream contract S10 under a single reviewed record and complete the
