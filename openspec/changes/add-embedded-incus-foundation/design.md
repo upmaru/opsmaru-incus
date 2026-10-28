@@ -129,6 +129,101 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: S05 image binary handoff and copy certification (2026-10-28)
+
+Certify stream contract S05 under a single reviewed record and complete the
+three rows linked to it, which then have no open stream contract:
+
+- image creation, upload and copy target on `POST /1.0/images`
+- image download on `GET /1.0/images/{fingerprint}/export`
+- push export on `POST /1.0/images/{fingerprint}/export`
+
+This also lands the image copy deferred from S10. The operation WebSocket row
+stays partial while S02 is open.
+
+User decisions (2026-10-28):
+
+- The `?public` documentation views on image export and `POST /1.0/images`
+  serve unauthenticated clients. `Connection.https!` always presents a client
+  certificate, so they are approved exclusions, like the B11 public alias view.
+  The daemon-to-daemon push upload (fingerprint and secret headers) is still
+  certified through `Images.import/4`.
+- Image copy cleanup is explicit. `Images.copy/4` stays free of side effects
+  and returns its native handles. A new `Images.wait_copy/2` waits on the
+  operation that drives the copy (the target in pull and relay mode, the source
+  export in push mode) and then performs the pinned cleanup explicitly:
+  - in push mode, it cancels the target's token operation
+  - in relay mode, and in pull mode against a target without
+    `image_create_aliases`, it creates the requested aliases
+
+  When the source export fails in push mode, `copy` returns the accepted token
+  handle with the error and does not cancel it; the host cancels with
+  `Operation.cancel/1`. This is an approved difference from the pinned client,
+  which cancels the token itself.
+- Certify every `CreateImage` source kind, so `POST /1.0/images` can complete:
+  binary upload, image pull and push, URL, and instance and snapshot publish.
+- Two PRs. Rows linked to S05 complete only once S05 is certified.
+
+PR 1: image binary and create control plane, with rows still partial.
+
+- `CreateImage` JSON bodies for every source kind (image pull with and without
+  a secret, push token request, URL, instance and snapshot publish) on Unix and
+  mutual HTTPS, compared with the pinned `CreateImage(image, nil)`. Coverage
+  includes schema-driven bodies, the `image_compression_algorithm` guard before
+  dispatch, accepted operations with native `/wait`, native 400/403/404/409, and
+  lost or malformed replies that are uncertain and never replayed.
+- `Images.import/4` binary uploads compared with the pinned
+  `CreateImage(image, args)` on both transports: unified and split images, the
+  container `rootfs` and virtual-machine `rootfs.img` parts, compression, and
+  the public, filename, properties, profiles, aliases and push
+  fingerprint/secret headers. Request bytes and headers are compared, and a
+  lost upload is uncertain and never replayed.
+- `Images.download/4` compared with the pinned `GetImageFile` and
+  `GetPrivateImageFile` on both transports: unified and split exports, private
+  secret encoding, names, sizes and bytes, OCI exports that skip the
+  fingerprint check, fingerprint mismatch, a split export with one sink,
+  native errors, sink failure and deadlines.
+- `ExportImage` compared with the pinned method, including the
+  `images_push_relay` guard. No row completes and S05 stays open.
+
+PR 2: image copy and certification.
+
+- `Images.copy/4` pull, push and relay end to end on mutual HTTPS, compared
+  with the pinned `CopyImage`: requests, secrets, aliases (`copy_aliases` and
+  explicit), profiles with the `image_copy_profile` guard, `auto_update`,
+  `public` and image type. Pull and push need the host-approved origin; a Unix
+  peer is refused before any request.
+- `Images.wait_copy/2` compared with the pinned `RemoteOperation.Wait` for
+  success, failure and cancellation, including token cancellation and alias
+  creation where the pinned client performs them. Any other divergence is
+  recorded for approval.
+- Lost or malformed source and target replies are uncertain and never
+  replayed. Every handle already accepted is kept.
+- An image-transfer record kind certifies S05 and completes the three rows. The
+  selected manifest grows 239 -> 242 pairs (241 complete), and the certified
+  stream contracts become S01, S03, S04, S05, S06, S07 and S10.
+
+Approved exclusions:
+
+- the `?public` documentation views
+- the pinned `/dev/incus/sock` download path, since the library never probes
+  local sockets
+- trying each address a server advertises; pull and push use one host-approved
+  origin
+- cluster forwarding beyond host project and target routing
+
+Already-approved boundaries stay as they are:
+
+- relay stages bytes through host adapters rather than temporary files
+- hosts observe progress through their own sinks and sources, not a progress
+  callback
+- connection deadlines replace the pinned 30-second response-header timeout
+
+Copies whose source is a SimpleStreams or OCI server stay with S12 and S11.
+Real-daemon image acceptance stays separately recorded. Each PR updates the
+ledgers, closure ledger, backlog, client docs and generated coverage. Task 3.9,
+`complete_port` and every Go declaration status are unchanged.
+
 #### Approved slice: S10 copy and migration certification (2026-10-27)
 
 Certify stream contract S10 under a single reviewed record and complete the
