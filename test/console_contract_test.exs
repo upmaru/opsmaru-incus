@@ -53,7 +53,7 @@ defmodule Opsmaru.Incus.ConsoleContractTest do
 
         ours = backend(root, identity)
         drive(mode, client(ours, identity), body)
-        await_frames(ours, attachments)
+        await_frames(ours, attachments, true)
 
         assert requests(ours) == requests(native), "#{mode} #{inspect(body)}"
         assert [{"control", _} | data] = frames(ours)
@@ -290,14 +290,17 @@ defmodule Opsmaru.Incus.ConsoleContractTest do
   end
 
   # The control channel has its detach close frame, and every data channel its
-  # payload and barrier.
-  defp await_frames(fixture, attachments) do
+  # payload and barrier. Our explicit detach also closes each data channel with a
+  # frame; the pinned mirror only closes the socket, so its data close is not awaited.
+  defp await_frames(fixture, attachments, data_close? \\ false) do
     await(fn ->
       case frames(fixture) do
         [{"control", control} | data] ->
           List.last(control) == {8, <<1000::16, "Detaching from console">>} and
             length(data) == attachments and
-            Enum.all?(data, fn {"data", frames} -> {1, ""} in frames end)
+            Enum.all?(data, fn {"data", frames} ->
+              {1, ""} in frames and (not data_close? or List.last(frames) == {8, ""})
+            end)
 
         _ ->
           false
