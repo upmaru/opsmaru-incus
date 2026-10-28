@@ -392,13 +392,42 @@ defmodule Opsmaru.Incus.Images do
        else: headers
   end
 
-  defp image_event({:headers, headers}, ref, _fingerprint, _sinks) do
+  defp image_event({:headers, headers}, ref, _fingerprint, sinks) do
+    {type, subtype, _} =
+      :cow_http_hd.parse_content_type(headers["content-type"] || "application/octet-stream")
+
+    # As in the pinned client, a split export needs both sinks before any byte is written.
+    if {type, subtype} == {"multipart", "form-data"} and not Map.has_key?(sinks, :rootfs),
+      do: {:error, :missing_sink},
+      else: image_headers(headers, ref)
+  rescue
+    _ -> {:error, :invalid_image_headers}
+  end
+
+  defp image_event({:data, bytes}, ref, _, sinks), do: image_data(bytes, ref, sinks)
+
+  defp image_event(:done, ref, fingerprint, _) do
+    state = Process.get(ref)
+    digest = Base.encode16(:crypto.hash_final(state.hash), case: :lower)
+
+    cond do
+      state.mode == :multipart and (state.phase != :done or state.parts != [:metadata, :rootfs]) ->
+        {:error, :invalid_image_stream}
+
+      not state.oci and not String.starts_with?(digest, fingerprint) ->
+        {:error, :fingerprint_mismatch}
+
+      true ->
+        {:ok, %{names: state.names, sizes: state.sizes, sha256: digest}}
+    end
+  end
+
+  defp image_headers(headers, ref) do
     if is_nil(Process.get(ref)) do
       {type, subtype, params} =
         :cow_http_hd.parse_content_type(headers["content-type"] || "application/octet-stream")
 
       mode = if {type, subtype} == {"multipart", "form-data"}, do: :multipart, else: :unified
-
       name = image_name(mode, headers)
 
       state = %{
@@ -423,11 +452,9 @@ defmodule Opsmaru.Incus.Images do
     end
 
     :ok
-  rescue
-    _ -> {:error, :invalid_image_headers}
   end
 
-  defp image_event({:data, bytes}, ref, _, sinks) do
+  defp image_data(bytes, ref, sinks) do
     state = Process.get(ref)
 
     case consume(state, bytes, sinks) do
@@ -440,22 +467,6 @@ defmodule Opsmaru.Incus.Images do
     end
   rescue
     _ -> {:error, :invalid_image_stream}
-  end
-
-  defp image_event(:done, ref, fingerprint, _) do
-    state = Process.get(ref)
-    digest = Base.encode16(:crypto.hash_final(state.hash), case: :lower)
-
-    cond do
-      state.mode == :multipart and (state.phase != :done or state.parts != [:metadata, :rootfs]) ->
-        {:error, :invalid_image_stream}
-
-      not state.oci and not String.starts_with?(digest, fingerprint) ->
-        {:error, :fingerprint_mismatch}
-
-      true ->
-        {:ok, %{names: state.names, sizes: state.sizes, sha256: digest}}
-    end
   end
 
   defp image_name(:multipart, _), do: nil

@@ -30,6 +30,7 @@ type Input struct {
 	Name        string `json:"name"`
 	Writable    bool   `json:"writable"`
 	ImageType   string `json:"image_type"`
+	MetaOnly    bool   `json:"meta_only"`
 
 	Action      string            `json:"action"`
 	Args        []json.RawMessage `json:"args"`
@@ -374,10 +375,14 @@ func imageTransfer(client incus.InstanceServer, input Input, root string) {
 		defer os.Remove(rootfs.Name())
 		defer rootfs.Close()
 		var response *incus.ImageFileResponse
+		request := incus.ImageFileRequest{MetaFile: meta, RootfsFile: rootfs}
+		if input.MetaOnly {
+			request.RootfsFile = nil
+		}
 		if input.Transfer == "download_private_image" {
-			response, err = client.GetPrivateImageFile(input.Fingerprint, input.Secret, incus.ImageFileRequest{MetaFile: meta, RootfsFile: rootfs})
+			response, err = client.GetPrivateImageFile(input.Fingerprint, input.Secret, request)
 		} else {
-			response, err = client.GetImageFile(input.Fingerprint, incus.ImageFileRequest{MetaFile: meta, RootfsFile: rootfs})
+			response, err = client.GetImageFile(input.Fingerprint, request)
 		}
 		if err != nil {
 			result["error"] = err.Error()

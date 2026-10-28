@@ -70,6 +70,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** reads agree with the pinned client for populated/empty/corrupt results, native 403/404, routing, extensions and lifetime cleanup, and synchronous writes agree for request bodies, ETags and native rejection while lost or malformed replies are uncertain and never replayed
 - **AND** reviewed records list each completed row, selectors the pinned client does not send and cluster forwarding are approved exclusions, and the metrics and ACL log rows stay partial while S07 is open
 
+#### Scenario: Certified image transfer and copy
+
+- **WHEN** a caller creates an image from an upload, a URL, an instance or snapshot, or a pull or push source, downloads or pushes an image export, or copies an image by pull, push or relay, over Unix or mutual HTTPS
+- **THEN** requests, bodies, headers, bytes, guards, accepted operations and copy waits agree with the pinned client. Native errors are preserved; unified, split and OCI exports keep their names, sizes and fingerprint checks; pull and push use only the host-approved origin; and lost or malformed source and target replies are uncertain and never replayed
+- **AND** S05 is certified by a single reviewed record; explicit copy cleanup through `Images.wait_copy/2`, with no implicit token cancellation, is a recorded approved difference; and the public documentation views, the local `/dev/incus/sock` download path, advertised-address fallback and cluster forwarding are recorded approved exclusions
+
 #### Scenario: Certified copy and migration
 
 - **WHEN** a caller renames or migrates an instance, snapshot or custom volume, creates a volume or migration target, or copies an instance, snapshot or volume locally or by pull, push or relay, over Unix or mutual HTTPS

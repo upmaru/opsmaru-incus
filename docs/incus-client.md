@@ -937,6 +937,35 @@ HTTPS:
 
 Image copy is not certified here: it belongs to the still-open S05 contract, and the operation WebSocket row waits on S02.
 
+Image binary handoff (stream contract S05) is not yet certified. Its image
+creation, upload, download and push export control plane has contract evidence
+on Unix and mutual HTTPS (S05 PR 1):
+
+- `CreateImage` JSON bodies for every source kind agree with the pinned client:
+  - a private image pull with a secret
+  - a public SimpleStreams alias pull
+  - a push token request
+  - a URL
+  - instance and snapshot publish
+
+  A `compression_algorithm` needs `image_compression_algorithm` before dispatch.
+- `Images.import/4` uploads send the pinned client's path, headers and bytes:
+  - unified uploads, and split uploads with a container `rootfs` or a
+    virtual-machine `rootfs.img` part
+  - the public, filename, properties, profiles and aliases headers, and a push
+    target's fingerprint and secret
+
+  A lost upload is uncertain and never resent.
+- `Images.download/4` agrees with the pinned `GetImageFile` on unified, split
+  and OCI exports: names, sizes, bytes and native errors. A fingerprint
+  mismatch, a missing filename and a misordered split export fail. A split
+  export with only a metadata sink is refused before any byte is written.
+- `ExportImage` pushes to an approved target with aliases and profiles and
+  requires `images_push_relay`.
+
+Image copy and its explicit wait are certified separately, so these rows stay
+partial.
+
 `RepairInstance` (`name`, body `%{"action" => "rebuild-config-volume"}`,
 `instances_debug_repair`) sends the daemon's registered
 `POST /1.0/instances/{name}/debug/repair`. The REST document lists this route

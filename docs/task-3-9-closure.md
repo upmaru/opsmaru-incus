@@ -1682,3 +1682,43 @@ unchanged.
   and real-daemon copy acceptance stay separately recorded. Image copy is
   not certified here: it belongs to the still-open S05 contract, and the
   operation WebSocket row waits on S02.
+
+## S05 image transfer and copy certification (PR 1: image binary and create control plane)
+
+Approved 2026-10-28. PR 1 adds contract evidence for the S05 image creation,
+upload, download and push export control plane. No row completes and S05 stays
+open until PR 2 adds image copy and certifies it. Task 3.9, `complete_port` and
+every Go declaration status (1239 partial / 41 missing) are unchanged.
+
+- [x] The sync-mutation contract test now covers 115 write methods. It adds
+  `CreateImage` and `ExportImage` on Unix and mutual HTTPS: schema-driven
+  bodies, accepted operations with native `/wait`, native 400/403/404/409/412,
+  and lost or malformed replies that are uncertain and never replayed. Its
+  pinned-oracle arguments now follow the body, as the pinned `CreateImage`
+  upload arguments do.
+- [x] `CreateImage` JSON bodies for every source kind agree with the pinned
+  client, accepted or rejected: a private pull with a secret, a public
+  SimpleStreams alias pull, a push token request, a URL, and instance and
+  snapshot publish. The test pins the guard table. A `compression_algorithm`
+  needs `image_compression_algorithm` before dispatch, and a publish without one
+  needs nothing. `ExportImage` requires `images_push_relay`.
+- [x] `Images.import/4` uploads agree with the pinned
+  `CreateImage(image, args)`: path and routing query, every `x-incus-*` header
+  (public, filename, properties, profiles, aliases, push fingerprint and
+  secret), unified bytes, and split parts with names, filenames and bytes for
+  the container `rootfs` and virtual-machine `rootfs.img`. Accepted, native 400
+  and lost uploads are compared. A lost upload is uncertain and sent once.
+- [x] `Images.download/4` agrees with the pinned `GetImageFile` on unified,
+  split container, split virtual-machine and OCI exports (names, sizes and
+  bytes), and fails where it fails: fingerprint mismatch, missing filename,
+  misordered split export, and native 404 with its message.
+- [x] Fix: a split export with only a metadata sink is now refused before any
+  byte is written, as in the pinned client. Before this change the metadata
+  was written first.
+- [x] Mutation probes fail the new tests: writing to a missing rootfs sink,
+  dropping the push secret header, and checking OCI exports against the
+  fingerprint.
+- Approved exclusions: the `?public` views, the local `/dev/incus/sock`
+  download path, advertised-address fallback and cluster forwarding. Image copy
+  (pull, push and relay), `Images.wait_copy/2`, lost copy replies and the
+  certification of the three rows follow in PR 2.

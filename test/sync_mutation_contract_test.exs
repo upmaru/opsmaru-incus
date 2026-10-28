@@ -24,12 +24,15 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   # S10 PR 1: the instance, snapshot and custom volume rename and migration control
   # plane, and volume creation as a copy or migration target.
   @s10 ~w(RenameInstance MigrateInstance RenameInstanceSnapshot MigrateInstanceSnapshot CreateStoragePoolVolume CreateStoragePoolVolumeFromMigration RenameStoragePoolVolume MigrateStoragePoolVolume)
+  # S05 PR 1: image creation for every source kind, and push export.
+  @s05 ~w(CreateImage ExportImage)
   @all_methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
   @methods Enum.filter(
              @all_methods,
-             &(&1["name"] in (@b09 ++ @b10 ++ @b08 ++ @b11 ++ @rest ++ @s07 ++ @s06 ++ @s10))
+             &(&1["name"] in (@b09 ++
+                                @b10 ++ @b08 ++ @b11 ++ @rest ++ @s07 ++ @s06 ++ @s10 ++ @s05))
            )
-  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings storage storage_buckets storage_volume_nbd storage_api_volume_snapshots storage_volumes_rebuild console container_log_delete image_force_refresh instances_rebuild container_edit_metadata snapshot_expiry container_exec_recording instances_debug_repair container_backup custom_volume_backup storage_bucket_backup storage_buckets_create_credentials container_only_migration instance_pool_move instance_project_move cluster_migration_inconsistent_copy storage_api_volume_rename storage_api_remote_volume_handling storage_api_remote_volume_snapshot_copy)
+  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings storage storage_buckets storage_volume_nbd storage_api_volume_snapshots storage_volumes_rebuild console container_log_delete image_force_refresh instances_rebuild container_edit_metadata snapshot_expiry container_exec_recording instances_debug_repair container_backup custom_volume_backup storage_bucket_backup storage_buckets_create_credentials container_only_migration instance_pool_move instance_project_move cluster_migration_inconsistent_copy storage_api_volume_rename storage_api_remote_volume_handling storage_api_remote_volume_snapshot_copy image_compression_algorithm images_push_relay)
   @uuid "01234567-89ab-cdef-0123-456789abcdef"
   @url "/1.0/operations/" <> @uuid
   @etag "\"before\""
@@ -43,7 +46,7 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 113
+    assert length(@methods) == 115
     assert Enum.all?(@methods, &(&1["result"] in ["sync", "model", "operation"]))
     :ok
   end
@@ -216,6 +219,48 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       # A volume snapshot migrates through its snapshot path.
       snapshot = %{body(migrate) | "name" => "fixture-volume/fixture-snapshot"}
       compare(root, identity, Map.put(migrate, "sample", snapshot), {:wait, 200})
+    end
+
+    test "#{transport} image creation sources agree with the pinned client", %{root: root} do
+      identity = identity(root, unquote(transport))
+      create = Enum.find(@methods, &(&1["name"] == "CreateImage"))
+      export = Enum.find(@methods, &(&1["name"] == "ExportImage"))
+
+      # The pinned client's own checks, so a dropped catalogue guard cannot pass unseen.
+      assert {create["guards"], export["guards"], export["extension"]} ==
+               {[
+                  %{
+                    "field" => "compression_algorithm",
+                    "extension" => "image_compression_algorithm"
+                  }
+                ], [], "images_push_relay"}
+
+      for {_, body} <- image_sources(),
+          outcome <- [{:wait, 200}, 400],
+          do: compare(root, identity, Map.put(create, "sample", body), outcome)
+
+      # A publish with a compression algorithm needs image_compression_algorithm; one
+      # without it sends none and needs nothing.
+      publish = image_sources()[:instance]
+      guarded(root, identity, create, hd(create["guards"]), publish)
+      plain = Map.delete(publish, "compression_algorithm")
+      extensions = @extensions -- ["image_compression_algorithm"]
+      fixture = backend(root, identity, &respond({:wait, 200}, create, &1), extensions)
+      assert {:ok, %{type: "async"}} = call(client(fixture, identity, extensions), create, plain)
+      sent = Jason.decode!(List.last(HTTPFixture.requests(fixture)).body)
+      assert sent["compression_algorithm"] in [nil, ""]
+
+      # A push export to an approved target with aliases and profiles.
+      body = %{
+        "target" => "https://target.example:8443",
+        "certificate" => "fixture-certificate",
+        "secret" => "fixture-secret",
+        "project" => "fixture-project",
+        "aliases" => [%{"name" => "fixture-alias", "description" => "fixture"}],
+        "profiles" => ["default", "fixture"]
+      }
+
+      compare(root, identity, Map.put(export, "sample", body), {:wait, 200})
     end
 
     test "#{transport} untrusted clients bootstrap trust with a trust token", %{root: root} do
@@ -578,6 +623,72 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     end)
   end
 
+  # Image sources: a private pull with a secret, a public SimpleStreams alias pull, a
+  # push token request, a URL, and instance and snapshot publish with every option.
+  defp image_sources,
+    do: [
+      pull: %{
+        "aliases" => [%{"name" => "fixture-alias", "description" => "fixture"}],
+        "auto_update" => true,
+        "profiles" => ["default"],
+        "source" => %{
+          "type" => "image",
+          "mode" => "pull",
+          "protocol" => "incus",
+          "server" => "https://origin.example:8443",
+          "certificate" => "fixture-certificate",
+          "fingerprint" => "fixture-fingerprint",
+          "secret" => "fixture-secret",
+          "project" => "fixture-project",
+          "image_type" => "virtual-machine"
+        }
+      },
+      alias: %{
+        "public" => true,
+        "source" => %{
+          "type" => "image",
+          "mode" => "pull",
+          "protocol" => "simplestreams",
+          "server" => "https://images.example",
+          "alias" => "fixture/1",
+          "image_type" => "container"
+        }
+      },
+      push: %{
+        "public" => true,
+        "expires_at" => "2030-01-02T03:04:05Z",
+        "properties" => %{"os" => "fixture"},
+        "aliases" => [%{"name" => "fixture-alias"}],
+        "source" => %{"mode" => "push", "fingerprint" => "fixture-fingerprint"}
+      },
+      url: %{
+        "auto_update" => true,
+        "source" => %{
+          "type" => "url",
+          "mode" => "pull",
+          "url" => "https://images.example/fixture"
+        }
+      },
+      instance: %{
+        "filename" => "fixture.tar.xz",
+        "public" => true,
+        "compression_algorithm" => "zstd",
+        "format" => "split",
+        "expires_at" => "2030-01-02T03:04:05Z",
+        "properties" => %{"description" => "fixture"},
+        "aliases" => [%{"name" => "fixture-alias"}],
+        "source" => %{
+          "type" => "instance",
+          "name" => "fixture-guest",
+          "project" => "fixture-project"
+        }
+      },
+      snapshot: %{
+        "properties" => %{"description" => "fixture"},
+        "source" => %{"type" => "snapshot", "name" => "fixture-guest/fixture-snapshot"}
+      }
+    ]
+
   # Instance targets: a pull migration with live and CRIU channels, a push migration
   # target refreshing an existing instance, and a local copy from another project.
   defp instance_sources,
@@ -694,11 +805,12 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   end
 
   defp oracle(root, fixture, identity, method, args, body) do
-    # Trailing pinned arguments the catalogue records, such as unused console log options.
+    # Trailing pinned arguments the catalogue records follow the body, such as unused
+    # console log options or CreateImage's absent upload arguments.
     values =
       Enum.map(method["params"], &args[&1]) ++
-        Map.get(method, "oracle_trailing", []) ++
         if(body, do: [body], else: []) ++
+        Map.get(method, "oracle_trailing", []) ++
         if(method["verb"] == "PUT", do: [@etag], else: [])
 
     input =

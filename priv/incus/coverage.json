@@ -98,7 +98,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -165,7 +166,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/images.ex",
       "evidence": [
-        "test/image_transfer_test.exs"
+        "test/image_transfer_test.exs",
+        "test/image_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -243,7 +245,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/images.ex",
       "evidence": [
-        "test/private_image_reference_test.exs"
+        "test/private_image_reference_test.exs",
+        "test/image_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -366,7 +369,9 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs",
+        "test/image_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -3677,7 +3682,9 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs",
+        "test/image_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -4461,7 +4468,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
-        "test/resource_slice_test.exs"
+        "test/resource_slice_test.exs",
+        "test/sync_mutation_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -4725,7 +4733,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/images.ex",
       "evidence": [
-        "test/image_transfer_test.exs"
+        "test/image_transfer_test.exs",
+        "test/image_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -5609,7 +5618,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/images.ex",
       "evidence": [
-        "test/private_image_reference_test.exs"
+        "test/private_image_reference_test.exs",
+        "test/image_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
