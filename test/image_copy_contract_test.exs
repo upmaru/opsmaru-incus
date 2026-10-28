@@ -88,6 +88,15 @@ defmodule Opsmaru.Incus.ImageCopyContractTest do
         assert mutations(source2) == mutations(source), label
         assert mutations(target2) == mutations(target), label
 
+        # Waiting again on a finished copy sends nothing more: no alias, no cancel.
+        if outcome == :success do
+          {:ok, done} = waited
+          assert done.aliases == []
+          sent = mutations(source2) ++ mutations(target2)
+          assert {:ok, _} = Images.wait_copy(done, timeout: 3_000)
+          assert mutations(source2) ++ mutations(target2) == sent, label
+        end
+
         # Only the driving operation is waited on; a push also reads its token to cancel it.
         driving_id = if mode == :push, do: "export", else: "copy"
         read = operation_reads(source2) ++ operation_reads(target2)
@@ -139,11 +148,20 @@ defmodule Opsmaru.Incus.ImageCopyContractTest do
           {source, target} = pair(root, identity, image, @extensions, :success, %{alias: reply})
           assert {:ok, copy} = copy(mode, image, opts, source, target)
 
-          assert {:error, %Error{kind: :uncertain, response: %{accepted: kept}}} =
+          assert {:error, %Error{kind: :uncertain, response: %{accepted: kept, alias: "one"}}} =
                    Images.wait_copy(copy, timeout: 3_000)
 
           assert Operation.successful?(kept.target)
           assert count(source, target, :alias) == 1
+
+          # Waiting again sends only the aliases never sent; the uncertain one is not resent.
+          assert kept.aliases == ["two"]
+
+          assert {:error, %Error{kind: :uncertain, response: %{accepted: rest, alias: "two"}}} =
+                   Images.wait_copy(kept, timeout: 3_000)
+
+          assert rest.aliases == []
+          assert alias_names(target) == ["one", "two"]
           assert deletes(source) == [] and deletes(target) == []
         end
       end
@@ -196,6 +214,26 @@ defmodule Opsmaru.Incus.ImageCopyContractTest do
 
       assert {:error, %Error{kind: :unapproved_copy_origin}} =
                Images.copy(target.client, source.client, image, opts)
+    end
+
+    # Malformed option values are refused before the secret request, so no handle
+    # is left behind.
+    for bad <- [
+          [aliases: ["base"]],
+          [aliases: [%{"name" => ""}]],
+          [aliases: [%{name: "base"}]],
+          [profiles: "p"],
+          [public: "yes"],
+          [type: 1]
+        ] do
+      assert {:error, %Error{kind: :invalid_copy_options}} =
+               Images.copy(
+                 target.client,
+                 source.client,
+                 image,
+                 [mode: "pull", approved_origin: source.origin] ++ bad
+               ),
+             inspect(bad)
     end
 
     assert {:error, %Error{kind: :same_backend}} =
@@ -401,6 +439,14 @@ defmodule Opsmaru.Incus.ImageCopyContractTest do
         request.method == "GET",
         "/1.0/operations/" <> rest <- [URI.parse(request.target).path],
         do: rest |> String.split("/") |> hd()
+      )
+
+  defp alias_names(side),
+    do:
+      for(
+        request <- HTTPFixture.requests(side.fixture),
+        kind(request) == :alias,
+        do: Jason.decode!(request.body)["name"]
       )
 
   defp deletes(side), do: for({"DELETE", target, _} <- mutations(side), do: target)

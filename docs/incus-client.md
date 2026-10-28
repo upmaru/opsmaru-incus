@@ -1004,8 +1004,14 @@ copy target (`POST /1.0/images`), image download
   cancellation; cancel the driving handle with `Operation.cancel/1`. A local
   deadline performs no cleanup, because the copy may still be running.
 - A lost or malformed source, target or alias reply is uncertain and never
-  replayed. Every handle already accepted is kept in `response.accepted`, and
-  nothing is cancelled.
+  replayed. Every handle already accepted is kept in `response.accepted`,
+  including the pull secret operation when its reply has no usable secret, and
+  nothing is cancelled. Each alias is sent at most once: the returned copy
+  keeps only aliases never sent, and an alias failure names its alias in
+  `response.alias`, so waiting again never resends one.
+- Malformed option values (aliases without a string name, non-list profiles,
+  non-boolean flags) are refused with `:invalid_copy_options` before any
+  request.
 
 Approved differences from the pinned client:
 

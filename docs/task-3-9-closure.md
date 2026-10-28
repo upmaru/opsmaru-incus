@@ -1761,7 +1761,11 @@ contracts become S01, S03, S04, S05, S06, S07 and S10. Task 3.9,
   - the first alias creation
 
   The handles accepted before the loss are kept in `response.accepted`;
-  nothing after it is sent and nothing is cancelled.
+  nothing after it is sent and nothing is cancelled. A pull secret reply with
+  no usable secret keeps its bound operation. Waiting again sends only the
+  aliases never sent, and a finished copy sends nothing more.
+- [x] Malformed alias, profile, flag and type values are refused before the
+  secret request, so bad input never leaves an accepted handle behind.
 - [x] Guards agree with the pinned client before any mutation:
   - a profile override without `image_copy_profile`, in every mode
   - pull and push without the approved HTTPS origin (a Unix peer, no origin

@@ -146,9 +146,10 @@ defmodule Opsmaru.Incus.Images do
          :ok <- copy_options(opts),
          false <- same_backend?(target, source),
          {:ok, image} <- Model.decode("Image", Model.encode(image)),
+         aliases = copy_aliases(image.data, opts),
+         :ok <- check_aliases(aliases),
          :ok <- profile_override(target, opts) do
       image = image.data
-      aliases = copy_aliases(image, opts)
 
       result =
         case opts[:mode] || "pull" do
@@ -182,10 +183,37 @@ defmodule Opsmaru.Incus.Images do
       opts[:mode] not in [nil, "pull", "push", "relay"] ->
         {:error, :unsupported_copy_mode}
 
+      not valid_copy_values?(opts) ->
+        {:error, :invalid_copy_options}
+
       true ->
         :ok
     end
   end
+
+  defp valid_copy_values?(opts),
+    do:
+      Enum.all?([:public, :auto_update, :copy_aliases], &(opts[&1] in [nil, true, false])) and
+        (is_nil(opts[:type]) or text?(opts[:type], 0)) and
+        (is_nil(opts[:approved_origin]) or text?(opts[:approved_origin], 1)) and
+        (is_nil(opts[:profiles]) or
+           (is_list(opts[:profiles]) and Enum.all?(opts[:profiles], &text?(&1, 1))))
+
+  # Every alias is checked before any request, so bad input never strands a handle.
+  defp check_aliases(nil), do: :ok
+
+  defp check_aliases(aliases) do
+    if is_list(aliases) and
+         Enum.all?(aliases, fn entry ->
+           is_map(entry) and text?(entry["name"], 1) and
+             (is_nil(entry["description"]) or text?(entry["description"], 0))
+         end),
+       do: :ok,
+       else: {:error, :invalid_copy_options}
+  end
+
+  defp text?(value, min),
+    do: is_binary(value) and byte_size(value) in min..1024 and String.valid?(value)
 
   defp same_backend?(one, two),
     do:
@@ -221,44 +249,58 @@ defmodule Opsmaru.Incus.Images do
   defp certificate(client), do: (client.server.environment || %{})["certificate"] || ""
 
   defp pull(target, source, image, aliases, url, opts) do
-    case pull_secret(source, image) do
-      {:ok, secret, secret_op} ->
-        body = %{
-          "aliases" => aliases,
-          "auto_update" => opts[:auto_update] == true,
-          "public" => opts[:public] == true,
-          "profiles" => opts[:profiles],
-          "source" => %{
-            "type" => "image",
-            "mode" => "pull",
-            "protocol" => "incus",
-            "server" => url,
-            "certificate" => certificate(source),
-            "project" => source.connection.project || "default",
-            "fingerprint" => image["fingerprint"],
-            "secret" => secret,
-            "image_type" => opts[:type] || ""
-          }
+    with {:ok, secret, copy} <- pull_secret(source, image) do
+      body = %{
+        "aliases" => aliases,
+        "auto_update" => opts[:auto_update] == true,
+        "public" => opts[:public] == true,
+        "profiles" => opts[:profiles],
+        "source" => %{
+          "type" => "image",
+          "mode" => "pull",
+          "protocol" => "incus",
+          "server" => url,
+          "certificate" => certificate(source),
+          "project" => source.connection.project || "default",
+          "fingerprint" => image["fingerprint"],
+          "secret" => secret,
+          "image_type" => opts[:type] || ""
         }
+      }
 
-        # Servers without image_create_aliases get the aliases after the copy, as natively.
-        later = if Incus.has_extension?(target, "image_create_aliases"), do: [], else: aliases
-        copy = %ImageCopy{mode: "pull", source: secret_op, aliases: names(later)}
-        accept(copy, :target, target, "CreateImage", %{}, body)
-
-      {:error, error} ->
-        copy_failure(%ImageCopy{mode: "pull"}, error)
+      # Servers without image_create_aliases get the aliases after the copy, as natively.
+      later = if Incus.has_extension?(target, "image_create_aliases"), do: [], else: aliases
+      accept(%{copy | aliases: names(later)}, :target, target, "CreateImage", %{}, body)
     end
   end
 
+  # The secret operation is bound before its secret is read, so it is never lost.
   defp pull_secret(source, image) do
+    copy = %ImageCopy{mode: "pull"}
+
     if image["public"] == true do
-      {:ok, nil, nil}
+      {:ok, nil, copy}
     else
-      with {:ok, secret, response} <- secret_response(source, image["fingerprint"]),
-           {:ok, operation} <- bind(source, response),
-           do: {:ok, secret, operation}
+      args = %{"fingerprint" => image["fingerprint"]}
+
+      with {:ok, copy} <- accept(copy, :source, source, "CreateImageSecret", args, nil) do
+        case token_secret(copy.source.response) do
+          secret when is_binary(secret) -> {:ok, secret, copy}
+          _ -> unread_secret(copy, :source)
+        end
+      end
     end
+  end
+
+  # An accepted operation without a usable secret may have been accepted all the same.
+  defp unread_secret(copy, side) do
+    operation = Map.fetch!(copy, side)
+
+    copy_failure(copy, %Error{
+      kind: :uncertain,
+      response: operation.response,
+      operation: operation.url
+    })
   end
 
   defp push(target, source, image, aliases, url, opts) do
@@ -294,7 +336,7 @@ defmodule Opsmaru.Incus.Images do
           )
 
         _ ->
-          copy_failure(copy, %Error{kind: :uncertain, operation: copy.target.url})
+          unread_secret(copy, :target)
       end
     end
   end
@@ -405,7 +447,9 @@ defmodule Opsmaru.Incus.Images do
   Once a pull (against a server without `image_create_aliases`) or relay succeeds,
   the requested aliases are created, as natively. A local deadline or read failure
   performs no cleanup, so the copy may still run. Errors keep every handle in
-  `response.accepted`; nothing is replayed.
+  `response.accepted`; nothing is replayed. Each alias is sent at most once: the
+  returned copy keeps only aliases never sent, and an alias failure names its alias
+  in `response.alias`, so waiting again never resends one.
   """
   def wait_copy(copy, opts \\ [])
 
@@ -417,8 +461,7 @@ defmodule Opsmaru.Incus.Images do
          %Operation{} = operation <- Map.fetch!(copy, side) do
       case Operation.wait(operation, opts) do
         {:ok, current} ->
-          copy = copy |> Map.put(side, current) |> cancel_token()
-          with :ok <- create_aliases(copy), do: {:ok, copy}
+          copy |> Map.put(side, current) |> cancel_token() |> create_aliases()
 
         {:error, %Error{kind: :operation_failed} = error} ->
           copy_failure(cancel_token(copy), error)
@@ -444,23 +487,31 @@ defmodule Opsmaru.Incus.Images do
 
   defp cancel_token(copy), do: copy
 
-  defp create_aliases(%ImageCopy{aliases: []}), do: :ok
+  defp create_aliases(%ImageCopy{aliases: []} = copy), do: {:ok, copy}
 
   defp create_aliases(%ImageCopy{target: target} = copy) do
     metadata = Operation.data(target)["metadata"]
     fingerprint = copy.fingerprint || (is_map(metadata) && metadata["fingerprint"])
 
-    if is_binary(fingerprint) do
-      Enum.reduce_while(copy.aliases, :ok, fn name, :ok ->
-        case Incus.call(target.client, "CreateImageAlias", %{},
-               body: %{"name" => name, "target" => fingerprint}
-             ) do
-          {:ok, _} -> {:cont, :ok}
-          {:error, error} -> {:halt, copy_failure(copy, error)}
-        end
-      end)
-    else
-      copy_failure(copy, :invalid_copy_fingerprint)
+    if is_binary(fingerprint),
+      do: create_alias(copy, fingerprint, copy.aliases),
+      else: copy_failure(copy, :invalid_copy_fingerprint)
+  end
+
+  # Each alias is sent at most once: a returned copy keeps only the aliases never sent,
+  # and a failure names the alias whose reply it reports.
+  defp create_alias(copy, _fingerprint, []), do: {:ok, %{copy | aliases: []}}
+
+  defp create_alias(copy, fingerprint, [name | rest]) do
+    case Incus.call(copy.target.client, "CreateImageAlias", %{},
+           body: %{"name" => name, "target" => fingerprint}
+         ) do
+      {:ok, _} ->
+        create_alias(copy, fingerprint, rest)
+
+      {:error, error} ->
+        {:error,
+         %{error | response: %{accepted: %{copy | aliases: rest}, error: error, alias: name}}}
     end
   end
 

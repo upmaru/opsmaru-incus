@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.ImageTransferTest do
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Connection, Context, Error, Images, Model}
+  alias Opsmaru.Incus.{Connection, Context, Error, Images, Model, Operation}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../.integration/incus-image-driver", __DIR__)
 
@@ -50,11 +50,14 @@ defmodule Opsmaru.Incus.ImageTransferTest do
       target_fixture = backend(root, fn _ -> flunk("target mutation must not occur") end)
       target = client(target_fixture, context)
 
-      # The copy keeps the secret request's own error; nothing was accepted yet.
+      # The copy keeps the bound secret operation and the secret request's own error.
       assert {:error,
               %Error{
                 kind: :uncertain,
-                response: %{accepted: %{source: nil, target: nil}, error: copy_error}
+                response: %{
+                  accepted: %{source: %Operation{url: "/1.0/operations/token-op"}, target: nil},
+                  error: copy_error
+                }
               }} =
                Images.copy(target, source, %{"fingerprint" => "fingerprint", "public" => false},
                  mode: "pull",
