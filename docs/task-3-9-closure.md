@@ -1798,3 +1798,53 @@ contracts become S01, S03, S04, S05, S06, S07 and S10. Task 3.9,
   download path, advertised-address fallback and cluster forwarding. Copies
   from SimpleStreams or OCI servers stay with S12 and S11. Real-daemon image
   acceptance stays separately recorded.
+
+## S02 console certification
+
+Approved 2026-10-28. One PR certifies S02 under `s02_console_v1`. The record
+completes two rows: console attachment (`POST /1.0/instances/{}/console`) and
+the operation WebSocket (`GET /1.0/operations/{}/websocket`), whose S01 and S10
+contracts were already certified. The selected manifest grows to 243 pairs, all
+complete. The certified stream contracts become S01, S02, S03, S04, S05, S06,
+S07 and S10. Task 3.9, `complete_port` and every Go declaration status are
+unchanged.
+
+- [x] A new `console` driver runs the unchanged pinned `ConsoleInstance` and
+  `ConsoleInstanceDynamic` and holds its connections until the test has seen
+  the detach frame. `Session.console/3` and `DynamicConsole` agree with it on
+  Unix and mutual HTTPS:
+  - every request, with JSON bodies compared without the zero values the Go
+    DTO always sends
+  - the channel order (control, then channel 0)
+  - every client frame per channel: the resize control text (compared as
+    JSON), binary data, the empty-text barrier and the control channel's
+    `1000 "Detaching from console"` close frame
+  - the default `console` type, width and height, and `vga` with `force`,
+    each static and with two dynamic attachments
+- [x] Guards and native errors agree with the pinned client: a server without
+  `console`, `vga` without `console_vga_type`, `force` without
+  `console_force`, native 400/403/404 and a reply without a control secret.
+- [x] Malformed secrets (missing, empty or non-string data or control secrets,
+  or non-map metadata) fail closed with the accepted operation and open no
+  channel. Extra accepted channels are ignored.
+- [x] Lost and malformed POST replies are uncertain and sent once. A rejected
+  data channel keeps the accepted operation and detaches the control channel.
+- [x] Invalid bodies and options fail before any request.
+- [x] The static console now validates its body as `InstanceConsolePost`,
+  opens only the control channel and then channel 0, and detaches with the
+  pinned close frame. It used to open every returned channel and accept empty
+  metadata. `Session.output/1` reads channel 0 for a console.
+- [x] Existing dynamic-console evidence is linked rather than repeated:
+  repeated attachments, capacity, owner isolation and loss, lifetime,
+  asynchronous channel failures and peer closure.
+- [x] Mutation probes fail the new tests: opening channel 0 first, a bare
+  control close, and accepting a reply without a data secret.
+- Approved differences (2026-10-28):
+  - hosts drive frames, barriers, resize and detach; there is no callback or
+    mirror helper
+  - local arguments are checked before the POST
+  - a missing or empty secret opens no channel
+  - a rejected data channel detaches the control channel
+  - detaching ends each data channel with a close frame
+- Approved exclusions: the `?public` operation WebSocket view and cluster
+  forwarding. Real-daemon console acceptance stays separately recorded.

@@ -70,6 +70,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** reads agree with the pinned client for populated/empty/corrupt results, native 403/404, routing, extensions and lifetime cleanup, and synchronous writes agree for request bodies, ETags and native rejection while lost or malformed replies are uncertain and never replayed
 - **AND** reviewed records list each completed row, selectors the pinned client does not send and cluster forwarding are approved exclusions, and the metrics and ACL log rows stay partial while S07 is open
 
+#### Scenario: Certified console attachment
+
+- **WHEN** a caller opens a static or dynamic console of `console` or `vga` type, with or without size and `force`, and exchanges control and data frames over Unix or mutual HTTPS
+- **THEN** requests, bodies, guards, channel order, frames, barriers and the detach close frame agree with the pinned client. Native errors are preserved, malformed channel metadata fails closed with the accepted operation kept, and lost or malformed replies are uncertain and never replayed
+- **AND** S02 is certified by a single reviewed record; explicit host-driven channels without callbacks or mirroring, and local argument checks before the POST, are recorded approved differences; and the public WebSocket view and cluster forwarding are recorded approved exclusions
+
 #### Scenario: Certified image transfer and copy
 
 - **WHEN** a caller creates an image from an upload, a URL, an instance or snapshot, or a pull or push source, downloads or pushes an image export, or copies an image by pull, push or relay, over Unix or mutual HTTPS

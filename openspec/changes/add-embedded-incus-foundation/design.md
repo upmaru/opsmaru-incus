@@ -129,6 +129,62 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: S02 console certification (2026-10-28)
+
+Certify stream contract S02 under a single reviewed record in one PR. Two rows
+then have no open stream contract and complete:
+
+- console attachment on `POST /1.0/instances/{name}/console`
+- the operation WebSocket on `GET /1.0/operations/{id}/websocket`, whose other
+  linked contracts (S01 and S10) are already certified
+
+User decisions (2026-10-28):
+
+- The static `Session.console/3` matches the pinned `ConsoleInstance`. It
+  validates the body as `InstanceConsolePost` and requires the control and data
+  secrets in the accepted metadata. It then opens the control channel, then
+  channel 0, and ignores any other channel. Missing or malformed secrets fail
+  closed, before any channel opens, and keep the accepted operation; no channel
+  is opened with an empty secret. `Session.close/1` sends the pinned
+  `1000 "Detaching from console"` close frame on a console's control channel.
+  A new Go driver compares the static console with the pinned helper.
+- Console orchestration is explicit, which is an approved difference. Hosts
+  send and receive frames, write barriers, resize and detach themselves; there
+  is no `Control` callback, `ConsoleDisconnect` channel or `ws.Mirror` helper.
+  Evidence shows the explicit calls produce the same wire frames as the pinned
+  helpers.
+- Local argument checks happen before the POST, which is an approved
+  difference. The pinned client sends the POST and only then rejects a nil
+  `Terminal` or `Control`, leaving an accepted console orphaned. The method
+  fixture still compares the pinned POST body and its post-acceptance error.
+
+The PR covers:
+
+- the static and dynamic consoles compared with the pinned `ConsoleInstance`
+  and `ConsoleInstanceDynamic` on Unix and mutual HTTPS: `console` and `vga`
+  types, width and height, `force`, the `console_vga_type` and `console_force`
+  guards before dispatch, control frames, data frames and write barriers, and
+  the detach close frame
+- native 400/403/404 rejection, and lost or malformed replies that are
+  uncertain and never replayed
+- existing evidence for repeated dynamic attachments, capacity, owner loss,
+  lifetimes, channel failures and peer closure, linked rather than repeated
+- a console record kind that certifies S02 and completes the two rows. The
+  selected manifest grows 242 -> 243 pairs, all complete, and the certified
+  stream contracts become S01, S02, S03, S04, S05, S06, S07 and S10.
+
+Approved exclusions:
+
+- the `?public` documentation view of the operation WebSocket, like the earlier
+  `?public` exclusions
+- cluster forwarding beyond host project and target routing
+
+The server's control commands stay native: hosts may send any bounded JSON
+control message, and the daemon acts only on `window-resize`. Real-daemon
+console acceptance stays separately recorded. The PR updates the ledgers,
+closure ledger, backlog, client docs and generated coverage. Task 3.9,
+`complete_port` and every Go declaration status are unchanged.
+
 #### Approved slice: S05 image binary handoff and copy certification (2026-10-28)
 
 Certify stream contract S05 under a single reviewed record and complete the

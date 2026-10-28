@@ -266,7 +266,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/session_test.exs"
+        "test/session_test.exs",
+        "test/console_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -275,7 +276,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/dynamic_console.ex",
       "evidence": [
-        "test/dynamic_console_reference_test.exs"
+        "test/dynamic_console_reference_test.exs",
+        "test/console_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -3583,7 +3585,8 @@
       "elixir": "lib/opsmaru/incus/api.ex",
       "evidence": [
         "test/resource_slice_test.exs",
-        "test/session_test.exs"
+        "test/session_test.exs",
+        "test/console_contract_test.exs"
       ],
       "note": "Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate."
     },
@@ -3592,7 +3595,8 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/dynamic_console.ex",
       "evidence": [
-        "test/dynamic_console_reference_test.exs"
+        "test/dynamic_console_reference_test.exs",
+        "test/console_contract_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },

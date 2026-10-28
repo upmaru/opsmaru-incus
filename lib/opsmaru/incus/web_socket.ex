@@ -66,7 +66,16 @@ defmodule Opsmaru.Incus.WebSocket do
   @doc false
   def close_owned(channels) do
     deadline = now() + 100
-    requests = Enum.map(channels, &{&1.pid, :gen_server.send_request(&1.pid, :close)})
+
+    # A `{channel, {code, reason}}` entry sends that native close status.
+    requests =
+      Enum.map(channels, fn
+        {channel, {code, reason}} ->
+          {channel.pid, :gen_server.send_request(channel.pid, {:close, code, reason})}
+
+        channel ->
+          {channel.pid, :gen_server.send_request(channel.pid, :close)}
+      end)
 
     # Send all graceful closes first. A blocked write must not give each channel
     # a fresh timeout or keep an owner's local resources alive indefinitely.
@@ -215,6 +224,11 @@ defmodule Opsmaru.Incus.WebSocket do
 
   def handle_call(:close, _, state) do
     encode(state, :close)
+    {:stop, :normal, :ok, state}
+  end
+
+  def handle_call({:close, code, reason}, _, state) do
+    encode(state, {:close, code, reason})
     {:stop, :normal, :ok, state}
   end
 

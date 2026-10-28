@@ -320,18 +320,18 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 242 pairs are currently in the checked
-evidence manifest. 241 are complete under reviewed completion records:
+pairs plus 46 query/access variants; 243 pairs are currently in the checked
+evidence manifest. All 243 are complete under reviewed completion records:
 native wait, events, exec, all eight B01 mutations, conditional instance
 PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10
 administrative rows, all 24 B05 PATCH rows, 28 stream-free B08 storage rows and
 all nineteen stream-free B11 instance and image rows, all three B07 recorded exec
 output rows, the B12 debug repair row, the eight S07 auxiliary byte stream
 rows, the eight S04 file transfer rows, the nineteen S06 backup and archive
-rows, the six S10 copy and migration rows and the three S05 image transfer
-rows. The operation WebSocket row is
-partial. It retains remaining copy/stream/model/helper scope without
-treating already verified slices as wholly missing. No full-port or new backend/
+rows, the six S10 copy and migration rows, the three S05 image transfer
+rows and the two S02 console rows (console attachment and the operation
+WebSocket). The remaining documented pairs keep their copy/stream/model/helper
+scope without treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
 The callback listener has at most `min(queue_limit, 128)` handlers and one callback
@@ -384,8 +384,8 @@ oracle defect is recorded, not treated as correct behavior or an approval gate.
 
 The official console helper with nil I/O accepts its POST before returning
 `A terminal must be set`; the method fixture compares the POST and separately
-checks this error. Actual channel/control behavior is checked independently in
-`session_test.exs`. Private-image positive comparisons use native hexadecimal
+checks this error. Actual channel and control behavior is compared with the
+pinned helpers in `console_contract_test.exs`. Private-image positive comparisons use native hexadecimal
 secrets; the pinned Go private-image helper double-escapes special-character
 secrets. No upstream patch or real workload is used by these fixtures.
 
@@ -936,7 +936,7 @@ HTTPS:
   replayed. The handle already accepted (the source in pull and relay mode,
   the target in push mode) is kept, and nothing is cancelled.
 
-Image copy is certified with S05; the operation WebSocket row waits on S02.
+Image copy is certified with S05, and the operation WebSocket row with S02.
 
 Image binary handoff (stream contract S05) is **certified** by
 `s05_image_transfer_v1` (2026-10-28). It completes image creation, upload and
@@ -1033,6 +1033,57 @@ Approved exclusions:
 
 Copies whose source is a SimpleStreams or OCI server stay with S12 and S11.
 Real-daemon image acceptance is separately recorded.
+
+Consoles (stream contract S02) are **certified** by `s02_console_v1`
+(2026-10-28). It completes console attachment
+(`POST /1.0/instances/{name}/console`) and the operation WebSocket
+(`GET /1.0/operations/{id}/websocket`) on Unix and mutual HTTPS:
+
+- `Session.console/3` (static) and `DynamicConsole.open/4` (repeated
+  attachments) agree with the pinned `ConsoleInstance` and
+  `ConsoleInstanceDynamic` on every request, channel and client frame:
+  - the `InstanceConsolePost` body, with the `console` type by default, `vga`,
+    width and height, and `force`
+  - the `console` extension, and `console_vga_type` and `console_force` before
+    dispatch
+  - the control channel opens before channel 0
+  - window-resize control text, binary data and the empty-text write barrier
+  - the `1000 "Detaching from console"` close frame on the control channel
+    when the host closes the console
+- A static console opens only the control channel and channel 0, and ignores
+  any other channel. `Session.output/1` reads channel 0 for a console.
+- Native 400/403/404 rejections are preserved. A reply without a control
+  secret fails as in the pinned client.
+- A lost or malformed POST reply is uncertain and never replayed. A missing or
+  malformed channel secret fails closed with `:invalid_stream_metadata` and the
+  accepted operation, before any channel opens. A rejected data channel
+  returns `:stream_negotiation` with the accepted operation and detaches the
+  control channel already open.
+- Invalid bodies and options fail with `:invalid_console_arguments` before any
+  request.
+
+Approved differences from the pinned client:
+
+- Hosts drive the channels: they send and receive frames, write barriers,
+  resize and detach. There is no `Control` callback, `ConsoleDisconnect`
+  channel or `ws.Mirror`.
+- Local arguments are checked before the POST. The pinned client sends the
+  POST and only then rejects a nil `Terminal` or `Control`, leaving the
+  accepted console without a client.
+- A missing or empty channel secret opens no channel. The pinned static
+  helper dials channel 0 with an empty secret.
+- A rejected data channel detaches the control channel. The pinned helper
+  leaves it open.
+- Detaching ends each data channel with a close frame. The pinned mirror
+  closes the socket after the echoed barrier.
+
+Approved exclusions:
+
+- the `?public` documentation view of the operation WebSocket
+- cluster forwarding beyond host project and target routing
+
+The daemon acts only on `window-resize`; other bounded JSON control messages
+are sent as given. Real-daemon console acceptance is separately recorded.
 
 `RepairInstance` (`name`, body `%{"action" => "rebuild-config-volume"}`,
 `instances_debug_repair`) sends the daemon's registered
