@@ -130,7 +130,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "242 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "243 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -158,13 +158,10 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                DeleteInstanceFile
                GetInstanceBackupNames GetInstanceBackup CreateInstanceBackup RenameInstanceBackup DeleteInstanceBackup GetStorageVolumeBackups GetStorageVolumeBackup CreateStorageVolumeBackup RenameStorageVolumeBackup DeleteStorageVolumeBackup GetStoragePoolBucketBackupNames GetStoragePoolBucketBackup CreateStoragePoolBucketBackup RenameStoragePoolBucketBackup DeleteStoragePoolBucketBackup CreateStoragePoolBucket
                RenameInstance RenameInstanceSnapshot CreateStoragePoolVolume RenameStoragePoolVolume CreateStoragePoolVolumeInCollection
-               CreateImage ExportImage)
+               CreateImage ExportImage ConsoleInstance)
              )
 
-    assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
-             "partial" => 1,
-             "complete" => 241
-           }
+    assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{"complete" => 243}
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
     assert coverage["endpoint_evidence"] == "priv/incus/endpoint-evidence.json"
@@ -412,6 +409,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/operations", "b02_operations_v1"},
              {"GET /1.0/operations/{}", "b02_operation_v1"},
              {"GET /1.0/operations/{}/wait", "b03_native_wait_v1"},
+             {"GET /1.0/operations/{}/websocket", "s02_console_v1"},
              {"GET /1.0/profiles", "b02_profiles_v1"},
              {"GET /1.0/profiles/{}", "b02_profile_v1"},
              {"GET /1.0/projects", "b02_projects_v1"},
@@ -499,6 +497,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"POST /1.0/instances/{}/backups", "s06_archives_v1"},
              {"POST /1.0/instances/{}/backups/{}", "s06_archives_v1"},
              {"POST /1.0/instances/{}/bitmaps", "b11_post_instances_one_bitmaps_v1"},
+             {"POST /1.0/instances/{}/console", "s02_console_v1"},
              {"POST /1.0/instances/{}/exec", "b03_exec_v1"},
              {"POST /1.0/instances/{}/files", "s04_file_transfer_v1"},
              {"POST /1.0/instances/{}/metadata/templates", "s07_byte_streams_v1"},
@@ -579,7 +578,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            ]
 
     assert for(%{"status" => "certified", "id" => id} <- audit["stream_contracts"], do: id) ==
-             ["S01", "S03", "S04", "S05", "S06", "S07", "S10"]
+             ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S10"]
 
     refute audit["behavior_complete"] or audit["complete_port"]
     wait = ["completion_records", "b03_native_wait_v1"]
@@ -609,6 +608,14 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
 
     assert Enum.sort(Map.keys(s05["excluded_views"])) ==
              ["GET /1.0/images/{fingerprint}/export?public", "POST /1.0/images?public"]
+
+    console = ["completion_records", "s02_console_v1"]
+    s02 = get_in(audit, console)
+
+    assert {s02["kind"], s02["stream_contracts"], s02["methods"], s02["helpers"]} ==
+             {"console", ["S02"], ["ConsoleInstance"], ["websocket"]}
+
+    assert Map.keys(s02["excluded_views"]) == ["GET /1.0/operations/{id}/websocket?public"]
 
     events = ["completion_records", "b03_events_v1"]
     socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
@@ -665,7 +672,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            end), "open linked stream contract"},
           {update_in(audit, ["stream_contracts"], fn contracts ->
              Enum.map(contracts, fn contract ->
-               if contract["id"] == "S02",
+               if contract["id"] == "S08",
                  do: %{contract | "status" => "certified"},
                  else: contract
              end)
@@ -750,6 +757,19 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
           {update_in(audit, image_transfer ++ ["approved_differences"], fn [first | rest] ->
              [Map.delete(first, "approved") | rest]
            end), "unapproved exclusion"},
+          # S02 certification needs the detach close frame, the missing-control
+          # rejection, the websocket helper, the excluded public view and its approved
+          # differences.
+          {update_in(audit, console ++ ["cases"], &Map.delete(&1, "detach_close")),
+           "missing completion case"},
+          {update_in(audit, console ++ ["cases", "missing_control"], fn _ -> [] end),
+           "missing completion evidence"},
+          {update_in(audit, console ++ ["helpers"], &List.delete(&1, "websocket")),
+           "stale completion helpers"},
+          {put_in(audit, console ++ ["excluded_views"], %{}), "unlisted completion view"},
+          {update_in(audit, console ++ ["approved_differences"], fn [first | rest] ->
+             [Map.delete(first, "approved") | rest]
+           end), "unapproved exclusion"},
           # S04 certification needs the HEAD body check and its helpers.
           {update_in(audit, file_transfer ++ ["cases"], &Map.delete(&1, "head_no_body")),
            "missing completion case"},
@@ -813,38 +833,39 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
 
     # A completed row whose linked stream contract is still open cannot complete.
     record = get_in(audit, events)
+    nbd = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/instances/{}/nbd"))
 
     shared =
-      Map.merge(socket, %{"behavior_complete" => true, "completion_record" => "b03_events_v1"})
+      Map.merge(nbd, %{"behavior_complete" => true, "completion_record" => "b03_events_v1"})
 
     changed =
       audit
-      |> put_in(events ++ ["rows"], record["rows"] ++ [socket["pair"]])
+      |> put_in(events ++ ["rows"], record["rows"] ++ [nbd["pair"]])
       |> Map.update!("entries", fn entries ->
-        Enum.map(entries, &if(&1 == socket, do: shared, else: &1))
+        Enum.map(entries, &if(&1 == nbd, do: shared, else: &1))
       end)
 
     assert_raise ExUnit.AssertionError, ~r/open linked stream contract/, fn ->
       EndpointInventory.validate!(changed, native)
     end
 
-    # The instance console stays partial while its console contract (S02) is open,
-    # even though S05 is certified.
-    console = Enum.find(audit["entries"], &(&1["pair"] == "POST /1.0/instances/{}/console"))
-    record = get_in(audit, image_transfer)
+    # The instance SFTP row stays partial while its SFTP contracts (S08/S09) are
+    # open, even though S02 is certified.
+    sftp = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/instances/{}/sftp"))
+    record = get_in(audit, console)
 
     changed =
       audit
-      |> put_in(image_transfer ++ ["rows"], record["rows"] ++ [console["pair"]])
-      |> put_in(image_transfer ++ ["methods"], record["methods"] ++ ["ConsoleInstance"])
+      |> put_in(console ++ ["rows"], record["rows"] ++ [sftp["pair"]])
+      |> put_in(console ++ ["helpers"], record["helpers"] ++ ["sftp"])
       |> Map.update!("entries", fn entries ->
         Enum.map(
           entries,
-          &if(&1 == console,
+          &if(&1 == sftp,
             do:
-              Map.merge(console, %{
+              Map.merge(sftp, %{
                 "behavior_complete" => true,
-                "completion_record" => "s05_image_transfer_v1"
+                "completion_record" => "s02_console_v1"
               }),
             else: &1
           )
@@ -858,7 +879,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     # Selected rows cannot drop or claim completion independently of the full ledger.
     for {verb, pair, status} <- [
           {"GET", "/1.0/operations/{id}/wait", "partial"},
-          {"GET", "/1.0/operations/{id}/websocket", "complete"}
+          {"POST", "/1.0/instances/{name}/console", "partial"}
         ] do
       entries =
         Enum.map(@manifest["entries"], fn row ->

@@ -164,7 +164,12 @@ defmodule Opsmaru.Incus.SessionTest do
       assert {:ok, session} = result
       assert session.operation.url == "/1.0/operations/native-id"
       assert {:ok, {:binary, <<0, 255, 128>>}} = Session.output(session)
-      assert {:ok, {:binary, <<0, 255, 128>>}} = Session.output(session, "2")
+
+      # A console opens only control and channel 0, as the pinned helper does.
+      if action == :exec,
+        do: assert({:ok, {:binary, <<0, 255, 128>>}} = Session.output(session, "2")),
+        else: assert(Map.keys(session.channels) == ["0", "control"])
+
       assert :ok = Session.input(session, <<255, 0, 128, 42>>)
       assert :ok = Session.resize(session, 80, 24)
       assert :ok = Session.signal(session, 15)
@@ -176,6 +181,6 @@ defmodule Opsmaru.Incus.SessionTest do
 
     requests = WebSocketFixture.requests(fixture)
     assert Enum.count(requests, &(&1.method == "POST")) == 2
-    assert Enum.count(requests, &Map.has_key?(&1.headers, "sec-websocket-key")) == 8
+    assert Enum.count(requests, &Map.has_key?(&1.headers, "sec-websocket-key")) == 6
   end
 end
