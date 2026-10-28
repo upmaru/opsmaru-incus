@@ -1680,8 +1680,8 @@ unchanged.
 - Approved exclusions (2026-10-27): cluster forwarding beyond host project and
   target routing, and advertised-address fallback. Deployed-cluster, real CRIU
   and real-daemon copy acceptance stay separately recorded. Image copy is
-  not certified here: it belongs to the still-open S05 contract, and the
-  operation WebSocket row waits on S02.
+  certified with S05 (2026-10-28), and the operation WebSocket row waits on
+  S02.
 
 ## S05 image transfer and copy certification (PR 1: image binary and create control plane)
 
@@ -1722,3 +1722,79 @@ every Go declaration status (1239 partial / 41 missing) are unchanged.
   download path, advertised-address fallback and cluster forwarding. Image copy
   (pull, push and relay), `Images.wait_copy/2`, lost copy replies and the
   certification of the three rows follow in PR 2.
+
+## S05 image transfer and copy certification (PR 2: image copy and certification)
+
+Approved 2026-10-28. PR 2 adds image copy and its explicit wait, then certifies
+S05 under `s05_image_transfer_v1`. The record completes three rows: image
+creation, upload and copy target (`POST /1.0/images`), image download
+(`GET /1.0/images/{}/export`) and push export (`POST /1.0/images/{}/export`).
+The selected manifest grows to 242 pairs (241 complete). The certified stream
+contracts become S01, S03, S04, S05, S06, S07 and S10. Task 3.9,
+`complete_port` and every Go declaration status are unchanged.
+
+- [x] A new `imagecopy` driver runs the unchanged pinned `CopyImage` and waits
+  on, or cancels and then waits on, its remote operation. `Images.copy/4` and
+  `Images.wait_copy/2` agree with it on every POST and DELETE each side
+  receives, in order:
+  - JSON bodies are compared as the Go DTO decodes them
+  - uploads are compared by their `x-incus-*` headers and their unified bytes
+    or split parts
+  - pull, push and relay run on mutual HTTPS, and relay also on Unix
+  - each case runs with success, failure and cancellation outcomes
+  - the cases cover a private and a public image, `copy_aliases` with explicit
+    aliases, profiles, `auto_update`, `public`, the image type, a target with
+    and without `image_create_aliases`, and unified and split
+    virtual-machine relays
+- [x] Only the driving operation is waited on: the target in pull and relay
+  mode, the source export in push mode. A push also reads its token to cancel
+  it. A local deadline cancels nothing and creates no alias.
+- [x] Token cancellation and alias creation happen where the pinned client
+  performs them: a push token once the export is final; aliases after a
+  successful relay or a pull against a target without `image_create_aliases`.
+  The aliases are created by name, on the operation's fingerprint (pull) or
+  the image's (relay).
+- [x] Lost or malformed replies are uncertain and sent once:
+  - the pull secret and creation
+  - the push token and export
+  - the relay upload
+  - the first alias creation
+
+  The handles accepted before the loss are kept in `response.accepted`;
+  nothing after it is sent and nothing is cancelled. A pull secret reply with
+  no usable secret keeps its bound operation. Waiting again sends only the
+  aliases never sent, and a finished copy sends nothing more.
+- [x] Malformed alias, profile, flag and type values are refused before the
+  secret request, so bad input never leaves an accepted handle behind.
+- [x] Guards agree with the pinned client before any mutation:
+  - a profile override without `image_copy_profile`, in every mode
+  - pull and push without the approved HTTPS origin (a Unix peer, no origin
+    or the wrong one)
+  - unknown options and a same-backend copy
+- [x] Fixes found by the differential:
+  - push no longer sends `profiles` or `auto_update` in the token request
+  - relay no longer sends `auto_update`
+  - relay names both upload parts after the image filename, empty when unset
+  - a profile override is guarded only when profiles are given
+- [x] Mutation probes fail the new tests:
+  - waiting on the wrong side
+  - skipping the token cancellation
+  - cancelling it after a local deadline
+  - sending `auto_update` in the push token
+  - ignoring `image_create_aliases`
+  - skipping relay aliases
+  - dropping export profiles
+  - a default relay filename
+  - reordering copied aliases
+- Approved differences (2026-10-28):
+  - cleanup is explicit in `wait_copy/2`
+  - a failed push export keeps the token handle uncancelled
+  - a push to a source without `images_push_relay` is refused before the
+    token request, where the pinned client creates and then cancels it
+  - a failed or cancelled relay is reported as the native failure, where the
+    pinned relay reports success because `remoteOperationError(msg, nil)` is
+    nil
+- Approved exclusions: the `?public` views, the local `/dev/incus/sock`
+  download path, advertised-address fallback and cluster forwarding. Copies
+  from SimpleStreams or OCI servers stay with S12 and S11. Real-daemon image
+  acceptance stays separately recorded.

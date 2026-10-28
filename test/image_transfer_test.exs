@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.ImageTransferTest do
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Connection, Context, Error, Images, Model}
+  alias Opsmaru.Incus.{Connection, Context, Error, Images, Model, Operation}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../.integration/incus-image-driver", __DIR__)
 
@@ -50,12 +50,21 @@ defmodule Opsmaru.Incus.ImageTransferTest do
       target_fixture = backend(root, fn _ -> flunk("target mutation must not occur") end)
       target = client(target_fixture, context)
 
-      for result <- [
-            Images.image_secret(source, "fingerprint"),
-            Images.copy(target, source, %{"fingerprint" => "fingerprint", "public" => false},
-              mode: "pull"
-            )
-          ] do
+      # The copy keeps the bound secret operation and the secret request's own error.
+      assert {:error,
+              %Error{
+                kind: :uncertain,
+                response: %{
+                  accepted: %{source: %Operation{url: "/1.0/operations/token-op"}, target: nil},
+                  error: copy_error
+                }
+              }} =
+               Images.copy(target, source, %{"fingerprint" => "fingerprint", "public" => false},
+                 mode: "pull",
+                 approved_origin: HTTPFixture.endpoint(fixture).url
+               )
+
+      for result <- [Images.image_secret(source, "fingerprint"), {:error, copy_error}] do
         assert {:error,
                 %Error{
                   kind: :uncertain,
@@ -242,19 +251,23 @@ defmodule Opsmaru.Incus.ImageTransferTest do
     source = tls_client(source_fixture, source_identity, context)
     target = tls_client(target_fixture, target_identity, context)
 
+    origin = HTTPFixture.endpoint(if mode == "pull", do: source_fixture, else: target_fixture).url
+
     assert {:error, %Error{kind: :uncertain, response: state, operation: primary}} =
              Images.copy(target, source, %{"fingerprint" => "native", "public" => false},
-               mode: mode
+               mode: mode,
+               approved_origin: origin
              )
 
     assert %Error{kind: :uncertain} = state.error
-    known = state[if(mode == "pull", do: :source, else: :target)]
+    known = Map.fetch!(state.accepted, if(mode == "pull", do: :source, else: :target))
     expected = if mode == "pull", do: source, else: target
 
-    assert known.operation ==
+    assert known.url ==
              "/1.0/operations/" <> if(mode == "pull", do: "source-token", else: "target-token")
 
-    assert known.connection == expected.connection and known.identity == context.identity
+    assert known.client.connection == expected.connection and
+             known.response.identity == context.identity
 
     if failure == :malformed do
       assert primary == "/1.0/operations/possibly-accepted"
@@ -263,7 +276,7 @@ defmodule Opsmaru.Incus.ImageTransferTest do
       expected = if mode == "pull", do: target, else: source
       assert state.error.response.connection == expected.connection
     else
-      assert primary == known.operation and state.error.operation == nil
+      assert primary == nil and state.error.operation == nil
     end
 
     assert Enum.count(HTTPFixture.requests(source_fixture), &(&1.method == "POST")) == 1
@@ -299,14 +312,24 @@ defmodule Opsmaru.Incus.ImageTransferTest do
       source = tls_client(source_fixture, source_identity, context)
       target = tls_client(target_fixture, target_identity, context)
 
-      assert {:error, %Error{kind: :uncertain, response: accepted, operation: operation}} =
+      assert {:error,
+              %Error{kind: :uncertain, response: %{accepted: accepted}, operation: operation}} =
                Images.copy(target, source, %{"fingerprint" => "native", "public" => true},
-                 mode: "push"
+                 mode: "push",
+                 approved_origin: HTTPFixture.endpoint(target_fixture).url
                )
 
-      assert operation == "/1.0/operations/accepted-push-token"
-      assert accepted.operation == operation and accepted.connection == target.connection
-      assert Model.encode(accepted.metadata)["metadata"] == token_metadata
+      assert operation == "/1.0/operations/accepted-push-token" and is_nil(accepted.source)
+
+      if is_map(token_metadata) do
+        token = accepted.target
+        assert token.url == operation and token.client.connection == target.connection
+        assert Model.encode(token.response.metadata)["metadata"] == token_metadata
+      else
+        # A reply that does not decode binds no handle; its identity stays on the error.
+        assert is_nil(accepted.target)
+      end
+
       assert Enum.count(HTTPFixture.requests(target_fixture), &(&1.method == "POST")) == 1
       assert Enum.all?(HTTPFixture.requests(source_fixture), &(&1.method == "GET"))
     end
@@ -330,80 +353,6 @@ defmodule Opsmaru.Incus.ImageTransferTest do
              })
 
     assert length(HTTPFixture.requests(fixture)) == 2
-  end
-
-  test "pull/push copies use approved origins, preserve operations and match official request fields",
-       %{root: root, context: context} do
-    for mode <- ["pull", "push"] do
-      source_identity = TLSIdentity.generate(root, "source-#{mode}", "localhost")
-      target_identity = TLSIdentity.generate(root, "target-#{mode}", "localhost")
-
-      accepted = %{
-        status: 202,
-        body: %{
-          type: "async",
-          status_code: 100,
-          operation: "/1.0/operations/copy-id",
-          metadata: %{
-            id: "copy-id",
-            status_code: 200,
-            may_cancel: true,
-            metadata: %{secret: "fixture-secret"}
-          }
-        }
-      }
-
-      source_fixture = tls_backend(source_identity, fn _ -> accepted end)
-      target_fixture = tls_backend(target_identity, fn _ -> accepted end)
-
-      image = %{
-        "fingerprint" => "native-fingerprint",
-        "public" => true,
-        "type" => "virtual-machine",
-        "properties" => %{},
-        "expires_at" => "0001-01-01T00:00:00Z"
-      }
-
-      result =
-        driver(root, %{
-          url: HTTPFixture.endpoint(target_fixture).url,
-          server_cert: File.read!(target_identity.certfile),
-          transfer: "copy_image",
-          source_url: HTTPFixture.endpoint(source_fixture).url,
-          source_cert: File.read!(source_identity.certfile),
-          copy_mode: mode,
-          body: image
-        })
-
-      refute result["error"]
-      oracle_source_requests = HTTPFixture.requests(source_fixture)
-      oracle_target_requests = HTTPFixture.requests(target_fixture)
-      source = tls_client(source_fixture, source_identity, context)
-      target = tls_client(target_fixture, target_identity, context)
-      assert {:ok, copied} = Images.copy(target, source, image, mode: mode)
-      assert copied.state == :accepted
-      assert copied.target.operation == "/1.0/operations/copy-id"
-      actual_source = HTTPFixture.requests(source_fixture) |> List.last()
-      actual_target = HTTPFixture.requests(target_fixture) |> List.last()
-      expected_target = Enum.filter(oracle_target_requests, &(&1.method == "POST")) |> List.last()
-      expected_body = Jason.decode!(expected_target.body)
-      actual_body = Jason.decode!(actual_target.body)
-
-      assert expected_body["source"]
-             |> Map.take(["server", "fingerprint", "mode", "type", "project", "certificate"]) ==
-               actual_body["source"]
-               |> Map.take(["server", "fingerprint", "mode", "type", "project", "certificate"])
-
-      if mode == "push" do
-        expected_source =
-          Enum.filter(oracle_source_requests, &(&1.method == "POST")) |> List.last()
-
-        assert Jason.decode!(expected_source.body)
-               |> Map.take(["target", "certificate", "secret", "project", "profiles"]) ==
-                 Jason.decode!(actual_source.body)
-                 |> Map.take(["target", "certificate", "secret", "project", "profiles"])
-      end
-    end
   end
 
   test "relay copies use host staging adapters and lost target responses do not delete or replay",
@@ -532,7 +481,7 @@ defmodule Opsmaru.Incus.ImageTransferTest do
                  relay: adapter
                )
 
-      assert accepted.operation == "/1.0/operations/split-relay"
+      assert accepted.target.url == "/1.0/operations/split-relay"
       [request] = Enum.filter(HTTPFixture.requests(target_fixture), &(&1.method == "POST"))
       {_, actual_metadata, _, actual_rootfs} = multipart(request)
       assert actual_metadata == metadata
