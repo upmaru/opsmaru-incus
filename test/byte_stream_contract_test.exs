@@ -171,13 +171,18 @@ defmodule Opsmaru.Incus.ByteStreamContractTest do
                    )
                  end)
 
+        # The rest of the body arrives after the stream deadline, so a payload small
+        # enough for one read (metrics) still needs a read past the deadline.
+        slow = backend(root, identity, fn _ -> split(payload, 100) end)
+
         assert {:error, %Error{kind: :deadline}} =
-                 download(client(fixture, identity, stream_timeout: 50), scenario, fn _ ->
+                 download(client(slow, identity, stream_timeout: 50), scenario, fn _ ->
                    Process.sleep(200)
                    :ok
                  end)
 
-        assert length(HTTPFixture.requests(fixture)) == 3
+        assert length(HTTPFixture.requests(fixture)) == 2
+        assert length(HTTPFixture.requests(slow)) == 1
       end
     end
 
@@ -283,6 +288,21 @@ defmodule Opsmaru.Incus.ByteStreamContractTest do
         Integer.to_string(byte_size(payload)),
         "\r\n\r\n",
         payload
+      ]
+    }
+
+  # The head and the first byte now, the rest of the body after a delay.
+  defp split(<<first::binary-size(1), rest::binary>> = payload, delay),
+    do: %{
+      wire_chunks: [
+        {0,
+         IO.iodata_to_binary([
+           "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: ",
+           Integer.to_string(byte_size(payload)),
+           "\r\n\r\n",
+           first
+         ])},
+        {delay, rest}
       ]
     }
 

@@ -51,6 +51,7 @@ for name in ['GetMetrics','GetNetworkACLLogfile','GetInstanceLogfile','GetInstan
  helpers[name]=('lib/opsmaru/incus/streams.ex',['test/streams_test.exs','test/byte_stream_contract_test.exs'])
 for name in ['CopyInstance','CopyInstanceSnapshot','CopyStoragePoolVolume','MoveStoragePoolVolume']:
  helpers.setdefault(name, ('lib/opsmaru/incus/copy.ex', []))[1].append('test/copy_negotiation_reference_test.exs')
+ if name != 'MoveStoragePoolVolume': helpers[name][1].append('test/copy_contract_test.exs')
 for name in ['CreateInstanceFromImage','RebuildInstanceFromImage']:
  helpers[name]=('lib/opsmaru/incus/image_instances.ex',['test/copy_negotiation_reference_test.exs'])
 for name in ['operation.Cancel','Operation.Cancel']:
@@ -73,7 +74,7 @@ for name in ['NewURL','URL.Scheme','URL.Host','URL.Path','URL.Project','URL.Targ
 for name in ['GetConnectionInfo','IsClustered','IsAgent','RequireAuthenticated']:
  helpers[name]=('lib/opsmaru/incus/discovery.ex',['test/discovery_helpers_test.exs','test/authenticated_header_test.exs'])
 for name in ['GetTarget','CancelTarget']:
- helpers[name]=('lib/opsmaru/incus/migration.ex',['test/migration_target_test.exs','test/copy_negotiation_reference_test.exs'])
+ helpers[name]=('lib/opsmaru/incus/migration.ex',['test/migration_target_test.exs','test/copy_negotiation_reference_test.exs','test/copy_contract_test.exs'])
 models.add('ServerEnvironment')
 helpers['SendEvent']=('lib/opsmaru/incus/events.ex',['test/event_send_test.exs'])
 models.add('Event')
@@ -92,7 +93,7 @@ for name in ['Operation.AddHandler','Operation.RemoveHandler','operation.AddHand
 for name in ['RemoteOperation.AddHandler','remoteOperation.AddHandler']:
  helpers[name]=('lib/opsmaru/incus/migration.ex',['test/operation_handler_test.exs'])
 for name in ['RemoteOperation.Wait','remoteOperation.Wait']:
- helpers[name]=('lib/opsmaru/incus/migration.ex',['test/copy_negotiation_reference_test.exs','test/migration_target_test.exs'])
+ helpers[name]=('lib/opsmaru/incus/migration.ex',['test/copy_negotiation_reference_test.exs','test/migration_target_test.exs','test/copy_contract_test.exs'])
 client_interface_types = {'Operation': ('lib/opsmaru/incus/operation.ex',['test/operation_test.exs','test/operation_handler_test.exs']), 'RemoteOperation': ('lib/opsmaru/incus/migration.ex',['test/migration_target_test.exs','test/operation_handler_test.exs','test/copy_negotiation_reference_test.exs'])}
 helpers['ServerFiltered.MarshalYAML']=('lib/opsmaru/incus/server_yaml.ex',['test/server_yaml_reference_test.exs'])
 for name in ['ConfigMap.UnmarshalYAML','DevicesMap.UnmarshalYAML']:

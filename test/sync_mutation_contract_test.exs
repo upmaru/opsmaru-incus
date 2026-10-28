@@ -16,7 +16,7 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   # B11: every stream-free instance and image write.
   @b11 ~w(CreateImageAlias RenameImageAlias UpdateImageAlias DeleteImageAlias UpdateImage RefreshImage CreateImageSecret UpdateInstanceMetadata DeleteInstanceConsoleLog DeleteInstanceLogfile CreateInstanceBitmap RebuildInstance UpdateInstanceSnapshot UpdateInstances)
   # B07/B12 writes the pinned client lacks, compared through unchanged Go RawQuery.
-  @rest ~w(DeleteInstanceExecOutput RepairInstance RenameStoragePoolBucketBackup)
+  @rest ~w(DeleteInstanceExecOutput RepairInstance RenameStoragePoolBucketBackup CreateStoragePoolVolumeInCollection CreateStoragePoolVolumeInCollectionFromMigration)
   # S06 PR 1: the instance, custom volume and bucket backup control plane.
   @s06 ~w(CreateInstanceBackup RenameInstanceBackup DeleteInstanceBackup CreateStorageVolumeBackup RenameStorageVolumeBackup DeleteStorageVolumeBackup CreateStoragePoolBucketBackup DeleteStoragePoolBucketBackup CreateStoragePoolBucket)
   # S07: the metadata template delete.
@@ -43,7 +43,7 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 111
+    assert length(@methods) == 113
     assert Enum.all?(@methods, &(&1["result"] in ["sync", "model", "operation"]))
     :ok
   end
@@ -162,20 +162,29 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     test "#{transport} copy and migration sources agree with the pinned client", %{root: root} do
       identity = identity(root, unquote(transport))
       create = Enum.find(@all_methods, &(&1["name"] == "CreateInstance"))
-      volume = Enum.find(@methods, &(&1["name"] == "CreateStoragePoolVolumeFromMigration"))
-      local = Enum.find(@methods, &(&1["name"] == "CreateStoragePoolVolume"))
       migrate = Enum.find(@methods, &(&1["name"] == "MigrateStoragePoolVolume"))
+      # The typed route and the collection route (RawQuery) share the daemon handler.
+      named = &Enum.find(@methods, fn method -> method["name"] == &1 end)
+
+      volumes =
+        Enum.map(
+          ~w(CreateStoragePoolVolumeFromMigration CreateStoragePoolVolumeInCollectionFromMigration),
+          named
+        )
+
+      locals = Enum.map(~w(CreateStoragePoolVolume CreateStoragePoolVolumeInCollection), named)
 
       for {_, body} <- instance_sources(),
           outcome <- [{:wait, 200}, 400],
           do: compare(root, identity, Map.put(create, "sample", body), outcome)
 
-      for {_, body} <- volume_sources(),
+      for volume <- volumes,
+          {_, body} <- volume_sources(),
           outcome <- [{:wait, 200}, 400],
           do: compare(root, identity, Map.put(volume, "sample", body), outcome)
 
       # A local volume copy is synchronous, for every daemon volume type.
-      for type <- @volume_types, outcome <- [:sync, 400] do
+      for local <- locals, type <- @volume_types, outcome <- [:sync, 400] do
         body = %{
           "name" => "fixture-copy",
           "type" => type,
@@ -192,6 +201,17 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
 
         compare(root, identity, Map.put(local, "sample", body), outcome)
       end
+
+      # Instance moves: to another pool, to another project, or to the target member
+      # (routed by the host `target`), each with only its own guarded field.
+      move = Enum.find(@methods, &(&1["name"] == "MigrateInstance"))
+
+      for body <- [
+            %{"migration" => true, "pool" => "fixture-pool"},
+            %{"migration" => true, "project" => "fixture-project"},
+            %{"migration" => true, "name" => "fixture-moved", "live" => true}
+          ],
+          do: compare(root, identity, Map.put(move, "sample", body), {:wait, 200})
 
       # A volume snapshot migrates through its snapshot path.
       snapshot = %{body(migrate) | "name" => "fixture-volume/fixture-snapshot"}
@@ -657,6 +677,11 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
 
         "RenameStoragePoolBucketBackup" ->
           "/1.0/storage-pools/fixture%20%2FpoolName/buckets/fixture%20%2FbucketName/backups/fixture%20%2Fname"
+
+        # The collection route the pinned client never uses; the type is in the body.
+        name
+        when name in ~w(CreateStoragePoolVolumeInCollection CreateStoragePoolVolumeInCollectionFromMigration) ->
+          "/1.0/storage-pools/fixture%20%2FpoolName/volumes"
       end
 
     input =

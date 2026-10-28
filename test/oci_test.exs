@@ -258,7 +258,9 @@ defmodule Opsmaru.Incus.OCITest do
 
     started = System.monotonic_time(:millisecond)
     assert {:error, %Error{kind: :adapter_cleanup}} = OCI.resolve(client, "alpine")
-    assert System.monotonic_time(:millisecond) - started < 500
+    # The 60ms cleanup budget ends this in about 70ms, and the caller's own fallback at
+    # about 160ms; the bound leaves scheduler headroom yet stays below the 1s cleanup cap.
+    assert System.monotonic_time(:millisecond) - started < 1_000
     assert_receive {:cleaner, worker}
     monitor = Process.monitor(worker)
     assert_receive {:DOWN, ^monitor, :process, ^worker, _}
