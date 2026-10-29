@@ -129,6 +129,78 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: S09 typed SFTP certification (2026-10-29)
+
+Certify stream contract S09 by replacing the approved SFTP v3 subset (section
+4c) with a client that works like the pinned `pkg/sftp` v1.13.10 client
+returned by `GetInstanceFileSFTP` and `GetStoragePoolVolumeFileSFTP`. Those
+helpers use a 128 KiB unchecked maximum packet and the package defaults
+otherwise. The work lands in two PRs. The second PR certifies S09 under a
+single reviewed record and completes the two SFTP rows, which then have no
+open stream contract:
+
+- instance SFTP on `GET /1.0/instances/{name}/sftp` (B11)
+- custom volume SFTP on `GET /1.0/storage-pools/{pool}/volumes/{type}/{name}/sftp`
+  (B08)
+
+User decisions (2026-10-29):
+
+- The client matches the pinned `pkg/sftp` client rather than a subset.
+  Operations the subset rejected become supported, and
+  `:unsupported_sftp_operation` is retired.
+- Sessions are shared and concurrent. Any process may send requests, as any
+  goroutine can use a Go `*sftp.Client`. Requests are pipelined with distinct
+  ids and replies are matched by id. A session closes on `close/1`, peer EOF,
+  its finite stream lifetime, or when the process that opened it exits.
+- Files keep a position like a Go `*sftp.File`: `read/3`, `write/2` and
+  `seek/3` use and move it, while `read_at/4` and `write_at/4` ignore it.
+- Bulk transfer is pipelined like Go: large reads and writes are split into
+  128 KiB requests with up to 64 in flight per file, short reads are
+  continued, and whole-file copies stream through the library's acknowledged
+  host sources and sinks within the connection's bounds.
+- Go's client-side helpers are included: `walk/3` (kr/fs `Walker` order with
+  directory skipping), `glob/2`, `match/2`, `join/1` and `split/1`.
+- Two PRs: path and metadata operations with shared sessions first, then file
+  I/O and certification.
+
+PR 1 covers:
+
+- shared concurrent sessions. A request whose local deadline passes fails
+  alone and the session continues, as other goroutines do on a Go
+  connection. A possibly sent mutation is `:uncertain` and never replayed, and
+  its late reply is discarded. Malformed, oversized or unmatched replies end
+  the session and fail every pending request, mutations as `:uncertain`.
+- path and metadata operations with the pinned packets and compound steps:
+  `stat`, `lstat`, `read_dir`, `read_link`, `link`
+  (`hardlink@openssh.com`), `symlink` (OpenSSH argument order), `chmod`,
+  `chown`, `chtimes`, `truncate`, `set_extended_data`, `stat_vfs`
+  (`statvfs@openssh.com`), `remove` (file, then directory, then the pinned
+  error choice), `remove_directory`, `rename`, `posix_rename`
+  (`posix-rename@openssh.com`), `real_path`, `getwd`, `mkdir`, `mkdir_all`,
+  `remove_all` and `has_extension`. A compound operation stops at the first
+  uncertain step instead of sending more mutations.
+- file attributes as returned by the pinned client: name, size, raw mode with
+  Go's `FileMode` type and permission mapping, modification and access times,
+  owner and group, and extended pairs
+- errors that keep the native status code, message and language, plus the
+  class Go normalizes (`not_exist`, `permission`, `eof`) and, where Go returns
+  an `os.PathError`, its operation and path
+- paths sent as given, as the pinned client does. Only packet and connection
+  bounds apply.
+- the existing open, positional read/write and close calls, now shared and
+  concurrent. PR 2 replaces them with full file I/O.
+- a new Go driver that runs the pinned helpers against an unchanged
+  `pkg/sftp` v1.13.10 server fixture rooted in a temporary directory behind
+  the upgrade fixture. The fixture records each request and reply. Our
+  client then runs the same script against the recorded replies, and every
+  request packet (ids normalized) and decoded result must agree. It also
+  runs live against the server, on Unix and mutual HTTPS, for instance and
+  volume sessions.
+
+S09 and the two SFTP rows stay open until PR 2. Cluster forwarding and
+real-daemon SFTP acceptance stay approved exclusions. Task 3.9,
+`complete_port` and every Go declaration status are unchanged.
+
 #### Approved slice: S08 raw SFTP/NBD upgrade certification (2026-10-29)
 
 Certify stream contract S08 under a single reviewed record in one PR. Two rows
