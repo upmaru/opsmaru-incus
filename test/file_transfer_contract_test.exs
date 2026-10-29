@@ -299,7 +299,9 @@ defmodule Opsmaru.Incus.FileTransferContractTest do
 
   defp read(client, target, sink), do: read(target, sink).(client)
 
-  defp create(client, {:instance, name}, source, opts \\ []),
+  defp create(client, target, source, opts \\ [])
+
+  defp create(client, {:instance, name}, source, opts),
     do: Files.create(client, name, "/etc/a b", source, opts)
 
   defp create(client, {:volume, type}, source, opts),
