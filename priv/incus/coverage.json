@@ -1410,7 +1410,8 @@
       "evidence": [
         "test/raw_channel_test.exs",
         "test/native_upgrade_reference_test.exs",
-        "test/tls_stream_test.exs"
+        "test/tls_stream_test.exs",
+        "test/instance_upgrade_reference_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -1461,7 +1462,8 @@
       "evidence": [
         "test/raw_channel_test.exs",
         "test/native_upgrade_reference_test.exs",
-        "test/tls_stream_test.exs"
+        "test/tls_stream_test.exs",
+        "test/instance_upgrade_reference_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -4915,7 +4917,8 @@
       "evidence": [
         "test/raw_channel_test.exs",
         "test/native_upgrade_reference_test.exs",
-        "test/tls_stream_test.exs"
+        "test/tls_stream_test.exs",
+        "test/instance_upgrade_reference_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },
@@ -4966,7 +4969,8 @@
       "evidence": [
         "test/raw_channel_test.exs",
         "test/native_upgrade_reference_test.exs",
-        "test/tls_stream_test.exs"
+        "test/tls_stream_test.exs",
+        "test/instance_upgrade_reference_test.exs"
       ],
       "note": "Bounded helper slice only; consult public coverage limitations before use."
     },

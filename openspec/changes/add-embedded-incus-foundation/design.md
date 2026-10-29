@@ -155,8 +155,14 @@ User decisions (2026-10-29):
   typed `InstanceNBDArgs` and `StorageVolumeNBDPost`. A Go caller cannot pass
   anything else.
 - Protocol bytes that arrive coalesced with the 101 response are kept. This
-  is the only approved difference. The pinned `rawConn` discards bytes
-  buffered with the response, and copying that would corrupt streams.
+  is an approved difference. The pinned `rawConn` discards bytes buffered with
+  the response, and copying that would corrupt streams.
+- Over mutual HTTPS, a backend half-close ends the connection, which is an
+  approved difference (decided during implementation). OTP TLS closes on the
+  peer's `close_notify`, where a Go `tls.Conn` can keep writing. Later writes
+  return `:write_closed`, never a silent loss, and bytes already received stay
+  readable. incusd's `UpgradeResponse` never half-closes, so a real daemon
+  never triggers this. Unix half-close matches the pinned client.
 - Any process may use a raw channel, as with a Go `net.Conn`. The channel
   closes on `close/1`, peer closure or the existing finite stream lifetime,
   and when the process that opened it exits. This is the Elixir equivalent
@@ -169,7 +175,7 @@ The PR covers:
   target routing, Upgrade and Connection headers, initial and echoed bytes,
   and Go argument handling for empty, long and special-character names
 - backend half-close compared with the pinned connection, then writes after
-  read EOF
+  read EOF over Unix and the explicit `:write_closed` refusal over HTTPS
 - the existing volume differential, coalesced-byte, native rejection without
   retry, caller loss, lifetime, byte-bound and handshake-deadline evidence,
   linked rather than repeated

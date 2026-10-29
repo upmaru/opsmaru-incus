@@ -1848,3 +1848,37 @@ unchanged.
   - detaching ends each data channel with a close frame
 - Approved exclusions: the `?public` operation WebSocket view and cluster
   forwarding. Real-daemon console acceptance stays separately recorded.
+
+## S08 raw SFTP/NBD upgrade certification
+
+Approved 2026-10-29. One PR certifies S08 under `s08_raw_upgrades_v1`. The
+record completes the two NBD rows: instance NBD (`GET /1.0/instances/{}/nbd`,
+B11) and custom volume NBD (`GET /1.0/storage-pools/{}/volumes/{}/{}/nbd`,
+B08). The two SFTP rows stay partial while S09 is open. The selected manifest
+grows to 245 pairs, all complete. The certified stream contracts become S01,
+S02, S03, S04, S05, S06, S07, S08 and S10. Task 3.9, `complete_port` and every
+Go declaration status are unchanged.
+
+- [x] The reference driver now takes an instance name, `reuse` and a
+  native-error report. `Incus.sftp/2` and `nbd/3` agree with the unchanged
+  pinned `GetInstanceFileSFTPConn` and `GetInstanceNBDConn` on Unix and mutual
+  HTTPS: request path and query, project and target routing, Upgrade and
+  Connection headers, and the bytes read and written, for `reuse` off and on
+  and for plain, empty, special-character and 1500-byte names.
+- [x] Names are no longer checked locally: any string is escaped like Go's
+  `url.PathEscape` and sent, so the server answers natively. Only the pinned
+  extension guards and the boolean `reuse`/`writable` types are checked first.
+- [x] Backend half-close matches the pinned connection over Unix: EOF, then
+  writes still reach the server.
+- [x] Native rejection matches the pinned error text and status and is sent
+  once.
+- [x] Existing volume differential, coalesced-byte, caller-loss, lifetime,
+  bounds and rejection evidence is linked rather than repeated.
+- [x] Mutation probes fail the new tests: restoring the local name checks,
+  dropping `reuse=1`, and reverting the TLS `:write_closed` handling.
+- Approved differences (2026-10-29):
+  - protocol bytes coalesced with the 101 response are kept
+  - over mutual HTTPS a backend half-close ends the connection (OTP TLS); later
+    writes return `:write_closed` and received bytes stay readable
+- Approved exclusions: cluster forwarding and real-daemon NBD/SFTP payload
+  acceptance.

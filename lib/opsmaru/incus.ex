@@ -137,8 +137,9 @@ defmodule Opsmaru.Incus do
   defp path_escape(value),
     do: URI.encode(value, &(URI.char_unreserved?(&1) or &1 in ~c"$&+:=@"))
 
+  # Like the pinned helpers, any string name is escaped and sent; the server answers natively.
   defp upgrade_segments(values) do
-    if Enum.all?(values, &(is_binary(&1) and byte_size(&1) in 1..1024 and String.valid?(&1))),
+    if Enum.all?(values, &is_binary/1),
       do: :ok,
       else: {:error, %Error{kind: :invalid_arguments}}
   end

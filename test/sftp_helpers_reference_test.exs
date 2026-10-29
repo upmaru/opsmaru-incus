@@ -161,7 +161,7 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
     assert native["error"] =~ "custom_volume_sftp"
     client = %{client(fixture, nil) | server: %Server{api_extensions: []}}
     assert {:error, %Error{kind: :unsupported_extension}} = open(client, :volume)
-    assert {:error, %Error{kind: :invalid_arguments}} = Incus.file_sftp(client, "")
+    assert {:error, %Error{kind: :invalid_arguments}} = Incus.file_sftp(client, nil)
 
     assert {:error, %Error{kind: :host_not_ready}} =
              open(%{client | context: %{client.context | ready?: fn -> false end}}, :instance)

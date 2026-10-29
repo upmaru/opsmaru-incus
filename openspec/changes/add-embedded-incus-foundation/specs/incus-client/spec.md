@@ -73,8 +73,8 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 #### Scenario: Certified raw SFTP/NBD upgrades
 
 - **WHEN** a caller opens an instance or custom volume SFTP or NBD connection, with or without `reuse` or `writable`, over Unix or mutual HTTPS
-- **THEN** the request, escaped names, routing, headers and exchanged bytes agree with the pinned client; names are sent unchecked so the server answers natively, only the pinned extension guards run before I/O, backend half-close leaves writes usable and native rejection is preserved without retry
-- **AND** S08 is certified by a single reviewed record that completes the two NBD rows; keeping coalesced 101 bytes is the recorded approved difference; cluster forwarding and real-daemon payload acceptance are recorded approved exclusions; and the SFTP rows stay partial while S09 is open
+- **THEN** the request, escaped names, routing, headers and exchanged bytes agree with the pinned client; names are sent unchecked so the server answers natively, only the pinned extension guards run before I/O, backend half-close over Unix leaves writes usable and native rejection is preserved without retry
+- **AND** S08 is certified by a single reviewed record that completes the two NBD rows; keeping coalesced 101 bytes and refusing writes with `write_closed` after a TLS backend half-close are recorded approved differences; cluster forwarding and real-daemon payload acceptance are recorded approved exclusions; and the SFTP rows stay partial while S09 is open
 
 #### Scenario: Certified console attachment
 
