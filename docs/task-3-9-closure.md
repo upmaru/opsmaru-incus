@@ -203,7 +203,7 @@ file/image transfers. They remain foundation classification obligations.
 | Instance/volume/bucket archives | `Files`; `test/file_variants_reference_test.exs`, `test/backup_variants_test.exs` | Export/import/direct POST are implemented; classify each archive/name/pool/config/device/ISO variant and TLS/failure evidence rather than treating backups as absent. |
 | Metrics, logs, console log, templates, debug memory | `Streams`; `test/streams_test.exs` | Typed byte/header/error and TLS evidence exists. Recorded exec log paths and debug repair are separate missing wrappers; define the remaining per-helper option contracts. |
 | Raw instance/volume SFTP and NBD | `RawChannel`, explicit Incus helpers; `test/native_upgrade_reference_test.exs`, `test/volume_upgrade_reference_test.exs`, `test/raw_channel_test.exs`, `test/tls_stream_test.exs` | Raw transport/half-close/coalesced-byte/bounds evidence exists. NBD protocol implementation stays caller-owned; record all request options and the approved coalesced-byte oracle difference. |
-| Typed SFTP v3 subset | `SFTP`; `test/sftp_helpers_reference_test.exs` | Approved init/extensions/open/read/write/close subset is implemented on Unix/HTTPS; classify unsupported operations explicitly. Full pkg/sftp parity is not the gate for this approved subset. |
+| Typed SFTP | `SFTP`; `test/sftp_operations_reference_test.exs`, `test/sftp_session_test.exs`, `test/sftp_helpers_reference_test.exs` | Moving to full pinned `pkg/sftp` parity (approved 2026-10-29). PR 1: shared sessions and every path/metadata call. PR 2: cursor/positional file I/O, pipelined bulk transfer and certification. |
 | Copy/migration negotiation and relay | `Migration`, `Copy`, `ImageInstances`; `test/copy_negotiation_reference_test.exs`, `test/copy_guards_test.exs`, `test/migration_test.exs` | Recorded boolean/locality/cluster/project/member combinations, identities and relay cleanup have evidence. Enumerate remaining channel/option/remote-wait cases and single-origin differences; do not restart an already implemented copy port. |
 | OCI host-adapter handoff | `OCI`; `test/oci_test.exs`, `test/oci_origin_reference_test.exs` | All 20 concrete methods have partial mappings. Explicit adapter/native projections/bounds/cleanup have evidence; installed conversion/authentication and unclassified cache/options remain separate. |
 | SimpleStreams HTTPS and host delta | `SimpleStreams`; `test/simple_streams_test.exs` | All 20 concrete methods have partial mappings. Catalog/architecture/formats/checksums/full-file/delta/bounds/cleanup have evidence; refresh/cache/fallback variants and installed converter acceptance remain separate. |
@@ -1882,3 +1882,34 @@ Go declaration status are unchanged.
     writes return `:write_closed` and received bytes stay readable
 - Approved exclusions: cluster forwarding and real-daemon NBD/SFTP payload
   acceptance.
+
+## S09 typed SFTP certification (PR 1: shared sessions and path operations)
+
+Approved 2026-10-29. The approved SFTP v3 subset is being replaced by a client
+matching the pinned `pkg/sftp` v1.13.10 client. PR 1 lands shared sessions and
+every path and metadata call; PR 2 lands file I/O and certifies S09. S09 and the
+two SFTP rows stay open, and no ledger row or contract changes status.
+
+- [x] Sessions are shared and pipelined: any process may call one, replies are
+  matched by id, and the session closes on `close/1`, peer EOF, its lifetime or
+  the opener's exit. In-flight requests are bounded by `queue_limit`.
+- [x] Every pinned path and metadata call, with its compound steps:
+  `stat`, `lstat`, `read_dir`, `read_link`, `real_path`, `getwd`, `link`,
+  `symlink`, `chmod`, `chown`, `chtimes`, `truncate`, `set_extended_data`,
+  `stat_vfs`, `remove`, `remove_directory`, `rename`, `posix_rename`, `mkdir`,
+  `mkdir_all`, `remove_all`, `has_extension`, `glob` and `walk`, plus Go's
+  `path.Join`, `path.Split` and `path.Match`.
+- [x] A new driver runs the unchanged pinned helpers against an unchanged
+  `pkg/sftp` server fixture on Unix and mutual HTTPS, for instance and volume
+  sessions. Our client agrees on every request packet (ids normalized) and
+  result against the recorded replies, and on every result live. The path
+  helpers agree on 10 joins, 8 splits and 264 pattern/name matches.
+- [x] Paths are sent as given; the subset's UTF-8, NUL and length checks and its
+  handle-count bound are gone, as in the pinned client.
+- [x] A request deadline fails only that request and its late reply is
+  discarded; a possibly dispatched mutation is `:uncertain`, and a compound call
+  stops instead of sending its next mutation. A malformed matched reply fails
+  alone; unmatched or oversized frames end the session.
+- [x] Mutation probes fail the new tests: continuing a compound call after an
+  uncertain step, swapping the symlink arguments, and ending the session on a
+  request deadline.

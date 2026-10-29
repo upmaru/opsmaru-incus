@@ -242,17 +242,14 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
     end
   end
 
-  test "invalid arguments, foreign owner/handle and unsupported operations do no protocol I/O", %{
-    root: root
-  } do
+  test "invalid arguments and foreign handles do no protocol I/O; any process may use a session",
+       %{root: root} do
     fixture = backend(root, :gen_tcp, nil)
     assert {:ok, session} = open(client(fixture, nil), :instance)
     assert {:ok, handle} = SFTP.open(session, "native", :read)
     assert length(packets()) == 2
     refute inspect(handle) =~ <<255, 0>>
-
-    for path <- ["", <<255>>, "a" <> <<0>>, String.duplicate("x", 4097), %{}],
-        do: assert({:error, %Error{kind: :invalid_arguments}} = SFTP.open(session, path, :read))
+    assert {:error, %Error{kind: :invalid_arguments}} = SFTP.open(session, %{}, :read)
 
     assert {:error, _} = SFTP.open(session, "native", :unknown)
 
@@ -270,25 +267,32 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
 
     foreign = %{handle | session: make_ref()}
     assert {:error, _} = SFTP.read_at(session, foreign, 0, 1)
-    assert {:error, %Error{kind: :unsupported_sftp_operation}} = SFTP.unsupported(session, :stat)
-    task = Task.async(fn -> SFTP.extensions(session) end)
-    assert {:error, %Error{kind: :owner_mismatch}} = Task.await(task)
     assert packets() == []
+
+    # As in pkg/sftp, paths are sent as given, and the session is shared.
+    for path <- ["", <<255>>, "a" <> <<0>>, String.duplicate("x", 4097)] do
+      task = Task.async(fn -> SFTP.open(session, path, :read) end)
+      assert {:ok, _} = Task.await(task)
+      assert [<<3, _::32, length::32, ^path::binary-size(length), _::binary>>] = packets()
+    end
+
+    assert {:ok, %{"future" => "new"}} =
+             Task.await(Task.async(fn -> SFTP.extensions(session) end))
+
     SFTP.close(session)
     assert_receive :sftp_peer_closed
   end
 
-  test "malformed and oversized packets close the session; dispatched writes remain uncertain", %{
-    root: root
-  } do
+  test "unmatched or oversized frames close the session; malformed matched replies fail alone; dispatched writes remain uncertain",
+       %{root: root} do
     replies = [
-      fn _, id -> <<103, id + 1::32, string(@read)::binary>> end,
-      fn _, id -> <<103, id::32, string(<<>>)::binary>> end,
-      fn _, id -> <<103, id::32, 999::32, "truncated">> end,
-      fn _, _ -> {:wire, <<4_294_967_295::32>>} end
+      {true, fn _, id -> <<103, id + 1::32, string(@read)::binary>> end},
+      {false, fn _, id -> <<103, id::32, string(<<>>)::binary>> end},
+      {false, fn _, id -> <<103, id::32, 999::32, "truncated">> end},
+      {true, fn _, _ -> {:wire, <<4_294_967_295::32>>} end}
     ]
 
-    for make_reply <- replies do
+    for {fatal?, make_reply} <- replies do
       reply = fn
         3, id, _ -> <<102, id::32, string(@handle)::binary>>
         type, id, _ -> make_reply.(type, id)
@@ -302,15 +306,26 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
                SFTP.write_at(session, handle, 0, @write)
 
       assert kind == :uncertain
-      assert_receive :sftp_peer_closed
+
+      if fatal? do
+        assert_receive :sftp_peer_closed
+        refute Process.alive?(session.pid)
+      else
+        # As in pkg/sftp, a bad reply to one request leaves the connection usable.
+        refute_receive :sftp_peer_closed, 100
+        assert Process.alive?(session.pid)
+        SFTP.close(session)
+        assert_receive :sftp_peer_closed
+      end
+
       assert Enum.map(packets(), &:binary.first/1) == [1, 3, 6]
-      refute Process.alive?(session.pid)
     end
   end
 
-  test "RPC timeout and cancellation retain native write identity and close the peer", %{
-    root: root
-  } do
+  test "RPC timeout fails one write and cancellation closes the peer, retaining native write identity",
+       %{
+         root: root
+       } do
     for cancel? <- [false, true] do
       fixture =
         backend(root, :gen_tcp, nil,
@@ -331,6 +346,7 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
           assert {:ok, handle} = SFTP.open(session, "native", :read)
           send(parent, {:sftp_owned, session, :sys.get_state(session.pid).raw.pid})
           send(parent, {:sftp_result, SFTP.write_at(session, handle, 0, @write)})
+          send(parent, {:sftp_alive, Process.alive?(session.pid)})
         end)
 
       assert_receive {:sftp_owned, session, raw}, 1_000
@@ -346,6 +362,9 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
       assert error.response.connection == session.connection
       assert error.response.identity == :verified
       assert error.response.session == session.ref
+      # A local deadline fails only its request; cancellation ends the session.
+      assert_receive {:sftp_alive, alive}, 1_000
+      assert alive == not cancel?
 
       assert_receive :sftp_peer_closed, 1_000
       refute Process.alive?(session.pid)
@@ -528,8 +547,10 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
     assert {:ok, session} = open(client(fixture, nil), :instance)
     assert {:ok, handle} = SFTP.open(session, "native", :read)
     assert {:error, %Error{kind: :sftp_protocol}} = SFTP.read_at(session, handle, 0, 10)
-    assert_receive :sftp_peer_closed
     assert Enum.map(packets(), &:binary.first/1) == [1, 3, 5]
+    refute_receive :sftp_peer_closed, 100
+    SFTP.close(session)
+    assert_receive :sftp_peer_closed
   end
 
   test "a forged session cannot kill an unrelated process on call timeout" do
@@ -544,7 +565,6 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
 
     fake = %SFTP{
       pid: unrelated,
-      owner: self(),
       ref: make_ref(),
       timeout: 1,
       lifetime: RequestContext.new!(timeout: 1_000)

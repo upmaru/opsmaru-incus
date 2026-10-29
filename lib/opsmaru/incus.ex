@@ -83,10 +83,10 @@ defmodule Opsmaru.Incus do
     end
   end
 
-  @doc "Initialize the approved owner-bound SFTP v3 file-I/O subset."
+  @doc "Open a shared SFTP session matching the pinned `GetInstanceFileSFTP`."
   def file_sftp(client, instance), do: SFTP.instance(client, instance)
 
-  @doc "Initialize the bounded volume SFTP v3 subset after its native extension check."
+  @doc "Open a shared volume SFTP session after its native extension check, like `GetStoragePoolVolumeFileSFTP`."
   def volume_file_sftp(client, pool, type, name), do: SFTP.volume(client, pool, type, name)
 
   @doc "Open the native NBD byte connection after checking the native extension."
