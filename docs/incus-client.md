@@ -36,7 +36,7 @@ successful MCP tool would establish complete declaration coverage.
 | `Files.read/4`, `create/5`, `backup_import/3`, `backup_download/4` | Binary files, separate directory metadata, native UID/GID/mode parsing and backup headers |
 | `Files.volume_read/6`, `volume_create/7`, `volume_delete/5`, volume/bucket backup helpers, `backup_stream/4` | Twelve native file/archive helpers have differential byte/header/query evidence; full option/platform/backend coverage remains separate |
 | `Streams.metrics/2`, `network_acl_log/3`, `instance_logfile/4`, `instance_console_log/3`, `instance_template_file/4`, `create_instance_template_file/4`, `instance_debug_memory/4` | Native binary/text handoff to an acknowledged host sink or bounded source; no collector or implicit file writes |
-| `Incus.sftp/2`, `nbd/3`, `volume_sftp/4`, `volume_nbd/5` | Native raw 101 byte channels; consumers supply their SFTP/NBD implementation |
+| `Incus.sftp/2`, `nbd/3`, `volume_sftp/4`, `volume_nbd/5` | Native raw 101 byte channels matching the pinned `Get*SFTPConn`/`Get*NBDConn`; names are sent unchecked and consumers supply their SFTP/NBD implementation |
 | `Incus.file_sftp/2`, `volume_file_sftp/4` | Approved bounded SFTP v3 subset: initialize a creator-owned session over the existing raw upgrade; volume extension, host identity/readiness and verified transport still apply |
 | `SFTP.extensions/1`, `open/3`, `read_at/4`, `write_at/4`, `close_file/2`, `close/1` | One request at a time; explicit file modes, native opaque handles and byte/status fidelity; other operations reject and possibly dispatched mutations are never replayed |
 | `RawChannel.recv/2`, `send_data/2`, `shutdown_write/1`, `close/1` | Bounded binary duplex and native half-close |
@@ -169,8 +169,10 @@ no pending queue or replay. A local success is never hardware acceptance.
 Private image exports preserve the pinned `setQueryParam` double form encoding
 for unusual token characters. Ordinary token values are unaffected. The client
 uses only its explicit connection, with no `/dev/incus/sock` fallback. Image
-sinks/options and upgrade path/options are validated before I/O. Storage SFTP
-and read-only/writable NBD have dedicated unchanged typed-method comparisons
+sinks/options are validated before I/O. Raw upgrade names are escaped and sent
+unchecked, like the pinned helpers; only the pinned extension guards and the
+boolean `reuse`/`writable` types are checked first. Instance and storage SFTP
+and NBD, with `reuse` and `writable`, have unchanged typed-method comparisons
 over Unix and HTTPS; coalesced bytes use independent preservation fixtures.
 
 `NativeConfig.from_json/3` is an explicit native normalization step. Model
@@ -320,8 +322,8 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 243 pairs are currently in the checked
-evidence manifest. All 243 are complete under reviewed completion records:
+pairs plus 46 query/access variants; 245 pairs are currently in the checked
+evidence manifest. All 245 are complete under reviewed completion records:
 native wait, events, exec, all eight B01 mutations, conditional instance
 PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10
 administrative rows, all 24 B05 PATCH rows, 28 stream-free B08 storage rows and
@@ -329,8 +331,8 @@ all nineteen stream-free B11 instance and image rows, all three B07 recorded exe
 output rows, the B12 debug repair row, the eight S07 auxiliary byte stream
 rows, the eight S04 file transfer rows, the nineteen S06 backup and archive
 rows, the six S10 copy and migration rows, the three S05 image transfer
-rows and the two S02 console rows (console attachment and the operation
-WebSocket). The remaining documented pairs keep their copy/stream/model/helper
+rows, the two S02 console rows (console attachment and the operation
+WebSocket) and the two S08 NBD rows. The remaining documented pairs keep their copy/stream/model/helper
 scope without treating already verified slices as wholly missing. No full-port or new backend/
 hardware acceptance follows from those fixtures.
 
@@ -1084,6 +1086,46 @@ Approved exclusions:
 
 The daemon acts only on `window-resize`; other bounded JSON control messages
 are sent as given. Real-daemon console acceptance is separately recorded.
+
+Raw SFTP/NBD upgrades (stream contract S08) are **certified** by
+`s08_raw_upgrades_v1` (2026-10-29). It completes instance NBD
+(`GET /1.0/instances/{name}/nbd`) and custom volume NBD
+(`GET /1.0/storage-pools/{pool}/volumes/{type}/{name}/nbd`) on Unix and mutual
+HTTPS. The two SFTP rows are also linked to typed SFTP (S09) and stay partial
+until it is certified.
+
+- `Incus.sftp/2`, `nbd/3`, `volume_sftp/4` and `volume_nbd/5` agree with the
+  pinned `GetInstanceFileSFTPConn`, `GetInstanceNBDConn`,
+  `GetStoragePoolVolumeFileSFTPConn` and `GetStoragePoolVolumeBlockNBDConn`:
+  - the request path, `reuse=1` and `writable=1`, project and target routing,
+    and the `Upgrade` and `Connection` headers
+  - empty, long and special-character names, escaped like Go's
+    `url.PathEscape` and sent unchecked so the server answers natively
+  - the bytes received after the 101 response and the bytes written
+  - backend half-close over Unix, after which writes still reach the server
+- Only the pinned extension guards run before I/O: `instance_nbd`,
+  `custom_volume_sftp` and `storage_volume_nbd`. Instance SFTP has none.
+  `reuse` and `writable` must be booleans, standing in for Go's typed
+  arguments.
+- Native rejections match the pinned error and are sent once.
+- Existing evidence is linked: coalesced bytes, caller loss, lifetime, byte
+  and handshake bounds, blocked-write caps and bad upgrade framing.
+
+Approved differences from the pinned client:
+
+- Protocol bytes that arrive with the 101 response are kept. The pinned
+  `rawConn` discards them.
+- Over mutual HTTPS, a backend half-close ends the connection, because OTP
+  TLS closes on the peer's `close_notify`. Later writes return
+  `:write_closed` and bytes already received stay readable. A Go `tls.Conn`
+  can keep writing; incusd's `UpgradeResponse` never half-closes, so a real
+  daemon never triggers this.
+
+Approved exclusions:
+
+- cluster forwarding beyond host project and target routing
+- real-daemon NBD export and SFTP file semantics, which stay with separately
+  recorded acceptance. The NBD payload protocol is caller-owned.
 
 `RepairInstance` (`name`, body `%{"action" => "rebuild-config-volume"}`,
 `instances_debug_repair`) sends the daemon's registered

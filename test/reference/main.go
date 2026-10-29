@@ -29,8 +29,12 @@ type Input struct {
 	VolumeType  string `json:"volume_type"`
 	Name        string `json:"name"`
 	Writable    bool   `json:"writable"`
-	ImageType   string `json:"image_type"`
-	MetaOnly    bool   `json:"meta_only"`
+	Reuse       bool   `json:"reuse"`
+	// Instance overrides the default "fixture" instance name, including with "".
+	Instance    *string `json:"instance"`
+	ReportError bool    `json:"report_error"`
+	ImageType   string  `json:"image_type"`
+	MetaOnly    bool    `json:"meta_only"`
 
 	Action      string            `json:"action"`
 	Args        []json.RawMessage `json:"args"`
@@ -123,17 +127,29 @@ func main() {
 func rawConnection(client incus.InstanceServer, input Input) {
 	var conn net.Conn
 	var err error
+	instance := "fixture"
+	if input.Instance != nil {
+		instance = *input.Instance
+	}
 	switch input.Protocol {
 	case "sftp":
-		conn, err = client.GetInstanceFileSFTPConn("fixture")
+		conn, err = client.GetInstanceFileSFTPConn(instance)
 	case "nbd":
-		conn, err = client.GetInstanceNBDConn("fixture", incus.InstanceNBDArgs{})
+		conn, err = client.GetInstanceNBDConn(instance, incus.InstanceNBDArgs{Reuse: input.Reuse})
 	case "volume_sftp":
 		conn, err = client.GetStoragePoolVolumeFileSFTPConn(input.Pool, input.VolumeType, input.Name)
 	case "volume_nbd":
 		conn, err = client.GetStoragePoolVolumeBlockNBDConn(input.Pool, input.VolumeType, input.Name, incus.StorageVolumeNBDPost{Writable: input.Writable})
 	default:
 		err = fmt.Errorf("unknown fixture protocol")
+	}
+	if err != nil && input.ReportError {
+		result := map[string]any{"error": err.Error()}
+		if status, ok := api.StatusErrorMatch(err); ok {
+			result["error_status"] = status
+		}
+		_ = json.NewEncoder(os.Stdout).Encode(result)
+		return
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

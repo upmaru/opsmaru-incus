@@ -129,6 +129,73 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: S08 raw SFTP/NBD upgrade certification (2026-10-29)
+
+Certify stream contract S08 under a single reviewed record in one PR. Two rows
+then have no open stream contract and complete:
+
+- instance NBD on `GET /1.0/instances/{name}/nbd` (B11)
+- custom volume NBD on `GET /1.0/storage-pools/{pool}/volumes/{type}/{name}/nbd`
+  (B08)
+
+The two SFTP rows are also linked to S09 and stay partial until S09 is
+certified in its own PR.
+
+User decisions (2026-10-29):
+
+- The raw helpers work like the pinned Go client. `Incus.sftp/2`, `nbd/3`,
+  `volume_sftp/4` and `volume_nbd/5` match `GetInstanceFileSFTPConn`,
+  `GetInstanceNBDConn`, `GetStoragePoolVolumeFileSFTPConn` and
+  `GetStoragePoolVolumeBlockNBDConn`. Name segments are no longer checked
+  locally: any binary, including an empty, long or non-UTF-8 name, is escaped
+  like Go's `url.PathEscape` and sent, so the server answers with its native
+  error. Only the extension guards the pinned client checks (`instance_nbd`,
+  `custom_volume_sftp`, `storage_volume_nbd`) run before I/O. The `reuse` and
+  `writable` options keep their boolean type checks, which stand in for Go's
+  typed `InstanceNBDArgs` and `StorageVolumeNBDPost`. A Go caller cannot pass
+  anything else.
+- Protocol bytes that arrive coalesced with the 101 response are kept. This
+  is an approved difference. The pinned `rawConn` discards bytes buffered with
+  the response, and copying that would corrupt streams.
+- Over mutual HTTPS, a backend half-close ends the connection, which is an
+  approved difference (decided during implementation). OTP TLS closes on the
+  peer's `close_notify`, where a Go `tls.Conn` can keep writing. Later writes
+  return `:write_closed`, never a silent loss, and bytes already received stay
+  readable. incusd's `UpgradeResponse` never half-closes, so a real daemon
+  never triggers this. Unix half-close matches the pinned client.
+- Any process may use a raw channel, as with a Go `net.Conn`. The channel
+  closes on `close/1`, peer closure or the existing finite stream lifetime,
+  and when the process that opened it exits. This is the Elixir equivalent
+  of the connection closing with its Go program.
+
+The PR covers:
+
+- a new differential for the instance helpers against the pinned client on
+  Unix and mutual HTTPS: SFTP and NBD with `reuse` off and on, project and
+  target routing, Upgrade and Connection headers, initial and echoed bytes,
+  and Go argument handling for empty, long and special-character names
+- backend half-close compared with the pinned connection, then writes after
+  read EOF over Unix and the explicit `:write_closed` refusal over HTTPS
+- the existing volume differential, coalesced-byte, native rejection without
+  retry, caller loss, lifetime, byte-bound and handshake-deadline evidence,
+  linked rather than repeated
+- a raw-upgrade record kind that certifies S08 and completes the two NBD rows.
+  The selected manifest grows 243 -> 245 pairs, all complete, and the
+  certified stream contracts become S01, S02, S03, S04, S05, S06, S07, S08
+  and S10.
+
+Approved exclusions:
+
+- cluster forwarding beyond host project and target routing
+- NBD export and SFTP file semantics on a real daemon, which stay with
+  separately recorded opt-in real-Incus acceptance. The NBD payload protocol
+  stays caller-owned.
+
+The library-wide request-path bound and host identity and readiness checks are
+unchanged. The PR updates the ledgers, closure ledger, backlog, client docs and
+generated coverage. Task 3.9, `complete_port` and every Go declaration status
+are unchanged.
+
 #### Approved slice: S02 console certification (2026-10-28)
 
 Certify stream contract S02 under a single reviewed record in one PR. Two rows

@@ -3,7 +3,9 @@ defmodule Opsmaru.Incus.RawChannel do
   Owner-monitored native SFTP/NBD duplex byte channel. No WebSocket framing.
 
   A pull reader and bounded inbound queue expose backpressure; overflow is
-  visible. Read EOF leaves the write direction usable. Lifetime, chunks, byte
+  visible. Read EOF leaves the write direction usable over Unix; over TLS the
+  peer's close_notify ends the connection, so later writes return
+  `:write_closed`. Lifetime, chunks, byte
   totals and every blocking socket write are bounded. Closing the local channel
   never cancels an operation or owns host/Incus lifecycle.
   """
@@ -237,7 +239,9 @@ defmodule Opsmaru.Incus.RawChannel do
 
   def handle_info({tag, socket}, %{socket: socket} = state)
       when tag in [:tcp_closed, :ssl_closed] do
-    state = %{state | read_eof: true}
+    # OTP TLS ends the whole connection on the peer's close_notify, unlike a Go tls.Conn;
+    # later writes report write_closed while already received bytes stay readable.
+    state = %{state | read_eof: true, write_eof: state.write_eof or tag == :ssl_closed}
     if state.notify_read_eof, do: send(state.owner, {state.ref, :read_eof})
 
     if state.pending do

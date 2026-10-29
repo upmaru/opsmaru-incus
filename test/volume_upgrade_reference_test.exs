@@ -125,7 +125,7 @@ defmodule Opsmaru.Incus.VolumeUpgradeReferenceTest do
     end
 
     assert {:error, %Error{kind: :invalid_arguments}} =
-             Incus.volume_sftp(client, "", "custom", "v")
+             Incus.volume_sftp(client, nil, "custom", "v")
 
     client = %{client | context: %{context | ready?: fn -> false end}}
 
