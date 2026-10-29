@@ -504,7 +504,10 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
       identity: identity
     } do
       {client, fixture} = download_client(identity, "metadata", "rootfs")
-      client = %{client | connection: %{client.connection | stream_timeout: 100}}
+      # Owner loss gets a deadline it cannot reach, so only the owner's exit can
+      # kill the sink; the deadline case leaves room to monitor the sink first.
+      stream_timeout = if unquote(cause) == :deadline, do: 500, else: 30_000
+      client = %{client | connection: %{client.connection | stream_timeout: stream_timeout}}
       parent = self()
 
       owner =
@@ -528,10 +531,10 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
       assert_receive {:sink, worker}, 1000
       monitor = Process.monitor(worker)
       if unquote(cause) == :owner_loss, do: Process.exit(owner, :kill)
-      assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 500
+      assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 2_000
 
       if unquote(cause) == :deadline,
-        do: assert_receive({:download_result, {:error, %Error{kind: :deadline}}}, 500)
+        do: assert_receive({:download_result, {:error, %Error{kind: :deadline}}}, 2_000)
 
       assert Enum.count(HTTPFixture.requests(fixture), &(&1.target == "/images/meta.tar.xz")) == 1
       refute Enum.any?(HTTPFixture.requests(fixture), &(&1.target == "/images/root.squashfs"))
