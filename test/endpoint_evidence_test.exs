@@ -583,25 +583,6 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08", "S10"]
 
     refute audit["behavior_complete"] or audit["complete_port"]
-    wait = ["completion_records", "b03_native_wait_v1"]
-    update = ["completion_records", "b01_update_instance_v1"]
-    delete = ["completion_records", "b01_delete_image_v1"]
-    cancel = ["completion_records", "b01_cancel_operation_v1"]
-    patch = ["completion_records", "b04_instance_patch_v1"]
-    instances = ["completion_records", "b02_instances_v1"]
-    images = ["completion_records", "b02_images_v1"]
-    discovery = ["completion_records", "b02_discovery_v1"]
-    network_update = ["completion_records", "b09_put_networks_one_v1"]
-    peer_create = ["completion_records", "b09_post_networks_one_peers_v1"]
-    certificates = ["completion_records", "b10_post_certificates_v1"]
-    cluster_update = ["completion_records", "b10_put_cluster_v1"]
-    server_patch = ["completion_records", "b05_patch_server_v1"]
-    snapshot_patch = ["completion_records", "b05_patch_instances_one_snapshots_one_v1"]
-    download = ["completion_records", "b07_exec_output_one_v1"]
-    byte_streams = ["completion_records", "s07_byte_streams_v1"]
-    file_transfer = ["completion_records", "s04_file_transfer_v1"]
-    archives = ["completion_records", "s06_archives_v1"]
-    migration = ["completion_records", "s10_migration_v1"]
     image_transfer = ["completion_records", "s05_image_transfer_v1"]
     s05 = get_in(audit, image_transfer)
 
@@ -645,221 +626,28 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
       assert row["stream_contracts"] == ["S08", "S09"]
       refute row["behavior_complete"] or Map.has_key?(row, "completion_record")
     end
+  end
 
-    events = ["completion_records", "b03_events_v1"]
-    socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
-    head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
+  for part <- 1..4 do
+    test "reviewed completion records reject removed or overclaimed evidence, part #{part} of 4",
+         %{native: native} do
+      audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
 
-    complete = fn row, record ->
-      entries =
-        Enum.map(audit["entries"], fn entry ->
-          if entry == row,
-            do: Map.merge(entry, %{"behavior_complete" => true, "completion_record" => record}),
-            else: entry
-        end)
-
-      %{audit | "entries" => entries}
-    end
-
-    for {changed, message} <- [
-          {update_in(audit, wait ++ ["cases"], &Map.delete(&1, "native_404")),
-           "missing completion case"},
-          {put_in(audit, wait ++ ["cases", "invented"], ["native_wait"]),
-           "missing completion case"},
-          {put_in(audit, wait ++ ["transports"], ["unix"]), "missing completion transport"},
-          {put_in(audit, events ++ ["cases", "native_403"], []), "missing completion evidence"},
-          {put_in(audit, events ++ ["evidence_kinds", "event_rejection"], "proxy_success"),
-           "unknown completion evidence kind"},
-          {update_in(audit, wait ++ ["evidence_kinds"], &Map.delete(&1, "native_wait_preflight")),
-           "stale completion evidence kinds"},
-          {put_in(audit, wait ++ ["excluded_views"], %{}), "unlisted completion view"},
-          {put_in(
-             audit,
-             wait ++ ["excluded_views", "GET /1.0/operations/{id}/wait?public", "approved"],
-             nil
-           ), "unapproved exclusion"},
-          {update_in(audit, wait ++ ["excluded_scope"], &[%{"scope" => "unapproved"} | &1]),
-           "unapproved exclusion"},
-          {update_in(audit, events ++ ["selectors"], &Map.delete(&1, "type")),
-           "unclassified completion selector"},
-          {put_in(audit, events ++ ["selectors", "type"], nil),
-           "unclassified completion selector"},
-          {put_in(audit, events ++ ["selectors", "type"], ""),
-           "unclassified completion selector"},
-          {put_in(audit, wait ++ ["methods"], ["GetOperationWait"]), "stale completion methods"},
-          {put_in(audit, wait ++ ["approved"], nil), "unapproved completion record"},
-          {put_in(audit, wait ++ ["rows"], ["GET /1.0/operations/{}/wait", socket["pair"]]),
-           "unrelated completion record row"},
-          {complete.(socket, "b03_native_wait_v1"), "unsupported completion claim"},
-          {complete.(head, "b03_native_wait_v1"), "unsupported completion claim"},
-          {update_in(audit, ["stream_contracts"], fn contracts ->
-             Enum.map(contracts, fn contract ->
-               if contract["id"] == "S03",
-                 do: Map.merge(contract, %{"status" => "open_contract_certification"}),
-                 else: contract
-             end)
-           end), "open linked stream contract"},
-          {update_in(audit, ["stream_contracts"], fn contracts ->
-             Enum.map(contracts, fn contract ->
-               if contract["id"] == "S09",
-                 do: %{contract | "status" => "certified"},
-                 else: contract
-             end)
-           end), "unsupported certification claim"},
-          {update_in(audit, update ++ ["cases"], &Map.delete(&1, "extension_guards")),
-           "missing completion case"},
-          {update_in(audit, update ++ ["cases"], &Map.delete(&1, "etag")),
-           "missing completion case"},
-          {update_in(
-             audit,
-             ["completion_records", "b03_exec_v1", "cases"],
-             &Map.delete(&1, "body_fields")
-           ), "missing completion case"},
-          {update_in(audit, patch ++ ["cases"], &Map.delete(&1, "unconditional_rejection")),
-           "missing completion case"},
-          {put_in(audit, delete ++ ["cases", "native_404"], ["mutation_guards"])
-           |> put_in(delete ++ ["evidence_kinds", "mutation_guards"], "named_go_differential"),
-           "unlinked completion evidence"},
-          {put_in(audit, patch ++ ["excluded_scope"], [%{"scope" => "unconditional PATCH"}]),
-           "unapproved exclusion"},
-          {put_in(audit, cancel ++ ["kind"], "async_mutation"), "missing completion case"},
-          {update_in(audit, instances ++ ["cases"], &Map.delete(&1, "selectors")),
-           "missing completion case"},
-          {update_in(audit, images ++ ["cases"], &Map.delete(&1, "extension_guards")),
-           "missing completion case"},
-          {update_in(audit, discovery ++ ["cases"], &Map.delete(&1, "discovery_version")),
-           "missing completion case"},
-          {put_in(audit, images ++ ["excluded_views", "GET /1.0/images?public", "approved"], nil),
-           "unapproved exclusion"},
-          {update_in(audit, instances ++ ["selectors"], &Map.delete(&1, "filter")),
-           "unclassified completion selector"},
-          {update_in(audit, instances ++ ["methods"], &List.delete(&1, "GetInstancesFull")),
-           "stale completion methods"},
-          {update_in(audit, network_update ++ ["cases"], &Map.delete(&1, "native_409")),
-           "missing completion case"},
-          {update_in(audit, network_update ++ ["cases"], &Map.delete(&1, "etag")),
-           "missing completion case"},
-          {update_in(audit, peer_create ++ ["evidence_kinds"], &Map.delete(&1, "peer_guard")),
-           "stale completion evidence kinds"},
-          {put_in(audit, network_update ++ ["kind"], "read_contract"), "missing completion case"},
-          # A synchronous record with an operation-returning method proves its lifecycle.
-          {update_in(audit, certificates ++ ["cases"], &Map.delete(&1, "running")),
-           "missing completion case"},
-          {update_in(audit, certificates ++ ["methods"], &(&1 -- ["CreateCertificateToken"])),
-           "stale completion methods"},
-          {update_in(
-             audit,
-             cluster_update ++ ["evidence_kinds"],
-             &Map.delete(&1, "admin_guards")
-           ), "stale completion evidence kinds"},
-          # S06 certification needs ISO import, lost-reply evidence and its helpers.
-          {update_in(audit, archives ++ ["cases"], &Map.delete(&1, "iso_import")),
-           "missing completion case"},
-          {update_in(audit, archives ++ ["cases", "response_loss_no_replay"], fn _ -> [] end),
-           "missing completion evidence"},
-          {update_in(audit, archives ++ ["helpers"], &List.delete(&1, "bucket_import")),
-           "stale completion helpers"},
-          # S10 certification needs the relay differences, cancellation evidence, its
-          # helpers and approved differences.
-          {update_in(audit, migration ++ ["cases"], &Map.delete(&1, "relay_differences")),
-           "missing completion case"},
-          {update_in(audit, migration ++ ["cases", "remote_cancel"], fn _ -> [] end),
-           "missing completion evidence"},
-          {update_in(audit, migration ++ ["helpers"], &List.delete(&1, "volume_import")),
-           "stale completion helpers"},
-          {update_in(audit, migration ++ ["approved_differences"], fn [first | rest] ->
-             [Map.delete(first, "approved") | rest]
-           end), "unapproved exclusion"},
-          # S05 certification needs token cleanup, lost-copy evidence, the download
-          # helper, the excluded public views and its approved differences.
-          {update_in(audit, image_transfer ++ ["cases"], &Map.delete(&1, "token_cleanup")),
-           "missing completion case"},
-          {update_in(audit, image_transfer ++ ["cases", "aliases"], fn _ -> [] end),
-           "missing completion evidence"},
-          {update_in(audit, image_transfer ++ ["helpers"], &List.delete(&1, "download")),
-           "stale completion helpers"},
-          {update_in(
-             audit,
-             image_transfer ++ ["excluded_views"],
-             &Map.delete(&1, "POST /1.0/images?public")
-           ), "unlisted completion view"},
-          {update_in(audit, image_transfer ++ ["approved_differences"], fn [first | rest] ->
-             [Map.delete(first, "approved") | rest]
-           end), "unapproved exclusion"},
-          # S02 certification needs the detach close frame, the missing-control
-          # rejection, the websocket helper, the excluded public view and its approved
-          # differences.
-          {update_in(audit, console ++ ["cases"], &Map.delete(&1, "detach_close")),
-           "missing completion case"},
-          {update_in(audit, console ++ ["cases", "missing_control"], fn _ -> [] end),
-           "missing completion evidence"},
-          {update_in(audit, console ++ ["helpers"], &List.delete(&1, "websocket")),
-           "stale completion helpers"},
-          {put_in(audit, console ++ ["excluded_views"], %{}), "unlisted completion view"},
-          {update_in(audit, console ++ ["approved_differences"], fn [first | rest] ->
-             [Map.delete(first, "approved") | rest]
-           end), "unapproved exclusion"},
-          # S08 certification needs coalesced bytes, the half-close writes, both NBD
-          # helpers and only them, both transports, the reuse/writable selectors, the
-          # oracle evidence and its approved differences.
-          {update_in(audit, raw_upgrade ++ ["cases"], &Map.delete(&1, "coalesced_bytes")),
-           "missing completion case"},
-          {put_in(audit, raw_upgrade ++ ["cases", "invented"], ["s08_instance"]),
-           "missing completion case"},
-          {update_in(audit, raw_upgrade ++ ["cases", "half_close_writes"], fn _ -> [] end),
-           "missing completion evidence"},
-          {update_in(audit, raw_upgrade ++ ["helpers"], &List.delete(&1, "volume_nbd")),
-           "stale completion helpers"},
-          {update_in(audit, raw_upgrade ++ ["helpers"], &(&1 ++ ["sftp"])),
-           "stale completion helpers"},
-          {put_in(audit, raw_upgrade ++ ["transports"], ["unix"]),
-           "missing completion transport"},
-          {update_in(audit, raw_upgrade ++ ["selectors"], &Map.delete(&1, "writable")),
-           "unclassified completion selector"},
-          {put_in(audit, raw_upgrade ++ ["selectors", "reuse"], ""),
-           "unclassified completion selector"},
-          {update_in(
-             audit,
-             raw_upgrade ++ ["evidence_kinds"],
-             &Map.delete(&1, "s08_oracle_loss")
-           ), "stale completion evidence kinds"},
-          {put_in(audit, raw_upgrade ++ ["evidence_kinds", "s08_coalesced"], "raw_proxy_success"),
-           "unknown completion evidence kind"},
-          {update_in(audit, raw_upgrade ++ ["approved_differences"], fn [first | rest] ->
-             [Map.delete(first, "approved") | rest]
-           end), "unapproved exclusion"},
-          {put_in(audit, raw_upgrade ++ ["stream_contracts"], []),
-           "unsupported certification claim"},
-          # S04 certification needs the HEAD body check and its helpers.
-          {update_in(audit, file_transfer ++ ["cases"], &Map.delete(&1, "head_no_body")),
-           "missing completion case"},
-          {update_in(audit, file_transfer ++ ["helpers"], &List.delete(&1, "volume_head")),
-           "stale completion helpers"},
-          # S07 certification needs mid-stream cleanup and the stream link itself.
-          {update_in(audit, byte_streams ++ ["cases"], &Map.delete(&1, "caller_loss")),
-           "missing completion case"},
-          {put_in(audit, byte_streams ++ ["stream_contracts"], []),
-           "unsupported certification claim"},
-          # A byte download proves its sink, bounds and that it never deletes.
-          {update_in(audit, download ++ ["cases"], &Map.delete(&1, "no_implicit_delete")),
-           "missing completion case"},
-          # A conditional PATCH proves its own result kind: empty sync or accepted /wait.
-          {update_in(audit, server_patch ++ ["cases"], &Map.delete(&1, "empty_sync")),
-           "missing completion case"},
-          {update_in(audit, snapshot_patch ++ ["cases"], &Map.delete(&1, "running")),
-           "missing completion case"},
-          {update_in(
-             audit,
-             server_patch ++ ["cases"],
-             &Map.put(&1, "restore_rejection", ["rest_patch"])
-           ), "missing completion case"},
-          {%{audit | "behavior_complete" => true}, ""},
-          {%{audit | "complete_port" => true}, ""}
-        ] do
-      assert_raise ExUnit.AssertionError, ~r/#{message}/, fn ->
-        EndpointInventory.validate!(changed, native)
+      for {{changed, message}, index} <- Enum.with_index(completion_negative_cases(audit)),
+          rem(index, 4) == unquote(part) - 1 do
+        assert_raise ExUnit.AssertionError, ~r/#{message}/, fn ->
+          EndpointInventory.validate!(changed, native)
+        end
       end
     end
+  end
+
+  test "repair, open linked stream and selected-row completion claims are rejected", %{
+    native: native
+  } do
+    audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
+    events = ["completion_records", "b03_events_v1"]
+    raw_upgrade = ["completion_records", "s08_raw_upgrades_v1"]
 
     # The reconciled repair row maps the registered POST method; the server-only POST
     # completes only through that record.
@@ -984,6 +772,237 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
         EndpointEvidence.validate!(%{@manifest | "entries" => entries}, native)
       end
     end
+  end
+
+  # Negative completion-record cases, split across tests so each stays within
+  # the ExUnit timeout on slower runners; every case still runs.
+  defp completion_negative_cases(audit) do
+    wait = ["completion_records", "b03_native_wait_v1"]
+    update = ["completion_records", "b01_update_instance_v1"]
+    delete = ["completion_records", "b01_delete_image_v1"]
+    cancel = ["completion_records", "b01_cancel_operation_v1"]
+    patch = ["completion_records", "b04_instance_patch_v1"]
+    instances = ["completion_records", "b02_instances_v1"]
+    images = ["completion_records", "b02_images_v1"]
+    discovery = ["completion_records", "b02_discovery_v1"]
+    network_update = ["completion_records", "b09_put_networks_one_v1"]
+    peer_create = ["completion_records", "b09_post_networks_one_peers_v1"]
+    certificates = ["completion_records", "b10_post_certificates_v1"]
+    cluster_update = ["completion_records", "b10_put_cluster_v1"]
+    server_patch = ["completion_records", "b05_patch_server_v1"]
+    snapshot_patch = ["completion_records", "b05_patch_instances_one_snapshots_one_v1"]
+    download = ["completion_records", "b07_exec_output_one_v1"]
+    byte_streams = ["completion_records", "s07_byte_streams_v1"]
+    file_transfer = ["completion_records", "s04_file_transfer_v1"]
+    archives = ["completion_records", "s06_archives_v1"]
+    migration = ["completion_records", "s10_migration_v1"]
+    image_transfer = ["completion_records", "s05_image_transfer_v1"]
+    console = ["completion_records", "s02_console_v1"]
+    raw_upgrade = ["completion_records", "s08_raw_upgrades_v1"]
+    events = ["completion_records", "b03_events_v1"]
+    socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
+    head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
+
+    complete = fn row, record ->
+      entries =
+        Enum.map(audit["entries"], fn entry ->
+          if entry == row,
+            do: Map.merge(entry, %{"behavior_complete" => true, "completion_record" => record}),
+            else: entry
+        end)
+
+      %{audit | "entries" => entries}
+    end
+
+    [
+      {update_in(audit, wait ++ ["cases"], &Map.delete(&1, "native_404")),
+       "missing completion case"},
+      {put_in(audit, wait ++ ["cases", "invented"], ["native_wait"]), "missing completion case"},
+      {put_in(audit, wait ++ ["transports"], ["unix"]), "missing completion transport"},
+      {put_in(audit, events ++ ["cases", "native_403"], []), "missing completion evidence"},
+      {put_in(audit, events ++ ["evidence_kinds", "event_rejection"], "proxy_success"),
+       "unknown completion evidence kind"},
+      {update_in(audit, wait ++ ["evidence_kinds"], &Map.delete(&1, "native_wait_preflight")),
+       "stale completion evidence kinds"},
+      {put_in(audit, wait ++ ["excluded_views"], %{}), "unlisted completion view"},
+      {put_in(
+         audit,
+         wait ++ ["excluded_views", "GET /1.0/operations/{id}/wait?public", "approved"],
+         nil
+       ), "unapproved exclusion"},
+      {update_in(audit, wait ++ ["excluded_scope"], &[%{"scope" => "unapproved"} | &1]),
+       "unapproved exclusion"},
+      {update_in(audit, events ++ ["selectors"], &Map.delete(&1, "type")),
+       "unclassified completion selector"},
+      {put_in(audit, events ++ ["selectors", "type"], nil), "unclassified completion selector"},
+      {put_in(audit, events ++ ["selectors", "type"], ""), "unclassified completion selector"},
+      {put_in(audit, wait ++ ["methods"], ["GetOperationWait"]), "stale completion methods"},
+      {put_in(audit, wait ++ ["approved"], nil), "unapproved completion record"},
+      {put_in(audit, wait ++ ["rows"], ["GET /1.0/operations/{}/wait", socket["pair"]]),
+       "unrelated completion record row"},
+      {complete.(socket, "b03_native_wait_v1"), "unsupported completion claim"},
+      {complete.(head, "b03_native_wait_v1"), "unsupported completion claim"},
+      {update_in(audit, ["stream_contracts"], fn contracts ->
+         Enum.map(contracts, fn contract ->
+           if contract["id"] == "S03",
+             do: Map.merge(contract, %{"status" => "open_contract_certification"}),
+             else: contract
+         end)
+       end), "open linked stream contract"},
+      {update_in(audit, ["stream_contracts"], fn contracts ->
+         Enum.map(contracts, fn contract ->
+           if contract["id"] == "S09",
+             do: %{contract | "status" => "certified"},
+             else: contract
+         end)
+       end), "unsupported certification claim"},
+      {update_in(audit, update ++ ["cases"], &Map.delete(&1, "extension_guards")),
+       "missing completion case"},
+      {update_in(audit, update ++ ["cases"], &Map.delete(&1, "etag")), "missing completion case"},
+      {update_in(
+         audit,
+         ["completion_records", "b03_exec_v1", "cases"],
+         &Map.delete(&1, "body_fields")
+       ), "missing completion case"},
+      {update_in(audit, patch ++ ["cases"], &Map.delete(&1, "unconditional_rejection")),
+       "missing completion case"},
+      {put_in(audit, delete ++ ["cases", "native_404"], ["mutation_guards"])
+       |> put_in(delete ++ ["evidence_kinds", "mutation_guards"], "named_go_differential"),
+       "unlinked completion evidence"},
+      {put_in(audit, patch ++ ["excluded_scope"], [%{"scope" => "unconditional PATCH"}]),
+       "unapproved exclusion"},
+      {put_in(audit, cancel ++ ["kind"], "async_mutation"), "missing completion case"},
+      {update_in(audit, instances ++ ["cases"], &Map.delete(&1, "selectors")),
+       "missing completion case"},
+      {update_in(audit, images ++ ["cases"], &Map.delete(&1, "extension_guards")),
+       "missing completion case"},
+      {update_in(audit, discovery ++ ["cases"], &Map.delete(&1, "discovery_version")),
+       "missing completion case"},
+      {put_in(audit, images ++ ["excluded_views", "GET /1.0/images?public", "approved"], nil),
+       "unapproved exclusion"},
+      {update_in(audit, instances ++ ["selectors"], &Map.delete(&1, "filter")),
+       "unclassified completion selector"},
+      {update_in(audit, instances ++ ["methods"], &List.delete(&1, "GetInstancesFull")),
+       "stale completion methods"},
+      {update_in(audit, network_update ++ ["cases"], &Map.delete(&1, "native_409")),
+       "missing completion case"},
+      {update_in(audit, network_update ++ ["cases"], &Map.delete(&1, "etag")),
+       "missing completion case"},
+      {update_in(audit, peer_create ++ ["evidence_kinds"], &Map.delete(&1, "peer_guard")),
+       "stale completion evidence kinds"},
+      {put_in(audit, network_update ++ ["kind"], "read_contract"), "missing completion case"},
+      # A synchronous record with an operation-returning method proves its lifecycle.
+      {update_in(audit, certificates ++ ["cases"], &Map.delete(&1, "running")),
+       "missing completion case"},
+      {update_in(audit, certificates ++ ["methods"], &(&1 -- ["CreateCertificateToken"])),
+       "stale completion methods"},
+      {update_in(
+         audit,
+         cluster_update ++ ["evidence_kinds"],
+         &Map.delete(&1, "admin_guards")
+       ), "stale completion evidence kinds"},
+      # S06 certification needs ISO import, lost-reply evidence and its helpers.
+      {update_in(audit, archives ++ ["cases"], &Map.delete(&1, "iso_import")),
+       "missing completion case"},
+      {update_in(audit, archives ++ ["cases", "response_loss_no_replay"], fn _ -> [] end),
+       "missing completion evidence"},
+      {update_in(audit, archives ++ ["helpers"], &List.delete(&1, "bucket_import")),
+       "stale completion helpers"},
+      # S10 certification needs the relay differences, cancellation evidence, its
+      # helpers and approved differences.
+      {update_in(audit, migration ++ ["cases"], &Map.delete(&1, "relay_differences")),
+       "missing completion case"},
+      {update_in(audit, migration ++ ["cases", "remote_cancel"], fn _ -> [] end),
+       "missing completion evidence"},
+      {update_in(audit, migration ++ ["helpers"], &List.delete(&1, "volume_import")),
+       "stale completion helpers"},
+      {update_in(audit, migration ++ ["approved_differences"], fn [first | rest] ->
+         [Map.delete(first, "approved") | rest]
+       end), "unapproved exclusion"},
+      # S05 certification needs token cleanup, lost-copy evidence, the download
+      # helper, the excluded public views and its approved differences.
+      {update_in(audit, image_transfer ++ ["cases"], &Map.delete(&1, "token_cleanup")),
+       "missing completion case"},
+      {update_in(audit, image_transfer ++ ["cases", "aliases"], fn _ -> [] end),
+       "missing completion evidence"},
+      {update_in(audit, image_transfer ++ ["helpers"], &List.delete(&1, "download")),
+       "stale completion helpers"},
+      {update_in(
+         audit,
+         image_transfer ++ ["excluded_views"],
+         &Map.delete(&1, "POST /1.0/images?public")
+       ), "unlisted completion view"},
+      {update_in(audit, image_transfer ++ ["approved_differences"], fn [first | rest] ->
+         [Map.delete(first, "approved") | rest]
+       end), "unapproved exclusion"},
+      # S02 certification needs the detach close frame, the missing-control
+      # rejection, the websocket helper, the excluded public view and its approved
+      # differences.
+      {update_in(audit, console ++ ["cases"], &Map.delete(&1, "detach_close")),
+       "missing completion case"},
+      {update_in(audit, console ++ ["cases", "missing_control"], fn _ -> [] end),
+       "missing completion evidence"},
+      {update_in(audit, console ++ ["helpers"], &List.delete(&1, "websocket")),
+       "stale completion helpers"},
+      {put_in(audit, console ++ ["excluded_views"], %{}), "unlisted completion view"},
+      {update_in(audit, console ++ ["approved_differences"], fn [first | rest] ->
+         [Map.delete(first, "approved") | rest]
+       end), "unapproved exclusion"},
+      # S08 certification needs coalesced bytes, the half-close writes, both NBD
+      # helpers and only them, both transports, the reuse/writable selectors, the
+      # oracle evidence and its approved differences.
+      {update_in(audit, raw_upgrade ++ ["cases"], &Map.delete(&1, "coalesced_bytes")),
+       "missing completion case"},
+      {put_in(audit, raw_upgrade ++ ["cases", "invented"], ["s08_instance"]),
+       "missing completion case"},
+      {update_in(audit, raw_upgrade ++ ["cases", "half_close_writes"], fn _ -> [] end),
+       "missing completion evidence"},
+      {update_in(audit, raw_upgrade ++ ["helpers"], &List.delete(&1, "volume_nbd")),
+       "stale completion helpers"},
+      {update_in(audit, raw_upgrade ++ ["helpers"], &(&1 ++ ["sftp"])),
+       "stale completion helpers"},
+      {put_in(audit, raw_upgrade ++ ["transports"], ["unix"]), "missing completion transport"},
+      {update_in(audit, raw_upgrade ++ ["selectors"], &Map.delete(&1, "writable")),
+       "unclassified completion selector"},
+      {put_in(audit, raw_upgrade ++ ["selectors", "reuse"], ""),
+       "unclassified completion selector"},
+      {update_in(
+         audit,
+         raw_upgrade ++ ["evidence_kinds"],
+         &Map.delete(&1, "s08_oracle_loss")
+       ), "stale completion evidence kinds"},
+      {put_in(audit, raw_upgrade ++ ["evidence_kinds", "s08_coalesced"], "raw_proxy_success"),
+       "unknown completion evidence kind"},
+      {update_in(audit, raw_upgrade ++ ["approved_differences"], fn [first | rest] ->
+         [Map.delete(first, "approved") | rest]
+       end), "unapproved exclusion"},
+      {put_in(audit, raw_upgrade ++ ["stream_contracts"], []), "unsupported certification claim"},
+      # S04 certification needs the HEAD body check and its helpers.
+      {update_in(audit, file_transfer ++ ["cases"], &Map.delete(&1, "head_no_body")),
+       "missing completion case"},
+      {update_in(audit, file_transfer ++ ["helpers"], &List.delete(&1, "volume_head")),
+       "stale completion helpers"},
+      # S07 certification needs mid-stream cleanup and the stream link itself.
+      {update_in(audit, byte_streams ++ ["cases"], &Map.delete(&1, "caller_loss")),
+       "missing completion case"},
+      {put_in(audit, byte_streams ++ ["stream_contracts"], []),
+       "unsupported certification claim"},
+      # A byte download proves its sink, bounds and that it never deletes.
+      {update_in(audit, download ++ ["cases"], &Map.delete(&1, "no_implicit_delete")),
+       "missing completion case"},
+      # A conditional PATCH proves its own result kind: empty sync or accepted /wait.
+      {update_in(audit, server_patch ++ ["cases"], &Map.delete(&1, "empty_sync")),
+       "missing completion case"},
+      {update_in(audit, snapshot_patch ++ ["cases"], &Map.delete(&1, "running")),
+       "missing completion case"},
+      {update_in(
+         audit,
+         server_patch ++ ["cases"],
+         &Map.put(&1, "restore_rejection", ["rest_patch"])
+       ), "missing completion case"},
+      {%{audit | "behavior_complete" => true}, ""},
+      {%{audit | "complete_port" => true}, ""}
+    ]
   end
 
   test "exec completion certifies S01 only with its full mode, failure and transport evidence", %{
