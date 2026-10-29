@@ -199,6 +199,8 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
       %{op: "glob", pattern: "a/["},
       %{op: "glob", pattern: "zz"},
       %{op: "glob", pattern: "a/f1"},
+      # pkg/sftp joins the directory with the Lstat name, so "a/" yields "a/a".
+      %{op: "glob", pattern: "a/"},
       %{op: "glob", pattern: "missing/*"},
       %{op: "walk", path: "a", skip: ["a/sub"]},
       %{op: "walk", path: ".", skip: []},

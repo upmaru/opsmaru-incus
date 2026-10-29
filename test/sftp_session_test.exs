@@ -164,6 +164,36 @@ defmodule Opsmaru.Incus.SFTPSessionTest do
     SFTP.close(session)
   end
 
+  test "a request that waited past its caller's deadline is never sent", %{root: root} do
+    script = fn {:request, <<type, id::32, _::binary>>}, state ->
+      if type == 17, do: {[attrs(id, "x")], state}, else: {[], state}
+    end
+
+    fixture = backend(root, script)
+    {:ok, session} = open(fixture, timeout: 200)
+    :ok = :sys.suspend(session.pid)
+    mutation = Task.async(fn -> SFTP.mkdir(session, "late") end)
+    Process.sleep(300)
+    :ok = :sys.resume(session.pid)
+
+    # Nothing was dispatched, so the failure is a plain deadline, not uncertain.
+    assert {:error, %Error{kind: :deadline} = error} = Task.await(mutation, 2_000)
+    refute error.response[:request_id]
+    assert {:ok, _} = SFTP.stat(session, "x")
+    assert Enum.map(requests(), &:binary.first/1) == [1, 17]
+    SFTP.close(session)
+  end
+
+  test "a session ended by an invalid frame stops its reader", %{root: root} do
+    script = fn {:request, _}, state -> {[{:raw, <<0::32>>}], state} end
+    fixture = backend(root, script)
+    {:ok, session} = open(fixture)
+    reader = Process.monitor(:sys.get_state(session.pid).reader)
+    assert {:error, %Error{kind: :sftp_limit}} = SFTP.stat(session, "x")
+    assert_receive {:DOWN, ^reader, :process, _, _}, 2_000
+    eventually_dead(session.pid)
+  end
+
   defp attrs(id, name),
     do: <<105, id::32, 1::32, byte_size(name)::64>>
 
@@ -230,6 +260,9 @@ defmodule Opsmaru.Incus.SFTPSessionTest do
             {:after, delay, bytes} ->
               Process.sleep(delay)
               transport.send(socket, frame(bytes))
+
+            {:raw, bytes} ->
+              transport.send(socket, bytes)
 
             bytes ->
               transport.send(socket, frame(bytes))

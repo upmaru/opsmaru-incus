@@ -353,7 +353,9 @@ defmodule Opsmaru.Incus.SFTP do
   def glob(session, pattern) when is_binary(pattern) do
     if SPath.meta?(pattern) do
       {dir, file} = SPath.split(pattern)
-      glob_meta(session, pattern, clean_glob(dir), file)
+
+      with {:ok, matches} <- glob_meta(session, pattern, clean_glob(dir), file),
+           do: {:ok, Enum.reverse(matches)}
     else
       case lstat(session, pattern) do
         {:ok, stat} -> {:ok, [SPath.join([clean_glob(elem(SPath.split(pattern), 0)), stat.name])]}
@@ -387,14 +389,15 @@ defmodule Opsmaru.Incus.SFTP do
   defp clean_glob("/"), do: "/"
   defp clean_glob(dir), do: binary_part(dir, 0, byte_size(dir) - 1)
 
-  # Stat or ReadDir failures end this directory quietly with the matches so far.
+  # Matches accumulate newest first; glob/2 reverses them once. Stat or ReadDir
+  # failures end this directory quietly with the matches so far.
   defp glob_dir(session, dir, pattern, matches) do
     with {:ok, stat} <- stat(session, dir),
          true <- Stat.dir?(stat),
          {:ok, entries} <- read_dir(session, dir) do
       Enum.reduce_while(entries, {:ok, matches}, fn entry, {:ok, matches} ->
         case SPath.match(pattern, entry.name) do
-          {:ok, true} -> {:cont, {:ok, matches ++ [SPath.join([dir, entry.name])]}}
+          {:ok, true} -> {:cont, {:ok, [SPath.join([dir, entry.name]) | matches]}}
           {:ok, false} -> {:cont, {:ok, matches}}
           {:error, :bad_pattern} -> {:halt, {:error, %Error{kind: :bad_pattern}}}
         end
@@ -570,7 +573,7 @@ defmodule Opsmaru.Incus.SFTP do
     tag = make_ref()
 
     try do
-      result = GenServer.call(pid, {ref, tag, request}, session.timeout + 500)
+      result = GenServer.call(pid, {ref, tag, expiring(request, session)}, session.timeout + 500)
       request_id(tag)
       result
     catch
@@ -596,6 +599,13 @@ defmodule Opsmaru.Incus.SFTP do
   end
 
   defp call(_, _), do: error(:invalid_arguments)
+
+  # A request carries the caller's absolute deadline, so one that waited in the
+  # session queue past it is never sent after the caller has given up.
+  defp expiring({:request, op, args}, session),
+    do: {:request, op, args, now() + session.timeout}
+
+  defp expiring(request, _), do: request
 
   defp closed_kind(lifetime, request_context) do
     status =
@@ -693,11 +703,16 @@ defmodule Opsmaru.Incus.SFTP do
   def handle_call({ref, _, :extensions}, _, %{ref: ref} = state),
     do: {:reply, {:ok, state.extensions}, state}
 
-  def handle_call({ref, tag, {:request, op, args}}, {caller, _} = from, %{ref: ref} = state) do
+  def handle_call(
+        {ref, tag, {:request, op, args, expires}},
+        {caller, _} = from,
+        %{ref: ref} = state
+      ) do
     connection = state.client.connection
     limit = min(connection.max_chunk_bytes, connection.max_request_bytes)
 
-    with :ok <- authorize(state),
+    with :ok <- unexpired(expires),
+         :ok <- authorize(state),
          :ok <- open_handle(state, op, args),
          true <- map_size(state.pending) + MapSet.size(state.abandoned) < connection.queue_limit,
          true <- state.id < @uint32,
@@ -714,7 +729,7 @@ defmodule Opsmaru.Incus.SFTP do
           else: state
 
       send(caller, {tag, id})
-      deadline = request_deadline(connection, state.lifetime)
+      deadline = min(request_deadline(connection, state.lifetime), expires)
 
       case send_packet(state, body, deadline) do
         :ok ->
@@ -733,6 +748,8 @@ defmodule Opsmaru.Incus.SFTP do
   end
 
   def handle_call(_, _, state), do: {:reply, error(:invalid_arguments), state}
+
+  defp unexpired(expires), do: if(now() < expires, do: :ok, else: {:error, :deadline})
 
   # Never send a request for a handle this session has not opened or already closed.
   defp open_handle(state, op, {handle, _, _}) when op in [:read, :write],
@@ -938,6 +955,8 @@ defmodule Opsmaru.Incus.SFTP do
     for {id, entry} <- state.pending,
         do: GenServer.reply(entry.from, {:error, failure(state, id, :channel_closed)})
 
+    # The reader may be waiting for an acknowledgement that a failed session never sends.
+    if state.reader, do: Process.exit(state.reader, :kill)
     RawChannel.close(state.raw)
   end
 
