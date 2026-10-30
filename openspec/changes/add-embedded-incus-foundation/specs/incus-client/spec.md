@@ -76,6 +76,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** the request, escaped names, routing, headers and exchanged bytes agree with the pinned client; names are sent unchecked so the server answers natively, only the pinned extension guards run before I/O, backend half-close over Unix leaves writes usable and native rejection is preserved without retry
 - **AND** S08 is certified by a single reviewed record that completes the two NBD rows; keeping coalesced 101 bytes and refusing writes with `write_closed` after a TLS backend half-close are recorded approved differences; cluster forwarding and real-daemon payload acceptance are recorded approved exclusions; and the SFTP rows stay partial while S09 is open
 
+#### Scenario: Certified typed SFTP
+
+- **WHEN** any process uses an instance or custom volume SFTP session or an open file from it, for path, metadata, cursor, positional or whole-file calls, over Unix or mutual HTTPS
+- **THEN** request packets, compound steps, pipelining order and results agree with the pinned `pkg/sftp` v1.13.10 client, cursor calls take turns under Go's per-file lock, a possibly accepted mutation is uncertain and never resent, and a failed request or transfer leaves other callers' requests running
+- **AND** S09 is certified by a single reviewed record that completes both SFTP rows; reporting a failed final upload write is a recorded approved difference; and cluster forwarding and real-daemon SFTP acceptance are recorded approved exclusions
+
 #### Scenario: Certified console attachment
 
 - **WHEN** a caller opens a static or dynamic console of `console` or `vga` type, with or without size and `force`, and exchanges control and data frames over Unix or mutual HTTPS
