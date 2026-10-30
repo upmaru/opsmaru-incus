@@ -25,18 +25,27 @@ defmodule Opsmaru.Incus.SFTP do
   every pending request, mutations as `:uncertain`. Closing a session releases
   its channel without deleting backend files or canceling Incus.
 
-  File handles from `open/3` belong to one session. `read_at/4` and `write_at/4`
-  move at most 128 KiB per call with nonnegative signed-int64 offsets; a short
-  DATA reply is rejected rather than continued.
+  `open/2`, `create/2` and `open_file/3` return an `Opsmaru.Incus.SFTP.File`
+  bound to this session, which keeps its native handle and position.
   """
   use GenServer
   import Bitwise
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Context, Error, RawChannel, RequestContext, Transport}
-  alias Opsmaru.Incus.SFTP.{Handle, Packet, Stat, StatVFS}
+  alias Opsmaru.Incus.SFTP
+  alias Opsmaru.Incus.SFTP.{Packet, Stat, StatVFS}
   alias Opsmaru.Incus.SFTP.Path, as: SPath
   defstruct [:pid, :ref, :timeout, :lifetime, :request_context, :connection, :identity]
-  @modes %{read: 1, write: 2, read_write: 3, append: 6, create: 27}
+  # Go's os flag bits as toPflags reads them.
+  @open_flags %{
+    read_only: 0,
+    write_only: 1,
+    read_write: 2,
+    append: 0x400,
+    create: 0x40,
+    truncate: 0x200,
+    exclusive: 0x80
+  }
   @packet_limit 132_096
   @uint32 0xFFFFFFFF
 
@@ -55,42 +64,48 @@ defmodule Opsmaru.Incus.SFTP do
     end
   end
 
-  def open(session, path, mode) when is_binary(path) and is_map_key(@modes, mode),
-    do: request(session, :open, {path, @modes[mode]}, mode != :read, &handle/2)
+  @doc "Go `Open`: opens `path` for reading."
+  def open(session, path), do: open_file(session, path, [:read_only])
 
-  def open(_, _, _), do: error(:invalid_arguments)
+  @doc "Go `Create`: opens `path` read/write, creating or truncating it."
+  def create(session, path), do: open_file(session, path, [:read_write, :create, :truncate])
 
-  def read_at(session, %Handle{} = handle, offset, count)
-      when is_integer(offset) and offset in 0..9_223_372_036_854_775_807 and
-             is_integer(count) and count in 1..131_072 and
-             offset + count <= 9_223_372_036_854_775_807 do
-    with {:ok, value} <- file_handle(session, handle) do
-      request(session, :read, {value, offset, count}, false, fn
-        {:data, bytes}, _ when byte_size(bytes) == count -> {:ok, bytes}
-        {:status, {1, _, _}}, _ -> :eof
+  @doc """
+  Go `OpenFile`: opens `path` with `:read_only`, `:write_only`, `:read_write`,
+  `:append`, `:create`, `:truncate` and `:exclusive`, mapped as Go's `toPflags`
+  maps the `os` flags. No access flag means read-only, and conflicting access
+  flags send neither read nor write, as natively.
+  """
+  def open_file(session, path, flags) when is_binary(path) and is_list(flags) do
+    if Enum.all?(flags, &is_map_key(@open_flags, &1)) do
+      bits = Enum.reduce(flags, 0, &(&2 ||| @open_flags[&1]))
+      # Creating or truncating changes the file, so a lost reply is uncertain.
+      mutation = (bits &&& (@open_flags.create ||| @open_flags.truncate)) != 0
+
+      request(session, :open, {path, pflags(bits)}, mutation, fn
+        {:file, id}, _ -> {:ok, %SFTP.File{session: session, id: id, path: path}}
         reply, error -> status(reply, error)
       end)
+    else
+      error(:invalid_arguments)
     end
   end
 
-  def read_at(_, _, _, _), do: error(:invalid_arguments)
+  def open_file(_, _, _), do: error(:invalid_arguments)
 
-  def write_at(session, %Handle{} = handle, offset, bytes)
-      when is_integer(offset) and offset in 0..9_223_372_036_854_775_807 and is_binary(bytes) and
-             byte_size(bytes) in 1..131_072 and
-             offset + byte_size(bytes) <= 9_223_372_036_854_775_807 do
-    with {:ok, value} <- file_handle(session, handle),
-         do: request(session, :write, {value, offset, bytes}, true, &ok/2)
+  defp pflags(bits) do
+    access =
+      case bits &&& 3 do
+        0 -> 0x01
+        1 -> 0x02
+        2 -> 0x03
+        3 -> 0
+      end
+
+    Enum.reduce([{0x400, 0x04}, {0x40, 0x08}, {0x200, 0x10}, {0x80, 0x20}], access, fn
+      {os, pflag}, acc -> if (bits &&& os) == os, do: acc ||| pflag, else: acc
+    end)
   end
-
-  def write_at(_, _, _, _), do: error(:invalid_arguments)
-
-  def close_file(session, %Handle{} = handle) do
-    with {:ok, value} <- file_handle(session, handle),
-         do: request(session, :close_file, value, true, &ok/2)
-  end
-
-  def close_file(_, _), do: error(:invalid_arguments)
 
   @doc "Go `Stat`: attributes of the file `path` names, following symlinks."
   def stat(session, path) when is_binary(path),
@@ -469,11 +484,6 @@ defmodule Opsmaru.Incus.SFTP do
   defp ok({:status, {0, _, _}}, _), do: :ok
   defp ok(reply, error), do: status(reply, error)
 
-  defp handle({:handle, value}, %Error{response: %{session: ref}}),
-    do: {:ok, %Handle{session: ref, value: value}}
-
-  defp handle(reply, error), do: status(reply, error)
-
   defp attributes({:attrs, fields}, _, name), do: {:ok, Stat.new(fields, name)}
   defp attributes(reply, error, _), do: status(reply, error)
 
@@ -503,19 +513,47 @@ defmodule Opsmaru.Incus.SFTP do
 
   defp status(_, %Error{} = error), do: {:error, %{error | kind: error.kind || :sftp_protocol}}
 
-  defp file_handle(%__MODULE__{ref: ref}, %Handle{session: ref, value: value}), do: {:ok, value}
-  defp file_handle(_, _), do: error(:invalid_arguments)
+  defp request(session, op, args, mutation, interpret),
+    do: settle(call(session, {:request, op, args}), mutation, interpret)
 
-  defp request(session, op, args, mutation, interpret) do
-    case call(session, {:request, op, args}) do
-      {:ok, reply, %Error{} = template} ->
-        result = interpret.(reply, template)
-        if mutation, do: uncertain_malformed(result), else: result
-
-      error ->
-        if mutation, do: uncertain(error), else: error
-    end
+  # Interprets one reply, or the failure that replaced it, for request/5 and the
+  # pipelined calls of SFTP.File.
+  defp settle({:ok, reply, %Error{} = template}, mutation, interpret) do
+    result = interpret.(reply, template)
+    if mutation, do: uncertain_malformed(result), else: result
   end
+
+  defp settle(error, mutation, _), do: if(mutation, do: uncertain(error), else: error)
+
+  # Internal calls for SFTP.File; not part of the public API.
+  @doc false
+  def file_request(session, op, args, mutation, interpret),
+    do: request(session, op, args, mutation, interpret)
+
+  @doc false
+  def file_settle(result, mutation, interpret), do: settle(result, mutation, interpret)
+
+  @doc false
+  def file_reply(:ok, reply, error), do: ok(reply, error)
+  def file_reply(:status, reply, error), do: status(reply, error)
+  def file_reply({:attributes, name}, reply, error), do: attributes(reply, error, name)
+
+  @doc false
+  def file_base(path), do: base(path)
+
+  @doc false
+  # Sends one request without waiting; its result arrives as
+  # `{:sftp_reply, dest, id, result}` for the caller to settle.
+  def file_dispatch(session, op, args, dest), do: call(session, {:dispatch, op, args, dest})
+
+  @doc false
+  # Waits for Go's per-file lock (:shared or :exclusive), bounded by the session's
+  # lifetime. Returns the file's offset with a token for file_unlock/3.
+  def file_lock(%__MODULE__{} = session, id, mode), do: call(session, {:lock, id, mode})
+
+  @doc false
+  def file_unlock(%__MODULE__{} = session, token, offset),
+    do: call(session, {:unlock, token, offset})
 
   # A matched reply that does not decode leaves a mutation's outcome unknown.
   defp uncertain_malformed({:error, %Error{kind: :sftp_protocol} = error}),
@@ -572,8 +610,12 @@ defmodule Opsmaru.Incus.SFTP do
   defp call(%__MODULE__{pid: pid, ref: ref} = session, request) when is_pid(pid) do
     tag = make_ref()
 
+    # A lock wait is bounded by the session's lifetime instead, as Go's wait ends
+    # only with the lock.
+    timeout = if match?({:lock, _, _}, request), do: :infinity, else: session.timeout + 500
+
     try do
-      result = GenServer.call(pid, {ref, tag, expiring(request, session)}, session.timeout + 500)
+      result = GenServer.call(pid, {ref, tag, expiring(request, session)}, timeout)
       request_id(tag)
       result
     catch
@@ -581,7 +623,7 @@ defmodule Opsmaru.Incus.SFTP do
         id = request_id(tag)
         reason = closed_kind(session.lifetime, session.request_context)
 
-        if request == :close,
+        if request == :close or match?({:unlock, _, _}, request),
           do: :ok,
           else:
             {:error,
@@ -604,6 +646,9 @@ defmodule Opsmaru.Incus.SFTP do
   # session queue past it is never sent after the caller has given up.
   defp expiring({:request, op, args}, session),
     do: {:request, op, args, now() + session.timeout}
+
+  defp expiring({:dispatch, op, args, dest}, session),
+    do: {:dispatch, op, args, dest, now() + session.timeout}
 
   defp expiring(request, _), do: request
 
@@ -642,7 +687,9 @@ defmodule Opsmaru.Incus.SFTP do
           id: 0,
           pending: %{},
           abandoned: MapSet.new(),
-          handles: MapSet.new(),
+          files: %{},
+          locks: %{},
+          lock_monitors: %{},
           extensions: %{},
           reader: nil,
           raw_monitor: Process.monitor(raw.pid)
@@ -708,57 +755,201 @@ defmodule Opsmaru.Incus.SFTP do
         {caller, _} = from,
         %{ref: ref} = state
       ) do
+    case submit(state, op, args, expires, {:call, from}, &send(caller, {tag, &1})) do
+      {:sent, _, state} ->
+        {:noreply, state}
+
+      {:failed, id, reason, state} ->
+        GenServer.reply(from, {:error, failure(state, id, reason)})
+        fatal(state, reason)
+
+      {:rejected, kind} ->
+        {:reply, error(kind), state}
+    end
+  end
+
+  def handle_call({ref, _, {:dispatch, op, args, dest, expires}}, from, %{ref: ref} = state) do
+    case submit(state, op, args, expires, {:async, dest}, fn _ -> :ok end) do
+      {:sent, id, state} ->
+        {:reply, {:ok, id}, state}
+
+      {:failed, id, reason, state} ->
+        GenServer.reply(from, {:error, failure(state, id, reason)})
+        fatal(state, reason)
+
+      {:rejected, kind} ->
+        {:reply, error(kind), state}
+    end
+  end
+
+  def handle_call({ref, _, {:lock, id, mode}}, {pid, _} = from, %{ref: ref} = state)
+      when mode in [:shared, :exclusive] do
+    case state.files do
+      %{^id => file} ->
+        token = make_ref()
+        monitor = Process.monitor(pid)
+        file = %{file | queue: :queue.in({token, mode, from}, file.queue)}
+
+        state = %{
+          state
+          | files: Map.put(state.files, id, file),
+            locks: Map.put(state.locks, token, {id, monitor}),
+            lock_monitors: Map.put(state.lock_monitors, monitor, token)
+        }
+
+        {:noreply, grant(state, id)}
+
+      _ ->
+        {:reply, error(:file_closed), state}
+    end
+  end
+
+  def handle_call({ref, _, {:unlock, token, offset}}, _, %{ref: ref} = state),
+    do: {:reply, :ok, release(state, token, offset)}
+
+  def handle_call(_, _, state), do: {:reply, error(:invalid_arguments), state}
+
+  defp submit(state, op, args, expires, target, on_id) do
     connection = state.client.connection
     limit = min(connection.max_chunk_bytes, connection.max_request_bytes)
 
     with :ok <- unexpired(expires),
          :ok <- authorize(state),
-         :ok <- open_handle(state, op, args),
+         {:ok, wire} <- resolve(state, op, args),
          true <- map_size(state.pending) + MapSet.size(state.abandoned) < connection.queue_limit,
          true <- state.id < @uint32,
-         body = Packet.frame(Packet.request(state.id + 1, op, args)),
+         body = Packet.frame(Packet.request(state.id + 1, op, wire)),
          true <- byte_size(body) <= limit do
       id = state.id + 1
-      state = %{state | id: id}
-
-      # As natively, a close attempt invalidates the local handle even if the
-      # server rejects it. Never send a later use-after-close request.
-      state =
-        if op == :close_file,
-          do: %{state | handles: MapSet.delete(state.handles, args)},
-          else: state
-
-      send(caller, {tag, id})
+      state = invalidate(%{state | id: id}, op, args)
+      on_id.(id)
       deadline = min(request_deadline(connection, state.lifetime), expires)
 
       case send_packet(state, body, deadline) do
         :ok ->
           timer = Process.send_after(self(), {:sftp_deadline, id}, max(0, deadline - now()))
-          entry = %{from: from, op: op, timer: timer, template: template(state, id)}
-          {:noreply, %{state | pending: Map.put(state.pending, id, entry)}}
+
+          entry = %{
+            target: target,
+            op: op,
+            args: args,
+            timer: timer,
+            template: template(state, id)
+          }
+
+          {:sent, id, %{state | pending: Map.put(state.pending, id, entry)}}
 
         {:error, reason} ->
-          GenServer.reply(from, {:error, failure(state, id, reason)})
-          fatal(state, reason)
+          {:failed, id, reason, state}
       end
     else
-      {:error, kind} -> {:reply, error(kind), state}
-      false -> {:reply, error(:sftp_limit), state}
+      {:error, kind} -> {:rejected, kind}
+      false -> {:rejected, :sftp_limit}
     end
   end
 
-  def handle_call(_, _, state), do: {:reply, error(:invalid_arguments), state}
-
   defp unexpired(expires), do: if(now() < expires, do: :ok, else: {:error, :deadline})
 
-  # Never send a request for a handle this session has not opened or already closed.
-  defp open_handle(state, op, {handle, _, _}) when op in [:read, :write],
-    do: open_handle(state, :close_file, handle)
+  # File calls name an open file; its native handle never leaves the session.
+  # A closed or unknown file sends nothing, as Go's os.ErrClosed.
+  defp resolve(state, op, {id, offset, data}) when op in [:read, :write] do
+    with {:ok, handle} <- file_handle(state, id),
+         do: {:ok, {handle, offset &&& 0xFFFFFFFFFFFFFFFF, data}}
+  end
 
-  defp open_handle(state, :close_file, handle),
-    do: if(MapSet.member?(state.handles, handle), do: :ok, else: {:error, :invalid_arguments})
+  defp resolve(state, :fsetstat, {id, attrs}) do
+    with {:ok, handle} <- file_handle(state, id), do: {:ok, {handle, attrs}}
+  end
 
-  defp open_handle(_, _, _), do: :ok
+  defp resolve(state, op, id) when op in [:close_file, :fstat, :fsync],
+    do: file_handle(state, id)
+
+  defp resolve(_, _, args), do: {:ok, args}
+
+  defp file_handle(state, id) do
+    case state.files do
+      %{^id => %{handle: handle}} when is_binary(handle) -> {:ok, handle}
+      _ -> {:error, :file_closed}
+    end
+  end
+
+  # As natively, a close attempt invalidates the local handle even if the
+  # server rejects it. Never send a later use-after-close request.
+  defp invalidate(state, :close_file, id),
+    do: update_in(state.files[id], &%{&1 | handle: nil})
+
+  defp invalidate(state, _, _), do: state
+
+  # Go's sync.RWMutex per file: waiters are served in order, a run of shared
+  # waiters together, and a waiting exclusive call holds back later shared ones.
+  defp grant(state, id) do
+    file = state.files[id]
+
+    case :queue.peek(file.queue) do
+      {:value, {token, mode, from}} ->
+        cond do
+          is_nil(file.handle) ->
+            GenServer.reply(from, error(:file_closed))
+            file = %{file | queue: :queue.drop(file.queue)}
+            grant(forget(%{state | files: Map.put(state.files, id, file)}, token), id)
+
+          map_size(file.holders) == 0 or (mode == :shared and file.mode == :shared) ->
+            GenServer.reply(from, {:ok, token, file.offset})
+
+            file = %{
+              file
+              | queue: :queue.drop(file.queue),
+                holders: Map.put(file.holders, token, mode),
+                mode: mode
+            }
+
+            state = %{state | files: Map.put(state.files, id, file)}
+            if mode == :shared, do: grant(state, id), else: state
+
+          true ->
+            state
+        end
+
+      :empty ->
+        state
+    end
+  end
+
+  defp release(state, token, offset) do
+    case state.locks do
+      %{^token => {id, _}} ->
+        file = state.files[id]
+        holders = Map.delete(file.holders, token)
+
+        file = %{
+          file
+          | holders: holders,
+            queue: :queue.filter(&(elem(&1, 0) != token), file.queue),
+            mode: if(map_size(holders) == 0, do: nil, else: file.mode),
+            offset:
+              if(is_integer(offset) and Map.get(file.holders, token) == :exclusive,
+                do: offset,
+                else: file.offset
+              )
+        }
+
+        state = grant(forget(%{state | files: Map.put(state.files, id, file)}, token), id)
+        file = state.files[id]
+
+        if is_nil(file.handle) and map_size(file.holders) == 0 and :queue.is_empty(file.queue),
+          do: %{state | files: Map.delete(state.files, id)},
+          else: state
+
+      _ ->
+        state
+    end
+  end
+
+  defp forget(state, token) do
+    {{_, monitor}, locks} = Map.pop(state.locks, token)
+    Process.demonitor(monitor, [:flush])
+    %{state | locks: locks, lock_monitors: Map.delete(state.lock_monitors, monitor)}
+  end
 
   defp authorize(state) do
     case Context.authorize(state.client.context, state.client.connection) do
@@ -787,7 +978,7 @@ defmodule Opsmaru.Incus.SFTP do
         {:noreply, state}
 
       {entry, pending} ->
-        GenServer.reply(entry.from, {:error, failure(state, id, deadline_kind(state))})
+        answer(entry, id, {:error, failure(state, id, deadline_kind(state))})
         {:noreply, %{state | pending: pending, abandoned: MapSet.put(state.abandoned, id)}}
     end
   end
@@ -797,6 +988,11 @@ defmodule Opsmaru.Incus.SFTP do
 
   def handle_info({:DOWN, monitor, :process, _, _}, %{raw_monitor: monitor} = state),
     do: fatal(state, :channel_closed)
+
+  # A process that exits while holding or waiting for a file lock releases it.
+  def handle_info({:DOWN, monitor, :process, _, _}, %{lock_monitors: monitors} = state)
+      when is_map_key(monitors, monitor),
+      do: {:noreply, release(state, monitors[monitor], nil)}
 
   def handle_info(_, state), do: {:noreply, state}
 
@@ -840,9 +1036,8 @@ defmodule Opsmaru.Incus.SFTP do
         {entry, pending} ->
           Process.cancel_timer(entry.timer)
           state = %{state | pending: pending}
-          reply = decode(type, payload)
-          state = track(state, entry.op, reply)
-          GenServer.reply(entry.from, {:ok, reply, entry.template})
+          {state, reply} = track(state, entry, decode(type, payload))
+          answer(entry, id, {:ok, reply, entry.template})
           {:ok, state}
       end
     end
@@ -855,10 +1050,28 @@ defmodule Opsmaru.Incus.SFTP do
     end
   end
 
-  defp track(state, :open, {:handle, handle}),
-    do: %{state | handles: MapSet.put(state.handles, handle)}
+  defp answer(%{target: {:call, from}}, _, result), do: GenServer.reply(from, result)
 
-  defp track(state, _, _), do: state
+  defp answer(%{target: {:async, dest}}, id, result),
+    do: send(dest, {:sftp_reply, dest, id, result})
+
+  # An opened file is registered here; callers only see its local id.
+  defp track(state, %{op: :open, args: {path, _}}, {:handle, handle}) do
+    id = make_ref()
+
+    file = %{
+      handle: handle,
+      path: path,
+      offset: 0,
+      mode: nil,
+      holders: %{},
+      queue: :queue.new()
+    }
+
+    {%{state | files: Map.put(state.files, id, file)}, {:file, id}}
+  end
+
+  defp track(state, _, reply), do: {state, reply}
 
   defp template(state, id),
     do: %Error{
@@ -890,7 +1103,7 @@ defmodule Opsmaru.Incus.SFTP do
   defp fatal(state, reason) do
     for {id, entry} <- state.pending do
       Process.cancel_timer(entry.timer)
-      GenServer.reply(entry.from, {:error, failure(state, id, reason)})
+      answer(entry, id, {:error, failure(state, id, reason)})
     end
 
     {:stop, :normal, %{state | pending: %{}}}
@@ -953,7 +1166,7 @@ defmodule Opsmaru.Incus.SFTP do
   @impl true
   def terminate(_, state) do
     for {id, entry} <- state.pending,
-        do: GenServer.reply(entry.from, {:error, failure(state, id, :channel_closed)})
+        do: answer(entry, id, {:error, failure(state, id, :channel_closed)})
 
     # The reader may be waiting for an acknowledgement that a failed session never sends.
     if state.reader, do: Process.exit(state.reader, :kill)

@@ -57,11 +57,11 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
       assert {:ok, extensions} = SFTP.extensions(session)
       assert extensions == Map.new(@ext)
       refute inspect(session) =~ "localhost"
-      assert {:ok, handle} = SFTP.open(session, "dir/雪+file", :create)
-      assert {:ok, @read} = SFTP.read_at(session, handle, 3, 5)
-      assert :ok = SFTP.write_at(session, handle, 9, @write)
-      assert :eof = SFTP.read_at(session, handle, 15, 1)
-      assert :ok = SFTP.close_file(session, handle)
+      assert {:ok, handle} = open_mode(session, "dir/雪+file", :create)
+      assert {:ok, @read} = SFTP.File.read_at(handle, 3, 5)
+      assert :ok = SFTP.File.write_at(handle, 9, @write)
+      assert {:eof, ""} = SFTP.File.read_at(handle, 15, 1)
+      assert :ok = SFTP.File.close(handle)
       assert :ok = SFTP.close(session)
       assert :ok = SFTP.close(session)
       refute Process.alive?(session.pid)
@@ -77,7 +77,7 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
     end
   end
 
-  test "all subset modes produce unchanged native open flags", %{root: root} do
+  test "every helper open mode produces the pinned open flags", %{root: root} do
     for mode <- [:read, :write, :read_write, :append, :create] do
       fixture = backend(root, :gen_tcp, nil)
       input = native_input(fixture, nil, :instance)
@@ -92,8 +92,8 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
       expected = packets()
       assert_receive :sftp_peer_closed
       assert {:ok, session} = open(client(fixture, nil), :instance)
-      assert {:ok, handle} = SFTP.open(session, "native", mode)
-      assert :ok = SFTP.close_file(session, handle)
+      assert {:ok, handle} = open_mode(session, "native", mode)
+      assert :ok = SFTP.File.close(handle)
       SFTP.close(session)
       assert packets() == expected
       assert_receive :sftp_peer_closed
@@ -144,7 +144,7 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
               error_code: 777,
               message: "private-denial",
               response: %{request_id: 1, language: "en"}
-            } = error} = SFTP.open(session, "secret", :read)
+            } = error} = open_mode(session, "secret", :read)
 
     refute inspect(error) =~ "private-denial"
     SFTP.close(session)
@@ -246,32 +246,36 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
        %{root: root} do
     fixture = backend(root, :gen_tcp, nil)
     assert {:ok, session} = open(client(fixture, nil), :instance)
-    assert {:ok, handle} = SFTP.open(session, "native", :read)
+    assert {:ok, handle} = open_mode(session, "native", :read)
     assert length(packets()) == 2
     refute inspect(handle) =~ <<255, 0>>
-    assert {:error, %Error{kind: :invalid_arguments}} = SFTP.open(session, %{}, :read)
+    assert {:error, %Error{kind: :invalid_arguments}} = open_mode(session, %{}, :read)
 
-    assert {:error, _} = SFTP.open(session, "native", :unknown)
+    assert {:error, _} = open_mode(session, "native", :unknown)
 
-    for {offset, count} <- [
-          {-1, 1},
-          {0, 0},
-          {0, 131_073},
-          {0, "1"},
-          {9_223_372_036_854_775_807, 1}
-        ],
-        do: assert({:error, _} = SFTP.read_at(session, handle, offset, count))
+    for {offset, count} <- [{0, -1}, {0, "1"}, {9_223_372_036_854_775_808, 1}],
+        do:
+          assert(
+            {:error, %Error{kind: :invalid_arguments}} = SFTP.File.read_at(handle, offset, count)
+          )
 
-    for bytes <- ["", [], String.duplicate("x", 131_073)],
-        do: assert({:error, _} = SFTP.write_at(session, handle, 0, bytes))
+    for bytes <- [[], ~c"x", nil],
+        do:
+          assert(
+            {:error, %Error{kind: :invalid_arguments}} = SFTP.File.write_at(handle, 0, bytes)
+          )
 
-    foreign = %{handle | session: make_ref()}
-    assert {:error, _} = SFTP.read_at(session, foreign, 0, 1)
+    # As natively, an empty read sends nothing.
+    assert {:ok, ""} = SFTP.File.read_at(handle, 0, 0)
+
+    # A file of another session, or one never opened, sends nothing.
+    foreign = %{handle | id: make_ref()}
+    assert {:error, %Error{kind: :file_closed}} = SFTP.File.read_at(foreign, 0, 1)
     assert packets() == []
 
     # As in pkg/sftp, paths are sent as given, and the session is shared.
     for path <- ["", <<255>>, "a" <> <<0>>, String.duplicate("x", 4097)] do
-      task = Task.async(fn -> SFTP.open(session, path, :read) end)
+      task = Task.async(fn -> open_mode(session, path, :read) end)
       assert {:ok, _} = Task.await(task)
       assert [<<3, _::32, length::32, ^path::binary-size(length), _::binary>>] = packets()
     end
@@ -300,10 +304,10 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
 
       fixture = backend(root, :gen_tcp, nil, reply: reply)
       assert {:ok, session} = open(client(fixture, nil), :instance)
-      assert {:ok, handle} = SFTP.open(session, "native", :read)
+      assert {:ok, handle} = open_mode(session, "native", :read)
 
       assert {:error, %Error{kind: kind, response: %{request_id: 2}}} =
-               SFTP.write_at(session, handle, 0, @write)
+               SFTP.File.write_at(handle, 0, @write)
 
       assert kind == :uncertain
 
@@ -343,9 +347,9 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
           assert {:ok, session} =
                    open(client(fixture, nil, timeout: 100, request_context: scope), :instance)
 
-          assert {:ok, handle} = SFTP.open(session, "native", :read)
+          assert {:ok, handle} = open_mode(session, "native", :read)
           send(parent, {:sftp_owned, session, :sys.get_state(session.pid).raw.pid})
-          send(parent, {:sftp_result, SFTP.write_at(session, handle, 0, @write)})
+          send(parent, {:sftp_result, SFTP.File.write_at(handle, 0, @write)})
           send(parent, {:sftp_alive, Process.alive?(session.pid)})
         end)
 
@@ -388,9 +392,9 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
     owner =
       spawn(fn ->
         {:ok, session} = open(client(fixture, nil, timeout: 2_000), :instance)
-        {:ok, handle} = SFTP.open(session, "native", :read)
+        {:ok, handle} = open_mode(session, "native", :read)
         send(parent, {:sftp_owned, session, :sys.get_state(session.pid).raw.pid})
-        SFTP.write_at(session, handle, 0, @write)
+        SFTP.File.write_at(handle, 0, @write)
       end)
 
     assert_receive {:sftp_owned, session, raw}, 1_000
@@ -474,9 +478,9 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
     expected = packets()
     assert_receive :sftp_peer_closed
     assert {:ok, session} = open(client(fixture, nil), :instance)
-    assert {:ok, handle} = SFTP.open(session, "native", :read)
-    assert {:error, %Error{error_code: 777}} = SFTP.close_file(session, handle)
-    assert {:error, %Error{kind: :invalid_arguments}} = SFTP.close_file(session, handle)
+    assert {:ok, handle} = open_mode(session, "native", :read)
+    assert {:error, %Error{error_code: 777}} = SFTP.File.close(handle)
+    assert {:error, %Error{kind: :file_closed}} = SFTP.File.close(handle)
     SFTP.close(session)
     assert packets() == expected
     assert_receive :sftp_peer_closed
@@ -512,10 +516,10 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
     expected = packets()
     assert_receive :sftp_peer_closed
     assert {:ok, session} = open(client(fixture, nil), :instance)
-    assert {:ok, handle} = SFTP.open(session, "native", :read_write)
-    assert {:ok, ^data} = SFTP.read_at(session, handle, 0, byte_size(data))
-    assert :ok = SFTP.write_at(session, handle, 1, data)
-    assert :ok = SFTP.close_file(session, handle)
+    assert {:ok, handle} = open_mode(session, "native", :read_write)
+    assert {:ok, ^data} = SFTP.File.read_at(handle, 0, byte_size(data))
+    assert :ok = SFTP.File.write_at(handle, 1, data)
+    assert :ok = SFTP.File.close(handle)
     SFTP.close(session)
     assert packets() == expected
     assert_receive :sftp_peer_closed
@@ -525,17 +529,17 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
     assert {:ok, session} =
              open(client(fixture, nil, max_chunk_bytes: 64, max_request_bytes: 64), :instance)
 
-    assert {:ok, handle} = SFTP.open(session, "native", :read)
+    assert {:ok, handle} = open_mode(session, "native", :read)
     packets()
-    assert {:error, %Error{kind: :sftp_limit}} = SFTP.write_at(session, handle, 0, data)
+    assert {:error, %Error{kind: :sftp_limit}} = SFTP.File.write_at(handle, 0, data)
     assert packets() == []
-    assert :ok = SFTP.close_file(session, handle)
+    assert :ok = SFTP.File.close(handle)
     SFTP.close(session)
     packets()
     assert_receive :sftp_peer_closed
   end
 
-  test "partial DATA is rejected instead of silently performing more read requests", %{root: root} do
+  test "partial DATA is continued with further reads like the pinned readChunkAt", %{root: root} do
     fixture =
       backend(root, :gen_tcp, nil,
         reply: fn
@@ -544,14 +548,37 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
         end
       )
 
+    input =
+      Map.put(native_input(fixture, nil, :instance), :Steps, [
+        %{Op: "open", Path: "native", Mode: "read"},
+        %{Op: "read", Offset: 0, Count: 10}
+      ])
+
+    native = oracle(input)
+    assert native["steps"] |> Enum.at(1) |> Map.fetch!("data") == Base.encode64("shortshort")
+    expected = packets()
+    assert_receive :sftp_peer_closed
+
     assert {:ok, session} = open(client(fixture, nil), :instance)
-    assert {:ok, handle} = SFTP.open(session, "native", :read)
-    assert {:error, %Error{kind: :sftp_protocol}} = SFTP.read_at(session, handle, 0, 10)
-    assert Enum.map(packets(), &:binary.first/1) == [1, 3, 5]
-    refute_receive :sftp_peer_closed, 100
+    assert {:ok, handle} = open_mode(session, "native", :read)
+    assert {:ok, "shortshort"} = SFTP.File.read_at(handle, 0, 10)
+    # Go's client closes without closing the file; ours does the same here.
     SFTP.close(session)
+    assert packets() == expected
     assert_receive :sftp_peer_closed
   end
+
+  # The open flags of the Go helper driver's modes.
+  @modes %{
+    read: [:read_only],
+    write: [:write_only],
+    read_write: [:read_write],
+    append: [:write_only, :append],
+    create: [:read_write, :create, :truncate]
+  }
+
+  defp open_mode(session, path, mode),
+    do: SFTP.open_file(session, path, Map.get(@modes, mode, [mode]))
 
   test "a forged session cannot kill an unrelated process on call timeout" do
     unrelated =

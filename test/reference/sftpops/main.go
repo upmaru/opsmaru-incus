@@ -1,11 +1,16 @@
 // Fixture-only driver of the unchanged pinned GetInstanceFileSFTP and
 // GetStoragePoolVolumeFileSFTP helpers. It runs a scripted list of pkg/sftp client
-// path and metadata operations against the private Unix/TLS fixture and prints each
-// result in a normalized JSON form; it performs no local file operations.
+// path, metadata and *sftp.File operations against the private Unix/TLS fixture and
+// prints each result in a normalized JSON form; it performs no local file
+// operations. File data is generated from a size and seed on both sides and
+// reported as a byte count and SHA-256.
 package main
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -35,6 +40,54 @@ type step struct {
 	Size     int64      `json:"size"`
 	Extended [][]string `json:"extended"`
 	Skip     []string   `json:"skip"`
+	File     string     `json:"file"`
+	Flags    []string   `json:"flags"`
+	Offset   int64      `json:"offset"`
+	Count    int        `json:"count"`
+	Whence   string     `json:"whence"`
+	Data     *gen       `json:"data"`
+	Workers  int        `json:"concurrency"`
+}
+
+// gen describes deterministic data: byte i is (i*31 + seed) mod 251.
+type gen struct {
+	Size int `json:"size"`
+	Seed int `json:"seed"`
+}
+
+func (g *gen) bytes() []byte {
+	b := make([]byte, g.Size)
+	for i := range b {
+		b[i] = byte((i*31 + g.Seed) % 251)
+	}
+	return b
+}
+
+var files = map[string]*sftp.File{}
+
+var flagBits = map[string]int{"read_only": os.O_RDONLY, "write_only": os.O_WRONLY,
+	"read_write": os.O_RDWR, "append": os.O_APPEND, "create": os.O_CREATE,
+	"truncate": os.O_TRUNC, "exclusive": os.O_EXCL}
+
+var whences = map[string]int{"start": io.SeekStart, "current": io.SeekCurrent, "end": io.SeekEnd}
+
+// summary is a byte count with the SHA-256 of the bytes.
+func summary(b []byte) map[string]any {
+	sum := sha256.Sum256(b)
+	return map[string]any{"n": len(b), "sha256": hex.EncodeToString(sum[:])}
+}
+
+// counter is a WriteTo sink that hashes what it receives.
+type counter struct{ buf bytes.Buffer }
+
+func (c *counter) Write(p []byte) (int, error) { return c.buf.Write(p) }
+
+// transfer reports a byte count result and, when err is set, the partial result.
+func transfer(op string, value map[string]any, err error) map[string]any {
+	if err != nil {
+		return map[string]any{"op": op, "error": failure(err), "partial": value}
+	}
+	return map[string]any{"op": op, "ok": value}
 }
 
 func main() {
@@ -86,7 +139,75 @@ func main() {
 func run(c *sftp.Client, s step) map[string]any {
 	var value any
 	var err error
+	f := files[s.File]
+	if s.File != "" && f == nil && s.Op != "open" && s.Op != "create" && s.Op != "open_file" {
+		return map[string]any{"op": s.Op, "error": map[string]any{"class": "unopened"}}
+	}
 	switch s.Op {
+	case "open", "create", "open_file":
+		var file *sftp.File
+		switch s.Op {
+		case "open":
+			file, err = c.Open(s.Path)
+		case "create":
+			file, err = c.Create(s.Path)
+		default:
+			bits := 0
+			for _, flag := range s.Flags {
+				bits |= flagBits[flag]
+			}
+			file, err = c.OpenFile(s.Path, bits)
+		}
+		if err == nil {
+			files[s.File] = file
+			value = file.Name()
+		}
+	case "close":
+		err = f.Close()
+	case "read":
+		b := make([]byte, s.Count)
+		n, err := f.Read(b)
+		return transfer(s.Op, summary(b[:n]), err)
+	case "read_at":
+		b := make([]byte, s.Count)
+		n, err := f.ReadAt(b, s.Offset)
+		return transfer(s.Op, summary(b[:n]), err)
+	case "write":
+		n, err := f.Write(s.Data.bytes())
+		return transfer(s.Op, map[string]any{"n": n}, err)
+	case "write_at":
+		n, err := f.WriteAt(s.Data.bytes(), s.Offset)
+		return transfer(s.Op, map[string]any{"n": n}, err)
+	case "seek":
+		value, err = f.Seek(s.Offset, whences[s.Whence])
+	case "write_to":
+		sink := &counter{}
+		n, err := f.WriteTo(sink)
+		result := summary(sink.buf.Bytes())
+		result["n"] = n
+		return transfer(s.Op, result, err)
+	case "read_from":
+		n, err := f.ReadFrom(bytes.NewReader(s.Data.bytes()))
+		return transfer(s.Op, map[string]any{"n": n}, err)
+	case "read_from_with_concurrency":
+		n, err := f.ReadFromWithConcurrency(bytes.NewReader(s.Data.bytes()), s.Workers)
+		return transfer(s.Op, map[string]any{"n": n}, err)
+	case "file_stat":
+		value, err = info(f.Stat())
+	case "file_chmod":
+		err = f.Chmod(os.FileMode(s.Mode))
+	case "file_chown":
+		err = f.Chown(s.UID, s.GID)
+	case "file_truncate":
+		err = f.Truncate(s.Size)
+	case "file_set_extended_data":
+		extended := []sftp.StatExtended{}
+		for _, pair := range s.Extended {
+			extended = append(extended, sftp.StatExtended{ExtType: pair[0], ExtData: pair[1]})
+		}
+		err = f.SetExtendedData(s.Path, extended)
+	case "sync":
+		err = f.Sync()
 	case "stat":
 		value, err = info(c.Stat(s.Path))
 	case "lstat":

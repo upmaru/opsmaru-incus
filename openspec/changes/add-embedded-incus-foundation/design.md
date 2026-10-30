@@ -201,6 +201,78 @@ S09 and the two SFTP rows stay open until PR 2. Cluster forwarding and
 real-daemon SFTP acceptance stay approved exclusions. Task 3.9,
 `complete_port` and every Go declaration status are unchanged.
 
+User decisions for PR 2 (2026-10-30):
+
+- Writes follow the defaults the pinned helpers leave in place. They never set
+  `UseConcurrentWrites`, so a write or upload larger than 128 KiB sends one
+  WRITE at a time and waits for each reply. Only reads are pipelined by
+  default. `read_from_with_concurrency/3` is Go's explicit pipelined upload.
+  This narrows the earlier bullet, which said large writes were pipelined too.
+- A file may be used from any process, with Go's per-file lock. Cursor calls
+  (`read`, `write`, `seek`, `write_to`, `read_from`, `sync`, `close`) take
+  turns, while positional and metadata calls (`read_at`, `write_at`, `stat`,
+  `chmod`, `chown`, `truncate`, `set_extended_data`) may overlap one another
+  but not a cursor call. Like Go's `sync.RWMutex`, a waiting cursor call
+  holds back later positional calls. A process that exits while holding or
+  waiting for the lock releases it. Waits are bounded by the session's
+  lifetime.
+- `read_from/2` reports a failed final short write. Go's `ReadFrom` keeps the
+  end-of-source signal and drops that write's result, so a lost last chunk
+  reports success. The requests sent are unchanged. This is an approved
+  difference.
+
+PR 2 covers:
+
+- `open/2` (Go `Open`), `create/2` (Go `Create`) and `open_file/3` (Go
+  `OpenFile`). The flags are `:read_only`, `:write_only`, `:read_write`,
+  `:append`, `:create`, `:truncate` and `:exclusive`, mapped with Go's
+  `toPflags`, including its handling of combined access modes. PR 1's
+  `open/3`, `read_at/4`, `write_at/4`, `close_file/2` and `Handle` are
+  retired.
+- `Opsmaru.Incus.SFTP.File`, mirroring `*sftp.File`:
+  - `name/1`
+  - `close/1`: the handle is invalidated before CLOSE is sent, and later calls
+    fail with `:file_closed` without I/O, like `os.ErrClosed`.
+  - `read/2` and `read_at/3`: up to 128 KiB is one request, continued after
+    short replies until filled or failed. Larger reads are pipelined in
+    128 KiB chunks with ids in offset order, at most 64 per file plus Go's one
+    read dispatched ahead. A short chunk there means end of file, as in Go.
+  - `seek/3`: `:start`, `:current` or `:end`, which sends FSTAT; a negative
+    result is rejected without moving.
+  - `write/2` and `write_at/3`: 128 KiB WRITEs sent one at a time.
+  - `write_to/2`: streams the file into an acknowledged host sink. It sends
+    Go's path STAT first. Files up to 128 KiB, and files that are not regular,
+    are read one request at a time. Larger regular files use Go's pipelined
+    read-ahead, delivered to the sink in order.
+  - `read_from/2`: groups an enumerable source into full 128 KiB WRITEs, like
+    `io.ReadFull`, sent one at a time.
+  - `read_from_with_concurrency/3`: the same, pipelined. The concurrency is
+    capped at 64, and values below 1 mean 64.
+  - `stat/1` (FSTAT, named by the base of the opened path)
+  - `chmod/2`, `chown/3`, `truncate/2` and `set_extended_data/2` (FSETSTAT)
+  - `sync/1`: sends `fsync@openssh.com` only when the server announced it with
+    data `"1"`. Otherwise it fails locally with status 8 "fsync not
+    supported", as Go does.
+- results: `{:ok, value}` on success. Reads that reach end of file return
+  `{:eof, data}`. Other failures keep the byte count Go returns, and for reads
+  the bytes received, in `error.response`.
+- uncertainty: a WRITE, CLOSE, FSETSTAT or FSYNC whose outcome is unknown is
+  `:uncertain`. Transfers stop at the first failure, never resend a chunk and
+  dispatch no new reads; late replies are discarded.
+- the Go driver gains file steps that run the pinned `*sftp.File` methods
+  against the same server fixture. Recorded-reply replay must agree packet for
+  packet. The one exception is the read-ahead past end of file in pipelined
+  `WriteTo`: Go stops it only once the end is seen, so its length depends on
+  timing. There the comparison checks the in-order reads up to the end of the
+  file and that every extra read starts at or past it. Results are compared
+  live on Unix and mutual HTTPS, for instance and volume sessions.
+- lock, pipelining, bound and uncertainty cases against the scripted session
+  fixture
+- the S09 completion record, completing both SFTP rows and certifying S09,
+  with the manifest at 247. Go client options the Incus helpers never set
+  (`UseFstat`, `UseConcurrentReads(false)`, `UseConcurrentWrites(true)`,
+  `MaxConcurrentRequestsPerFile` and other packet sizes) are not exposed.
+
 #### Approved slice: S08 raw SFTP/NBD upgrade certification (2026-10-29)
 
 Certify stream contract S08 under a single reviewed record in one PR. Two rows

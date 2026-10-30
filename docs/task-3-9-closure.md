@@ -203,7 +203,7 @@ file/image transfers. They remain foundation classification obligations.
 | Instance/volume/bucket archives | `Files`; `test/file_variants_reference_test.exs`, `test/backup_variants_test.exs` | Export/import/direct POST are implemented; classify each archive/name/pool/config/device/ISO variant and TLS/failure evidence rather than treating backups as absent. |
 | Metrics, logs, console log, templates, debug memory | `Streams`; `test/streams_test.exs` | Typed byte/header/error and TLS evidence exists. Recorded exec log paths and debug repair are separate missing wrappers; define the remaining per-helper option contracts. |
 | Raw instance/volume SFTP and NBD | `RawChannel`, explicit Incus helpers; `test/native_upgrade_reference_test.exs`, `test/volume_upgrade_reference_test.exs`, `test/raw_channel_test.exs`, `test/tls_stream_test.exs` | Raw transport/half-close/coalesced-byte/bounds evidence exists. NBD protocol implementation stays caller-owned; record all request options and the approved coalesced-byte oracle difference. |
-| Typed SFTP | `SFTP`; `test/sftp_operations_reference_test.exs`, `test/sftp_session_test.exs`, `test/sftp_helpers_reference_test.exs` | Moving to full pinned `pkg/sftp` parity (approved 2026-10-29). PR 1: shared sessions and every path/metadata call. PR 2: cursor/positional file I/O, pipelined bulk transfer and certification. |
+| Typed SFTP | `SFTP`; `test/sftp_operations_reference_test.exs`, `test/sftp_session_test.exs`, `test/sftp_helpers_reference_test.exs` | S09 certified by `s09_typed_sftp_v1` (2026-10-30), completing both SFTP rows with S08: the pinned `pkg/sftp` client with shared sessions, every path/metadata call and `*sftp.File` I/O. Reporting a failed final upload write is an approved difference. |
 | Copy/migration negotiation and relay | `Migration`, `Copy`, `ImageInstances`; `test/copy_negotiation_reference_test.exs`, `test/copy_guards_test.exs`, `test/migration_test.exs` | Recorded boolean/locality/cluster/project/member combinations, identities and relay cleanup have evidence. Enumerate remaining channel/option/remote-wait cases and single-origin differences; do not restart an already implemented copy port. |
 | OCI host-adapter handoff | `OCI`; `test/oci_test.exs`, `test/oci_origin_reference_test.exs` | All 20 concrete methods have partial mappings. Explicit adapter/native projections/bounds/cleanup have evidence; installed conversion/authentication and unclassified cache/options remain separate. |
 | SimpleStreams HTTPS and host delta | `SimpleStreams`; `test/simple_streams_test.exs` | All 20 concrete methods have partial mappings. Catalog/architecture/formats/checksums/full-file/delta/bounds/cleanup have evidence; refresh/cache/fallback variants and installed converter acceptance remain separate. |
@@ -1913,3 +1913,50 @@ two SFTP rows stay open, and no ledger row or contract changes status.
 - [x] Mutation probes fail the new tests: continuing a compound call after an
   uncertain step, swapping the symlink arguments, and ending the session on a
   request deadline.
+
+## S09 typed SFTP certification (PR 2: file I/O and certification)
+
+Approved 2026-10-29 and 2026-10-30. PR 2 adds the pinned `*sftp.File` and
+certifies S09 under `s09_typed_sftp_v1` (kind `typed_sftp`). The record
+completes instance SFTP (`GET /1.0/instances/{}/sftp`, B11) and custom volume
+SFTP (`GET /1.0/storage-pools/{}/volumes/{}/{}/sftp`, B08), whose other linked
+contract, S08, is already certified. The selected manifest grows to 247 pairs,
+all complete, and every classified row is now complete. The certified stream
+contracts become S01 to S10; S11 and S12 stay open, so task 3.9 and
+`complete_port` stay incomplete. Go declaration statuses are unchanged.
+
+- [x] `open/2`, `create/2` and `open_file/3` replace the subset's five modes,
+  with the flags mapped like Go's `toPflags`. `open/3`, `read_at/4`,
+  `write_at/4`, `close_file/2` and `SFTP.Handle` are retired.
+- [x] `SFTP.File` mirrors `*sftp.File`: `read/2`, `read_at/3`, `write/2`,
+  `write_at/3`, `seek/3`, `write_to/2`, `read_from/2`,
+  `read_from_with_concurrency/3`, `stat/1`, `chmod/2`, `chown/3`,
+  `truncate/2`, `set_extended_data/2`, `sync/1`, `name/1` and `close/1`.
+- [x] Writes follow the helpers' defaults (user decision 2026-10-30): one
+  128 KiB WRITE at a time, with Go's explicit pipelined upload as
+  `read_from_with_concurrency/3`. Reads over 128 KiB are pipelined with up to 64
+  requests per file plus one dispatched ahead; short reads are continued below
+  128 KiB and mean end of file above it.
+- [x] Go's per-file lock (user decision 2026-10-30): cursor calls take turns,
+  positional calls overlap, a waiting cursor call holds back later ones, and a
+  process that exits releases the lock.
+- [x] The Go driver gains file steps. Against the same server fixture, on Unix
+  and mutual HTTPS for instance and volume sessions, our client agrees with the
+  pinned client on every request packet and result for cursor and positional
+  reads and writes, end of file, seek, pipelined reads, `WriteTo` read-ahead,
+  one-at-a-time and pipelined uploads, file attributes, unsupported `Sync`,
+  closed files and the open flags. Go's read-ahead past the end of the file
+  depends on timing, so the replay allows only extra reads past an end already
+  seen on the same handle and lists them.
+- [x] Session fixtures cover the lock, the pipelining window and connection
+  bound, an uncertain write, a failed final upload write, a failed pipelined
+  upload, a refusing sink and the FSYNC packet.
+- [x] Mutation probes fail the new tests: a window without Go's extra read, no
+  backpressure at the connection bound, ignoring the final write's failure as
+  Go does, not releasing a dead holder's lock, and dropping the waiting cursor
+  call's precedence.
+- Approved differences: `read_from/2` reports a failed final short write
+  (2026-10-30), and sessions end with their stream lifetime, which also bounds
+  lock waits (2026-10-29).
+- Approved exclusions: cluster forwarding, real-daemon SFTP acceptance and
+  `pkg/sftp` options the Incus helpers never set.
