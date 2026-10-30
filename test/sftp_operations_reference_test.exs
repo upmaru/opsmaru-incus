@@ -103,6 +103,34 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
     recorded()
   end
 
+  test "the replay skips only read-ahead past an end of file already seen on the same handle" do
+    read = fn id, offset -> <<5, id::32, 1::32, "h", offset::64, 131_072::32>> end
+    eof = fn id -> <<101, id::32, 1::32, 0::32, 0::32>> end
+    close = {<<4, 9::32, 1::32, "h">>, <<101, 9::32, 0::32, 0::32, 0::32>>}
+    state = %{mismatches: [], read_ahead: [], eof: %{}}
+
+    # An ordinary end-of-file read our client did not send is a mismatch.
+    {_, _, missed} = answer(elem(close, 0), [{read.(1, 0), eof.(1)}, close], state)
+    assert [{_, _}] = missed.mismatches
+    assert missed.read_ahead == []
+
+    # Once the end is seen at offset 0, Go's further read past it may be skipped,
+    # but not a read on another handle.
+    exchange = [{read.(1, 0), eof.(1)}, {read.(2, 131_072), eof.(2)}, close]
+    {_, rest, seen} = answer(read.(7, 0), exchange, state)
+    assert {_, [], skipped} = answer(elem(close, 0), rest, seen)
+    assert skipped.mismatches == []
+    assert [{:skipped, _}] = skipped.read_ahead
+
+    other = <<5, 2::32, 1::32, "g", 131_072::64, 131_072::32>>
+
+    {_, rest, seen} =
+      answer(read.(7, 0), [{read.(1, 0), eof.(1)}, {other, eof.(2)}, close], state)
+
+    {_, _, crossed} = answer(elem(close, 0), rest, seen)
+    assert [{_, _}] = crossed.mismatches
+  end
+
   test "Go path helpers agree with the pinned sftp.Join, Split and Match", %{base: base} do
     joins = [
       [],
@@ -774,26 +802,36 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
       ] ->
         {<<reply_type, id::32, reply::binary>>, exchange, note_eof(ours, recorded, state)}
 
-      # Go read further ahead than we did: skip its read answered with end of file.
-      [{<<5, _::binary>> = read, <<101, _::32, 1::32, _::binary>>} | exchange] ->
-        answer(ours, exchange, %{state | read_ahead: [{:skipped, read} | state.read_ahead]})
+      [{read, reply} | rest] ->
+        if skippable?(read, reply, state),
+          do: answer(ours, rest, %{state | read_ahead: [{:skipped, read} | state.read_ahead]}),
+          else: unmatched(ours, id, exchange, state)
 
-      _ ->
-        case past_eof(ours, state) do
-          true ->
-            eof = <<101, id::32, 1::32, 0::32, 0::32>>
-            {eof, exchange, %{state | read_ahead: [{:extra, ours} | state.read_ahead]}}
+      [] ->
+        unmatched(ours, id, exchange, state)
+    end
+  end
 
-          false ->
-            {expected, exchange} =
-              case exchange do
-                [{request, _} | rest] -> {request, rest}
-                [] -> {:unexpected, []}
-              end
+  # Go read further ahead than we did: only its reads answered with end of file
+  # that start at or past an end already seen on the same handle may be skipped.
+  defp skippable?(<<5, _::binary>> = read, <<101, _::32, 1::32, _::binary>>, state),
+    do: past_eof(read, state)
 
-            failure = <<101, id::32, 4::32, 0::32, 0::32>>
-            {failure, exchange, %{state | mismatches: [{ours, expected} | state.mismatches]}}
+  defp skippable?(_, _, _), do: false
+
+  defp unmatched(ours, id, exchange, state) do
+    if past_eof(ours, state) do
+      eof = <<101, id::32, 1::32, 0::32, 0::32>>
+      {eof, exchange, %{state | read_ahead: [{:extra, ours} | state.read_ahead]}}
+    else
+      {expected, exchange} =
+        case exchange do
+          [{request, _} | rest] -> {request, rest}
+          [] -> {:unexpected, []}
         end
+
+      failure = <<101, id::32, 4::32, 0::32, 0::32>>
+      {failure, exchange, %{state | mismatches: [{ours, expected} | state.mismatches]}}
     end
   end
 

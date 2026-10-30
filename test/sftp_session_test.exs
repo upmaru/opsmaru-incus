@@ -335,6 +335,35 @@ defmodule Opsmaru.Incus.SFTPSessionTest do
       SFTP.close(session)
     end
 
+    test "a raising source or sink keeps the position its completed chunks reached",
+         %{root: root} do
+      fixture = backend(root, &files/2, %{files_state() | size: 300_000})
+      {:ok, session} = open(fixture)
+      {:ok, file} = SFTP.create(session, "f")
+
+      source =
+        Stream.map([1, 2], fn
+          1 -> :binary.copy("x", 131_072)
+          2 -> raise "source failed"
+        end)
+
+      assert_raise RuntimeError, fn -> SFTP.File.read_from(file, source) end
+      assert {:ok, 131_072} = SFTP.File.seek(file, 0, :current)
+
+      # Go moves the offset before handing each chunk to the writer.
+      {:ok, file} = SFTP.open(session, "f")
+
+      sink = fn _ ->
+        calls = Process.get(:sink_calls, 0) + 1
+        Process.put(:sink_calls, calls)
+        if calls == 2, do: raise("sink failed"), else: :ok
+      end
+
+      assert_raise RuntimeError, fn -> SFTP.File.write_to(file, sink) end
+      assert {:ok, 262_144} = SFTP.File.seek(file, 0, :current)
+      SFTP.close(session)
+    end
+
     test "a refusing sink ends write_to with the bytes delivered", %{root: root} do
       fixture = backend(root, &files/2, %{files_state() | size: 5})
       {:ok, session} = open(fixture)

@@ -28,6 +28,7 @@ defmodule Opsmaru.Incus.SFTP.File do
   @int64_max 9_223_372_036_854_775_807
   @uint32 0xFFFFFFFF
   @uint64 0xFFFFFFFFFFFFFFFF
+  @progress {__MODULE__, :progress}
 
   defguardp is_offset(value) when is_integer(value) and value in @int64_min..@int64_max
 
@@ -221,20 +222,30 @@ defmodule Opsmaru.Incus.SFTP.File do
   defp locked(file, mode, fun) do
     case SFTP.file_lock(file.session, file.id, mode) do
       {:ok, token, offset} ->
+        previous = Process.put(@progress, offset)
+
         try do
           {result, offset} = fun.(offset)
           SFTP.file_unlock(file.session, token, offset)
           result
         catch
+          # A raising source or sink keeps the position its completed chunks
+          # reached, as Go moves the offset chunk by chunk.
           kind, reason ->
-            SFTP.file_unlock(file.session, token, nil)
+            SFTP.file_unlock(file.session, token, Process.get(@progress))
             :erlang.raise(kind, reason, __STACKTRACE__)
+        after
+          if is_nil(previous),
+            do: Process.delete(@progress),
+            else: Process.put(@progress, previous)
         end
 
       error ->
         error
     end
   end
+
+  defp progress(offset), do: Process.put(@progress, offset)
 
   defp request(file, op, args, mutation, interpret),
     do: SFTP.file_request(file.session, op, args, mutation, interpret)
@@ -366,6 +377,7 @@ defmodule Opsmaru.Incus.SFTP.File do
     result = read_chunk(file, offset, @max_packet, [], 0)
     {data, finished} = sequential_chunk(result)
     offset = offset + byte_size(data)
+    progress(offset)
 
     case deliver(sink, data, written) do
       {:ok, written} when finished == :more ->
@@ -409,6 +421,7 @@ defmodule Opsmaru.Incus.SFTP.File do
       case SFTP.file_settle(result, false, &data/2) do
         {:ok, bytes} ->
           bytes = binary_part(bytes, 0, min(byte_size(bytes), @max_packet))
+          progress(start + byte_size(bytes))
 
           case deliver(sink, bytes, written) do
             {:ok, written} -> {:cont, {written, start + byte_size(bytes), nil}}
@@ -447,6 +460,7 @@ defmodule Opsmaru.Incus.SFTP.File do
 
         case write_chunk(file, offset, chunk) do
           :ok when kind == :full ->
+            progress(offset + byte_size(chunk))
             read_from_sequential(file, reader, offset + byte_size(chunk), read)
 
           :ok ->
@@ -468,20 +482,25 @@ defmodule Opsmaru.Incus.SFTP.File do
              {:done, {reader, start, read}}
 
            {:error, error, reader} ->
-             {:failed, {:error, error}, start, {reader, start, read}}
+             {:failed, {:error, error}, {start, 0}, {reader, start, read}}
 
            {_, chunk, reader} ->
              size = byte_size(chunk)
 
-             {:item, {:write, {file.id, start, chunk}, start},
+             {:item, {:write, {file.id, start, chunk}, {start, size}},
               {reader, start + size, read + size}}
          end
        end, {reader, offset, 0}}
 
-    consume = fn start, result, nil ->
+    # Progress is the acknowledged prefix, written in order.
+    consume = fn {start, size}, result, nil ->
       case SFTP.file_settle(result, true, &reply(:ok, &1, &2)) do
-        :ok -> {:cont, nil}
-        error -> {:halt, {start, error}}
+        :ok ->
+          progress(start + size)
+          {:cont, nil}
+
+        error ->
+          {:halt, {start, error}}
       end
     end
 
