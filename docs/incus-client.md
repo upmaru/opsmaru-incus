@@ -37,8 +37,9 @@ successful MCP tool would establish complete declaration coverage.
 | `Files.volume_read/6`, `volume_create/7`, `volume_delete/5`, volume/bucket backup helpers, `backup_stream/4` | Twelve native file/archive helpers have differential byte/header/query evidence; full option/platform/backend coverage remains separate |
 | `Streams.metrics/2`, `network_acl_log/3`, `instance_logfile/4`, `instance_console_log/3`, `instance_template_file/4`, `create_instance_template_file/4`, `instance_debug_memory/4` | Native binary/text handoff to an acknowledged host sink or bounded source; no collector or implicit file writes |
 | `Incus.sftp/2`, `nbd/3`, `volume_sftp/4`, `volume_nbd/5` | Native raw 101 byte channels matching the pinned `Get*SFTPConn`/`Get*NBDConn`; names are sent unchecked and consumers supply their SFTP/NBD implementation |
-| `Incus.file_sftp/2`, `volume_file_sftp/4` | Approved bounded SFTP v3 subset: initialize a creator-owned session over the existing raw upgrade; volume extension, host identity/readiness and verified transport still apply |
-| `SFTP.extensions/1`, `open/3`, `read_at/4`, `write_at/4`, `close_file/2`, `close/1` | One request at a time; explicit file modes, native opaque handles and byte/status fidelity; other operations reject and possibly dispatched mutations are never replayed |
+| `Incus.file_sftp/2`, `volume_file_sftp/4` | Shared SFTP session matching the pinned `GetInstanceFileSFTP`/`GetStoragePoolVolumeFileSFTP` (`pkg/sftp` v1.13.10) over the raw upgrade; volume extension, host identity/readiness and verified transport still apply |
+| `SFTP.stat/2`, `lstat/2`, `read_dir/2`, `read_link/2`, `real_path/2`, `getwd/1`, `link/3`, `symlink/3`, `chmod/3`, `chown/4`, `chtimes/4`, `truncate/3`, `set_extended_data/3`, `stat_vfs/2`, `remove/2`, `remove_directory/2`, `rename/3`, `posix_rename/3`, `mkdir/2`, `mkdir_all/2`, `remove_all/2`, `glob/2`, `walk/3`, `has_extension/2`, `join/1`, `split/1`, `match/2` | The pinned `pkg/sftp` path and metadata calls and Go path helpers; pipelined requests from any process; possibly dispatched mutations are never replayed |
+| `SFTP.extensions/1`, `open/3`, `read_at/4`, `write_at/4`, `close_file/2`, `close/1` | Explicit file modes, native opaque handles and byte/status fidelity; full file I/O lands with S09 PR 2 |
 | `RawChannel.recv/2`, `send_data/2`, `shutdown_write/1`, `close/1` | Bounded binary duplex and native half-close |
 | `Operation.raw/4`, `from_response/2`, `poll/1`, `wait/2`, `cancel/1`, `websocket/2` | Bound native handles and raw operation ETags; authoritative completion and supported cancellation |
 | `Events.subscribe/2`, `next/2`, `send/2`, `close/1` | Native events through an owner-monitored bounded WebSocket queue; sending acknowledges the local write, not backend processing |
@@ -594,43 +595,74 @@ The native names `GetInstanceFileSFTP` (`%{"name" => instance}`) and
 `GetStoragePoolVolumeFileSFTP` (`%{"pool" => pool, "type" => type, "name" => name}`)
 also dispatch through `Incus.call/4` with no options. They return `SFTP` sessions,
 distinct from the raw connections returned by `sftp/2` and `volume_sftp/4`.
-Only the creating process can invoke session operations. Both sessions and
-`SFTP.Handle` values redact native bytes on inspection; explicit handle fields
-are privileged data for the host.
+Sessions and `SFTP.Handle` values redact native bytes on inspection; explicit
+handle fields are privileged data for the host.
 
 ```elixir
 {:ok, sftp} = Incus.file_sftp(client, "instance")
-{:ok, file} = SFTP.open(sftp, "/known-size-file", :read)
-{:ok, bytes} = SFTP.read_at(sftp, file, 0, 1024)
-:ok = SFTP.close_file(sftp, file)
+:ok = SFTP.mkdir_all(sftp, "srv/app")
+{:ok, entries} = SFTP.read_dir(sftp, "srv")
+{:ok, stat} = SFTP.stat(sftp, "srv/app")
+{:ok, matches} = SFTP.glob(sftp, "srv/*.conf")
 :ok = SFTP.close(sftp)
 ```
 
-Supported modes are `:read`, `:write`, `:read_write`, `:append` (existing file),
-and `:create` (read/write plus create/truncate). Read/write calls accept positive
-sizes up to 128 KiB and nonnegative signed-int64 offsets. Reads accept one full
-requested DATA response or EOF; short/empty DATA rejects rather than generating
-more requests. Paths are valid UTF-8, NUL-free and at most 4096 bytes. Each
-outgoing packet must fit both `max_request_bytes` and `max_chunk_bytes`, so a
-128-KiB write requires room for its native framing as well. Reply packets are
-limited to 132096 bytes and `max_response_bytes`; raw stream/queue/chunk limits
-still apply. Extensions are limited to 64 pairs (1024-byte names/4096-byte data),
-and live nonempty handle values to 256 bytes, with at most
-`min(queue_limit, 128)` handles.
+Typed SFTP (stream contract S09) is being moved from the approved v3 subset to
+the full pinned `pkg/sftp` v1.13.10 client in two PRs. PR 1 has landed the
+shared session and every path and metadata call:
 
-Every request has an absolute local deadline. Closing, protocol failure, caller
-loss, cancellation, remote EOF or local stream expiry releases the local channel;
-stream expiry does not cancel a shared host context or another session. Failed
-file-close attempts invalidate the handle as natively. SFTP status errors retain
-wire code/message/language; known codes are not replaced by Go filesystem errors.
-Unanswered or malformed replies to potentially dispatched mutations return
-`:uncertain` with the native request ID when known. Privileged error response data
-retains the connection, verified host identity and session reference even after
-the process ends. Reconcile backend file state
-before any further mutation; the helper never replays, unlinks a file or sends
-Incus cancellation. `unsupported/2` returns `:unsupported_sftp_operation` for
-other protocol operations. This remains a fixture-verified subset, not complete
-SFTP, directory/stat/attribute/extension-operation or installed-backend acceptance.
+- A session is shared, as goroutines share a Go `*sftp.Client`: any process may
+  call it, and requests are pipelined with distinct ids whose replies are
+  matched by id. It closes on `close/1`, peer EOF, its stream lifetime, or when
+  the process that opened it exits. In-flight requests are bounded by the
+  connection's `queue_limit`.
+- `stat/2`, `lstat/2`, `read_dir/2`, `read_link/2`, `real_path/2`, `getwd/1`,
+  `link/3` (`hardlink@openssh.com`), `symlink/3` (OpenSSH argument order),
+  `chmod/3`, `chown/4`, `chtimes/4`, `truncate/3`, `set_extended_data/3`,
+  `stat_vfs/2` (`statvfs@openssh.com`), `remove/2`, `remove_directory/2`,
+  `rename/3`, `posix_rename/3` (`posix-rename@openssh.com`), `mkdir/2`,
+  `mkdir_all/2`, `remove_all/2` and `has_extension/2` send the pinned packets,
+  including the compound steps of `remove/2`, `mkdir_all/2` and
+  `remove_all/2`.
+- `glob/2` and `walk/3` (the kr/fs `Walker` order, with a `skip:` function for
+  `SkipDir`) follow the pinned client, and `join/1`, `split/1` and `match/2`
+  are Go's `path.Join`, `path.Split` and `path.Match`.
+- `SFTP.Stat` carries Go's `FileInfo` name (the base of the requested path),
+  signed size and `FileMode` (`file_mode`, with `Stat.dir?/1`), plus the native
+  mode, times, owner, group and extended pairs. `SFTP.StatVFS` carries the
+  extension's eleven fields.
+- Paths are sent as given, as the pinned client does; only packet and
+  connection bounds apply. Each outgoing packet must fit `max_request_bytes`
+  and `max_chunk_bytes`; replies are limited to 132096 bytes and
+  `max_response_bytes`.
+- Native status errors are `:sftp_status` with the code, message and language,
+  plus `response.class` (`:eof`, `:not_exist`, `:permission` or `nil`) as Go
+  normalizes them and `response.op`/`response.path` where Go returns an
+  `os.PathError`. `mkdir_all/2` on a file returns `:not_directory`, and
+  `glob/2` with a malformed pattern `:bad_pattern`.
+- A request whose local deadline passes fails alone; the session continues. A
+  possibly dispatched mutation is `:uncertain` with its native request id and
+  is never replayed, and its late reply is discarded. A compound call stops at
+  the first error that is not a native status rather than sending further
+  mutations. A reply that does not decode fails its own request (mutations as
+  `:uncertain`); malformed, oversized or unmatched frames end the session and
+  fail every pending request.
+
+`test/sftp_operations_reference_test.exs` runs the unchanged pinned client
+against an unchanged `pkg/sftp` server fixture rooted in a temporary directory,
+on Unix and mutual HTTPS, for instance and volume sessions. Our client then runs
+the same script against the recorded replies, where every request packet (ids
+normalized) and result must agree, and again live against a fresh copy of the
+tree. `test/sftp_session_test.exs` covers concurrent out-of-order replies,
+opener and caller exit, request deadlines, frame failures and the in-flight
+bound.
+
+File I/O is unchanged until PR 2: `open/3` takes `:read`, `:write`,
+`:read_write`, `:append` (existing file) or `:create` (read/write plus
+create/truncate), and `read_at/4`/`write_at/4` move one request of at most
+128 KiB at a nonnegative signed-int64 offset, rejecting a short DATA reply.
+A file-close attempt invalidates the handle as natively. S09 and the two SFTP
+rows stay open until PR 2 certifies them.
 
 ## Live noninteractive exec output
 
