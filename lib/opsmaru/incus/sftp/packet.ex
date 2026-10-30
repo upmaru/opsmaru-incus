@@ -42,9 +42,13 @@ defmodule Opsmaru.Incus.SFTP.Packet do
     do: <<6, id::32, string(handle)::binary, offset::64, string(bytes)::binary>>
 
   def request(id, :lstat, path), do: <<7, id::32, string(path)::binary>>
+  def request(id, :fstat, handle), do: <<8, id::32, string(handle)::binary>>
 
   def request(id, :setstat, {path, attrs}),
     do: <<9, id::32, string(path)::binary, attributes(attrs)::binary>>
+
+  def request(id, :fsetstat, {handle, attrs}),
+    do: <<10, id::32, string(handle)::binary, attributes(attrs)::binary>>
 
   def request(id, :opendir, path), do: <<11, id::32, string(path)::binary>>
   def request(id, :readdir, handle), do: <<12, id::32, string(handle)::binary>>
@@ -70,6 +74,7 @@ defmodule Opsmaru.Incus.SFTP.Packet do
     do: extended(id, "posix-rename@openssh.com", string(old) <> string(new))
 
   def request(id, :statvfs, path), do: extended(id, "statvfs@openssh.com", string(path))
+  def request(id, :fsync, handle), do: extended(id, "fsync@openssh.com", string(handle))
 
   defp extended(id, name, args), do: <<200, id::32, string(name)::binary, args::binary>>
 

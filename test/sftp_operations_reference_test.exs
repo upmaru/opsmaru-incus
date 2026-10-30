@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
   @moduledoc """
-  S09 PR 1: SFTP path and metadata operations compared with the unchanged pinned
+  S09: SFTP path, metadata and file operations compared with the unchanged pinned
   `pkg/sftp` v1.13.10 client returned by `GetInstanceFileSFTP` and
   `GetStoragePoolVolumeFileSFTP`.
 
@@ -9,6 +9,13 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
   script live; our client then runs the same script against the recorded replies,
   where every request packet (ids normalized) and every result must agree, and
   finally runs it live against a fresh copy of the same tree.
+
+  Go's pipelined `WriteTo` keeps reading ahead until it handles the end of the
+  file, so how many reads it sends past the end depends on timing. The replay
+  therefore skips recorded reads answered with end of file that our client did
+  not send, and answers our extra reads with end of file only when they start at
+  or past an offset already answered that way on the same handle. Both are
+  listed and checked; nothing else may differ.
   """
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
@@ -19,6 +26,8 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
   @integration Path.expand("../.integration", __DIR__)
   @driver Path.join(@integration, "sftp-operations-driver")
   @server Path.join(@integration, "sftp-server-fixture")
+  # A regular file larger than eight 128 KiB packets, so WriteTo reads ahead.
+  @big 1_060_921
 
   setup_all do
     File.mkdir_p!(@integration)
@@ -50,38 +59,48 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
   end
 
   for transport <- [:gen_tcp, :ssl], kind <- [:instance, :volume] do
-    test "#{transport} #{kind}: every path and metadata operation matches the pinned client",
-         %{base: base, root: root} do
-      transport = unquote(transport)
-      kind = unquote(kind)
-      identity = identity(transport, base)
-      steps = steps(File.stat!(base))
+    test(
+      "#{transport} #{kind}: every path and metadata operation matches the pinned client",
+      context,
+      do: differential(context, unquote(transport), unquote(kind), :paths)
+    )
 
-      # 1. The pinned client, live against the unchanged pkg/sftp server.
-      reset_tree(root)
-      live = backend(base, transport, identity, {:live, root, self()})
-      native = oracle(native_input(live, identity, kind, steps))
-      assert Map.has_key?(native, "steps"), inspect(native)
-      exchange = recorded()
+    test(
+      "#{transport} #{kind}: every file operation matches the pinned client",
+      context,
+      do: differential(context, unquote(transport), unquote(kind), :files)
+    )
+  end
 
-      # 2. Our client against the recorded replies: identical requests and results.
-      replay = backend(base, transport, identity, {:replay, exchange, self()})
-      assert {:ok, session} = open(client(replay, identity), kind)
-      ours = run(session, steps)
-      assert ours == native["steps"]
-      SFTP.close(session)
-      assert_receive {:sftp_replay_done, mismatches, remaining}, 5_000
-      assert mismatches == []
-      assert remaining == 0
+  defp differential(%{base: base, root: root}, transport, kind, script) do
+    identity = identity(transport, base)
+    steps = steps(script, File.stat!(base))
 
-      # 3. Our client live against a fresh copy of the same tree.
-      reset_tree(root)
-      live = backend(base, transport, identity, {:live, root, self()})
-      assert {:ok, session} = open(client(live, identity), kind)
-      assert volatile(run(session, steps)) == volatile(native["steps"])
-      SFTP.close(session)
-      recorded()
-    end
+    # 1. The pinned client, live against the unchanged pkg/sftp server.
+    reset_tree(root)
+    live = backend(base, transport, identity, {:live, root, self()})
+    native = oracle(native_input(live, identity, kind, steps))
+    assert Map.has_key?(native, "steps"), inspect(native)
+    exchange = recorded()
+
+    # 2. Our client against the recorded replies: identical requests and results.
+    replay = backend(base, transport, identity, {:replay, exchange, self()})
+    assert {:ok, session} = open(client(replay, identity), kind)
+    ours = run(session, steps)
+    assert_steps(ours, native["steps"], steps)
+    SFTP.close(session)
+    assert_receive {:sftp_replay_done, mismatches, remaining, read_ahead}, 5_000
+    assert mismatches == []
+    assert remaining == 0
+    if script == :paths, do: assert(read_ahead == [])
+
+    # 3. Our client live against a fresh copy of the same tree.
+    reset_tree(root)
+    live = backend(base, transport, identity, {:live, root, self()})
+    assert {:ok, session} = open(client(live, identity), kind)
+    assert_steps(volatile(run(session, steps)), volatile(native["steps"]), steps)
+    SFTP.close(session)
+    recorded()
   end
 
   test "Go path helpers agree with the pinned sftp.Join, Split and Match", %{base: base} do
@@ -147,8 +166,15 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
     assert ours == native["steps"]
   end
 
+  defp assert_steps(ours, native, steps) do
+    assert length(ours) == length(native)
+
+    for {{mine, theirs}, step} <- Enum.zip(Enum.zip(ours, native), steps),
+        do: assert({step, mine} == {step, theirs})
+  end
+
   # Every pinned client path/metadata call, including compound steps and errors.
-  defp steps(stat) do
+  defp steps(:paths, stat) do
     [
       %{op: "stat", path: "a/f1"},
       %{op: "stat", path: "missing"},
@@ -213,6 +239,84 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
     ]
   end
 
+  # Every *sftp.File method: cursor and positional I/O, end of file, pipelined
+  # reads and read-ahead, one-at-a-time and pipelined uploads, attributes, closed
+  # files and the open flags.
+  defp steps(:files, stat) do
+    [
+      %{op: "open", file: "f", path: "a/f1"},
+      %{op: "read", file: "f", count: 3},
+      %{op: "read", file: "f", count: 0},
+      %{op: "read", file: "f", count: 10},
+      %{op: "read", file: "f", count: 10},
+      %{op: "seek", file: "f", offset: 1, whence: "start"},
+      %{op: "seek", file: "f", offset: 2, whence: "current"},
+      %{op: "seek", file: "f", offset: -1, whence: "end"},
+      %{op: "seek", file: "f", offset: -10, whence: "end"},
+      %{op: "read_at", file: "f", offset: 1, count: 3},
+      %{op: "seek", file: "f", offset: 0, whence: "current"},
+      %{op: "write", file: "f", data: %{size: 3, seed: 1}},
+      %{op: "file_stat", file: "f"},
+      %{op: "write_to", file: "f"},
+      %{op: "sync", file: "f"},
+      %{op: "close", file: "f"},
+      %{op: "close", file: "f"},
+      %{op: "read", file: "f", count: 1},
+      %{op: "read_at", file: "f", offset: 0, count: 1},
+      %{op: "file_stat", file: "f"},
+      %{op: "open", file: "m", path: "missing"},
+      %{op: "open_file", file: "x", path: "a/f1", flags: ["write_only", "create", "exclusive"]},
+      %{op: "open", file: "b", path: "big"},
+      %{op: "read", file: "b", count: 300_000},
+      %{op: "read_at", file: "b", offset: @big - 921, count: 200_000},
+      %{op: "read_at", file: "b", offset: @big - 21, count: 100},
+      %{op: "read_at", file: "b", offset: 2_000_000, count: 10},
+      %{op: "seek", file: "b", offset: 0, whence: "start"},
+      %{op: "write_to", file: "b"},
+      %{op: "seek", file: "b", offset: 0, whence: "current"},
+      %{op: "seek", file: "b", offset: 1_000_000, whence: "start"},
+      %{op: "write_to", file: "b"},
+      %{op: "seek", file: "b", offset: 0, whence: "current"},
+      %{op: "close", file: "b"},
+      %{op: "create", file: "w", path: "new"},
+      %{op: "write", file: "w", data: %{size: 300_000, seed: 3}},
+      %{op: "write_at", file: "w", offset: 10, data: %{size: 5, seed: 4}},
+      %{op: "write", file: "w", data: %{size: 0, seed: 0}},
+      %{op: "seek", file: "w", offset: 0, whence: "current"},
+      %{op: "read_at", file: "w", offset: 0, count: 300_000},
+      %{op: "file_chmod", file: "w", mode: 0o600},
+      %{op: "file_chown", file: "w", uid: stat.uid, gid: stat.gid},
+      %{op: "file_truncate", file: "w", size: 200_000},
+      %{op: "file_set_extended_data", file: "w", extended: [["x@example.com", "v"]]},
+      %{op: "file_stat", file: "w"},
+      %{op: "seek", file: "w", offset: 0, whence: "end"},
+      %{op: "read_from", file: "w", data: %{size: 300_000, seed: 5}},
+      %{op: "seek", file: "w", offset: 0, whence: "current"},
+      %{
+        op: "read_from_with_concurrency",
+        file: "w",
+        data: %{size: 400_000, seed: 6},
+        concurrency: 2
+      },
+      %{op: "seek", file: "w", offset: 0, whence: "current"},
+      %{op: "read_from", file: "w", data: %{size: 0, seed: 0}},
+      %{op: "seek", file: "w", offset: 0, whence: "start"},
+      %{op: "write_to", file: "w"},
+      %{op: "close", file: "w"},
+      %{op: "open_file", file: "a", path: "z", flags: ["write_only", "append"]},
+      %{op: "write", file: "a", data: %{size: 4, seed: 9}},
+      %{op: "close", file: "a"},
+      %{op: "open_file", file: "rw", path: "z", flags: ["read_write"]},
+      %{op: "read", file: "rw", count: 100},
+      %{op: "close", file: "rw"},
+      %{op: "open_file", file: "both", path: "z", flags: ["write_only", "read_write"]},
+      %{op: "read", file: "both", count: 1},
+      %{op: "close", file: "both"},
+      %{op: "stat", path: "new"},
+      %{op: "stat", path: "z"}
+    ]
+  end
+
   defp reset_tree(root) do
     File.rm_rf!(root)
     File.mkdir_p!(Path.join(root, "a/sub"))
@@ -221,16 +325,156 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
     File.write!(Path.join(root, "a/雪 file"), "snow")
     File.write!(Path.join(root, "a/sub/f2"), "x")
     File.write!(Path.join(root, "z"), "zz")
+    File.write!(Path.join(root, "big"), generate(%{size: @big, seed: 7}))
     File.chmod!(Path.join(root, "a/f1"), 0o644)
     :ok = File.ln_s("f1", Path.join(root, "a/link"))
 
     # Fixed times make the native and live attribute results comparable.
-    for path <- ["a/sub/f2", "a/sub", "a/f1", "a/雪 file", "z", "e", "a", "."] do
+    for path <- ["a/sub/f2", "a/sub", "a/f1", "a/雪 file", "z", "big", "e", "a", "."] do
       System.cmd("touch", ["-h", "-t", "202001020304.05", Path.join(root, path)])
     end
   end
 
-  defp run(session, steps), do: Enum.map(steps, &step(session, &1))
+  defp run(session, steps) do
+    {results, _} = Enum.map_reduce(steps, %{}, &file_step(session, &1, &2))
+    results
+  end
+
+  # Byte i is (i * 31 + seed) mod 251, as the Go driver generates it.
+  defp generate(%{size: size, seed: seed}),
+    do: :binary.list_to_bin(for(i <- 0..(size - 1)//1, do: rem(i * 31 + seed, 251)))
+
+  defp summary(bytes),
+    do: %{
+      "n" => byte_size(bytes),
+      "sha256" => Base.encode16(:crypto.hash(:sha256, bytes), case: :lower)
+    }
+
+  defp file_step(session, %{op: op, file: name, path: path} = step, files)
+       when op in ["open", "create", "open_file"] do
+    result =
+      case op do
+        "open" -> SFTP.open(session, path)
+        "create" -> SFTP.create(session, path)
+        "open_file" -> SFTP.open_file(session, path, Enum.map(step.flags, &String.to_atom/1))
+      end
+
+    case result do
+      {:ok, file} -> {ok(op, SFTP.File.name(file)), Map.put(files, name, file)}
+      error -> {result(op, error), files}
+    end
+  end
+
+  defp file_step(_, %{op: op, file: name}, files) when not is_map_key(files, name),
+    do: {%{"op" => op, "error" => %{"class" => "unopened"}}, files}
+
+  defp file_step(_, %{file: name} = step, files),
+    do: {file_op(files[name], step), files}
+
+  defp file_step(session, step, files), do: {step(session, step), files}
+
+  defp file_op(file, %{op: "read", count: count}),
+    do: read_result("read", SFTP.File.read(file, count))
+
+  defp file_op(file, %{op: "read_at", offset: offset, count: count}),
+    do: read_result("read_at", SFTP.File.read_at(file, offset, count))
+
+  defp file_op(file, %{op: "write", data: data}),
+    do: write_result("write", SFTP.File.write(file, generate(data)), data.size)
+
+  defp file_op(file, %{op: "write_at", offset: offset, data: data}),
+    do: write_result("write_at", SFTP.File.write_at(file, offset, generate(data)), data.size)
+
+  defp file_op(file, %{op: "seek", offset: offset, whence: whence}),
+    do: result("seek", SFTP.File.seek(file, offset, String.to_existing_atom(whence)))
+
+  defp file_op(file, %{op: "write_to"}) do
+    parent = self()
+    ref = make_ref()
+
+    sink = fn chunk ->
+      send(parent, {ref, chunk})
+      :ok
+    end
+
+    result = SFTP.File.write_to(file, sink)
+    sunk = summary(sunk(ref, []))
+
+    case result do
+      {:ok, written} -> ok("write_to", %{sunk | "n" => written})
+      {:error, error} -> partial("write_to", error, %{sunk | "n" => error.response.count})
+    end
+  end
+
+  defp file_op(file, %{op: "read_from", data: data}),
+    do: count_result("read_from", SFTP.File.read_from(file, source(data)))
+
+  defp file_op(file, %{op: "read_from_with_concurrency", data: data, concurrency: concurrency}),
+    do:
+      count_result(
+        "read_from_with_concurrency",
+        SFTP.File.read_from_with_concurrency(file, source(data), concurrency)
+      )
+
+  defp file_op(file, %{op: "file_stat"}), do: stat_result("file_stat", SFTP.File.stat(file))
+
+  defp file_op(file, %{op: "file_chmod", mode: mode}),
+    do: result("file_chmod", SFTP.File.chmod(file, mode))
+
+  defp file_op(file, %{op: "file_chown", uid: uid, gid: gid}),
+    do: result("file_chown", SFTP.File.chown(file, uid, gid))
+
+  defp file_op(file, %{op: "file_truncate", size: size}),
+    do: result("file_truncate", SFTP.File.truncate(file, size))
+
+  defp file_op(file, %{op: "file_set_extended_data", extended: pairs}),
+    do:
+      result(
+        "file_set_extended_data",
+        SFTP.File.set_extended_data(file, Enum.map(pairs, &List.to_tuple/1))
+      )
+
+  defp file_op(file, %{op: "sync"}), do: result("sync", SFTP.File.sync(file))
+  defp file_op(file, %{op: "close"}), do: result("close", SFTP.File.close(file))
+
+  defp sunk(ref, acc) do
+    receive do
+      {^ref, chunk} -> sunk(ref, [acc | chunk])
+    after
+      0 -> IO.iodata_to_binary(acc)
+    end
+  end
+
+  # Odd-sized chunks, so grouping into 128 KiB WRITEs is our client's work.
+  defp source(data) do
+    bytes = generate(data)
+
+    Stream.unfold(bytes, fn
+      <<>> -> nil
+      <<chunk::binary-size(100_000), rest::binary>> -> {chunk, rest}
+      rest -> {rest, <<>>}
+    end)
+  end
+
+  defp read_result(op, {:ok, data}), do: ok(op, summary(data))
+
+  defp read_result(op, {:eof, data}),
+    do: %{"op" => op, "error" => %{"class" => "eof"}, "partial" => summary(data)}
+
+  defp read_result(op, {:error, error}),
+    do: partial(op, error, summary(Map.get(error.response || %{}, :data, "")))
+
+  defp write_result(op, :ok, size), do: ok(op, %{"n" => size})
+  defp write_result(op, {:error, error}, _), do: partial(op, error, %{"n" => count(error)})
+
+  defp count_result(op, {:ok, count}), do: ok(op, %{"n" => count})
+  defp count_result(op, {:error, error}), do: partial(op, error, %{"n" => count(error)})
+
+  defp count(%Error{response: %{count: count}}), do: count
+  defp count(_), do: 0
+
+  defp partial(op, error, value),
+    do: %{"op" => op, "error" => error_json(error), "partial" => value}
 
   defp step(session, %{op: "stat", path: path}), do: stat_result("stat", SFTP.stat(session, path))
 
@@ -345,6 +589,14 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
     do: %{"class" => "not_dir", "op" => response.op, "path" => response.path}
 
   defp error_json(%Error{kind: :sftp_status} = error), do: status_json(error)
+
+  # os.ErrClosed and os.ErrInvalid, as the Go driver reports them.
+  defp error_json(%Error{kind: :file_closed}),
+    do: %{"class" => "other", "text" => "file already closed"}
+
+  defp error_json(%Error{kind: :invalid_arguments}),
+    do: %{"class" => "other", "text" => "invalid argument"}
+
   defp error_json(%Error{kind: kind}), do: %{"class" => "other", "kind" => to_string(kind)}
 
   defp status_json(error) do
@@ -495,30 +747,74 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
   defp replay(transport, socket, {version, exchange}, parent) do
     {:ok, _init} = receive_frame(transport, socket)
     :ok = transport.send(socket, frame(version))
-    replay_loop(transport, socket, exchange, parent, [])
+    replay_loop(transport, socket, exchange, parent, %{mismatches: [], read_ahead: [], eof: %{}})
   end
 
-  defp replay_loop(transport, socket, exchange, parent, mismatches) do
+  defp replay_loop(transport, socket, exchange, parent, state) do
     case receive_frame(transport, socket) do
-      {:ok, <<type, id::32, rest::binary>> = ours} ->
-        case exchange do
-          [{<<^type, _::32, ^rest::binary>>, <<reply_type, _::32, reply::binary>>} | exchange] ->
-            :ok = transport.send(socket, frame(<<reply_type, id::32, reply::binary>>))
-            replay_loop(transport, socket, exchange, parent, mismatches)
-
-          [{expected, _} | exchange] ->
-            :ok = transport.send(socket, frame(<<101, id::32, 4::32, 0::32, 0::32>>))
-            replay_loop(transport, socket, exchange, parent, [{ours, expected} | mismatches])
-
-          [] ->
-            :ok = transport.send(socket, frame(<<101, id::32, 4::32, 0::32, 0::32>>))
-            replay_loop(transport, socket, [], parent, [{ours, :unexpected} | mismatches])
-        end
+      {:ok, ours} ->
+        {reply, exchange, state} = answer(ours, exchange, state)
+        :ok = transport.send(socket, frame(reply))
+        replay_loop(transport, socket, exchange, parent, state)
 
       :closed ->
-        send(parent, {:sftp_replay_done, Enum.reverse(mismatches), length(exchange)})
+        send(
+          parent,
+          {:sftp_replay_done, Enum.reverse(state.mismatches), length(exchange),
+           Enum.reverse(state.read_ahead)}
+        )
     end
   end
+
+  defp answer(<<type, id::32, rest::binary>> = ours, exchange, state) do
+    case exchange do
+      [
+        {<<^type, _::32, ^rest::binary>>, <<reply_type, _::32, reply::binary>> = recorded}
+        | exchange
+      ] ->
+        {<<reply_type, id::32, reply::binary>>, exchange, note_eof(ours, recorded, state)}
+
+      # Go read further ahead than we did: skip its read answered with end of file.
+      [{<<5, _::binary>> = read, <<101, _::32, 1::32, _::binary>>} | exchange] ->
+        answer(ours, exchange, %{state | read_ahead: [{:skipped, read} | state.read_ahead]})
+
+      _ ->
+        case past_eof(ours, state) do
+          true ->
+            eof = <<101, id::32, 1::32, 0::32, 0::32>>
+            {eof, exchange, %{state | read_ahead: [{:extra, ours} | state.read_ahead]}}
+
+          false ->
+            {expected, exchange} =
+              case exchange do
+                [{request, _} | rest] -> {request, rest}
+                [] -> {:unexpected, []}
+              end
+
+            failure = <<101, id::32, 4::32, 0::32, 0::32>>
+            {failure, exchange, %{state | mismatches: [{ours, expected} | state.mismatches]}}
+        end
+    end
+  end
+
+  defp note_eof(<<5, _::32, rest::binary>>, <<101, _::32, 1::32, _::binary>>, state) do
+    {handle, offset} = read_position(rest)
+    %{state | eof: Map.update(state.eof, handle, offset, &min(&1, offset))}
+  end
+
+  defp note_eof(_, _, state), do: state
+
+  # Our extra read-ahead must start at or past an offset already answered with
+  # end of file on the same handle.
+  defp past_eof(<<5, _::32, rest::binary>>, state) do
+    {handle, offset} = read_position(rest)
+    is_map_key(state.eof, handle) and offset >= state.eof[handle]
+  end
+
+  defp past_eof(_, _), do: false
+
+  defp read_position(<<length::32, handle::binary-size(length), offset::64, _::32>>),
+    do: {handle, offset}
 
   defp receive_frame(transport, socket) do
     with {:ok, <<length::32>>} <- transport.recv(socket, 4, 5_000),

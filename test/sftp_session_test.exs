@@ -194,6 +194,251 @@ defmodule Opsmaru.Incus.SFTPSessionTest do
     eventually_dead(session.pid)
   end
 
+  describe "files" do
+    test "cursor calls take turns; positional calls overlap; a waiting cursor call holds back later ones",
+         %{root: root} do
+      fixture = backend(root, &files/2, files_state())
+      {:ok, session} = open(fixture)
+      {:ok, file} = SFTP.open(session, "f")
+      hold(session)
+
+      # A cursor read holds the lock; a positional read waits without sending.
+      cursor = Task.async(fn -> SFTP.File.read(file, 4) end)
+      assert_request(5)
+      positional = Task.async(fn -> SFTP.File.read_at(file, 0, 4) end)
+      refute_request()
+      release(session)
+      assert {:ok, <<0, 0, 0, 0>>} = Task.await(cursor)
+      assert {:ok, _} = Task.await(positional)
+      assert_request(5)
+
+      # Positional reads overlap: both are sent before either is answered.
+      hold(session)
+      both = for _ <- 1..2, do: Task.async(fn -> SFTP.File.read_at(file, 8, 4) end)
+      assert_request(5)
+      assert_request(5)
+
+      # A cursor call waits for them, and a later positional read waits behind it.
+      seek = Task.async(fn -> SFTP.File.seek(file, 2, :current) end)
+      Process.sleep(50)
+      later = Task.async(fn -> SFTP.File.read_at(file, 16, 4) end)
+      refute_request()
+      release(session)
+      Enum.each(both, &assert({:ok, _} = Task.await(&1)))
+      assert {:ok, 6} = Task.await(seek)
+      assert {:ok, _} = Task.await(later)
+      assert_request(5)
+      SFTP.close(session)
+    end
+
+    test "a holder's exit releases the lock; closing fails queued calls without I/O",
+         %{root: root} do
+      fixture = backend(root, &files/2, files_state())
+      {:ok, session} = open(fixture)
+      {:ok, file} = SFTP.open(session, "f")
+      hold(session)
+
+      holder = spawn(fn -> SFTP.File.read(file, 4) end)
+      assert_request(5)
+      Process.exit(holder, :kill)
+      assert {:ok, 0} = SFTP.File.seek(file, 0, :current)
+
+      stalled = Task.async(fn -> SFTP.File.read(file, 4) end)
+      assert_request(5)
+      close = Task.async(fn -> SFTP.File.close(file) end)
+      Process.sleep(50)
+      queued = Task.async(fn -> SFTP.File.read_at(file, 0, 1) end)
+      release(session)
+      assert {:ok, _} = Task.await(stalled)
+      assert :ok = Task.await(close)
+      assert {:error, %Error{kind: :file_closed}} = Task.await(queued)
+      assert_request(4)
+      refute_request()
+      assert {:error, %Error{kind: :file_closed}} = SFTP.File.write(file, "x")
+      SFTP.close(session)
+    end
+
+    test "large reads are pipelined in offset order within Go's window and the connection bound",
+         %{root: root} do
+      fixture = backend(root, &files/2, files_state())
+      {:ok, session} = open(fixture, queue_limit: 200)
+      {:ok, file} = SFTP.open(session, "f")
+      hold(session)
+      count = 70 * 131_072
+      read = Task.async(fn -> SFTP.File.read_at(file, 0, count) end)
+
+      # 64 workers plus Go's one read dispatched ahead.
+      offsets = for _ <- 1..65, do: read_offset(assert_request(5))
+      assert offsets == Enum.map(0..64, &(&1 * 131_072))
+      refute_request()
+      release(session)
+      assert {:ok, data} = Task.await(read, 10_000)
+      assert byte_size(data) == count
+
+      assert Enum.map(1..5, fn _ -> read_offset(assert_request(5)) end) ==
+               Enum.map(65..69, &(&1 * 131_072))
+
+      SFTP.close(session)
+
+      # A smaller in-flight bound throttles the window instead of failing it.
+      fixture = backend(root, &files/2, files_state())
+      {:ok, session} = open(fixture, queue_limit: 4)
+      {:ok, file} = SFTP.open(session, "f")
+      requests()
+      assert {:ok, data} = SFTP.File.read_at(file, 0, 10 * 131_072)
+      assert byte_size(data) == 10 * 131_072
+      assert Enum.map(requests(), &read_offset/1) == Enum.map(0..9, &(&1 * 131_072))
+      SFTP.close(session)
+    end
+
+    test "a write whose reply never arrives is uncertain and nothing more is sent",
+         %{root: root} do
+      fixture = backend(root, &files/2, %{files_state() | silent_write: 131_072})
+      {:ok, session} = open(fixture, timeout: 300)
+      {:ok, file} = SFTP.create(session, "f")
+      requests()
+
+      assert {:error, %Error{kind: :uncertain, response: %{count: 131_072}}} =
+               SFTP.File.write(file, :binary.copy("x", 300_000))
+
+      assert Enum.map(requests(), &write_offset/1) == [0, 131_072]
+      assert {:ok, 131_072} = SFTP.File.seek(file, 0, :current)
+      SFTP.close(session)
+    end
+
+    test "read_from reports a failed final short write, which Go ignores", %{root: root} do
+      fixture = backend(root, &files/2, %{files_state() | fail_write: 131_072})
+      {:ok, session} = open(fixture)
+      {:ok, file} = SFTP.create(session, "f")
+
+      assert {:error, %Error{kind: :sftp_status, error_code: 4, response: %{count: 131_082}}} =
+               SFTP.File.read_from(file, [:binary.copy("x", 131_000), :binary.copy("y", 82)])
+
+      assert {:ok, 131_072} = SFTP.File.seek(file, 0, :current)
+      SFTP.close(session)
+    end
+
+    test "pipelined uploads stop at the first failure and keep its offset", %{root: root} do
+      fixture = backend(root, &files/2, %{files_state() | fail_write: 2 * 131_072})
+      {:ok, session} = open(fixture)
+      {:ok, file} = SFTP.create(session, "f")
+      requests()
+      source = for _ <- 1..6, do: :binary.copy("z", 131_072)
+
+      assert {:error, %Error{error_code: 4, response: %{count: count}}} =
+               SFTP.File.read_from_with_concurrency(file, source, 2)
+
+      offsets = Enum.map(requests(), &write_offset/1)
+      assert Enum.take(offsets, 3) == [0, 131_072, 2 * 131_072]
+      assert offsets == Enum.sort(offsets) and count >= 3 * 131_072
+      assert {:ok, 262_144} = SFTP.File.seek(file, 0, :current)
+      SFTP.close(session)
+    end
+
+    test "a refusing sink ends write_to with the bytes delivered", %{root: root} do
+      fixture = backend(root, &files/2, %{files_state() | size: 5})
+      {:ok, session} = open(fixture)
+      {:ok, file} = SFTP.open(session, "f")
+
+      assert {:error, %Error{kind: :sink_failed, response: %{count: 0}}} =
+               SFTP.File.write_to(file, fn _ -> :stop end)
+
+      SFTP.close(session)
+    end
+
+    test "sync sends fsync@openssh.com when the server announces it", %{root: root} do
+      fixture =
+        backend(root, &files/2, files_state(), [{"fsync@openssh.com", "1"}])
+
+      {:ok, session} = open(fixture)
+      {:ok, file} = SFTP.open(session, "f")
+      requests()
+      assert :ok = SFTP.File.sync(file)
+
+      assert [<<200, _::32, 17::32, "fsync@openssh.com", 1::32, "h">>] = requests()
+      SFTP.close(session)
+    end
+  end
+
+  defp files_state,
+    do: %{hold: false, held: [], size: 1_000_000_000, silent_write: nil, fail_write: nil}
+
+  # A scripted file server: OPEN gives handle "h", READs return a byte per chunk
+  # unless held, and STAT of "hold"/"release" controls holding.
+  defp files({:request, <<type, id::32, rest::binary>>}, state) do
+    case {type, rest} do
+      {3, _} ->
+        {[<<102, id::32, 1::32, "h">>], state}
+
+      {5, <<1::32, "h", offset::64, length::32>>} ->
+        read_reply(id, offset, length, state)
+
+      {6, <<1::32, "h", offset::64, _::binary>>} ->
+        write_reply(id, offset, state)
+
+      {17, <<4::32, "hold">>} ->
+        {[attrs(id, "hold")], %{state | hold: true}}
+
+      {17, <<7::32, "release">>} ->
+        replies =
+          for {id, offset, length} <- Enum.reverse(state.held), do: data(id, offset, length)
+
+        {replies ++ [attrs(id, "release")], %{state | hold: false, held: []}}
+
+      {17, _} ->
+        {[<<105, id::32, 5::32, state.size::64, 0o100644::32>>], state}
+
+      {8, _} ->
+        {[<<105, id::32, 1::32, state.size::64>>], state}
+
+      _ ->
+        {[status(id, 0)], state}
+    end
+  end
+
+  defp read_reply(id, offset, length, state) do
+    cond do
+      offset >= state.size -> {[status(id, 1)], state}
+      state.hold -> {[], %{state | held: [{id, offset, length} | state.held]}}
+      true -> {[data(id, offset, min(length, state.size - offset))], state}
+    end
+  end
+
+  defp write_reply(id, offset, state) do
+    cond do
+      offset == state.silent_write -> {[], state}
+      offset == state.fail_write -> {[status(id, 4)], state}
+      true -> {[status(id, 0)], state}
+    end
+  end
+
+  defp data(id, offset, length),
+    do:
+      <<103, id::32, length::32,
+        :binary.copy(<<rem(div(offset, 131_072), 251)>>, length)::binary>>
+
+  defp status(id, code), do: <<101, id::32, code::32, 0::32, 0::32>>
+
+  defp hold(session) do
+    assert {:ok, _} = SFTP.stat(session, "hold")
+    requests()
+  end
+
+  defp release(session) do
+    assert {:ok, _} = SFTP.stat(session, "release")
+    assert_receive {:sftp_request, <<17, _::32, 7::32, "release">>}
+  end
+
+  defp assert_request(type) do
+    assert_receive {:sftp_request, <<^type, _::binary>> = body}, 2_000
+    body
+  end
+
+  defp refute_request, do: refute_receive({:sftp_request, _}, 150)
+
+  defp read_offset(<<5, _::32, 1::32, "h", offset::64, _::32>>), do: offset
+  defp write_offset(<<6, _::32, 1::32, "h", offset::64, _::binary>>), do: offset
+
   defp attrs(id, name),
     do: <<105, id::32, 1::32, byte_size(name)::64>>
 
@@ -214,14 +459,18 @@ defmodule Opsmaru.Incus.SFTPSessionTest do
     assert_receive {:DOWN, ^monitor, :process, ^pid, _}, 2_000
   end
 
-  defp backend(root, script, initial \\ nil) do
+  defp backend(root, script, initial \\ nil, extensions \\ []) do
     parent = self()
 
     handler = fn request ->
       if request.target == "/1.0" do
         %{status: 200, body: %{type: "sync", metadata: %{api_version: "1.0", api_extensions: []}}}
       else
-        %{upgrade: fn transport, socket -> serve(transport, socket, script, parent, initial) end}
+        %{
+          upgrade: fn transport, socket ->
+            serve(transport, socket, script, parent, initial, extensions)
+          end
+        }
       end
     end
 
@@ -236,7 +485,7 @@ defmodule Opsmaru.Incus.SFTPSessionTest do
     )
   end
 
-  defp serve(transport, socket, script, parent, initial) do
+  defp serve(transport, socket, script, parent, initial, extensions) do
     :ok =
       transport.send(
         socket,
@@ -245,7 +494,8 @@ defmodule Opsmaru.Incus.SFTPSessionTest do
 
     {:ok, init} = receive_frame(transport, socket)
     send(parent, {:sftp_request, init})
-    :ok = transport.send(socket, frame(<<2, 3::32>>))
+    pairs = for {name, data} <- extensions, into: <<>>, do: string(name) <> string(data)
+    :ok = transport.send(socket, frame(<<2, 3::32, pairs::binary>>))
     loop(transport, socket, script, parent, initial)
   end
 
@@ -286,6 +536,7 @@ defmodule Opsmaru.Incus.SFTPSessionTest do
   end
 
   defp frame(body), do: <<byte_size(body)::32, body::binary>>
+  defp string(bytes), do: <<byte_size(bytes)::32, bytes::binary>>
 
   defp open(fixture, opts \\ []) do
     connection =

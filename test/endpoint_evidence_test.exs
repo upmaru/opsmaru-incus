@@ -41,13 +41,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     [view | other_views] = first["documented_views"]
     views = [%{view | "selectors" => %{"recursion" => "99"}} | other_views]
     wrong_parameters = [%{view | "query_parameters" => ["absent"]} | other_views]
-    # The first row is complete, so the invented completion targets a partial row.
-    partial = Enum.find(audit["entries"], &(not &1["behavior_complete"]))
+    # Every row is complete, so the invented completion drops a row's record.
+    claimed = Enum.find(rest, & &1["behavior_complete"])
 
     invented =
       Enum.map(
         audit["entries"],
-        &if(&1 == partial, do: %{&1 | "behavior_complete" => true}, else: &1)
+        &if(&1 == claimed, do: Map.delete(&1, "completion_record"), else: &1)
       )
 
     for changed <- [
@@ -130,7 +130,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "245 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "247 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -161,7 +161,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                CreateImage ExportImage ConsoleInstance)
              )
 
-    assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{"complete" => 245}
+    assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{"complete" => 247}
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
     assert coverage["endpoint_evidence"] == "priv/incus/endpoint-evidence.json"
@@ -378,6 +378,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/instances/{}/metadata", "b11_instances_one_metadata_v1"},
              {"GET /1.0/instances/{}/metadata/templates", "s07_byte_streams_v1"},
              {"GET /1.0/instances/{}/nbd", "s08_raw_upgrades_v1"},
+             {"GET /1.0/instances/{}/sftp", "s09_typed_sftp_v1"},
              {"GET /1.0/instances/{}/snapshots", "b02_instance_snapshots_v1"},
              {"GET /1.0/instances/{}/snapshots/{}", "b02_instance_snapshot_v1"},
              {"GET /1.0/instances/{}/state", "b02_instance_state_v1"},
@@ -442,6 +443,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
               "b08_storage_pools_one_volumes_one_one_bitmaps_one_v1"},
              {"GET /1.0/storage-pools/{}/volumes/{}/{}/files", "s04_file_transfer_v1"},
              {"GET /1.0/storage-pools/{}/volumes/{}/{}/nbd", "s08_raw_upgrades_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/sftp", "s09_typed_sftp_v1"},
              {"GET /1.0/storage-pools/{}/volumes/{}/{}/snapshots",
               "b08_storage_pools_one_volumes_one_one_snapshots_v1"},
              {"GET /1.0/storage-pools/{}/volumes/{}/{}/snapshots/{}",
@@ -580,7 +582,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            ]
 
     assert for(%{"status" => "certified", "id" => id} <- audit["stream_contracts"], do: id) ==
-             ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08", "S10"]
+             ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08", "S09", "S10"]
 
     refute audit["behavior_complete"] or audit["complete_port"]
     image_transfer = ["completion_records", "s05_image_transfer_v1"]
@@ -614,17 +616,24 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     assert s08["excluded_views"] == %{}
     assert length(s08["approved_differences"]) == 2
 
-    # The raw SFTP rows are linked to S08 and S09; they stay partial while S09 is open.
-    s09 = Enum.find(audit["stream_contracts"], &(&1["id"] == "S09"))
-    assert s09["status"] == "open_contract_certification"
+    # The SFTP rows are linked to S08 and S09 and complete under the S09 record.
+    s09 = get_in(audit, ["completion_records", "s09_typed_sftp_v1"])
 
-    for pair <- [
-          "GET /1.0/instances/{}/sftp",
-          "GET /1.0/storage-pools/{}/volumes/{}/{}/sftp"
-        ] do
+    assert {s09["kind"], s09["stream_contracts"], s09["methods"], s09["helpers"]} ==
+             {"typed_sftp", ["S09"], [], ["file_sftp", "sftp", "volume_file_sftp", "volume_sftp"]}
+
+    assert s09["rows"] == [
+             "GET /1.0/instances/{}/sftp",
+             "GET /1.0/storage-pools/{}/volumes/{}/{}/sftp"
+           ]
+
+    assert s09["excluded_views"] == %{}
+    assert length(s09["approved_differences"]) == 2
+
+    for pair <- s09["rows"] do
       row = Enum.find(audit["entries"], &(&1["pair"] == pair))
       assert row["stream_contracts"] == ["S08", "S09"]
-      refute row["behavior_complete"] or Map.has_key?(row, "completion_record")
+      assert row["behavior_complete"] and row["completion_record"] == "s09_typed_sftp_v1"
     end
   end
 
@@ -679,61 +688,38 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
       end
     end
 
-    # A completed row whose linked stream contract is still open cannot complete.
-    record = get_in(audit, events)
-
-    volume_sftp =
-      Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/storage-pools/{}/volumes/{}/{}/sftp"))
-
-    shared =
-      Map.merge(volume_sftp, %{
-        "behavior_complete" => true,
-        "completion_record" => "b03_events_v1"
-      })
-
-    changed =
-      audit
-      |> put_in(events ++ ["rows"], record["rows"] ++ [volume_sftp["pair"]])
-      |> Map.update!("entries", fn entries ->
-        Enum.map(entries, &if(&1 == volume_sftp, do: shared, else: &1))
+    # A completed row whose linked stream contract is reopened cannot stay complete,
+    # even though the row's other contract (S08) is certified.
+    reopened =
+      update_in(audit, ["stream_contracts"], fn contracts ->
+        Enum.map(contracts, fn contract ->
+          if contract["id"] == "S09",
+            do: %{contract | "status" => "open_contract_certification"},
+            else: contract
+        end)
       end)
 
     assert_raise ExUnit.AssertionError, ~r/open linked stream contract/, fn ->
-      EndpointInventory.validate!(changed, native)
+      EndpointInventory.validate!(reopened, native)
     end
 
-    # The S08 record cannot complete either SFTP row while S09 is open, even though
-    # S08 itself is certified.
-    record = get_in(audit, raw_upgrade)
+    # The S08 record cannot complete an SFTP row in place of the S09 record.
+    sftp = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/instances/{}/sftp"))
 
-    for {pair, helper} <- [
-          {"GET /1.0/instances/{}/sftp", "sftp"},
-          {"GET /1.0/storage-pools/{}/volumes/{}/{}/sftp", "volume_sftp"}
-        ] do
-      sftp = Enum.find(audit["entries"], &(&1["pair"] == pair))
+    moved =
+      audit
+      |> update_in(raw_upgrade ++ ["rows"], &(&1 ++ [sftp["pair"]]))
+      |> update_in(raw_upgrade ++ ["helpers"], &(&1 ++ sftp["helpers"]))
+      |> Map.update!("entries", fn entries ->
+        Enum.map(
+          entries,
+          &if(&1 == sftp, do: %{sftp | "completion_record" => "s08_raw_upgrades_v1"}, else: &1)
+        )
+      end)
 
-      changed =
-        audit
-        |> put_in(raw_upgrade ++ ["rows"], record["rows"] ++ [pair])
-        |> put_in(raw_upgrade ++ ["helpers"], record["helpers"] ++ [helper])
-        |> Map.update!("entries", fn entries ->
-          Enum.map(
-            entries,
-            &if(&1 == sftp,
-              do:
-                Map.merge(sftp, %{
-                  "behavior_complete" => true,
-                  "completion_record" => "s08_raw_upgrades_v1"
-                }),
-              else: &1
-            )
-          )
-        end)
-
-      assert_raise ExUnit.AssertionError, ~r/open linked stream contract/, fn ->
-        EndpointInventory.validate!(changed, native)
-      end
-    end
+    assert_raise ExUnit.AssertionError,
+                 ~r/stale selected completion|unrelated completion record row/,
+                 fn -> EndpointInventory.validate!(moved, native) end
 
     # Each S08 evidence key must stay linked from both selected NBD rows.
     root = Path.join(System.tmp_dir!(), "op-s08-record-#{System.unique_integer([:positive])}")
@@ -759,7 +745,9 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
           {"GET", "/1.0/operations/{id}/wait", "partial"},
           {"POST", "/1.0/instances/{name}/console", "partial"},
           {"GET", "/1.0/instances/{name}/nbd", "partial"},
-          {"GET", "/1.0/storage-pools/{poolName}/volumes/{type}/{volumeName}/nbd", "partial"}
+          {"GET", "/1.0/storage-pools/{poolName}/volumes/{type}/{volumeName}/nbd", "partial"},
+          {"GET", "/1.0/instances/{name}/sftp", "partial"},
+          {"GET", "/1.0/storage-pools/{poolName}/volumes/{type}/{volumeName}/sftp", "partial"}
         ] do
       entries =
         Enum.map(@manifest["entries"], fn row ->
@@ -799,6 +787,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     image_transfer = ["completion_records", "s05_image_transfer_v1"]
     console = ["completion_records", "s02_console_v1"]
     raw_upgrade = ["completion_records", "s08_raw_upgrades_v1"]
+    typed_sftp = ["completion_records", "s09_typed_sftp_v1"]
     events = ["completion_records", "b03_events_v1"]
     socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
     head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
@@ -851,7 +840,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
        end), "open linked stream contract"},
       {update_in(audit, ["stream_contracts"], fn contracts ->
          Enum.map(contracts, fn contract ->
-           if contract["id"] == "S09",
+           if contract["id"] == "S11",
              do: %{contract | "status" => "certified"},
              else: contract
          end)
@@ -948,6 +937,27 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
       {update_in(audit, console ++ ["approved_differences"], fn [first | rest] ->
          [Map.delete(first, "approved") | rest]
        end), "unapproved exclusion"},
+      # S09 certification needs the pipelining, lock and host transfer cases, the
+      # typed and raw helpers of both rows, both transports, the Go differential
+      # and its approved differences.
+      {update_in(audit, typed_sftp ++ ["cases"], &Map.delete(&1, "file_lock")),
+       "missing completion case"},
+      {update_in(audit, typed_sftp ++ ["cases"], &Map.delete(&1, "read_ahead")),
+       "missing completion case"},
+      {put_in(audit, typed_sftp ++ ["cases", "pipelined_reads"], []),
+       "missing completion evidence"},
+      {update_in(audit, typed_sftp ++ ["helpers"], &List.delete(&1, "volume_file_sftp")),
+       "stale completion helpers"},
+      {put_in(audit, typed_sftp ++ ["transports"], ["mutual_https"]),
+       "missing completion transport"},
+      {update_in(audit, typed_sftp ++ ["evidence_kinds"], &Map.delete(&1, "s09_files")),
+       "stale completion evidence kinds"},
+      {put_in(audit, typed_sftp ++ ["evidence_kinds", "s09_files"], "raw_proxy_success"),
+       "unknown completion evidence kind"},
+      {update_in(audit, typed_sftp ++ ["approved_differences"], fn [first | rest] ->
+         [Map.delete(first, "approved") | rest]
+       end), "unapproved exclusion"},
+      {put_in(audit, typed_sftp ++ ["stream_contracts"], []), "unsupported certification claim"},
       # S08 certification needs coalesced bytes, the half-close writes, both NBD
       # helpers and only them, both transports, the reuse/writable selectors, the
       # oracle evidence and its approved differences.

@@ -30,6 +30,8 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
       ~w(request routing native_400 native_403 native_404 accepted_identity response_loss_no_replay static_console dynamic_console console_types terminal_size force control_first ignored_channels control_frames data_frames write_barriers detach_close missing_control invalid_stream_metadata stream_negotiation repeated_attachments capacity channel_failure owner_loss lifetime peer_closure redaction host_channels preflight),
     "raw_upgrade" =>
       ~w(request routing upgrade_headers path_escaping reuse writable initial_bytes duplex coalesced_bytes oracle_byte_loss half_close half_close_writes native_403 native_404 no_retry redaction bad_framing response_bound handshake_deadline caller_loss blocked_writes local_close lifetime typed_options preflight extension_guards),
+    "typed_sftp" =>
+      ~w(request routing version_extensions path_operations compound_operations path_helpers attributes status_errors open_flags cursor_io positional_io end_of_file short_reads pipelined_reads read_ahead sequential_writes concurrent_uploads host_sources host_sinks file_attributes fsync closed_files file_lock shared_sessions opener_lifetime request_deadline response_loss_no_replay frame_failures in_flight_bound caller_loss packet_bounds preflight),
     "binary_download" =>
       ~w(request populated routing native_400 native_403 native_404 byte_bounds deadline cancellation acknowledged_sink no_implicit_delete preflight),
     "read_contract" =>

@@ -39,7 +39,8 @@ successful MCP tool would establish complete declaration coverage.
 | `Incus.sftp/2`, `nbd/3`, `volume_sftp/4`, `volume_nbd/5` | Native raw 101 byte channels matching the pinned `Get*SFTPConn`/`Get*NBDConn`; names are sent unchecked and consumers supply their SFTP/NBD implementation |
 | `Incus.file_sftp/2`, `volume_file_sftp/4` | Shared SFTP session matching the pinned `GetInstanceFileSFTP`/`GetStoragePoolVolumeFileSFTP` (`pkg/sftp` v1.13.10) over the raw upgrade; volume extension, host identity/readiness and verified transport still apply |
 | `SFTP.stat/2`, `lstat/2`, `read_dir/2`, `read_link/2`, `real_path/2`, `getwd/1`, `link/3`, `symlink/3`, `chmod/3`, `chown/4`, `chtimes/4`, `truncate/3`, `set_extended_data/3`, `stat_vfs/2`, `remove/2`, `remove_directory/2`, `rename/3`, `posix_rename/3`, `mkdir/2`, `mkdir_all/2`, `remove_all/2`, `glob/2`, `walk/3`, `has_extension/2`, `join/1`, `split/1`, `match/2` | The pinned `pkg/sftp` path and metadata calls and Go path helpers; pipelined requests from any process; possibly dispatched mutations are never replayed |
-| `SFTP.extensions/1`, `open/3`, `read_at/4`, `write_at/4`, `close_file/2`, `close/1` | Explicit file modes, native opaque handles and byte/status fidelity; full file I/O lands with S09 PR 2 |
+| `SFTP.extensions/1`, `open/2`, `create/2`, `open_file/3`, `close/1` | Go `Open`, `Create` and `OpenFile` (flags mapped like Go's `toPflags`), returning an `SFTP.File` bound to the session |
+| `SFTP.File.read/2`, `read_at/3`, `write/2`, `write_at/3`, `seek/3`, `write_to/2`, `read_from/2`, `read_from_with_concurrency/3`, `stat/1`, `chmod/2`, `chown/3`, `truncate/2`, `set_extended_data/2`, `sync/1`, `name/1`, `close/1` | The pinned `*sftp.File`: cursor and positional I/O, pipelined reads, one-at-a-time writes, host sink/source transfers and Go's per-file lock; possibly accepted writes are never resent |
 | `RawChannel.recv/2`, `send_data/2`, `shutdown_write/1`, `close/1` | Bounded binary duplex and native half-close |
 | `Operation.raw/4`, `from_response/2`, `poll/1`, `wait/2`, `cancel/1`, `websocket/2` | Bound native handles and raw operation ETags; authoritative completion and supported cancellation |
 | `Events.subscribe/2`, `next/2`, `send/2`, `close/1` | Native events through an owner-monitored bounded WebSocket queue; sending acknowledges the local write, not backend processing |
@@ -323,8 +324,8 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 245 pairs are currently in the checked
-evidence manifest. All 245 are complete under reviewed completion records:
+pairs plus 46 query/access variants; all 247 pairs are in the checked
+evidence manifest and complete under reviewed completion records:
 native wait, events, exec, all eight B01 mutations, conditional instance
 PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10
 administrative rows, all 24 B05 PATCH rows, 28 stream-free B08 storage rows and
@@ -333,9 +334,9 @@ output rows, the B12 debug repair row, the eight S07 auxiliary byte stream
 rows, the eight S04 file transfer rows, the nineteen S06 backup and archive
 rows, the six S10 copy and migration rows, the three S05 image transfer
 rows, the two S02 console rows (console attachment and the operation
-WebSocket) and the two S08 NBD rows. The remaining documented pairs keep their copy/stream/model/helper
-scope without treating already verified slices as wholly missing. No full-port or new backend/
-hardware acceptance follows from those fixtures.
+WebSocket), the two S08 NBD rows and the two S09 SFTP rows. Stream contracts
+S11 and S12 stay open, so task 3.9 and `complete_port` remain incomplete. No
+full-port or new backend/hardware acceptance follows from those fixtures.
 
 The callback listener has at most `min(queue_limit, 128)` handlers and one callback
 worker at a time. Each worker is limited by the connection timeout and remaining
@@ -595,8 +596,8 @@ The native names `GetInstanceFileSFTP` (`%{"name" => instance}`) and
 `GetStoragePoolVolumeFileSFTP` (`%{"pool" => pool, "type" => type, "name" => name}`)
 also dispatch through `Incus.call/4` with no options. They return `SFTP` sessions,
 distinct from the raw connections returned by `sftp/2` and `volume_sftp/4`.
-Sessions and `SFTP.Handle` values redact native bytes on inspection; explicit
-handle fields are privileged data for the host.
+Sessions and `SFTP.File` values redact native bytes on inspection; a file's
+native handle stays inside its session.
 
 ```elixir
 {:ok, sftp} = Incus.file_sftp(client, "instance")
@@ -604,12 +605,20 @@ handle fields are privileged data for the host.
 {:ok, entries} = SFTP.read_dir(sftp, "srv")
 {:ok, stat} = SFTP.stat(sftp, "srv/app")
 {:ok, matches} = SFTP.glob(sftp, "srv/*.conf")
+{:ok, file} = SFTP.create(sftp, "srv/app/config")
+{:ok, _bytes_read} = SFTP.File.read_from(file, File.stream!("config", 65_536))
+{:ok, _offset} = SFTP.File.seek(file, 0, :start)
+{:ok, _written} = SFTP.File.write_to(file, fn chunk -> IO.binwrite(device, chunk) end)
+:ok = SFTP.File.close(file)
 :ok = SFTP.close(sftp)
 ```
 
-Typed SFTP (stream contract S09) is being moved from the approved v3 subset to
-the full pinned `pkg/sftp` v1.13.10 client in two PRs. PR 1 has landed the
-shared session and every path and metadata call:
+Typed SFTP (stream contract S09) is **certified** by `s09_typed_sftp_v1`
+(2026-10-30), completing instance SFTP (`GET /1.0/instances/{name}/sftp`) and
+custom volume SFTP (`GET /1.0/storage-pools/{pool}/volumes/{type}/{name}/sftp`)
+on Unix and mutual HTTPS together with S08. It matches the pinned `pkg/sftp`
+v1.13.10 client the Incus helpers return: 128 KiB packets and the package
+defaults otherwise.
 
 - A session is shared, as goroutines share a Go `*sftp.Client`: any process may
   call it, and requests are pipelined with distinct ids whose replies are
@@ -648,21 +657,58 @@ shared session and every path and metadata call:
   `:uncertain`); malformed, oversized or unmatched frames end the session and
   fail every pending request.
 
+Files mirror the pinned `*sftp.File`:
+
+- `open/2`, `create/2` and `open_file/3` send Go's OPEN. The flags
+  `:read_only`, `:write_only`, `:read_write`, `:append`, `:create`,
+  `:truncate` and `:exclusive` map like Go's `toPflags`: no access flag means
+  read-only, and conflicting access flags send neither read nor write.
+- Any process may use a file. Go's per-file lock is kept: cursor calls
+  (`read/2`, `write/2`, `seek/3`, `write_to/2`, `read_from/2`, `sync/1`,
+  `close/1`) take turns, positional and attribute calls (`read_at/3`,
+  `write_at/3`, `stat/1`, `chmod/2`, `chown/3`, `truncate/2`,
+  `set_extended_data/2`) overlap each other but not a cursor call, and a waiting
+  cursor call holds back later calls. A process that exits while holding or
+  waiting for the lock releases it.
+- Reads up to 128 KiB are one request, continued after short replies. Larger
+  reads are pipelined in 128 KiB chunks in offset order with up to 64 requests
+  per file plus one dispatched ahead, within the connection's `queue_limit`; a
+  short chunk means end of file. Reads that reach the end return
+  `{:eof, data}`.
+- Writes and `read_from/2` send one 128 KiB WRITE at a time, as the helpers
+  leave Go's concurrent writes off. `read_from_with_concurrency/3` is Go's
+  explicit pipelined upload. A full 128 KiB WRITE frame is 131,097 bytes plus
+  the handle, so `max_chunk_bytes` and `max_request_bytes` must allow it
+  (132,096 does); smaller bounds reject it before I/O.
+- `write_to/2` sends Go's STAT of the opened path, then streams the file into an
+  acknowledged sink: regular files over 128 KiB with Go's read-ahead, others one
+  request at a time. As natively, a pipelined copy leaves the position at the
+  read that found the end. `read_from/2` takes an enumerable of binary chunks.
+- `sync/1` sends `fsync@openssh.com` only when the server announced it with
+  data `"1"`; otherwise it fails locally with status 8, as Go does.
+- Failures keep the byte count Go returns in `response.count`, and for reads
+  the bytes received in `response.data`. A WRITE, CLOSE, FSETSTAT or FSYNC whose
+  outcome is unknown is `:uncertain`; transfers stop at the first failure and
+  never resend a chunk. After `close/1`, every call fails with `:file_closed`
+  without I/O.
+
 `test/sftp_operations_reference_test.exs` runs the unchanged pinned client
 against an unchanged `pkg/sftp` server fixture rooted in a temporary directory,
-on Unix and mutual HTTPS, for instance and volume sessions. Our client then runs
-the same script against the recorded replies, where every request packet (ids
+on Unix and mutual HTTPS, for instance and volume sessions, with one script of
+path and metadata calls and one of file calls. Our client then runs the same
+script against the recorded replies, where every request packet (ids
 normalized) and result must agree, and again live against a fresh copy of the
-tree. `test/sftp_session_test.exs` covers concurrent out-of-order replies,
-opener and caller exit, request deadlines, frame failures and the in-flight
-bound.
+tree. Go's pipelined `WriteTo` keeps reading ahead until it handles the end of
+the file, so the replay allows only extra reads past an end already seen on
+the same handle, and lists them. `test/sftp_session_test.exs` covers
+concurrent out-of-order replies, opener and caller exit, request deadlines,
+frame failures, the in-flight bound, the file lock, the pipelining window,
+uncertain writes, upload and sink failures and FSYNC.
 
-File I/O is unchanged until PR 2: `open/3` takes `:read`, `:write`,
-`:read_write`, `:append` (existing file) or `:create` (read/write plus
-create/truncate), and `read_at/4`/`write_at/4` move one request of at most
-128 KiB at a nonnegative signed-int64 offset, rejecting a short DATA reply.
-A file-close attempt invalidates the handle as natively. S09 and the two SFTP
-rows stay open until PR 2 certifies them.
+Approved differences: `read_from/2` reports a failed final short write, which
+Go's `ReadFrom` ignores, and sessions end with their stream lifetime, which
+also bounds lock waits. Approved exclusions: cluster forwarding, real-daemon
+SFTP acceptance and Go client options the Incus helpers never set.
 
 ## Live noninteractive exec output
 
@@ -1123,8 +1169,8 @@ Raw SFTP/NBD upgrades (stream contract S08) are **certified** by
 `s08_raw_upgrades_v1` (2026-10-29). It completes instance NBD
 (`GET /1.0/instances/{name}/nbd`) and custom volume NBD
 (`GET /1.0/storage-pools/{pool}/volumes/{type}/{name}/nbd`) on Unix and mutual
-HTTPS. The two SFTP rows are also linked to typed SFTP (S09) and stay partial
-until it is certified.
+HTTPS. The two SFTP rows are also linked to typed SFTP (S09) and complete with
+its certification.
 
 - `Incus.sftp/2`, `nbd/3`, `volume_sftp/4` and `volume_nbd/5` agree with the
   pinned `GetInstanceFileSFTPConn`, `GetInstanceNBDConn`,
