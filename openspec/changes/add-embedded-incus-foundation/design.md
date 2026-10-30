@@ -129,6 +129,92 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: S11 OCI image server certification (2026-10-31)
+
+Certify stream contract S11 by matching the pinned `ProtocolOCI` client
+(`client/oci.go` and `client/oci_images.go`) behind the explicit host adapter
+of section 4a. That includes its use as the source of an image copy or an
+image-based instance create or rebuild. S11 has no REST endpoint rows of its
+own, so its record lists the pinned declarations it covers instead. The work
+lands in one PR.
+
+User decisions (2026-10-31):
+
+- An OCI source works with `Images.copy/4`, `ImageInstances.create/5` and
+  `ImageInstances.rebuild/6` the way the pinned `CopyImage`,
+  `CreateInstanceFromImage` and `RebuildInstanceFromImage` treat a
+  `ProtocolOCI` source. A push copy follows Go: the target's push token is
+  requested, the copy fails with the native "Exporting images is not
+  supported with OCI registry" error, and the token is cancelled.
+- Daemon pulls from a private registry take explicit host credentials. A
+  `registry_credentials: {username, password}` option adds them to the
+  server URL the target receives, escaped as Go's `url.UserPassword`
+  escapes them, because Go sends the registry URL it was given, user
+  information included. A `nil` password gives a username-only URL, like
+  Go's `url.User`. Credentials never reach `Inspect`, error results or the
+  OCI value. Relay copies keep using the host adapter, which holds its own
+  credentials, so the option is refused there.
+- The library generates the converted image's `metadata.yaml`: Go's exact
+  `json.Marshal(api.ImageMetadata{Architecture, CreationDate})` bytes, which
+  include `expiry_date` 0 and null `properties` and `templates`. The adapter
+  receives them as `metadata_yaml` in its `image_file/3` request and must
+  pack them next to `config.json` in the metadata tarball.
+- A failed alias lookup returns its error to the caller only. Go also keeps
+  that error in a per-client map, so a later `GetImage` with the same name
+  returns it. Our cache is an immutable value that a failed lookup does not
+  return, so a later `image/2` reports "Image not found". This is an
+  approved difference.
+
+The PR covers:
+
+- `OCI.new!/5` with an optional `certificate:` PEM, Go's `TLSServerCert`.
+  `connection_info/1` reports it, and copies and instance pulls send it to
+  the target as the source certificate. The default stays empty, which tells
+  the daemon to use system trust.
+- `image_file/3` checks the cache before the sinks, as Go does: an unknown
+  fingerprint reports "Image not found" even when the sinks are missing,
+  and "No file requested" comes only after a cache hit.
+- an OCI source in copies:
+  - pull: one `CreateImage` with source protocol `oci`, the approved origin
+    (plus any credentials) as the server, the explicit certificate, the
+    fingerprint and Go's empty project. OCI images are public, so no secret
+    is requested. A non-public image fails before any request with the
+    native "Private images aren't supported with OCI registry" error.
+  - push: as decided above. The token request carries Go's push body.
+  - relay: converts through `OCI.image_file/3` into the relay's metadata and
+    rootfs sinks, then uploads a split image named after the image's (empty)
+    filename, as Go does, and creates aliases after the wait as for Incus
+    sources.
+- an OCI source in instance create and rebuild: Go's pull source fields
+  (type `image`, mode `pull`, protocol `oci`, the certificate, the alias
+  when one is given, otherwise the fingerprint) with the caller's own source
+  project kept as given. As with copies, a non-public image fails before any
+  request.
+- differential evidence:
+  - the OCI oracle gains the metadata bytes, cache-miss order and
+    certificate cases.
+  - the image copy driver gains an OCI source built with the unchanged
+    `ConnectOCI`. Pull and push run unchanged. Relay wraps the unchanged OCI
+    client and replaces only `GetImageFile` with fixture bytes, because the
+    pinned conversion needs root, skopeo and umoci. The target requests are
+    compared with ours on Unix and mutual HTTPS.
+  - the copy negotiation driver gains OCI-source create and rebuild,
+    including credentials escaped by Go's `url.UserPassword`.
+- a new rowless completion record kind, `oci_image_server`. It names the
+  pinned declarations it covers, which must exist in the declaration
+  inventory, and the Elixir functions that implement them. The validator
+  accepts empty `rows` only for this kind, which S12 may reuse with its own
+  kind later. S11 becomes certified. The endpoint manifest stays at 247, and
+  the POST /1.0/images and instance create and rebuild rows drop their note
+  that OCI copies wait on S11.
+
+Approved boundaries, already recorded in section 4a and S05: the host
+adapter replaces skopeo, the root requirement and temporary directories;
+hosts see progress through their own sinks; and installed-adapter, registry
+TLS and authentication, and real-daemon acceptance stay separate.
+`GetImageAliasArchitectures` keeps the host-supplied local architecture.
+Task 3.9, `complete_port` and every Go declaration status are unchanged.
+
 #### Approved slice: S09 typed SFTP certification (2026-10-29)
 
 Certify stream contract S09 by replacing the approved SFTP v3 subset (section

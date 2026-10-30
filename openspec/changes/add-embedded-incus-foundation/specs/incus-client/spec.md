@@ -82,6 +82,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** request packets, compound steps, pipelining order and results agree with the pinned `pkg/sftp` v1.13.10 client, cursor calls take turns under Go's per-file lock, a possibly accepted mutation is uncertain and never resent, and a failed request or transfer leaves other callers' requests running
 - **AND** S09 is certified by a single reviewed record that completes both SFTP rows; reporting a failed final upload write is a recorded approved difference; and cluster forwarding and real-daemon SFTP acceptance are recorded approved exclusions
 
+#### Scenario: Certified OCI image server
+
+- **WHEN** a host resolves, reads or converts an OCI image through its adapter, reads the OCI origin, or uses an OCI source to copy an image or create or rebuild an instance, over Unix or mutual HTTPS targets
+- **THEN** alias, image and metadata bytes, error order, connection information and every target request agree with the pinned `ProtocolOCI` client and its callers; a push copy fails natively and cancels its token; and registry credentials reach only the pull's server URL, escaped as Go escapes them
+- **AND** S11 is certified by a single reviewed rowless record that names its pinned declarations; failed lookups that are not cached are a recorded approved difference; and installed-adapter, registry authentication and real-daemon acceptance stay separately recorded
+
 #### Scenario: Certified console attachment
 
 - **WHEN** a caller opens a static or dynamic console of `console` or `vga` type, with or without size and `force`, and exchanges control and data frames over Unix or mutual HTTPS
