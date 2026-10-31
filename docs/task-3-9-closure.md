@@ -205,7 +205,7 @@ file/image transfers. They remain foundation classification obligations.
 | Raw instance/volume SFTP and NBD | `RawChannel`, explicit Incus helpers; `test/native_upgrade_reference_test.exs`, `test/volume_upgrade_reference_test.exs`, `test/raw_channel_test.exs`, `test/tls_stream_test.exs` | Raw transport/half-close/coalesced-byte/bounds evidence exists. NBD protocol implementation stays caller-owned; record all request options and the approved coalesced-byte oracle difference. |
 | Typed SFTP | `SFTP`; `test/sftp_operations_reference_test.exs`, `test/sftp_session_test.exs`, `test/sftp_helpers_reference_test.exs` | S09 certified by `s09_typed_sftp_v1` (2026-10-30), completing both SFTP rows with S08: the pinned `pkg/sftp` client with shared sessions, every path/metadata call and `*sftp.File` I/O. Reporting a failed final upload write is an approved difference. |
 | Copy/migration negotiation and relay | `Migration`, `Copy`, `ImageInstances`; `test/copy_negotiation_reference_test.exs`, `test/copy_guards_test.exs`, `test/migration_test.exs` | Recorded boolean/locality/cluster/project/member combinations, identities and relay cleanup have evidence. Enumerate remaining channel/option/remote-wait cases and single-origin differences; do not restart an already implemented copy port. |
-| OCI host-adapter handoff | `OCI`; `test/oci_test.exs`, `test/oci_origin_reference_test.exs` | All 20 concrete methods have partial mappings. Explicit adapter/native projections/bounds/cleanup have evidence; installed conversion/authentication and unclassified cache/options remain separate. |
+| OCI host-adapter handoff | `OCI`, `Images`, `ImageInstances`; `test/oci_test.exs`, `test/oci_origin_reference_test.exs`, `test/image_copy_contract_test.exs`, `test/copy_negotiation_reference_test.exs` | S11 certified by `s11_oci_image_server_v1` (2026-10-31), naming every `ProtocolOCI` declaration: projections, metadata bytes, origin helpers and OCI sources of copies and image-based create/rebuild. Uncached failed lookups, the host-supplied local architecture and separate registry credentials are approved differences; installed conversion and registry authentication remain separate. |
 | SimpleStreams HTTPS and host delta | `SimpleStreams`; `test/simple_streams_test.exs` | All 20 concrete methods have partial mappings. Catalog/architecture/formats/checksums/full-file/delta/bounds/cleanup have evidence; refresh/cache/fallback variants and installed converter acceptance remain separate. |
 
 - [x] Map explicit helpers to all documented routes and assign S01–S12 finite
@@ -1960,3 +1960,47 @@ contracts become S01 to S10; S11 and S12 stay open, so task 3.9 and
   lock waits (2026-10-29).
 - Approved exclusions: cluster forwarding, real-daemon SFTP acceptance and
   `pkg/sftp` options the Incus helpers never set.
+
+## S11 OCI image server certification
+
+Approved 2026-10-31. One PR certifies S11 under `s11_oci_image_server_v1`, a
+new rowless record kind, `oci_image_server`. S11 has no REST endpoint rows, so
+the record names the pinned declarations it covers: every `ProtocolOCI` method,
+`ConnectOCI`, and the OCI-source paths of `CopyImage`,
+`CreateInstanceFromImage` and `RebuildInstanceFromImage`. The validator
+requires every `ProtocolOCI` declaration to be listed and every named client
+function to exist. The certified stream contracts become S01 to S11; S12 stays
+open, so task 3.9 and `complete_port` stay incomplete. The selected manifest
+stays at 247 pairs, and Go declaration statuses are unchanged.
+
+- [x] `OCI.new!/5` takes an explicit `certificate:` PEM, Go's `TLSServerCert`,
+  which connection info reports and copies and instance pulls hand to the
+  target.
+- [x] `image_file/3` reports an unknown fingerprint before missing sinks, as
+  Go does, and hands the adapter Go's exact `metadata.yaml` bytes, checked
+  against the pinned `api.ImageMetadata` marshalling, including times before
+  1970 (user decision 2026-10-31).
+- [x] An OCI source works with `Images.copy/4` (pull, relay, and a push that
+  requests the target token, fails natively and cancels the token, like Go)
+  and with `ImageInstances.create/5` and `rebuild/6` (user decision
+  2026-10-31). Target requests agree with the unchanged pinned callers on Unix
+  and mutual HTTPS; the Go relay replaces only the root-only conversion with
+  fixture bytes.
+- [x] `registry_credentials:` adds user information to the pull server URL,
+  escaped byte for byte as Go's `url.UserPassword` and `url.User` escape it
+  (user decision 2026-10-31). It is refused with push and relay copies.
+- [x] Private OCI images fail before any request with the native
+  `GetImageSecret` error. Instance pulls omit an empty source project, as Go
+  does.
+- [x] Mutation probes fail the new tests: Go's escaping with `!*` left
+  unescaped, a `default` project for OCI pulls, and a push that does not
+  cancel its token.
+- Approved differences: a failed lookup is not cached for a later `image/2`,
+  `alias_architectures/4` keys by a host-supplied local architecture, and
+  registry credentials are a separate option rather than URL user information
+  (2026-10-31). Hosts see conversion progress through their own sinks, and a
+  failed relay upload is reported (S05, 2026-10-28).
+- Approved boundary: the host adapter replaces skopeo, umoci, the root
+  requirement and temporary directories (section 4a, 2026-10-11). Installed
+  adapter conversion, registry TLS and authentication and real-daemon pulls
+  stay separately recorded.

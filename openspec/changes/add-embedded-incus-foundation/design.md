@@ -164,6 +164,10 @@ User decisions (2026-10-31):
   returns it. Our cache is an immutable value that a failed lookup does not
   return, so a later `image/2` reports "Image not found". This is an
   approved difference.
+- `alias_architectures/4` keeps keying its result by a local architecture the
+  host supplies, because the library may not run on the Incus host. Go uses
+  the `uname` of the machine running the client. This is an approved
+  difference.
 
 The PR covers:
 
@@ -212,7 +216,6 @@ Approved boundaries, already recorded in section 4a and S05: the host
 adapter replaces skopeo, the root requirement and temporary directories;
 hosts see progress through their own sinks; and installed-adapter, registry
 TLS and authentication, and real-daemon acceptance stay separate.
-`GetImageAliasArchitectures` keeps the host-supplied local architecture.
 Task 3.9, `complete_port` and every Go declaration status are unchanged.
 
 #### Approved slice: S09 typed SFTP certification (2026-10-29)

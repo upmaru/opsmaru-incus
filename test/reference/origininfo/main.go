@@ -8,11 +8,12 @@ import (
 )
 
 func main() {
-	var in struct{ URL, CA, Protocol string }
+	var in struct{ URL, CA, Certificate, Protocol string }
 	if err := json.NewDecoder(os.Stdin).Decode(&in); err != nil {
 		panic(err)
 	}
-	args := &incus.ConnectionArgs{TLSCA: in.CA}
+	// TLSServerCert is the certificate OCI connection info hands to a target.
+	args := &incus.ConnectionArgs{TLSCA: in.CA, TLSServerCert: in.Certificate}
 	var client incus.Server
 	var err error
 	if in.Protocol == "simplestreams" {

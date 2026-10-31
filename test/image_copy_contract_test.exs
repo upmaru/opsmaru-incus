@@ -1,14 +1,46 @@
 defmodule Opsmaru.Incus.ImageCopyContractTest do
-  @moduledoc "S05 image copy and its completion compared with the pinned CopyImage."
+  @moduledoc "S05 image copy (and S11 OCI sources) compared with the pinned CopyImage."
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Connection, Context, Error, ImageCopy, Images, Operation, Server}
+
+  alias Opsmaru.Incus.{
+    Connection,
+    Context,
+    Error,
+    ImageCopy,
+    Images,
+    Model,
+    OCI,
+    Operation,
+    Server
+  }
+
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture}
   @driver Path.expand("../.integration/image-copy-driver", __DIR__)
   @extensions ~w(images_push_relay image_copy_profile)
   @metadata :binary.copy(<<0, 255, 128, 13, 10>>, 64)
   @rootfs :binary.copy(<<255, 0, 128, 1>>, 96)
   @guid "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+  @oci_info %{
+    "Name" => "library/alpine",
+    "Architecture" => "amd64",
+    "Created" => "2026-10-11T00:00:00Z",
+    "Layers" => ["sha256:one", "sha256:two"],
+    "LayersData" => [%{"Size" => 2}, %{"Size" => 4}]
+  }
+
+  # The host conversion the Go fixture source stands in for: the same two parts.
+  defmodule OCIAdapter do
+    @moduledoc false
+    @behaviour Opsmaru.Incus.OCI.Adapter
+    def inspect_image(config, _request), do: {:ok, Jason.encode!(config.info)}
+
+    def image_file(config, _request, emit) do
+      with :ok <- emit.(:metadata, config.metadata), do: emit.(:rootfs, config.rootfs)
+    end
+
+    def cleanup(_config, _id, _outcome), do: :ok
+  end
 
   setup_all do
     File.mkdir_p!(Path.dirname(@driver))
@@ -168,6 +200,120 @@ defmodule Opsmaru.Incus.ImageCopyContractTest do
     end
   end
 
+  for transport <- [:unix, :https] do
+    test "#{transport} S11 OCI-source copies agree with the pinned CopyImage", %{root: root} do
+      identity = identity(root, unquote(transport))
+      # A push needs the target's approved HTTPS origin; the registry is always HTTPS.
+      modes = if unquote(transport) == :https, do: [:pull, :push, :relay], else: [:pull, :relay]
+
+      for mode <- modes,
+          {opts, credentials, pinned} <- oci_cases(mode),
+          outcome <- if(mode == :push, do: [:success], else: [:success, :failure]) do
+        label = inspect({mode, opts, credentials, outcome})
+        registry = registry(root, pinned)
+        target = backend(root, identity, "target", registry.image, @extensions, outcome, %{})
+        native = oci_reference(root, identity, mode, registry, credentials, opts, target)
+        target2 = backend(root, identity, "target", registry.image, @extensions, outcome, %{})
+        result = oci_copy(mode, registry, opts, credentials, target2)
+
+        case {mode, outcome} do
+          {:push, _} ->
+            # As natively: the token is requested, the OCI export fails, the token is
+            # cancelled, and nothing is exported.
+            assert native["error"] == "Exporting images is not supported with OCI registry"
+
+            assert {:error, %Error{kind: :native, message: message, response: %{accepted: kept}}} =
+                     result
+
+            assert message == native["error"]
+            assert kept.target.url == "/1.0/operations/token" and is_nil(kept.source)
+
+            assert [{"POST", "/1.0/images" <> _, _}, {"DELETE", "/1.0/operations/token" <> _, _}] =
+                     mutations(target2)
+
+          {_, :success} ->
+            assert native["completed"], label <> inspect(native)
+            assert {:ok, copy} = result, label
+            assert {:ok, done} = Images.wait_copy(copy, timeout: 3_000), label
+            assert Operation.successful?(done.target)
+
+          {:relay, :failure} ->
+            # The recorded S05 relay difference: the pinned relay reports success.
+            assert native["completed"], label <> inspect(native)
+            assert {:ok, copy} = result, label
+
+            assert {:error, %Error{kind: :operation_failed}} =
+                     Images.wait_copy(copy, timeout: 3_000)
+
+          {:pull, :failure} ->
+            assert native["error"], label
+            assert {:ok, copy} = result, label
+
+            assert {:error, %Error{kind: :operation_failed}} =
+                     Images.wait_copy(copy, timeout: 3_000)
+        end
+
+        # The same mutations, bodies and headers reached the target, in the same order,
+        # and neither client contacted the registry.
+        assert mutations(target2) == mutations(target), label
+        assert HTTPFixture.requests(registry.fixture) == []
+
+        if mode == :pull do
+          [{"POST", _, body} | _] = mutations(target2)
+          assert body["source"]["protocol"] == "oci"
+          refute inspect(result) =~ "s3cret"
+        end
+      end
+    end
+  end
+
+  test "S11 OCI sources refuse private images and misplaced credentials before any request", %{
+    root: root
+  } do
+    identity = identity(root, :https)
+    registry = registry(root, true)
+    target = backend(root, identity, "target", registry.image, @extensions, :success, %{})
+    private = %{registry.image | "public" => false}
+
+    native =
+      oci_reference(root, identity, :pull, %{registry | image: private}, nil, [], target)
+
+    assert native["error"] == "Private images aren't supported with OCI registry"
+
+    assert {:error, %Error{kind: :native, message: message}} =
+             oci_copy(:pull, %{registry | image: private}, [], nil, target)
+
+    assert message == native["error"]
+
+    for mode <- [:push, :relay], credentials <- [{"user", "s3cret"}] do
+      assert {:error, %Error{kind: :invalid_copy_options}} =
+               oci_copy(mode, registry, [], credentials, target)
+    end
+
+    for credentials <- [{"user"}, {nil, "s3cret"}, {"user", 1}, "user:s3cret"] do
+      assert {:error, %Error{kind: :invalid_copy_options}} =
+               oci_copy(:pull, registry, [], credentials, target)
+    end
+
+    # The target pulls from the approved registry origin only.
+    for origin <- [nil, target.origin, "https://registry.invalid"] do
+      opts = if origin, do: [mode: "pull", approved_origin: origin], else: [mode: "pull"]
+
+      assert {:error, %Error{kind: :unapproved_copy_origin}} =
+               Images.copy(target.client, registry.client, registry.image, opts)
+    end
+
+    # A relay converts both parts, so it needs both staging sinks.
+    assert {:error, %Error{kind: :missing_relay_adapter}} =
+             Images.copy(target.client, registry.client, registry.image,
+               mode: "relay",
+               relay: Map.drop(stage(false), [:rootfs_sink, :rootfs_source])
+             )
+
+    assert mutations(target) == []
+    assert HTTPFixture.requests(registry.fixture) == []
+  end
+
   test "https S05 copy guards agree with the pinned CopyImage before any mutation", %{
     root: root
   } do
@@ -241,6 +387,14 @@ defmodule Opsmaru.Incus.ImageCopyContractTest do
 
     assert {:error, %Error{kind: :invalid_copy_options}} =
              Images.copy(target.client, source.client, image, retries: 1)
+
+    # Registry credentials describe an OCI registry, never an Incus source.
+    assert {:error, %Error{kind: :invalid_copy_options}} =
+             Images.copy(target.client, source.client, image,
+               mode: "pull",
+               approved_origin: source.origin,
+               registry_credentials: {"user", "s3cret"}
+             )
 
     assert mutations(source) == [] and mutations(target) == []
   end
@@ -369,6 +523,114 @@ defmodule Opsmaru.Incus.ImageCopyContractTest do
       client_key: File.read!(identity.keyfile),
       project: "fixture"
     }
+
+  # {copy options, registry credentials, whether the registry certificate is pinned}.
+  defp oci_cases(:pull) do
+    aliases = [%{"name" => "one", "description" => "first"}, %{"name" => "two"}]
+
+    [
+      {[aliases: aliases, copy_aliases: true, auto_update: true, public: true, type: "container"],
+       nil, true},
+      {[], {"robot$user", "p@ss:/?#[]!*'() é"}, false},
+      {[aliases: aliases], {"token", nil}, true}
+    ]
+  end
+
+  defp oci_cases(:push),
+    do: [{[aliases: [%{"name" => "one"}], copy_aliases: true, public: true], nil, true}]
+
+  defp oci_cases(:relay),
+    do: [
+      {[aliases: [%{"name" => "one"}, %{"name" => "two"}], public: true], nil, false},
+      {[copy_aliases: true, profiles: ["p"]], nil, true}
+    ]
+
+  # An OCI registry the targets are told about; nothing ever connects to it.
+  defp registry(root, pinned) do
+    identity =
+      TLSIdentity.generate(root, "s11-#{System.unique_integer([:positive])}", "localhost")
+
+    fixture =
+      start_supervised!(
+        {HTTPFixture,
+         transport: :ssl,
+         certfile: identity.certfile,
+         keyfile: identity.keyfile,
+         handler: fn _ -> %{status: 500, body: %{}} end},
+        id: make_ref()
+      )
+
+    url = HTTPFixture.endpoint(fixture).url
+    tls = [cacertfile: identity.cafile, certfile: identity.certfile, keyfile: identity.keyfile]
+    connection = Connection.https!(url, owner: :fixture, timeout: 5_000, tls: tls)
+    context = Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end)
+    certificate = if pinned, do: File.read!(identity.certfile), else: ""
+    config = %{info: @oci_info, metadata: @metadata, rootfs: @rootfs}
+    oci = OCI.new!(connection, context, OCIAdapter, config, certificate: certificate)
+    {:ok, %{image: image}, oci} = OCI.resolve(oci, "library/alpine:latest")
+
+    %{
+      fixture: fixture,
+      origin: url,
+      client: oci,
+      certificate: certificate,
+      image: Model.encode(image)
+    }
+  end
+
+  defp oci_copy(mode, registry, opts, credentials, target) do
+    opts = [mode: Atom.to_string(mode)] ++ opts
+
+    opts =
+      case mode do
+        :pull -> Keyword.put(opts, :approved_origin, registry.origin)
+        :push -> Keyword.put(opts, :approved_origin, target.origin)
+        :relay -> Keyword.put(opts, :relay, stage(true))
+      end
+
+    opts = if credentials, do: Keyword.put(opts, :registry_credentials, credentials), else: opts
+    Images.copy(target.client, registry.client, registry.image, opts)
+  end
+
+  defp oci_reference(root, identity, mode, registry, credentials, opts, target) do
+    {user, password} = credentials || {"", nil}
+
+    source = %{
+      oci: true,
+      url: registry.origin,
+      server_cert: registry.certificate,
+      metadata: Base.encode64(@metadata),
+      rootfs: Base.encode64(@rootfs),
+      user: user,
+      password: password
+    }
+
+    args = %{
+      Mode: Atom.to_string(mode),
+      Aliases: opts[:aliases],
+      CopyAliases: opts[:copy_aliases] == true,
+      AutoUpdate: opts[:auto_update] == true,
+      Public: opts[:public] == true,
+      Type: opts[:type] || "",
+      Profiles: opts[:profiles]
+    }
+
+    input = %{
+      after: "wait",
+      source: source,
+      target: native(target, identity),
+      image: registry.image,
+      args: args,
+      temp: root
+    }
+
+    file = Path.join(root, "oci-copy-#{System.unique_integer([:positive])}.json")
+    File.write!(file, Jason.encode!(input))
+    File.chmod!(file, 0o600)
+    {out, status} = System.cmd(@driver, [file], stderr_to_stdout: true)
+    assert status == 0, out
+    Jason.decode!(out)
+  end
 
   # Every POST and DELETE a side received, in order: JSON bodies compared as the Go
   # DTO decodes them (zero values dropped), uploads by their headers and parts.

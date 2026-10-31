@@ -582,7 +582,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            ]
 
     assert for(%{"status" => "certified", "id" => id} <- audit["stream_contracts"], do: id) ==
-             ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08", "S09", "S10"]
+             ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08", "S09", "S10", "S11"]
 
     refute audit["behavior_complete"] or audit["complete_port"]
     image_transfer = ["completion_records", "s05_image_transfer_v1"]
@@ -635,6 +635,17 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
       assert row["stream_contracts"] == ["S08", "S09"]
       assert row["behavior_complete"] and row["completion_record"] == "s09_typed_sftp_v1"
     end
+
+    # S11 has no REST rows: its record names every pinned OCI declaration instead.
+    s11 = get_in(audit, ["completion_records", "s11_oci_image_server_v1"])
+
+    assert {s11["kind"], s11["stream_contracts"], s11["rows"], s11["methods"]} ==
+             {"oci_image_server", ["S11"], [], []}
+
+    assert length(s11["declarations"]) == 24
+    assert "client/method/ProtocolIncus.CopyImage" in s11["declarations"]
+    assert length(s11["approved_differences"]) == 5
+    refute Enum.any?(audit["entries"], &(&1["completion_record"] == "s11_oci_image_server_v1"))
   end
 
   for part <- 1..4 do
@@ -788,6 +799,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     console = ["completion_records", "s02_console_v1"]
     raw_upgrade = ["completion_records", "s08_raw_upgrades_v1"]
     typed_sftp = ["completion_records", "s09_typed_sftp_v1"]
+    oci = ["completion_records", "s11_oci_image_server_v1"]
     events = ["completion_records", "b03_events_v1"]
     socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
     head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
@@ -840,7 +852,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
        end), "open linked stream contract"},
       {update_in(audit, ["stream_contracts"], fn contracts ->
          Enum.map(contracts, fn contract ->
-           if contract["id"] == "S11",
+           if contract["id"] == "S12",
              do: %{contract | "status" => "certified"},
              else: contract
          end)
@@ -935,6 +947,27 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
        "stale completion helpers"},
       {put_in(audit, console ++ ["excluded_views"], %{}), "unlisted completion view"},
       {update_in(audit, console ++ ["approved_differences"], fn [first | rest] ->
+         [Map.delete(first, "approved") | rest]
+       end), "unapproved exclusion"},
+      # S11 certification needs every pinned OCI declaration, the source and
+      # conversion cases, real client functions and no REST rows of its own.
+      {update_in(
+         audit,
+         oci ++ ["declarations"],
+         &List.delete(&1, "client/method/ProtocolOCI.GetImageFile")
+       ), "stale completion declarations"},
+      {update_in(audit, oci ++ ["declarations"], &["client/method/ProtocolOCI.Invented" | &1]),
+       "stale completion declarations"},
+      {update_in(audit, oci ++ ["cases"], &Map.delete(&1, "metadata_yaml")),
+       "missing completion case"},
+      {update_in(audit, oci ++ ["cases"], &Map.delete(&1, "copy_push")),
+       "missing completion case"},
+      {put_in(audit, oci ++ ["functions"], [["Opsmaru.Incus.OCI", "export", 2]]),
+       "missing public client function"},
+      {put_in(audit, oci ++ ["rows"], ["GET /1.0/images/{}/export"]),
+       "unrelated completion record"},
+      {put_in(audit, oci ++ ["kind"], "image_transfer"), "empty completion record"},
+      {update_in(audit, oci ++ ["approved_differences"], fn [first | rest] ->
          [Map.delete(first, "approved") | rest]
        end), "unapproved exclusion"},
       # S09 certification needs the pipelining, lock and host transfer cases, the

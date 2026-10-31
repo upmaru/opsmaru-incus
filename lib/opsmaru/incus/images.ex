@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.Images do
   @moduledoc "Native image transfers; host-owned sources/sinks and no mutation replay."
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Context, Error, ImageCopy, Model, Operation, Transfer}
+  alias Opsmaru.Incus.{Context, Error, ImageCopy, ImageSource, Model, OCI, Operation, Transfer}
 
   def import(client, image, metadata_source, opts \\ []) do
     with {:ok, model} <- Model.decode("ImagesPost", Model.encode(image)),
@@ -129,7 +129,8 @@ defmodule Opsmaru.Incus.Images do
     :auto_update,
     :profiles,
     :type,
-    :relay
+    :relay,
+    :registry_credentials
   ]
 
   @doc """
@@ -139,11 +140,19 @@ defmodule Opsmaru.Incus.Images do
   `wait_copy/2` completes it. Pull and push need `:approved_origin`, the HTTPS origin
   of the side the other backend connects to. A failure keeps every accepted handle in
   `response.accepted` and cancels none.
+
+  The source may be a resolved `OCI` value, as the pinned `CopyImage` takes a
+  `ProtocolOCI` source. A pull hands the target protocol `oci` and the registry
+  certificate; `:registry_credentials` (`{username, password}`, password `nil` for
+  a username-only URL) adds Go's escaped user information to the server URL for a
+  private registry. A relay converts through the host adapter. A push fails like
+  Go: the target's push token is requested and, after the native error, cancelled.
   """
   def copy(target, source, image, opts \\ []) do
     with :ok <- Context.authorize(target.context, target.connection),
          :ok <- Context.authorize(source.context, source.connection),
          :ok <- copy_options(opts),
+         :ok <- registry_credentials(source, opts),
          false <- same_backend?(target, source),
          {:ok, image} <- Model.decode("Image", Model.encode(image)),
          aliases = copy_aliases(image.data, opts),
@@ -158,7 +167,7 @@ defmodule Opsmaru.Incus.Images do
                  do: pull(target, source, image, aliases, url, opts)
 
           "push" ->
-            with :ok <- Incus.require_extension(source, "images_push_relay"),
+            with :ok <- push_source(source),
                  {:ok, url} <- copy_origin(target, opts[:approved_origin]),
                  do: push(target, source, image, aliases, url, opts)
 
@@ -186,6 +195,10 @@ defmodule Opsmaru.Incus.Images do
       not valid_copy_values?(opts) ->
         {:error, :invalid_copy_options}
 
+      # Credentials ride only the server URL of a daemon pull; a relay's adapter has its own.
+      not is_nil(opts[:registry_credentials]) and opts[:mode] not in [nil, "pull"] ->
+        {:error, :invalid_copy_options}
+
       true ->
         :ok
     end
@@ -197,7 +210,8 @@ defmodule Opsmaru.Incus.Images do
         (is_nil(opts[:type]) or text?(opts[:type], 0)) and
         (is_nil(opts[:approved_origin]) or text?(opts[:approved_origin], 1)) and
         (is_nil(opts[:profiles]) or
-           (is_list(opts[:profiles]) and Enum.all?(opts[:profiles], &text?(&1, 1))))
+           (is_list(opts[:profiles]) and Enum.all?(opts[:profiles], &text?(&1, 1)))) and
+        ImageSource.credentials?(opts[:registry_credentials])
 
   # Every alias is checked before any request, so bad input never strands a handle.
   defp check_aliases(nil), do: :ok
@@ -246,7 +260,19 @@ defmodule Opsmaru.Incus.Images do
        else: {:error, :unapproved_copy_origin}
   end
 
-  defp certificate(client), do: (client.server.environment || %{})["certificate"] || ""
+  # Registry credentials describe an OCI registry; an Incus source has none.
+  defp registry_credentials(source, opts) do
+    if is_nil(opts[:registry_credentials]) or ImageSource.oci?(source),
+      do: :ok,
+      else: {:error, :invalid_copy_options}
+  end
+
+  # The pinned CopyImage has no push check of its own; ExportImage on an Incus source does.
+  defp push_source(source) do
+    if ImageSource.oci?(source),
+      do: :ok,
+      else: Incus.require_extension(source, "images_push_relay")
+  end
 
   defp pull(target, source, image, aliases, url, opts) do
     with {:ok, secret, copy} <- pull_secret(source, image) do
@@ -258,10 +284,10 @@ defmodule Opsmaru.Incus.Images do
         "source" => %{
           "type" => "image",
           "mode" => "pull",
-          "protocol" => "incus",
-          "server" => url,
-          "certificate" => certificate(source),
-          "project" => source.connection.project || "default",
+          "protocol" => ImageSource.protocol(source),
+          "server" => ImageSource.server(url, opts[:registry_credentials]),
+          "certificate" => ImageSource.certificate(source),
+          "project" => ImageSource.project(source),
           "fingerprint" => image["fingerprint"],
           "secret" => secret,
           "image_type" => opts[:type] || ""
@@ -283,7 +309,8 @@ defmodule Opsmaru.Incus.Images do
     else
       args = %{"fingerprint" => image["fingerprint"]}
 
-      with {:ok, copy} <- accept(copy, :source, source, "CreateImageSecret", args, nil) do
+      with :ok <- ImageSource.private_image(source),
+           {:ok, copy} <- accept(copy, :source, source, "CreateImageSecret", args, nil) do
         case token_secret(copy.source.response) do
           secret when is_binary(secret) -> {:ok, secret, copy}
           _ -> unread_secret(copy, :source)
@@ -316,10 +343,16 @@ defmodule Opsmaru.Incus.Images do
     with {:ok, copy} <-
            accept(%ImageCopy{mode: "push"}, :target, target, "CreateImage", %{}, body) do
       case token_secret(copy.target.response) do
+        secret when is_binary(secret) and is_struct(source, OCI) ->
+          # As natively: the OCI export fails, then the token is cancelled.
+          _ = Operation.cancel(copy.target)
+          {:error, error} = OCI.unsupported(source, "ExportImage")
+          copy_failure(copy, error)
+
         secret when is_binary(secret) ->
           export = %{
             "target" => url,
-            "certificate" => certificate(target),
+            "certificate" => ImageSource.certificate(target),
             "secret" => secret,
             "project" => target.connection.project || "default",
             "profiles" => opts[:profiles]
@@ -398,6 +431,17 @@ defmodule Opsmaru.Incus.Images do
            do: relay_upload(copy, target, body, adapter[:metadata_source].(), upload_opts)
     else
       {:error, %Error{kind: :missing_relay_adapter}}
+    end
+  end
+
+  defp relay_download(_copy, %OCI{}, _image, sinks) when not is_map_key(sinks, :rootfs),
+    do: {:error, %Error{kind: :missing_relay_adapter}}
+
+  defp relay_download(copy, %OCI{} = source, image, sinks) do
+    # The pinned conversion always yields both parts, so the upload is split.
+    case OCI.image_file(source, image["fingerprint"], sinks) do
+      {:ok, _} -> {:ok, %{result: %{names: %{metadata: "", rootfs: ""}}}}
+      {:error, error} -> copy_failure(copy, error)
     end
   end
 
