@@ -49,6 +49,37 @@ func main() {
 			err = e
 			value = map[string]any{"alias": alias, "image": image}
 		}
+	case "metadata":
+		// The pinned GetImageFile marshals these values, read through the unchanged
+		// cache, as metadata.yaml; the conversion itself needs root, skopeo and umoci.
+		alias, _, e := client.GetImageAliasType(in.Type, in.Name)
+		err = e
+		if err == nil {
+			image, _, e := client.GetImage(alias.Target)
+			err = e
+			if err == nil {
+				data, e := json.Marshal(api.ImageMetadata{Architecture: image.Architecture, CreationDate: image.CreatedAt.Unix()})
+				err = e
+				value = string(data)
+			}
+		}
+	case "failed-lookup":
+		// The pinned client keeps a failed lookup's error for a later GetImage by name.
+		if _, _, e := client.GetImageAlias(in.Name); e == nil {
+			panic("lookup unexpectedly succeeded")
+		}
+		value, _, err = client.GetImage(in.Name)
+	case "GetImageFile":
+		// Cache-miss and empty-request order; a hit with no files fails before root.
+		target := in.Name
+		if in.Type != "miss" {
+			alias, _, e := client.GetImageAlias(in.Name)
+			if e != nil {
+				panic(e)
+			}
+			target = alias.Target
+		}
+		value, err = client.GetImageFile(target, incus.ImageFileRequest{})
 	case "GetImageAliasArchitectures":
 		value, err = client.GetImageAliasArchitectures(in.Type, in.Name)
 	case "Disconnect":

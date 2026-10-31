@@ -32,6 +32,8 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
       ~w(request routing upgrade_headers path_escaping reuse writable initial_bytes duplex coalesced_bytes oracle_byte_loss half_close half_close_writes native_403 native_404 no_retry redaction bad_framing response_bound handshake_deadline caller_loss blocked_writes local_close lifetime typed_options preflight extension_guards),
     "typed_sftp" =>
       ~w(request routing version_extensions path_operations compound_operations path_helpers attributes status_errors open_flags cursor_io positional_io end_of_file short_reads pipelined_reads read_ahead sequential_writes concurrent_uploads host_sources host_sinks file_attributes fsync closed_files file_lock shared_sessions opener_lifetime request_deadline response_loss_no_replay frame_failures in_flight_bound caller_loss packet_bounds preflight),
+    "oci_image_server" =>
+      ~w(construction readiness alias_normalization projection fingerprint architectures alias_architectures vm_rejection unsupported_methods immutable_cache cache_miss failed_lookup connection_info certificate http_requests uncertain_http disconnect metadata_yaml binary_sinks stream_bounds foreign_emitter inspection_bounds deadline cancellation caller_loss cleanup host_failures redaction copy_pull copy_push copy_relay registry_credentials private_images instance_create instance_rebuild approved_origin preflight),
     "binary_download" =>
       ~w(request populated routing native_400 native_403 native_404 byte_bounds deadline cancellation acknowledged_sink no_implicit_delete preflight),
     "read_contract" =>
@@ -40,6 +42,9 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
       ~w(collected non_waiting interactive record_output user_group_cwd_size empty_output routing upgrade_targets extension_guards control_frames control_range native_400 native_403 native_404 accepted_identity response_loss_no_replay stream_negotiation invalid_stream_metadata pending_status missing_channels redaction preflight stdin_chunking blocked_stdin deadline cancellation owner_loss sink_limit running_failed close_barrier_abrupt peer_closure)
   }
   @evidence_kinds ~w(named_go_differential raw_query_transport independent_fixture)
+  # A protocol-level contract without REST rows names the pinned declarations it
+  # covers instead; every declaration matching its prefixes must be listed.
+  @rowless %{"oci_image_server" => ["client/method/ProtocolOCI.", "client/function/ConnectOCI"]}
   # A documented route the daemon does not register, reconciled to the route it does
   # (approved source discrepancy): the row maps the registered method, never sent as
   # the documented verb.
@@ -319,7 +324,11 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     required = required_cases(record, catalogue)
     assert approved?(record), "unapproved completion record"
     anchor!(record["design"])
-    assert record["rows"] != [], "empty completion record"
+
+    if Map.has_key?(@rowless, record["kind"]),
+      do: rowless!(record),
+      else: assert(record["rows"] != [], "empty completion record")
+
     listed = Enum.map(record["rows"], &rows[&1])
 
     for row <- listed,
@@ -345,6 +354,31 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     for field <- ~w(bodies result separate_acceptance),
         do:
           assert(is_binary(record[field]) and record[field] != "", "missing completion #{field}")
+  end
+
+  defp rowless!(record) do
+    assert record["rows"] == [] and record["stream_contracts"] != [],
+           "unrelated completion record"
+
+    ids =
+      Jason.decode!(File.read!("priv/incus/coverage.json"))["entries"]
+      |> Enum.map(& &1["id"])
+
+    required = Enum.filter(ids, &String.starts_with?(&1, @rowless[record["kind"]]))
+    declarations = record["declarations"]
+
+    assert is_list(declarations) and declarations -- ids == [] and required -- declarations == [],
+           "stale completion declarations"
+
+    assert record["functions"] != [], "missing public client function"
+
+    for [module, function, arity] <- record["functions"] do
+      module = Module.concat([module])
+      Code.ensure_loaded!(module)
+
+      assert {String.to_existing_atom(function), arity} in module.__info__(:functions),
+             "missing public client function"
+    end
   end
 
   # Every documented view is supported with classified selectors or approved-excluded.

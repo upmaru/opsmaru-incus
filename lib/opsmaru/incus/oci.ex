@@ -2,7 +2,7 @@ defmodule Opsmaru.Incus.OCI do
   @moduledoc """
   Portable pinned OCI image semantics through an explicit host-owned adapter.
 
-  `new!/4` is passive. `resolve/3` inspects an alias and returns native alias/image
+  `new!/5` is passive. `resolve/3` inspects an alias and returns native alias/image
   models plus a new immutable cache value; `image/2` reads that cache. No global
   cache, command runner, filesystem state or credential generation is involved.
   `image_file/3` delivers converted binary metadata/rootfs to acknowledged sinks.
@@ -11,7 +11,7 @@ defmodule Opsmaru.Incus.OCI do
   alias Opsmaru.Incus.{Connection, Context, Discovery, Error, HTTP, Model, NativeInput, Response}
   alias Opsmaru.Incus.OCI.AdapterCall
   @enforce_keys [:connection, :context, :adapter, :config]
-  defstruct [:connection, :context, :adapter, :config, cache: %{}]
+  defstruct [:connection, :context, :adapter, :config, certificate: "", cache: %{}]
   @type t :: %__MODULE__{}
 
   @architectures %{
@@ -32,15 +32,40 @@ defmodule Opsmaru.Incus.OCI do
     "loongarch64" => ~w(loong64)
   }
 
-  def new!(%Connection{} = connection, %Context{} = context, adapter, config)
+  @doc """
+  Passive construction. `certificate:` is the registry certificate PEM, Go's
+  `TLSServerCert`: connection info reports it and copies or instance pulls hand it
+  to the target. It does not change how this connection verifies the registry.
+  """
+  def new!(%Connection{} = connection, %Context{} = context, adapter, config, opts \\ [])
       when is_atom(adapter) do
     unless Enum.all?([{:inspect_image, 2}, {:image_file, 3}, {:cleanup, 3}], fn {name, arity} ->
              Code.ensure_loaded?(adapter) and function_exported?(adapter, name, arity)
            end),
            do: raise(ArgumentError, "OCI requires an explicit complete host adapter")
 
-    %__MODULE__{connection: connection, context: context, adapter: adapter, config: config}
+    unless Keyword.keyword?(opts) and Keyword.keys(opts) -- [:certificate] == [] and
+             certificate?(Keyword.get(opts, :certificate, "")),
+           do: raise(ArgumentError, "OCI certificate must be one PEM certificate")
+
+    %__MODULE__{
+      connection: connection,
+      context: context,
+      adapter: adapter,
+      config: config,
+      certificate: Keyword.get(opts, :certificate, "")
+    }
   end
+
+  defp certificate?(""), do: true
+
+  defp certificate?(pem) when is_binary(pem) and byte_size(pem) <= 65_536 do
+    match?([{:Certificate, _, :not_encrypted}], :public_key.pem_decode(pem))
+  rescue
+    _ -> false
+  end
+
+  defp certificate?(_), do: false
 
   @doc "Resolve a container alias; native OCI rejects virtual-machine image types."
   def resolve(client, name, image_type \\ "") do
@@ -89,7 +114,7 @@ defmodule Opsmaru.Incus.OCI do
 
       {:ok,
        %Discovery{
-         certificate: "",
+         certificate: client.certificate,
          protocol: "oci",
          url: url,
          addresses: [url],
@@ -112,12 +137,18 @@ defmodule Opsmaru.Incus.OCI do
   defp https_origin(%__MODULE__{connection: %Connection{transport: :https}}), do: :ok
   defp https_origin(_), do: error(:invalid_origin, nil)
 
-  @doc "Convert through the host adapter; both native output sinks are explicit."
-  def image_file(client, fingerprint, %{metadata: metadata, rootfs: rootfs})
-      when is_function(metadata, 1) and is_function(rootfs, 1) do
+  @doc """
+  Convert through the host adapter; both native output sinks are explicit. The
+  request carries the pinned `metadata.yaml` bytes the adapter packs beside
+  `config.json`. As natively, an unknown fingerprint is reported before the sinks.
+  """
+  def image_file(client, fingerprint, sinks) do
     with :ok <- authorize(client),
-         {:ok, entry} <- entry(client, fingerprint) do
-      request = request(client, entry.alias) |> Map.put(:info, entry.info)
+         {:ok, entry} <- entry(client, fingerprint),
+         {:ok, metadata, rootfs} <- sinks(sinks) do
+      request =
+        request(client, entry.alias)
+        |> Map.merge(%{info: entry.info, metadata_yaml: metadata_yaml(entry.info)})
 
       AdapterCall.run(client, request, client.connection.stream_timeout, fn request ->
         stream(client, request, metadata, rootfs)
@@ -125,7 +156,19 @@ defmodule Opsmaru.Incus.OCI do
     end
   end
 
-  def image_file(_, _, _), do: error(:invalid_arguments, "No file requested")
+  defp sinks(%{metadata: metadata, rootfs: rootfs})
+       when is_function(metadata, 1) and is_function(rootfs, 1),
+       do: {:ok, metadata, rootfs}
+
+  defp sinks(_), do: error(:invalid_arguments, "No file requested")
+
+  # The pinned json.Marshal(api.ImageMetadata{Architecture, CreationDate}) bytes.
+  defp metadata_yaml(info) do
+    {:ok, created, _} = DateTime.from_iso8601(info["Created"])
+
+    ~s({"architecture":#{Jason.encode!(info["Architecture"])},"creation_date":) <>
+      ~s(#{DateTime.to_unix(created)},"expiry_date":0,"properties":null,"templates":null})
+  end
 
   @doc "Native unsupported OCI methods, without probing a registry or a host tool."
   def unsupported(client, method) do

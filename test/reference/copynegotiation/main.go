@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	incus "github.com/lxc/incus/v7/client"
 	"github.com/lxc/incus/v7/shared/api"
+	"net/url"
 	"os"
 	"time"
 )
@@ -16,6 +17,24 @@ type endpoint struct {
 	Certificate string `json:"certificate"`
 	Project     string `json:"project"`
 	Member      string `json:"member"`
+	// An OCI image source (S11): the unchanged ConnectOCI client, with any
+	// credentials escaped into its URL by net/url as a Go host would build it.
+	OCI      bool    `json:"oci"`
+	User     string  `json:"user"`
+	Password *string `json:"password"`
+}
+
+func connectOCI(e endpoint) (incus.ImageServer, error) {
+	uri, err := url.Parse(e.URL)
+	if err != nil {
+		return nil, err
+	}
+	if e.User != "" && e.Password != nil {
+		uri.User = url.UserPassword(e.User, *e.Password)
+	} else if e.User != "" {
+		uri.User = url.User(e.User)
+	}
+	return incus.ConnectOCI(uri.String(), &incus.ConnectionArgs{TLSServerCert: e.Certificate})
 }
 
 func connect(ctx context.Context, e endpoint) (incus.InstanceServer, error) {
@@ -61,23 +80,27 @@ func main() {
 		panic(err)
 	}
 	source := target
-	if in.Action != "move" {
+	var images incus.ImageServer = source
+	if in.Source.OCI {
+		images, err = connectOCI(in.Source)
+	} else if in.Action != "move" {
 		source, err = connect(ctx, in.Source)
-		if err != nil {
-			panic(err)
-		}
+		images = source
+	}
+	if err != nil {
+		panic(err)
 	}
 	var op incus.RemoteOperation
 	switch in.Action {
 	case "create-image":
 		var req api.InstancesPost
 		if err = json.Unmarshal(in.Body, &req); err == nil {
-			op, err = target.CreateInstanceFromImage(source, in.Image, req)
+			op, err = target.CreateInstanceFromImage(images, in.Image, req)
 		}
 	case "rebuild-image":
 		var req api.InstanceRebuildPost
 		if err = json.Unmarshal(in.Body, &req); err == nil {
-			op, err = target.RebuildInstanceFromImage(source, in.Image, in.Parent, req)
+			op, err = target.RebuildInstanceFromImage(images, in.Image, in.Parent, req)
 		}
 	case "move":
 		var model api.StorageVolume

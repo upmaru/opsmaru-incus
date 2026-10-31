@@ -10,6 +10,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
     Error,
     ImageInstances,
     Migration,
+    OCI,
     Operation,
     Server
   }
@@ -17,6 +18,15 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../.integration/copy-negotiation-driver", __DIR__)
   @extensions ~w(storage_api_local_volume_handling storage_api_remote_volume_handling storage_api_project storage_volume_project_move storage_api_volume_snapshots custom_volume_refresh custom_volume_refresh_exclude_older_snapshots container_push container_push_target container_only_migration container_incremental_copy virtual-machines container_snapshot_stateful_migration dependent cluster_migration_inconsistent_copy instance_allow_inconsistent_copy)
+
+  # An OCI source only describes its registry to the target; nothing converts.
+  defmodule NoCallAdapter do
+    @moduledoc false
+    @behaviour Opsmaru.Incus.OCI.Adapter
+    def inspect_image(_, _), do: raise("unexpected conversion adapter")
+    def image_file(_, _, _), do: raise("unexpected conversion adapter")
+    def cleanup(_, _, _), do: raise("unexpected conversion adapter")
+  end
 
   setup_all do
     {out, status} =
@@ -518,6 +528,12 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
     assert {:error, %Error{kind: :image_project_mismatch}} =
              ImageInstances.create(target, source, image, body, approved_origin: endpoint.url)
 
+    assert {:error, %Error{kind: :invalid_image_arguments}} =
+             ImageInstances.create(target, source, image, body,
+               approved_origin: endpoint.url,
+               registry_credentials: {"user", "s3cret"}
+             )
+
     assert posts(source_fixture) == []
     assert posts(target_fixture) == []
   end
@@ -602,6 +618,134 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
         assert length(posts(source_fixture)) == before_source
       end
     end
+  end
+
+  for action <- [:create, :rebuild], transport <- [:unix, :https] do
+    test "#{transport} S11 OCI-source image #{action} matches the pinned helper", %{root: root} do
+      for {source_fields, credentials, pinned} <- [
+            {%{"alias" => "library/alpine:latest", "project" => "caller"}, nil, true},
+            {%{}, {"robot$user", "p@ss:/?#[]!*'() é"}, false},
+            {%{"alias" => "edge"}, {"token", nil}, true}
+          ] do
+        compare_oci_image(
+          root,
+          unquote(action),
+          unquote(transport),
+          source_fields,
+          credentials,
+          pinned
+        )
+      end
+    end
+  end
+
+  test "S11 OCI-source image create refuses private images and bad credentials before any request",
+       %{root: root} do
+    {target, target_fixture, target_endpoint} = fixture(root, "oci-target", :https)
+    {oci, registry, registry_endpoint} = oci_registry(root, true)
+    image = %{"fingerprint" => String.duplicate("b", 64), "public" => false}
+    body = %{"name" => "from-oci"}
+
+    native =
+      reference(%{
+        action: "create-image",
+        target: target_endpoint,
+        source: registry_endpoint,
+        image: image,
+        body: body
+      })
+
+    assert native["error"] == "Private images aren't supported with OCI registry"
+
+    assert {:error, %Error{kind: :native, message: message}} =
+             ImageInstances.create(target, oci, image, body,
+               approved_origin: registry_endpoint.url
+             )
+
+    assert message == native["error"]
+
+    for origin <- [nil, target_endpoint.url, "https://registry.invalid"] do
+      opts = if origin, do: [approved_origin: origin], else: []
+
+      assert {:error, %Error{kind: :unapproved_image_origin}} =
+               ImageInstances.create(target, oci, %{image | "public" => true}, body, opts)
+    end
+
+    for credentials <- [{"user"}, {nil, "s3cret"}, "user:s3cret"] do
+      assert {:error, %Error{kind: :invalid_image_arguments}} =
+               ImageInstances.create(target, oci, %{image | "public" => true}, body,
+                 approved_origin: registry_endpoint.url,
+                 registry_credentials: credentials
+               )
+    end
+
+    assert posts(target_fixture) == []
+    assert HTTPFixture.requests(registry) == []
+  end
+
+  defp compare_oci_image(root, action, transport, source_fields, credentials, pinned) do
+    name = "oci-target-#{System.unique_integer([:positive])}"
+    {target, target_fixture, target_endpoint} = fixture(root, name, transport)
+    {oci, registry, registry_endpoint} = oci_registry(root, pinned)
+    image = %{"fingerprint" => String.duplicate("b", 64), "public" => true}
+    body = %{"source" => source_fields}
+    body = if action == :create, do: Map.put(body, "name", "from-oci"), else: body
+    {user, password} = credentials || {"", nil}
+
+    expected =
+      reference(%{
+        action: if(action == :create, do: "create-image", else: "rebuild-image"),
+        target: target_endpoint,
+        source: Map.merge(registry_endpoint, %{user: user, password: password}),
+        image: image,
+        body: body,
+        parent: "existing"
+      })
+
+    refute expected["error"], inspect(expected)
+    native = posts(target_fixture) |> List.last()
+    opts = [approved_origin: registry_endpoint.url]
+    opts = if credentials, do: Keyword.put(opts, :registry_credentials, credentials), else: opts
+
+    assert {:ok, operation} =
+             if(action == :create,
+               do: ImageInstances.create(target, oci, image, body, opts),
+               else: ImageInstances.rebuild(target, oci, image, "existing", body, opts)
+             )
+
+    refute inspect(operation) =~ "s3cret"
+    actual = posts(target_fixture) |> List.last()
+    assert actual.target == native.target
+    label = inspect({action, transport, source_fields, credentials})
+    assert Jason.decode!(actual.body) == Jason.decode!(native.body), label
+    fields = Jason.decode!(actual.body)["source"]
+    assert fields["protocol"] == "oci" and fields["mode"] == "pull"
+    assert fields["certificate"] == registry_endpoint.certificate
+    assert HTTPFixture.requests(registry) == []
+  end
+
+  # An OCI registry the target is told about; nothing ever connects to it.
+  defp oci_registry(root, pinned) do
+    identity =
+      TLSIdentity.generate(root, "oci-#{System.unique_integer([:positive])}", "localhost")
+
+    fixture =
+      start_supervised!(
+        {HTTPFixture,
+         transport: :ssl,
+         certfile: identity.certfile,
+         keyfile: identity.keyfile,
+         handler: fn _ -> %{status: 500, body: %{}} end},
+        id: make_ref()
+      )
+
+    url = HTTPFixture.endpoint(fixture).url
+    tls = [cacertfile: identity.cafile, certfile: identity.certfile, keyfile: identity.keyfile]
+    connection = Connection.https!(url, owner: :fixture, tls: tls)
+    context = Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end)
+    certificate = if pinned, do: File.read!(identity.certfile), else: ""
+    oci = OCI.new!(connection, context, NoCallAdapter, nil, certificate: certificate)
+    {oci, fixture, %{oci: true, url: url, certificate: certificate}}
   end
 
   test "private image preparation approves origin before token creation and retains its identity on target loss",

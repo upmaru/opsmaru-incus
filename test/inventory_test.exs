@@ -100,7 +100,8 @@ defmodule Opsmaru.Incus.InventoryTest do
                   do: "test/oci_origin_reference_test.exs",
                   else: "test/oci_test.exs"
 
-             entry["evidence"] == [expected]
+             # S11 adds the copy and instance tests after the primary OCI evidence.
+             hd(entry["evidence"]) == expected
            end)
 
     simplestreams =

@@ -3,9 +3,14 @@ defmodule Opsmaru.Incus.ImageInstances do
   Native create/rebuild from an image on explicit Incus clients. Remote pulls
   require the host to approve the exact verified HTTPS source origin. No
   advertised address fallback, mutation replay or automatic operation wait.
+
+  The source may be a resolved `OCI` value, as for the pinned helpers: the target
+  pulls with protocol `oci`, the registry certificate and the caller's own source
+  project. `:registry_credentials` (`{username, password}`) adds Go's escaped user
+  information to the server URL for a private registry.
   """
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Context, Error, Images, Model, NativeInput, Operation}
+  alias Opsmaru.Incus.{Context, Error, Images, ImageSource, Model, NativeInput, Operation}
 
   def create(target, source, image, request, opts \\ []),
     do: issue(target, source, image, "CreateInstance", %{}, "InstancesPost", request, opts)
@@ -28,7 +33,11 @@ defmodule Opsmaru.Incus.ImageInstances do
   defp issue(target, source, image, method, args, type, request, opts) do
     with :ok <- Context.authorize(target.context, target.connection),
          :ok <- Context.authorize(source.context, source.connection),
-         true <- Keyword.keyword?(opts) and Keyword.keys(opts) -- [:approved_origin] == [],
+         true <-
+           Keyword.keyword?(opts) and
+             Keyword.keys(opts) -- [:approved_origin, :registry_credentials] == [] and
+             ImageSource.credentials?(opts[:registry_credentials]) and
+             (is_nil(opts[:registry_credentials]) or ImageSource.oci?(source)),
          {:ok, image} <- Model.decode("Image", Model.encode(image)),
          true <-
            is_binary(image.data["fingerprint"]) and
@@ -86,28 +95,40 @@ defmodule Opsmaru.Incus.ImageInstances do
         alias_name = fields["alias"] || ""
         use_alias = is_binary(alias_name) and alias_name != "" and image["public"] == true
 
-        {:ok,
-         Map.merge(fields, %{
-           "mode" => "pull",
-           "protocol" => "incus",
-           "server" => opts[:approved_origin],
-           "project" => image_project(source, fields),
-           "certificate" => (source.server.environment || %{})["certificate"] || "",
-           "fingerprint" => if(use_alias, do: "", else: image["fingerprint"]),
-           "alias" => if(use_alias, do: alias_name, else: "")
-         }), true}
+        fields =
+          fields
+          |> Map.merge(%{
+            "mode" => "pull",
+            "protocol" => ImageSource.protocol(source),
+            "server" => ImageSource.server(opts[:approved_origin], opts[:registry_credentials]),
+            "project" => image_project(source, fields),
+            "certificate" => ImageSource.certificate(source),
+            "fingerprint" => if(use_alias, do: "", else: image["fingerprint"]),
+            "alias" => if(use_alias, do: alias_name, else: "")
+          })
+          # Go omits an empty source project.
+          |> Map.reject(fn {key, value} -> key == "project" and value == "" end)
+
+        {:ok, fields, true}
       else
         {:error, %Error{kind: :unapproved_image_origin}}
       end
     end
   end
 
-  defp image_project(source, fields), do: source.connection.project || fields["project"] || ""
+  # The pinned helper keeps the caller's source project; an OCI registry has none of
+  # its own, while an Incus source keeps its bound selection (approved difference).
+  defp image_project(source, fields) do
+    if ImageSource.oci?(source),
+      do: fields["project"] || "",
+      else: source.connection.project || fields["project"] || ""
+  end
 
   defp source_project(source, fields) do
-    if fields["project"] in [nil, "", source.connection.project || "default"],
-      do: :ok,
-      else: {:error, %Error{kind: :image_project_mismatch}}
+    if ImageSource.oci?(source) or
+         fields["project"] in [nil, "", source.connection.project || "default"],
+       do: :ok,
+       else: {:error, %Error{kind: :image_project_mismatch}}
   end
 
   defp same_backend?(target, source),
@@ -121,9 +142,9 @@ defmodule Opsmaru.Incus.ImageInstances do
     if image["public"] == true do
       {:ok, fields, nil}
     else
-      case Images.image_secret(source, image["fingerprint"]) do
-        {:ok, response} -> {:ok, Map.put(fields, "secret", response.metadata), response}
-        error -> error
+      with :ok <- ImageSource.private_image(source),
+           {:ok, response} <- Images.image_secret(source, image["fingerprint"]) do
+        {:ok, Map.put(fields, "secret", response.metadata), response}
       end
     end
   end
