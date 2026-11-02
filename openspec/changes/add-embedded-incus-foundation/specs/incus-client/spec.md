@@ -88,6 +88,12 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 - **THEN** alias, image and metadata bytes, error order, connection information and every target request agree with the pinned `ProtocolOCI` client and its callers; a push copy fails natively and cancels its token; and registry credentials reach only the pull's server URL, escaped as Go escapes them
 - **AND** S11 is certified by a single reviewed rowless record that names its pinned declarations; failed lookups that are not cached are a recorded approved difference; and installed-adapter, registry authentication and real-daemon acceptance stay separately recorded
 
+#### Scenario: Certified SimpleStreams image server
+
+- **WHEN** a host refreshes a SimpleStreams catalog over explicit verified HTTPS, with or without a host cache adapter, reads its images and aliases, downloads image files with or without a host delta adapter, reads the origin, or uses a SimpleStreams source to copy an image or create or rebuild an instance, over Unix or mutual HTTPS targets
+- **THEN** projections, error text and order, cache expiry, stale fallback and invalidation, per-file and combined fingerprint checks, connection information and every target request agree with the pinned `ProtocolSimpleStreams` client and its callers; a push copy fails natively and cancels its token
+- **AND** S12 is certified by a single reviewed rowless record that names its pinned declarations; explicit refresh, one deterministic delta and the decoder's own JSON error detail are recorded approved differences; and the socket, HTTP and tool-discovery boundaries, installed adapters and real-daemon acceptance stay separately recorded
+
 #### Scenario: Certified console attachment
 
 - **WHEN** a caller opens a static or dynamic console of `console` or `vga` type, with or without size and `force`, and exchanges control and data frames over Unix or mutual HTTPS
