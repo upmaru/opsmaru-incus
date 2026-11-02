@@ -59,9 +59,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/oci.ex",
       "evidence": [
-        "test/oci_test.exs"
+        "test/oci_test.exs",
+        "test/oci_origin_reference_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/function/ConnectPublicIncus",
@@ -6930,7 +6931,7 @@
       "evidence": [
         "test/oci_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.DoHTTP",
@@ -6939,25 +6940,28 @@
       "evidence": [
         "test/oci_origin_reference_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.ExportImage",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/oci.ex",
       "evidence": [
-        "test/oci_test.exs"
+        "test/oci_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetConnectionInfo",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/oci.ex",
       "evidence": [
-        "test/oci_origin_reference_test.exs"
+        "test/oci_origin_reference_test.exs",
+        "test/image_copy_contract_test.exs",
+        "test/copy_negotiation_reference_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetHTTPClient",
@@ -6966,7 +6970,7 @@
       "evidence": [
         "test/oci_origin_reference_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetImage",
@@ -6975,7 +6979,7 @@
       "evidence": [
         "test/oci_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAlias",
@@ -6984,7 +6988,7 @@
       "evidence": [
         "test/oci_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAliasArchitectures",
@@ -6993,7 +6997,7 @@
       "evidence": [
         "test/oci_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAliasNames",
@@ -7002,7 +7006,7 @@
       "evidence": [
         "test/oci_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAliasType",
@@ -7011,7 +7015,7 @@
       "evidence": [
         "test/oci_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageAliases",
@@ -7020,16 +7024,17 @@
       "evidence": [
         "test/oci_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageFile",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/oci.ex",
       "evidence": [
-        "test/oci_test.exs"
+        "test/oci_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageFingerprints",
@@ -7038,16 +7043,17 @@
       "evidence": [
         "test/oci_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetImageSecret",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/oci.ex",
       "evidence": [
-        "test/oci_test.exs"
+        "test/oci_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetImages",
@@ -7056,7 +7062,7 @@
       "evidence": [
         "test/oci_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetImagesAllProjects",
@@ -7065,7 +7071,7 @@
       "evidence": [
         "test/oci_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetImagesAllProjectsWithFilter",
@@ -7074,7 +7080,7 @@
       "evidence": [
         "test/oci_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetImagesWithFilter",
@@ -7083,7 +7089,7 @@
       "evidence": [
         "test/oci_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetPrivateImage",
@@ -7092,7 +7098,7 @@
       "evidence": [
         "test/oci_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolOCI.GetPrivateImageFile",
@@ -7101,7 +7107,7 @@
       "evidence": [
         "test/oci_test.exs"
       ],
-      "note": "Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified."
+      "note": "S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.Disconnect",

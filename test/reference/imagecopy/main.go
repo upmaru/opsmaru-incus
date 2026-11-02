@@ -1,13 +1,14 @@
 // Reference driver for S05 image copy: invokes the unchanged official v7.0.1 CopyImage
 // over mutual TLS (relay also over Unix), then waits on, or cancels and then waits on,
 // the returned remote operation so the pinned cleanup (token cancellation, aliases)
-// runs to completion.
+// runs to completion. An OCI source (S11) is the unchanged ConnectOCI client.
 package main
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"time"
 
@@ -16,12 +17,56 @@ import (
 )
 
 type endpoint struct {
-	Socket     string `json:"socket"`
-	URL        string `json:"url"`
-	ServerCert string `json:"server_cert"`
-	ClientCert string `json:"client_cert"`
-	ClientKey  string `json:"client_key"`
-	Project    string `json:"project"`
+	Socket     string  `json:"socket"`
+	URL        string  `json:"url"`
+	ServerCert string  `json:"server_cert"`
+	ClientCert string  `json:"client_cert"`
+	ClientKey  string  `json:"client_key"`
+	Project    string  `json:"project"`
+	OCI        bool    `json:"oci"`
+	Metadata   []byte  `json:"metadata"`
+	Rootfs     []byte  `json:"rootfs"`
+	User       string  `json:"user"`
+	Password   *string `json:"password"`
+}
+
+// fixtureOCI is the unchanged OCI client except for GetImageFile: the pinned
+// conversion needs root, skopeo and umoci, so a relay copy gets fixture bytes.
+type fixtureOCI struct {
+	incus.ImageServer
+	metadata, rootfs []byte
+}
+
+func (f *fixtureOCI) GetImageFile(_ string, req incus.ImageFileRequest) (*incus.ImageFileResponse, error) {
+	if _, err := req.MetaFile.Write(f.metadata); err != nil {
+		return nil, err
+	}
+	if _, err := req.RootfsFile.Write(f.rootfs); err != nil {
+		return nil, err
+	}
+	return &incus.ImageFileResponse{MetaName: "metadata.tar.gz", RootfsName: "rootfs.tar.gz",
+		MetaSize: int64(len(f.metadata)), RootfsSize: int64(len(f.rootfs))}, nil
+}
+
+func connectSource(ctx context.Context, e endpoint, temp string) (incus.ImageServer, error) {
+	if !e.OCI {
+		return connect(ctx, e, temp)
+	}
+	// Credentials ride the registry URL, escaped by net/url as a Go host would build it.
+	uri, err := url.Parse(e.URL)
+	if err != nil {
+		return nil, err
+	}
+	if e.User != "" && e.Password != nil {
+		uri.User = url.UserPassword(e.User, *e.Password)
+	} else if e.User != "" {
+		uri.User = url.User(e.User)
+	}
+	c, err := incus.ConnectOCI(uri.String(), &incus.ConnectionArgs{TLSServerCert: e.ServerCert, TempPath: temp})
+	if err != nil {
+		return nil, err
+	}
+	return &fixtureOCI{ImageServer: c, metadata: e.Metadata, rootfs: e.Rootfs}, nil
 }
 
 func connect(ctx context.Context, e endpoint, temp string) (incus.InstanceServer, error) {
@@ -74,7 +119,7 @@ func main() {
 	if err != nil {
 		fail(err)
 	}
-	source, err := connect(ctx, in.Source, in.Temp)
+	source, err := connectSource(ctx, in.Source, in.Temp)
 	if err != nil {
 		fail(err)
 	}

@@ -48,7 +48,7 @@ successful MCP tool would establish complete declaration coverage.
 | `Response.metadata_as_map/1`, `metadata_as_string_slice/1`, `metadata_as_operation/1`, `metadata_as_model/2` | Explicit native typed metadata extraction, including initialized-empty map/slice behavior for null, defaults and float64 metadata semantics; original response remains lossless |
 | `Tokens.certificate/1`, `cluster/1`, `encode/1` | Pure conversion of existing operation metadata and exact ordered JSON/base64 token formatting; tokens/addresses are privileged data, never provisioning or automatic connection targets |
 | `SimpleStreams.new!/3`, `refresh/1`, `images/1`, `image/2`, `aliases/1`, `alias/3`, `alias_architectures/3`, `files/2`, `image_file/4`, `unsupported/2` | Explicit verified HTTPS, host-supplied architecture and immutable catalog; pinned projections and checksummed binary sinks; optional bounded host delta adapter; installed conversion and full protocol parity remain open |
-| `OCI.new!/4`, `resolve/3`, `image/2`, `image_file/4`, `unsupported/2` | Explicit host-owned OCI adapter; passive construction, bounded immutable cache, pinned alias/image/unsupported projections and acknowledged binary output; no bundled host runner or installed conversion acceptance |
+| `OCI.new!/5`, `resolve/3`, `image/2`, `image_file/3`, `unsupported/2` | S11 certified: explicit host-owned OCI adapter; passive construction with an explicit registry certificate, bounded immutable cache, pinned alias/image/unsupported projections, Go's `metadata.yaml` bytes and acknowledged binary output; no bundled host runner or installed conversion acceptance |
 | `OCI.connection_info/1`, `http_client/1`, `http_request/4` | Native passive CA-configured metadata and bounded raw HTTP on an explicit verified HTTPS origin; no adapter/config origin inference, redirects or mutation replay |
 | `Session.exec/3`, `console/3`, `input/2`, `output/3`, `control/2`, `resize/3`, `signal/2`, `exit_status/1`, `close/1` | Native operation channels and control messages; local closure does not cancel Incus |
 | `Session.collect/4` | Creator-owned live noninteractive stdout/stderr sinks, aggregate output bounds, absolute collection deadline and authoritative operation/exit result; closes local channels without cancellation |
@@ -107,7 +107,10 @@ OCI construction is also passive. Supply a module implementing
 `Opsmaru.Incus.OCI.Adapter` and an opaque host-owned configuration reference:
 
 ```elixir
-oci = Opsmaru.Incus.OCI.new!(connection, context, MyHost.OCIAdapter, private_adapter_ref)
+oci =
+  Opsmaru.Incus.OCI.new!(connection, context, MyHost.OCIAdapter, private_adapter_ref,
+    certificate: registry_certificate_pem
+  )
 {:ok, %{alias: alias_model, image: image_model}, oci} =
   Opsmaru.Incus.OCI.resolve(oci, "library/alpine:latest@sha256:approved_digest", "container")
 {:ok, cached} = Opsmaru.Incus.OCI.image(oci, alias_model.data["target"])
@@ -118,7 +121,12 @@ oci = Opsmaru.Incus.OCI.new!(connection, context, MyHost.OCIAdapter, private_ada
 
 `MyHost.OCIAdapter` is a host implementation, not a provided Opsmaru module.
 The adapter receives the connection/context, normalized alias, unique call
-identity and absolute monotonic deadline. It owns verified registry TLS,
+identity and absolute monotonic deadline. A conversion request also carries
+`metadata_yaml`: Go's exact `metadata.yaml` bytes, which the adapter packs
+next to `config.json` in the metadata tarball. The optional `certificate:` is
+Go's `TLSServerCert`: connection info reports it and targets receive it when
+they pull from the registry. It does not change how this connection verifies
+the registry. It owns verified registry TLS,
 credentials, subprocesses and conversion files. Inspection JSON is capped at
 the lesser of 1 MiB and `max_response_bytes`; cached images are capped at the
 lesser of 128 and `queue_limit`. `resolve` returns a new immutable client cache.
@@ -136,8 +144,9 @@ The OCI oracle uses the unchanged pinned client with a fixture-only skopeo
 stdout stub for alias/image projections and unsupported helper errors; it does
 not run real skopeo, unpack an image, use root or contact a registry. Conversion
 contents, actual registry TLS/authentication and external process/file cleanup
-require separate installed-host-adapter acceptance. OCI connection-info/HTTP/
-disconnect and alias-architecture helpers remain uncovered. SimpleStreams now has a separate verified partial catalog/full-file slice below.
+require separate installed-host-adapter acceptance. Connection info, origin
+HTTP, disconnect and alias architectures have their own pinned comparisons;
+S11 certification is described with image copy below. SimpleStreams now has a separate verified partial catalog/full-file slice below.
 
 HTTPS uses peer trust, hostname and certificate validity checks. Hosts select
 CA and client certificate/private-key files, or an exact SHA-256 server pin.
@@ -158,7 +167,7 @@ the explicit connection. Host readiness and authorization still precede I/O.
 Image-based create/rebuild requires `approved_origin:` for a remote source,
 before generating a private-image token. A subsequent target failure retains
 the token operation response for reconciliation. Only local images and native
-Incus HTTPS sources are covered; OCI/SimpleStreams image sources remain missing.
+Incus HTTPS and OCI sources are covered; SimpleStreams image sources remain missing.
 
 Mint 1.11.0/hpax 1.1.0 and MintWebSocket 1.0.5 are locked. HTTP requests have
 connection/send/receive deadlines and header/body budgets. Transfers use bounded
@@ -334,8 +343,9 @@ output rows, the B12 debug repair row, the eight S07 auxiliary byte stream
 rows, the eight S04 file transfer rows, the nineteen S06 backup and archive
 rows, the six S10 copy and migration rows, the three S05 image transfer
 rows, the two S02 console rows (console attachment and the operation
-WebSocket), the two S08 NBD rows and the two S09 SFTP rows. Stream contracts
-S11 and S12 stay open, so task 3.9 and `complete_port` remain incomplete. No
+WebSocket), the two S08 NBD rows and the two S09 SFTP rows. S11 (OCI) is
+certified under a rowless record that names its pinned declarations. Stream
+contract S12 stays open, so task 3.9 and `complete_port` remain incomplete. No
 full-port or new backend/hardware acceptance follows from those fixtures.
 
 The callback listener has at most `min(queue_limit, 128)` handlers and one callback
@@ -487,8 +497,8 @@ OCI alias architecture keys use the host-supplied local architecture, which
 can differ from the inspected image architecture. The result returns a new
 immutable cache and native alias models; invalid local configuration and the
 pinned VM-type rejection occur before adapter work. No platform CLI is invoked.
-OCI HTTP/connection-info and SimpleStreams connection-info remain missing;
-these additional differential fixtures do not establish full protocol parity.
+SimpleStreams connection-info remains missing; OCI connection info and HTTP
+are compared with the pinned client under S11.
 
 
 Image pull/push failures preserve an inner `:uncertain` as the top-level kind;
@@ -1111,8 +1121,35 @@ Approved exclusions:
 - trying each address a server advertises
 - cluster forwarding beyond host project and target routing
 
-Copies whose source is a SimpleStreams or OCI server stay with S12 and S11.
-Real-daemon image acceptance is separately recorded.
+Copies whose source is a SimpleStreams server stay with S12. OCI sources are
+certified with S11 (below). Real-daemon image acceptance is separately recorded.
+
+The OCI image server (stream contract S11) is **certified** by
+`s11_oci_image_server_v1` (2026-10-31), matching the pinned `ProtocolOCI`
+client behind the explicit host adapter. A resolved `OCI` value can be the
+source of `Images.copy/4` and of `ImageInstances.create/5` and `rebuild/6`, as
+the pinned `CopyImage`, `CreateInstanceFromImage` and
+`RebuildInstanceFromImage` accept a `ProtocolOCI` source:
+
+- A pull tells the target protocol `oci`, the approved registry origin, the
+  registry certificate and the fingerprint (or, for an instance, the alias
+  when one is given). OCI images are public, so no secret is requested; a
+  private image fails before any request with Go's error.
+- `registry_credentials: {username, password}` adds user information to the
+  pull's server URL, escaped as Go's `url.UserPassword` escapes it (a `nil`
+  password gives Go's `url.User` form). Push and relay copies, and Incus
+  sources, refuse it.
+- A relay converts through `OCI.image_file/3` into the relay's metadata and
+  rootfs sinks and uploads a split image, so it needs both staging sinks.
+- A push fails like Go: the target's push token is requested, the copy
+  returns "Exporting images is not supported with OCI registry" and the token
+  is cancelled.
+
+Approved differences: a failed lookup is not cached for a later `image/2`,
+`alias_architectures/4` keys by the host-supplied local architecture, and
+registry credentials are a separate option rather than URL user information.
+Installed adapter conversion, registry TLS and authentication and real-daemon
+pulls remain separately recorded.
 
 Consoles (stream contract S02) are **certified** by `s02_console_v1`
 (2026-10-28). It completes console attachment

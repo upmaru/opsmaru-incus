@@ -121,11 +121,12 @@ for name in ['Response.MetadataAsMap','Response.MetadataAsOperation','Response.M
 for name in ['EventListener.AddHandler','EventListener.RemoveHandler','EventListener.Wait','EventListener.IsActive','EventListener.Disconnect']:
  helpers[name]=('lib/opsmaru/incus/event_listener.ex',['test/event_listener_test.exs'])
 oci_helpers = 'Disconnect GetImageAliasArchitectures GetImage GetImageAlias GetImageAliasType GetImageFile GetImages GetImagesAllProjects GetImagesAllProjectsWithFilter GetImagesWithFilter GetImageFingerprints GetImageAliases GetImageAliasNames GetImageSecret GetPrivateImage GetPrivateImageFile ExportImage'.split()
+# S11: the OCI record also covers OCI sources of copies and image-based create/rebuild.
 for name in oci_helpers:
- helpers['ProtocolOCI.'+name]=('lib/opsmaru/incus/oci.ex',['test/oci_test.exs'])
+ helpers['ProtocolOCI.'+name]=('lib/opsmaru/incus/oci.ex',['test/oci_test.exs'] + (['test/image_copy_contract_test.exs'] if name in ['GetImageFile','GetImageSecret','ExportImage'] else []))
 for name in ['GetConnectionInfo','GetHTTPClient','DoHTTP']:
- helpers['ProtocolOCI.'+name]=('lib/opsmaru/incus/oci.ex',['test/oci_origin_reference_test.exs'])
-helpers['ConnectOCI']=('lib/opsmaru/incus/oci.ex',['test/oci_test.exs'])
+ helpers['ProtocolOCI.'+name]=('lib/opsmaru/incus/oci.ex',['test/oci_origin_reference_test.exs'] + (['test/image_copy_contract_test.exs','test/copy_negotiation_reference_test.exs'] if name == 'GetConnectionInfo' else []))
+helpers['ConnectOCI']=('lib/opsmaru/incus/oci.ex',['test/oci_test.exs','test/oci_origin_reference_test.exs'])
 simple_helpers = 'GetConnectionInfo Disconnect GetHTTPClient DoHTTP GetImages GetImagesAllProjects GetImagesAllProjectsWithFilter GetImagesWithFilter GetImageFingerprints GetImage GetImageFile GetImageSecret GetPrivateImage GetPrivateImageFile GetImageAliases GetImageAliasNames GetImageAlias GetImageAliasType GetImageAliasArchitectures ExportImage'.split()
 for name in simple_helpers:
  helpers['ProtocolSimpleStreams.'+name]=('lib/opsmaru/incus/simple_streams.ex',['test/simple_streams_test.exs'])
@@ -147,7 +148,7 @@ for entry in inv['entries']:
  name=entry['name'].split('.')[-1]
  row=dict(id=entry['id'], status='missing', elixir=None, evidence=[], note='No verified implementation/evidence claim.')
  if entry['name'] in helpers and entry['name'].startswith(('ProtocolOCI.', 'ConnectOCI')):
-  impl,evidence=helpers[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='Explicit host-adapter OCI slice: pinned alias/image/unsupported helper differential; independent binary/budget/cleanup fixtures. Installed host conversion, TLS and full OCI parity remain unverified.')
+  impl,evidence=helpers[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='S11 is certified under reviewed record s11_oci_image_server_v1, which names every ProtocolOCI declaration. Through an explicit host adapter: pinned alias normalization, layer fingerprints, architectures, image JSON, metadata.yaml bytes, cache-miss order, unsupported-method errors, connection info with the explicit registry certificate and origin HTTP, compared with the unchanged OCI client; OCI sources of pull, push and relay copies and image-based instance create and rebuild (with Go-escaped registry credentials) compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: failed lookups are not cached, the local architecture is host-supplied, and credentials are a separate option. Installed host conversion, registry TLS/authentication and real-daemon pulls remain unverified; this is not Go declaration parity.')
  elif entry['name'] in helpers and entry['name'].startswith(('ProtocolSimpleStreams.', 'ConnectSimpleStreams')):
   impl,evidence=helpers[entry['name']];row.update(status='partial',elixir=impl,evidence=evidence,note='Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence.')
  elif entry['kind'] == 'method' and entry['name'].startswith(('ProtocolOCI.', 'ProtocolSimpleStreams.')):
