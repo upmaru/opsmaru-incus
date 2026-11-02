@@ -312,6 +312,20 @@ defmodule Opsmaru.Incus.ImageCopyContractTest do
 
     assert mutations(target) == []
     assert HTTPFixture.requests(registry.fixture) == []
+
+    # As the pinned isSameServer compares protocols, a registry behind the target's own
+    # origin (and project) is still a remote OCI source: the target pulls from it.
+    shared = %{registry.client | connection: target.client.connection}
+
+    assert {:ok, _copy} =
+             Images.copy(target.client, shared, registry.image,
+               mode: "pull",
+               approved_origin: target.origin
+             )
+
+    assert [{"POST", "/1.0/images" <> _, body}] = mutations(target)
+    # mutations/1 reads every local fixture origin as "origin".
+    assert body["source"]["protocol"] == "oci" and body["source"]["server"] == "origin"
   end
 
   test "https S05 copy guards agree with the pinned CopyImage before any mutation", %{

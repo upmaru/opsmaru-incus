@@ -43,8 +43,13 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
   }
   @evidence_kinds ~w(named_go_differential raw_query_transport independent_fixture)
   # A protocol-level contract without REST rows names the pinned declarations it
-  # covers instead; every declaration matching its prefixes must be listed.
-  @rowless %{"oci_image_server" => ["client/method/ProtocolOCI.", "client/function/ConnectOCI"]}
+  # covers instead; every declaration matching its prefixes, and each exact source
+  # path it certifies, must be listed.
+  @rowless %{
+    "oci_image_server" =>
+      {["client/method/ProtocolOCI.", "client/function/ConnectOCI"],
+       ~w(client/method/ProtocolIncus.CopyImage client/method/ProtocolIncus.CreateInstanceFromImage client/method/ProtocolIncus.RebuildInstanceFromImage)}
+  }
   # A documented route the daemon does not register, reconciled to the route it does
   # (approved source discrepancy): the row maps the registered method, never sent as
   # the documented verb.
@@ -364,7 +369,8 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
       Jason.decode!(File.read!("priv/incus/coverage.json"))["entries"]
       |> Enum.map(& &1["id"])
 
-    required = Enum.filter(ids, &String.starts_with?(&1, @rowless[record["kind"]]))
+    {prefixes, exact} = @rowless[record["kind"]]
+    required = Enum.filter(ids, &(String.starts_with?(&1, prefixes) or &1 in exact))
     declarations = record["declarations"]
 
     assert is_list(declarations) and declarations -- ids == [] and required -- declarations == [],

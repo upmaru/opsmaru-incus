@@ -131,9 +131,12 @@ defmodule Opsmaru.Incus.ImageInstances do
        else: {:error, %Error{kind: :image_project_mismatch}}
   end
 
+  # The pinned isSameServer compares protocols too: an OCI registry is never the
+  # target, even behind a shared origin.
   defp same_backend?(target, source),
     do:
-      target.connection.transport == source.connection.transport and
+      not ImageSource.oci?(source) and
+        target.connection.transport == source.connection.transport and
         target.connection.address == source.connection.address and
         (target.connection.project || "default") == (source.connection.project || "default") and
         target.connection.member == source.connection.member

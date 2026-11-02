@@ -229,9 +229,12 @@ defmodule Opsmaru.Incus.Images do
   defp text?(value, min),
     do: is_binary(value) and byte_size(value) in min..1024 and String.valid?(value)
 
+  # The pinned isSameServer compares protocols too: an OCI registry is never the
+  # target, even behind a shared origin.
   defp same_backend?(one, two),
     do:
-      one.connection.transport == two.connection.transport and
+      not ImageSource.oci?(two) and
+        one.connection.transport == two.connection.transport and
         one.connection.address == two.connection.address and
         one.connection.project == two.connection.project and
         one.connection.member == two.connection.member

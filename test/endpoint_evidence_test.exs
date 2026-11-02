@@ -958,6 +958,21 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
        ), "stale completion declarations"},
       {update_in(audit, oci ++ ["declarations"], &["client/method/ProtocolOCI.Invented" | &1]),
        "stale completion declarations"},
+      {update_in(
+         audit,
+         oci ++ ["declarations"],
+         &List.delete(&1, "client/method/ProtocolIncus.CopyImage")
+       ), "stale completion declarations"},
+      {update_in(
+         audit,
+         oci ++ ["declarations"],
+         &List.delete(&1, "client/method/ProtocolIncus.CreateInstanceFromImage")
+       ), "stale completion declarations"},
+      {update_in(
+         audit,
+         oci ++ ["declarations"],
+         &List.delete(&1, "client/method/ProtocolIncus.RebuildInstanceFromImage")
+       ), "stale completion declarations"},
       {update_in(audit, oci ++ ["cases"], &Map.delete(&1, "metadata_yaml")),
        "missing completion case"},
       {update_in(audit, oci ++ ["cases"], &Map.delete(&1, "copy_push")),

@@ -681,6 +681,25 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
 
     assert posts(target_fixture) == []
     assert HTTPFixture.requests(registry) == []
+
+    # As the pinned isSameServer compares protocols, a registry behind the target's own
+    # origin (and project) is still pulled from rather than read as a local fingerprint.
+    shared = %{oci | connection: target.connection}
+
+    for action <- [:create, :rebuild] do
+      opts = [approved_origin: target_endpoint.url]
+      image = %{image | "public" => true}
+
+      assert {:ok, _} =
+               if(action == :create,
+                 do: ImageInstances.create(target, shared, image, body, opts),
+                 else: ImageInstances.rebuild(target, shared, image, "existing", %{}, opts)
+               )
+
+      fields = Jason.decode!(List.last(posts(target_fixture)).body)["source"]
+      assert fields["protocol"] == "oci" and fields["mode"] == "pull", inspect(action)
+      assert fields["server"] == target_endpoint.url
+    end
   end
 
   defp compare_oci_image(root, action, transport, source_fields, credentials, pinned) do
