@@ -115,7 +115,7 @@ defmodule Opsmaru.Incus.InventoryTest do
 
     assert Enum.all?(simplestreams, fn entry ->
              entry["status"] == "missing" or
-               entry["evidence"] == ["test/simple_streams_test.exs"]
+               hd(entry["evidence"]) == "test/simple_streams_test.exs"
            end)
 
     for entry <- coverage["entries"] do

@@ -95,7 +95,9 @@ defmodule Opsmaru.Incus.WebSocket do
          HTTP.valid_headers?(Keyword.get(opts, :headers, [])) and
          Enum.all?(Keyword.get(opts, :headers, []), fn {name, _} ->
            not String.starts_with?(name, "sec-websocket-")
-         end), do: :ok, else: {:error, :invalid_websocket_options}
+         end),
+       do: :ok,
+       else: {:error, :invalid_websocket_options}
   end
 
   defp call(channel, message, timeout) do

@@ -63,7 +63,9 @@ defmodule Opsmaru.Incus.DynamicConsole do
     if Keyword.keyword?(opts) and length(opts) <= 1 and
          Enum.all?(opts, fn {key, value} ->
            key == :max_attachments and is_integer(value) and value in 1..32
-         end), do: :ok, else: {:error, %Error{kind: :invalid_console_arguments}}
+         end),
+       do: :ok,
+       else: {:error, %Error{kind: :invalid_console_arguments}}
   end
 
   @impl true

@@ -4,9 +4,9 @@ defmodule Opsmaru.Incus.SimpleStreams.Delta do
   alias Opsmaru.Incus.OCI.AdapterCall
   alias Opsmaru.Incus.SimpleStreams.Download
 
-  def run(client, base, delta, rootfs, sink, deadline, maximum) do
-    with :ok <- Download.manifest(delta, maximum),
-         :ok <- Download.manifest(rootfs, maximum - delta.size) do
+  def run(client, base, delta, rootfs, sink, deadline, maximum, combined) do
+    with :ok <- Download.manifest(delta),
+         :ok <- Download.manifest(rootfs) do
       adapter_client = %{
         connection: client.connection,
         adapter: client.delta_adapter,
@@ -22,17 +22,37 @@ defmodule Opsmaru.Incus.SimpleStreams.Delta do
         rootfs: rootfs
       }
 
-      AdapterCall.run(adapter_client, request, max(1, deadline - now()), fn request ->
-        convert(client, request, sink, maximum)
-      end)
+      result =
+        AdapterCall.run(adapter_client, request, max(1, deadline - now()), fn request ->
+          convert(client, request, sink, maximum, combined)
+        end)
+
+      case result do
+        {:ok, value, combined} ->
+          {:ok, value, combined}
+
+        # A cleanup failure keeps the conversion's own result.
+        {:error, %Error{kind: :adapter_cleanup, response: {:ok, value, _}} = error} ->
+          {:error, %{error | response: {:ok, value}}}
+
+        {:error, _} = error ->
+          error
+      end
     end
   end
 
-  defp convert(client, request, sink, maximum) do
+  defp convert(client, request, sink, maximum, combined) do
     ref = make_ref()
     worker = self()
     rejected = :atomics.new(1, [])
-    Process.put(ref, %{downloaded: false, size: 0, hash: :crypto.hash_init(:sha256)})
+
+    Process.put(ref, %{
+      downloaded: false,
+      delta_size: 0,
+      size: 0,
+      hash: :crypto.hash_init(:sha256),
+      combined: combined
+    })
 
     download = fn delta_sink ->
       cond do
@@ -45,7 +65,7 @@ defmodule Opsmaru.Incus.SimpleStreams.Delta do
 
     emit = fn bytes ->
       if self() == worker and :atomics.get(rejected, 1) == 0,
-        do: emit(client, request, ref, rejected, sink, bytes),
+        do: emit(client, request, ref, rejected, sink, bytes, maximum),
         else: reject(rejected)
     end
 
@@ -61,8 +81,9 @@ defmodule Opsmaru.Incus.SimpleStreams.Delta do
     Process.put(ref, %{Process.get(ref) | downloaded: true})
 
     case Download.file(client, request.delta, sink, request.deadline, maximum) do
-      {:ok, _} = result ->
-        result
+      {:ok, value, _} ->
+        Process.put(ref, %{Process.get(ref) | delta_size: value.size})
+        {:ok, value}
 
       error ->
         reject(rejected)
@@ -70,19 +91,21 @@ defmodule Opsmaru.Incus.SimpleStreams.Delta do
     end
   end
 
-  defp emit(client, request, ref, rejected, sink, bytes) do
+  # Converted bytes share the part's byte budget with the delta download.
+  defp emit(client, request, ref, rejected, sink, bytes, maximum) do
     state = Process.get(ref)
 
     valid =
       state.downloaded and is_binary(bytes) and
         byte_size(bytes) <= client.connection.max_chunk_bytes and
-        state.size + byte_size(bytes) <= request.rootfs.size and now() < request.deadline
+        state.delta_size + state.size + byte_size(bytes) <= maximum and now() < request.deadline
 
     if valid and acknowledge(sink, bytes) == :ok do
       Process.put(ref, %{
         state
         | size: state.size + byte_size(bytes),
-          hash: :crypto.hash_update(state.hash, bytes)
+          hash: :crypto.hash_update(state.hash, bytes),
+          combined: :crypto.hash_update(state.combined, bytes)
       })
 
       :ok
@@ -99,12 +122,14 @@ defmodule Opsmaru.Incus.SimpleStreams.Delta do
     _, _ -> :error
   end
 
+  # As natively, converted bytes are checked by the combined image fingerprint,
+  # not against the full rootfs manifest.
   defp finish(:ok, state, hash, rootfs, rejected) do
-    if :atomics.get(rejected, 1) == 0 and state.downloaded and state.size == rootfs.size and
-         hash == String.downcase(rootfs.sha256),
-       do:
-         {:ok, %{name: List.last(String.split(rootfs.path, "/")), size: state.size, sha256: hash}},
-       else: {:error, %Error{kind: :delta_failed}}
+    if :atomics.get(rejected, 1) == 0 and state.downloaded,
+      do:
+        {:ok, %{name: List.last(String.split(rootfs.path, "/")), size: state.size, sha256: hash},
+         state.combined},
+      else: {:error, %Error{kind: :delta_failed}}
   end
 
   defp finish({:error, %Error{}} = error, _, _, _, _), do: error

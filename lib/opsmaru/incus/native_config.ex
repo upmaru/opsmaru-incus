@@ -72,7 +72,9 @@ defmodule Opsmaru.Incus.NativeConfig do
     if map_size(value) <= 4096 and
          Enum.all?(value, fn {key, item} ->
            is_binary(key) and existing_map("ConfigMap", item) == :ok
-         end), do: :ok, else: :error
+         end),
+       do: :ok,
+       else: :error
   end
 
   defp existing_map(_, _), do: :error

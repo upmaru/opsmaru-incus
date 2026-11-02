@@ -405,7 +405,15 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
       )
 
     client = client(HTTPFixture.endpoint(fixture).url, identity, "x86_64")
-    assert {:error, %Error{kind: :simplestreams_response}} = SimpleStreams.refresh(client)
+    origin = HTTPFixture.endpoint(fixture).url
+
+    assert {:error,
+            %Error{
+              kind: :native,
+              message:
+                "Failed parsing stream: Unable to fetch #{origin}/streams/v1/index.json: 302 Found"
+            }} == SimpleStreams.refresh(client)
+
     assert [%{method: "GET", target: "/streams/v1/index.json"}] = HTTPFixture.requests(fixture)
   end
 
@@ -415,6 +423,7 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     metadata = <<0, 255, 13, 10, 5>>
     rootfs = :binary.copy(<<0, 255, 1>>, 10_000)
     {client, fixture} = download_client(identity, metadata, rootfs)
+    fp = fingerprint(client)
     owner = self()
 
     sinks = %{
@@ -428,7 +437,7 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
       end
     }
 
-    assert {:ok, result} = SimpleStreams.image_file(client, "image-fingerprint", sinks)
+    assert {:ok, result} = SimpleStreams.image_file(client, fp, sinks)
 
     assert result.metadata == %{
              name: "meta.tar.xz",
@@ -460,10 +469,17 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     identity: identity
   } do
     {client, fixture} = download_client(identity, "metadata", "rootfs", corrupt: true)
+    fp = fingerprint(client)
     sink = fn _ -> :ok end
 
-    assert {:error, %Error{kind: :checksum, response: %{fingerprint: "image-fingerprint"}}} =
-             SimpleStreams.image_file(client, "image-fingerprint", %{metadata: sink, rootfs: sink})
+    assert {:error, %Error{kind: :native, message: message, response: %{fingerprint: ^fp}}} =
+             SimpleStreams.image_file(client, fp, %{metadata: sink, rootfs: sink})
+
+    origin = HTTPFixture.endpoint(fixture).url
+
+    assert message ==
+             "Hash mismatch for #{origin}/images/meta.tar.xz: " <>
+               "#{hash(:binary.copy(<<7>>, 8))} != #{hash("metadata")}"
 
     assert Enum.map(HTTPFixture.requests(fixture), & &1.target) == [
              "/streams/v1/index.json",
@@ -475,28 +491,31 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
   test "empty part, acknowledged sink failure and aggregate byte limits remain visible", %{
     identity: identity
   } do
-    {client, fixture} = download_client(identity, "", "rootfs")
+    # An image whose fingerprint covers its empty metadata alone.
+    {client, fixture} = download_client(identity, "", "rootfs", fingerprint: hash(""))
+    fp = fingerprint(client)
 
     assert {:ok, %{metadata: %{size: 0}}} =
-             SimpleStreams.image_file(client, "image-fingerprint", %{
+             SimpleStreams.image_file(client, fp, %{
                metadata: fn _ -> flunk("empty body delivered a chunk") end
              })
 
     assert {:error, %Error{kind: :sink_failed}} =
-             SimpleStreams.image_file(client, "image-fingerprint", %{
+             SimpleStreams.image_file(client, fp, %{
                rootfs: fn _ -> {:error, :host_rejection} end
              })
 
+    # Go enforces no manifest size; the aggregate byte bound stops the stream.
     limited = %{client | connection: %{client.connection | max_stream_bytes: 1}}
     before = length(HTTPFixture.requests(fixture))
 
-    assert {:error, %Error{kind: :invalid_download_manifest}} =
-             SimpleStreams.image_file(limited, "image-fingerprint", %{rootfs: fn _ -> :ok end})
+    assert {:error, %Error{kind: :stream_limit}} =
+             SimpleStreams.image_file(limited, fp, %{rootfs: fn _ -> :ok end})
 
-    assert length(HTTPFixture.requests(fixture)) == before
+    assert length(HTTPFixture.requests(fixture)) == before + 1
 
     assert {:error, %Error{message: "No file requested"}} =
-             SimpleStreams.image_file(client, "image-fingerprint", %{})
+             SimpleStreams.image_file(client, fp, %{})
   end
 
   for cause <- [:deadline, :owner_loss] do
@@ -504,6 +523,7 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
       identity: identity
     } do
       {client, fixture} = download_client(identity, "metadata", "rootfs")
+      fp = fingerprint(client)
       # Owner loss gets a deadline it cannot reach, so only the owner's exit can
       # kill the sink; the deadline case leaves room to monitor the sink first.
       stream_timeout = if unquote(cause) == :deadline, do: 500, else: 30_000
@@ -513,7 +533,7 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
       owner =
         spawn(fn ->
           result =
-            SimpleStreams.image_file(client, "image-fingerprint", %{
+            SimpleStreams.image_file(client, fp, %{
               metadata: fn _ ->
                 Process.flag(:trap_exit, true)
                 send(parent, {:sink, self()})
@@ -553,7 +573,7 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
               "path" => "images/meta.tar.xz",
               "sha256" => hash(metadata),
               "size" => byte_size(metadata),
-              "combined_squashfs_sha256" => "image-fingerprint"
+              "combined_squashfs_sha256" => opts[:fingerprint] || hash(metadata <> rootfs)
             },
             "root" => %{
               "ftype" => "squashfs",
@@ -635,10 +655,23 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
 
   defp hash(bytes), do: :crypto.hash(:sha256, bytes) |> Base.encode16(case: :lower)
 
+  # The downloadable image; a delta fixture also lists its base.
+  defp fingerprint(client) do
+    Enum.find_value(client.catalog.images, fn image ->
+      if image.data["fingerprint"] != "base-fingerprint", do: image.data["fingerprint"]
+    end)
+  end
+
+  # A host delta source retriever that only has the fixture base.
+  defp source("base-fingerprint", base), do: base
+  defp source(_, _), do: nil
+
   test "explicit delta adapter receives verified bytes/base and emits checksum-verified rootfs",
        %{identity: identity} do
     {client, fixture} =
-      download_client(identity, "metadata", "converted-root", delta: "delta-bytes")
+      download_client(identity, "", "converted-root", delta: "delta-bytes")
+
+    fp = fingerprint(client)
 
     parent = self()
 
@@ -666,8 +699,8 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     end
 
     assert {:ok, %{rootfs: %{size: 14}}} =
-             SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: sink},
-               delta_base: %{fingerprint: "base-fingerprint", source: :private_host_base}
+             SimpleStreams.image_file(client, fp, %{rootfs: sink},
+               delta_source: &source(&1, :private_host_base)
              )
 
     assert_received {:delta_bytes, "delta-bytes"}
@@ -683,22 +716,20 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
   test "missing optional adapter/base/delta uses full files without conversion", %{
     identity: identity
   } do
-    {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
-    base = %{fingerprint: "base-fingerprint", source: :host_base}
+    {client, fixture} = download_client(identity, "", "root", delta: "delta")
+    fp = fingerprint(client)
     sink = fn _ -> :ok end
 
     assert {:ok, _} =
-             SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: sink},
-               delta_base: base
+             SimpleStreams.image_file(client, fp, %{rootfs: sink},
+               delta_source: &source(&1, :host_base)
              )
 
     client = with_delta(client, delta_config(fn _, _ -> flunk("unexpected conversion") end))
-    assert {:ok, _} = SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: sink})
+    assert {:ok, _} = SimpleStreams.image_file(client, fp, %{rootfs: sink})
 
     assert {:ok, _} =
-             SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: sink},
-               delta_base: %{base | fingerprint: "not-cached"}
-             )
+             SimpleStreams.image_file(client, fp, %{rootfs: sink}, delta_source: fn _ -> nil end)
 
     assert download_paths(fixture) == List.duplicate("/images/root.squashfs", 3)
     refute_received {:delta_call, _, _}
@@ -716,7 +747,8 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     test "delta #{failure} fails visibly, cleans its call and never falls back/replays", %{
       identity: identity
     } do
-      {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+      {client, fixture} = download_client(identity, "", "root", delta: "delta")
+      fp = fingerprint(client)
       parent = self()
 
       client =
@@ -733,13 +765,24 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
         :ok
       end
 
-      assert {:error, %Error{kind: :delta_failed, response: %{fingerprint: "image-fingerprint"}}} =
-               SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: sink},
-                 delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
-               )
+      result =
+        SimpleStreams.image_file(client, fp, %{rootfs: sink},
+          delta_source: &source(&1, :host_base)
+        )
 
+      if unquote(failure) == :wrong_bytes do
+        # As natively, the converted rootfs is checked by the combined fingerprint.
+        message = "Image fingerprint doesn't match. Got #{hash("bad!")} expected #{fp}"
+
+        assert {:error, %Error{kind: :native, message: ^message, response: %{fingerprint: ^fp}}} =
+                 result
+      else
+        assert {:error, %Error{kind: :delta_failed, response: %{fingerprint: ^fp}}} = result
+      end
+
+      outcome = if unquote(failure) == :wrong_bytes, do: :completed, else: :failed
       assert_receive {:delta_call, _, request}
-      assert_receive {:delta_cleanup, id, :failed}
+      assert_receive {:delta_cleanup, id, ^outcome}
       assert id == request.call_id
       assert download_paths(fixture) == ["/images/delta.vcdiff"]
       if unquote(failure) != :wrong_bytes, do: refute_received({:emitted, _})
@@ -748,8 +791,8 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
 
   defp delta_failure(:wrong_bytes, _, emit), do: emit.("bad!")
 
-  defp delta_failure(:ignored_rejection, _, emit) do
-    assert {:error, _} = emit.("too-long")
+  defp delta_failure(:ignored_rejection, request, emit) do
+    assert {:error, _} = emit.(:binary.copy("x", request.connection.max_chunk_bytes + 1))
     assert {:error, _} = emit.("root")
     :ok
   end
@@ -770,7 +813,8 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     test "delta #{cause} kills exit-trapping conversion and invokes unique bounded cleanup", %{
       identity: identity
     } do
-      {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+      {client, fixture} = download_client(identity, "", "root", delta: "delta")
+      fp = fingerprint(client)
       parent = self()
 
       client =
@@ -793,9 +837,9 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
           result =
             SimpleStreams.image_file(
               client,
-              "image-fingerprint",
+              fp,
               %{rootfs: fn _ -> flunk("unexpected output") end},
-              delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+              delta_source: &source(&1, :host_base)
             )
 
           send(parent, {:delta_result, result})
@@ -821,7 +865,8 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
   test "delta cleanup failure preserves its primary result and image identity", %{
     identity: identity
   } do
-    {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+    {client, fixture} = download_client(identity, "", "root", delta: "delta")
+    fp = fingerprint(client)
 
     config =
       delta_config(fn request, emit ->
@@ -836,10 +881,10 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     assert {:error,
             %Error{
               kind: :adapter_cleanup,
-              response: %{fingerprint: "image-fingerprint", error: error}
+              response: %{fingerprint: ^fp, error: error}
             }} =
-             SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: fn _ -> :ok end},
-               delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+             SimpleStreams.image_file(client, fp, %{rootfs: fn _ -> :ok end},
+               delta_source: &source(&1, :host_base)
              )
 
     assert {:ok, %{size: 4}} = error.response
@@ -849,7 +894,8 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
   test "configured delta construction is passive and unauthorized calls never convert", %{
     identity: identity
   } do
-    {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+    {client, fixture} = download_client(identity, "", "root", delta: "delta")
+    fp = fingerprint(client)
     count = length(HTTPFixture.requests(fixture))
 
     configured =
@@ -869,8 +915,8 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     }
 
     assert {:error, %Error{kind: :host_not_ready}} =
-             SimpleStreams.image_file(configured, "image-fingerprint", %{rootfs: fn _ -> :ok end},
-               delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+             SimpleStreams.image_file(configured, fp, %{rootfs: fn _ -> :ok end},
+               delta_source: &source(&1, :host_base)
              )
 
     refute_received {:delta_call, _, _}
@@ -881,7 +927,9 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     identity: identity
   } do
     {client, fixture} =
-      download_client(identity, "metadata", "root", delta: "delta", corrupt: true)
+      download_client(identity, "", "root", delta: "delta", corrupt: true)
+
+    fp = fingerprint(client)
 
     client =
       with_delta(
@@ -889,13 +937,15 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
         delta_config(fn request, _ -> request.download_delta.(fn _ -> :ok end) end)
       )
 
-    assert {:error, %Error{kind: :checksum, response: %{fingerprint: "image-fingerprint"}}} =
+    assert {:error, %Error{kind: :native, message: "Hash mismatch for " <> _, response: response}} =
              SimpleStreams.image_file(
                client,
-               "image-fingerprint",
+               fp,
                %{rootfs: fn _ -> flunk("corrupt delta emitted output") end},
-               delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+               delta_source: &source(&1, :host_base)
              )
+
+    assert response.fingerprint == fp
 
     assert_receive {:delta_cleanup, _, :failed}
     assert download_paths(fixture) == ["/images/delta.vcdiff"]
@@ -903,7 +953,8 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
 
   test "delta output rejection remains sticky and converted bytes never exceed their aggregate budget",
        %{identity: identity} do
-    {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+    {client, fixture} = download_client(identity, "", "root", delta: "delta")
+    fp = fingerprint(client)
 
     config =
       delta_config(fn request, emit ->
@@ -922,20 +973,21 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     end
 
     assert {:error, %Error{kind: :delta_failed}} =
-             SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: sink},
-               delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+             SimpleStreams.image_file(client, fp, %{rootfs: sink},
+               delta_source: &source(&1, :host_base)
              )
 
     assert_received :sink_called
     refute_received :sink_called
+    # The 5-byte delta fits in 8 bytes; its 4 converted bytes then do not.
     limited = %{client | connection: %{client.connection | max_stream_bytes: 8}}
 
-    assert {:error, %Error{kind: :invalid_download_manifest}} =
-             SimpleStreams.image_file(limited, "image-fingerprint", %{rootfs: fn _ -> :ok end},
-               delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+    assert {:error, %Error{kind: :delta_failed}} =
+             SimpleStreams.image_file(limited, fp, %{rootfs: fn _ -> :ok end},
+               delta_source: &source(&1, :host_base)
              )
 
-    assert download_paths(fixture) == ["/images/delta.vcdiff"]
+    assert download_paths(fixture) == List.duplicate("/images/delta.vcdiff", 2)
   end
 
   defp delta_config(convert),
@@ -959,7 +1011,8 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     test "caught delta sink #{failure} remains rejected with no further output", %{
       identity: identity
     } do
-      {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+      {client, fixture} = download_client(identity, "", "root", delta: "delta")
+      fp = fingerprint(client)
 
       client =
         with_delta(
@@ -989,8 +1042,8 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
       end
 
       assert {:error, %Error{kind: :delta_failed}} =
-               SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: sink},
-                 delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+               SimpleStreams.image_file(client, fp, %{rootfs: sink},
+                 delta_source: &source(&1, :host_base)
                )
 
       assert_received :sink_attempt
@@ -1008,7 +1061,8 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     root: root,
     identity: identity
   } do
-    {client, fixture} = download_client(identity, "metadata", "root", delta: "delta")
+    {client, fixture} = download_client(identity, "", "root", delta: "delta")
+    fp = fingerprint(client)
     {:ok, state} = Agent.start_link(fn -> nil end)
     parent = self()
     artifact = Path.join(root, "conversion-artifact")
@@ -1040,8 +1094,8 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
 
     caller =
       spawn(fn ->
-        SimpleStreams.image_file(client, "image-fingerprint", %{rootfs: fn _ -> :ok end},
-          delta_base: %{fingerprint: "base-fingerprint", source: :host_base}
+        SimpleStreams.image_file(client, fp, %{rootfs: fn _ -> :ok end},
+          delta_source: &source(&1, :host_base)
         )
       end)
 

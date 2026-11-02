@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.ImageCopyContractTest do
-  @moduledoc "S05 image copy (and S11 OCI sources) compared with the pinned CopyImage."
+  @moduledoc "S05 image copy (with S11 OCI and S12 SimpleStreams sources) compared with the pinned CopyImage."
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
 
@@ -15,7 +15,7 @@ defmodule Opsmaru.Incus.ImageCopyContractTest do
     Server
   }
 
-  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture}
+  alias Opsmaru.TestSupport.{HTTPFixture, SimpleStreamsFixture, TLSIdentity, WebSocketFixture}
   @driver Path.expand("../.integration/image-copy-driver", __DIR__)
   @extensions ~w(images_push_relay image_copy_profile)
   @metadata :binary.copy(<<0, 255, 128, 13, 10>>, 64)
@@ -265,6 +265,126 @@ defmodule Opsmaru.Incus.ImageCopyContractTest do
         end
       end
     end
+  end
+
+  for transport <- [:unix, :https] do
+    test "#{transport} S12 SimpleStreams-source copies agree with the pinned CopyImage", %{
+      root: root
+    } do
+      identity = identity(root, unquote(transport))
+      modes = if unquote(transport) == :https, do: [:pull, :push, :relay], else: [:pull, :relay]
+
+      for mode <- modes,
+          {opts, _, pinned} <- oci_cases(mode),
+          outcome <- if(mode == :push, do: [:success], else: [:success, :failure]) do
+        label = inspect({mode, opts, outcome})
+        server = SimpleStreamsFixture.start(root, pinned)
+        target = backend(root, identity, "target", server.image, @extensions, outcome, %{})
+        native = streams_reference(root, identity, mode, server, opts, target)
+        native_downloads = SimpleStreamsFixture.downloads(server)
+        target2 = backend(root, identity, "target", server.image, @extensions, outcome, %{})
+        result = streams_copy(mode, server, opts, target2)
+
+        case {mode, outcome} do
+          {:push, _} ->
+            assert native["error"] ==
+                     "Exporting images is not supported by the simplestreams protocol"
+
+            assert {:error, %Error{kind: :native, message: message, response: %{accepted: kept}}} =
+                     result
+
+            assert message == native["error"]
+            assert kept.target.url == "/1.0/operations/token" and is_nil(kept.source)
+
+            assert [{"POST", "/1.0/images" <> _, _}, {"DELETE", "/1.0/operations/token" <> _, _}] =
+                     mutations(target2)
+
+          {_, :success} ->
+            assert native["completed"], label <> inspect(native)
+            assert {:ok, copy} = result, label
+            assert {:ok, done} = Images.wait_copy(copy, timeout: 3_000), label
+            assert Operation.successful?(done.target)
+
+          {:relay, :failure} ->
+            # The recorded S05 relay difference: the pinned relay reports success.
+            assert native["completed"], label <> inspect(native)
+            assert {:ok, copy} = result, label
+
+            assert {:error, %Error{kind: :operation_failed}} =
+                     Images.wait_copy(copy, timeout: 3_000)
+
+          {:pull, :failure} ->
+            assert native["error"], label
+            assert {:ok, copy} = result, label
+
+            assert {:error, %Error{kind: :operation_failed}} =
+                     Images.wait_copy(copy, timeout: 3_000)
+        end
+
+        # The same target requests in the same order, and the same image files
+        # fetched from the server: only a relay downloads, metadata then rootfs.
+        assert mutations(target2) == mutations(target), label
+        ours = SimpleStreamsFixture.downloads(server) -- native_downloads
+        assert ours == native_downloads, label
+
+        if mode == :relay,
+          do:
+            assert(
+              native_downloads == [
+                "/images/fixture/incus.tar.xz",
+                "/images/fixture/root.squashfs"
+              ]
+            ),
+          else: assert(native_downloads == [])
+
+        if mode == :pull do
+          [{"POST", _, body} | _] = mutations(target2)
+          assert body["source"]["protocol"] == "simplestreams"
+        end
+      end
+    end
+  end
+
+  test "S12 SimpleStreams sources refuse private images, credentials and unapproved origins", %{
+    root: root
+  } do
+    identity = identity(root, :https)
+    server = SimpleStreamsFixture.start(root, true)
+    target = backend(root, identity, "target", server.image, @extensions, :success, %{})
+    private = %{server.image | "public" => false}
+    native = streams_reference(root, identity, :pull, %{server | image: private}, [], target)
+    assert native["error"] == "Private images aren't supported by the simplestreams protocol"
+
+    assert {:error, %Error{kind: :native, message: message}} =
+             streams_copy(:pull, %{server | image: private}, [], target)
+
+    assert message == native["error"]
+
+    assert {:error, %Error{kind: :invalid_copy_options}} =
+             Images.copy(target.client, server.client, server.image,
+               mode: "pull",
+               approved_origin: server.origin,
+               registry_credentials: {"user", "s3cret"}
+             )
+
+    for origin <- [nil, target.origin, "https://streams.invalid"] do
+      opts = if origin, do: [mode: "pull", approved_origin: origin], else: [mode: "pull"]
+
+      assert {:error, %Error{kind: :unapproved_copy_origin}} =
+               Images.copy(target.client, server.client, server.image, opts)
+    end
+
+    # A registry behind the target's own origin is still a remote SimpleStreams source.
+    shared = %{server.client | connection: target.client.connection}
+
+    assert {:ok, _} =
+             Images.copy(target.client, shared, server.image,
+               mode: "pull",
+               approved_origin: target.origin
+             )
+
+    assert [{"POST", "/1.0/images" <> _, body}] = mutations(target)
+    assert body["source"]["protocol"] == "simplestreams"
   end
 
   test "S11 OCI sources refuse private images and misplaced credentials before any request", %{
@@ -604,6 +724,54 @@ defmodule Opsmaru.Incus.ImageCopyContractTest do
 
     opts = if credentials, do: Keyword.put(opts, :registry_credentials, credentials), else: opts
     Images.copy(target.client, registry.client, registry.image, opts)
+  end
+
+  defp streams_copy(mode, server, opts, target) do
+    opts = [mode: Atom.to_string(mode)] ++ opts
+
+    opts =
+      case mode do
+        :pull -> Keyword.put(opts, :approved_origin, server.origin)
+        :push -> Keyword.put(opts, :approved_origin, target.origin)
+        :relay -> Keyword.put(opts, :relay, stage(true))
+      end
+
+    Images.copy(target.client, server.client, server.image, opts)
+  end
+
+  defp streams_reference(root, identity, mode, server, opts, target) do
+    source = %{
+      simplestreams: true,
+      url: server.origin,
+      server_cert: server.certificate,
+      ca: server.ca
+    }
+
+    args = %{
+      Mode: Atom.to_string(mode),
+      Aliases: opts[:aliases],
+      CopyAliases: opts[:copy_aliases] == true,
+      AutoUpdate: opts[:auto_update] == true,
+      Public: opts[:public] == true,
+      Type: opts[:type] || "",
+      Profiles: opts[:profiles]
+    }
+
+    input = %{
+      after: "wait",
+      source: source,
+      target: native(target, identity),
+      image: server.image,
+      args: args,
+      temp: root
+    }
+
+    file = Path.join(root, "streams-copy-#{System.unique_integer([:positive])}.json")
+    File.write!(file, Jason.encode!(input))
+    File.chmod!(file, 0o600)
+    {out, status} = System.cmd(@driver, [file], stderr_to_stdout: true)
+    assert status == 0, out
+    Jason.decode!(out)
   end
 
   defp oci_reference(root, identity, mode, registry, credentials, opts, target) do

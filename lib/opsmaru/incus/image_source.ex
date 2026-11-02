@@ -1,27 +1,46 @@
 defmodule Opsmaru.Incus.ImageSource do
   @moduledoc false
   # What a target is told about a remote image source, as the pinned
-  # GetConnectionInfo reports it: an Incus server or an OCI registry.
-  alias Opsmaru.Incus.{Error, OCI}
+  # GetConnectionInfo reports it: an Incus server, an OCI registry or a
+  # SimpleStreams server.
+  alias Opsmaru.Incus.{Error, OCI, SimpleStreams}
 
   def oci?(source), do: is_struct(source, OCI)
 
-  def protocol(source), do: if(oci?(source), do: "oci", else: "incus")
+  # A server that only serves images, never the same backend as an Incus target.
+  def image_server?(source), do: oci?(source) or is_struct(source, SimpleStreams)
+
+  def protocol(%OCI{}), do: "oci"
+  def protocol(%SimpleStreams{}), do: "simplestreams"
+  def protocol(_), do: "incus"
 
   def certificate(%OCI{certificate: certificate}), do: certificate
+  def certificate(%SimpleStreams{certificate: certificate}), do: certificate
   def certificate(client), do: (client.server.environment || %{})["certificate"] || ""
 
-  # ProtocolOCI.GetConnectionInfo has no project; an Incus source has its own.
-  def project(source), do: if(oci?(source), do: "", else: source.connection.project || "default")
+  # Image servers report no project; an Incus source has its own.
+  def project(source),
+    do: if(image_server?(source), do: "", else: source.connection.project || "default")
 
-  # ProtocolOCI.GetImageSecret: OCI registries have no private images.
-  def private_image(source) do
-    if oci?(source),
-      do:
-        {:error,
-         %Error{kind: :native, message: "Private images aren't supported with OCI registry"}},
-      else: :ok
-  end
+  # The image servers' GetImageSecret: they have no private images.
+  def private_image(%OCI{}),
+    do:
+      {:error,
+       %Error{kind: :native, message: "Private images aren't supported with OCI registry"}}
+
+  def private_image(%SimpleStreams{}),
+    do:
+      {:error,
+       %Error{
+         kind: :native,
+         message: "Private images aren't supported by the simplestreams protocol"
+       }}
+
+  def private_image(_), do: :ok
+
+  # The image servers' ExportImage, which a push copy calls after its token.
+  def export(%OCI{} = source), do: OCI.unsupported(source, "ExportImage")
+  def export(%SimpleStreams{} = source), do: SimpleStreams.unsupported(source, "ExportImage")
 
   def credentials?(nil), do: true
 

@@ -1,7 +1,9 @@
 // Reference driver for S05 image copy: invokes the unchanged official v7.0.1 CopyImage
 // over mutual TLS (relay also over Unix), then waits on, or cancels and then waits on,
 // the returned remote operation so the pinned cleanup (token cancellation, aliases)
-// runs to completion. An OCI source (S11) is the unchanged ConnectOCI client.
+// runs to completion. An OCI source (S11) is the unchanged ConnectOCI client and a
+// SimpleStreams source (S12) the unchanged ConnectSimpleStreams client, whose relay
+// downloads from the private fixture as natively.
 package main
 
 import (
@@ -28,6 +30,8 @@ type endpoint struct {
 	Rootfs     []byte  `json:"rootfs"`
 	User       string  `json:"user"`
 	Password   *string `json:"password"`
+	Streams    bool    `json:"simplestreams"`
+	CA         string  `json:"ca"`
 }
 
 // fixtureOCI is the unchanged OCI client except for GetImageFile: the pinned
@@ -49,6 +53,10 @@ func (f *fixtureOCI) GetImageFile(_ string, req incus.ImageFileRequest) (*incus.
 }
 
 func connectSource(ctx context.Context, e endpoint, temp string) (incus.ImageServer, error) {
+	if e.Streams {
+		// Trust comes from the CA; only a pinned certificate reaches the target.
+		return incus.ConnectSimpleStreams(e.URL, &incus.ConnectionArgs{TLSCA: e.CA, TLSServerCert: e.ServerCert, TempPath: temp})
+	}
 	if !e.OCI {
 		return connect(ctx, e, temp)
 	}

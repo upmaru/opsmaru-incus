@@ -22,6 +22,8 @@ type endpoint struct {
 	OCI      bool    `json:"oci"`
 	User     string  `json:"user"`
 	Password *string `json:"password"`
+	// A SimpleStreams image source (S12): the unchanged ConnectSimpleStreams client.
+	SimpleStreams bool `json:"simplestreams"`
 }
 
 func connectOCI(e endpoint) (incus.ImageServer, error) {
@@ -83,6 +85,8 @@ func main() {
 	var images incus.ImageServer = source
 	if in.Source.OCI {
 		images, err = connectOCI(in.Source)
+	} else if in.Source.SimpleStreams {
+		images, err = incus.ConnectSimpleStreams(in.Source.URL, &incus.ConnectionArgs{TLSServerCert: in.Source.Certificate})
 	} else if in.Action != "move" {
 		source, err = connect(ctx, in.Source)
 		images = source

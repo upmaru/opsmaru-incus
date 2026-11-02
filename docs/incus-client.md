@@ -47,7 +47,7 @@ successful MCP tool would establish complete declaration coverage.
 | `EventListener.open/2`, `add_handler/3`, `remove_handler/2`, `active?/1`, `send_event/2`, `wait/2`, `disconnect/1` | Explicit owner-bound callback listener; bounded capacity, sequential isolated callback workers, failure/lifetime cleanup and repeatable terminal result; local wait timeout does not disconnect or cancel work |
 | `Response.metadata_as_map/1`, `metadata_as_string_slice/1`, `metadata_as_operation/1`, `metadata_as_model/2` | Explicit native typed metadata extraction, including initialized-empty map/slice behavior for null, defaults and float64 metadata semantics; original response remains lossless |
 | `Tokens.certificate/1`, `cluster/1`, `encode/1` | Pure conversion of existing operation metadata and exact ordered JSON/base64 token formatting; tokens/addresses are privileged data, never provisioning or automatic connection targets |
-| `SimpleStreams.new!/3`, `refresh/1`, `images/1`, `image/2`, `aliases/1`, `alias/3`, `alias_architectures/3`, `files/2`, `image_file/4`, `unsupported/2` | Explicit verified HTTPS, host-supplied architecture and immutable catalog; pinned projections and checksummed binary sinks; optional bounded host delta adapter; installed conversion and full protocol parity remain open |
+| `SimpleStreams.new!/3`, `refresh/1`, `images/1`, `image/2`, `aliases/1`, `alias/3`, `alias_architectures/3`, `files/2`, `image_file/4`, `unsupported/2` | S12 certified: explicit verified HTTPS with an explicit server certificate, host-supplied architecture and immutable catalog; pinned projections, error text, per-file and combined fingerprint checks; optional host cache and delta adapters; no installed conversion or cache acceptance |
 | `OCI.new!/5`, `resolve/3`, `image/2`, `image_file/3`, `unsupported/2` | S11 certified: explicit host-owned OCI adapter; passive construction with an explicit registry certificate, bounded immutable cache, pinned alias/image/unsupported projections, Go's `metadata.yaml` bytes and acknowledged binary output; no bundled host runner or installed conversion acceptance |
 | `OCI.connection_info/1`, `http_client/1`, `http_request/4` | Native passive CA-configured metadata and bounded raw HTTP on an explicit verified HTTPS origin; no adapter/config origin inference, redirects or mutation replay |
 | `Session.exec/3`, `console/3`, `input/2`, `output/3`, `control/2`, `resize/3`, `signal/2`, `exit_status/1`, `close/1` | Native operation channels and control messages; local closure does not cancel Incus |
@@ -146,7 +146,8 @@ not run real skopeo, unpack an image, use root or contact a registry. Conversion
 contents, actual registry TLS/authentication and external process/file cleanup
 require separate installed-host-adapter acceptance. Connection info, origin
 HTTP, disconnect and alias architectures have their own pinned comparisons;
-S11 certification is described with image copy below. SimpleStreams now has a separate verified partial catalog/full-file slice below.
+S11 certification is described with image copy below, and S12 SimpleStreams
+certification in its own section below.
 
 HTTPS uses peer trust, hostname and certificate validity checks. Hosts select
 CA and client certificate/private-key files, or an exact SHA-256 server pin.
@@ -166,8 +167,8 @@ the explicit connection. Host readiness and authorization still precede I/O.
 
 Image-based create/rebuild requires `approved_origin:` for a remote source,
 before generating a private-image token. A subsequent target failure retains
-the token operation response for reconciliation. Only local images and native
-Incus HTTPS and OCI sources are covered; SimpleStreams image sources remain missing.
+the token operation response for reconciliation. Local images and native
+Incus HTTPS, OCI and SimpleStreams sources are covered.
 
 Mint 1.11.0/hpax 1.1.0 and MintWebSocket 1.0.5 are locked. HTTP requests have
 connection/send/receive deadlines and header/body budgets. Transfers use bounded
@@ -343,9 +344,10 @@ output rows, the B12 debug repair row, the eight S07 auxiliary byte stream
 rows, the eight S04 file transfer rows, the nineteen S06 backup and archive
 rows, the six S10 copy and migration rows, the three S05 image transfer
 rows, the two S02 console rows (console attachment and the operation
-WebSocket), the two S08 NBD rows and the two S09 SFTP rows. S11 (OCI) is
-certified under a rowless record that names its pinned declarations. Stream
-contract S12 stays open, so task 3.9 and `complete_port` remain incomplete. No
+WebSocket), the two S08 NBD rows and the two S09 SFTP rows. S11 (OCI) and
+S12 (SimpleStreams) are certified under rowless records that name their pinned
+declarations, so every stream contract is certified. Task 3.9 and
+`complete_port` stay incomplete until the closing review. No
 full-port or new backend/hardware acceptance follows from those fixtures.
 
 The callback listener has at most `min(queue_limit, 128)` handlers and one callback
@@ -404,11 +406,14 @@ secrets; the pinned Go private-image helper double-escapes special-character
 secrets. No upstream patch or real workload is used by these fixtures.
 
 
-SimpleStreams is a verified partial slice, constructed without contacting a backend:
+SimpleStreams (stream contract S12) is **certified** by
+`s12_simplestreams_image_server_v1` (2026-11-02), matching the pinned
+`ProtocolSimpleStreams` client over explicit verified HTTPS. It is constructed
+without contacting a backend:
 
 ```elixir
 stream = Opsmaru.Incus.SimpleStreams.new!(https_connection, context,
-  architecture: "aarch64")
+  architecture: "aarch64", certificate: server_pem)
 {:ok, catalog} = Opsmaru.Incus.SimpleStreams.refresh(stream)
 {:ok, image} = Opsmaru.Incus.SimpleStreams.alias(catalog, "ubuntu/24.04/arm64", "container")
 {:ok, result} = Opsmaru.Incus.SimpleStreams.image_file(catalog, image.data["target"],
@@ -419,14 +424,28 @@ Supply a connection without project/member or Incus-authenticated-header selecti
 The host supplies architecture explicitly; pin-equivalent platform selection uses
 the oracle's native architecture (including its Darwin x86_64 fallback). Catalog
 requests share one deadline and aggregate response byte limit; `queue_limit`
-bounds image/alias expansion. Sinks acknowledge binary chunks with `:ok`. Parts
-are verified against SHA-256 and size at completion; a failure can leave partial
-host output, which the host must discard or reconcile. There is no automatic retry,
-HTTP downgrade, redirect following, `/dev/incus/sock` discovery or file creation.
-Without an optional host delta adapter/base, downloads use full files. Conversion failure never falls back or replays delivered bytes.
-The four HTTP/connection/disconnect conveniences and complete cache/error variants
-remain open. These fixture results do not establish installed converter or
-real-backend acceptance.
+bounds image/alias expansion. Sinks acknowledge binary chunks with `:ok`. As
+natively, each part is checked against its SHA-256 only ("Hash mismatch for
+<url>: ..."), and the delivered metadata then rootfs bytes must hash to the
+image fingerprint ("Image fingerprint doesn't match. Got ... expected ...").
+Requesting only one part of a split image therefore fails, as in Go. A failure
+can leave partial host output, which the host must discard or reconcile.
+Catalog and download failures carry Go's text, such as "Failed parsing stream:
+Unable to fetch <url>: 404 Not Found". There is no automatic retry, HTTP
+downgrade, redirect following, `/dev/incus/sock` discovery or file creation.
+Without an optional host delta adapter and source, downloads use full files.
+Conversion failure never falls back or replays delivered bytes.
+
+`certificate:` is Go's `TLSServerCert`: one public PEM that connection info
+reports and copies send as the source certificate (empty by default). An
+optional `cache_adapter:` with `cache_config:` (and `cache_expiry:`, one hour by
+default) implements `SimpleStreams.CacheAdapter` in place of Go's cache
+directory, with the same namespace, expiry, stale fallback and 404 invalidation;
+shared code writes no files. Approved differences: `refresh/1` is explicit
+where Go loads lazily, one deterministic delta is converted, a catalog JSON
+decoding error's detail is the Elixir decoder's, and the local architecture is
+host-supplied. These fixture results do not establish installed converter or
+cache, public server or real-backend acceptance.
 
 
 Image-based create/rebuild retains the source connection's project. An explicitly
@@ -453,16 +472,21 @@ stream = Opsmaru.Incus.SimpleStreams.new!(https_connection, context,
   delta_config: private_converter_ref)
 {:ok, catalog} = Opsmaru.Incus.SimpleStreams.refresh(stream)
 {:ok, files} = Opsmaru.Incus.SimpleStreams.image_file(catalog, fingerprint,
-  %{rootfs: rootfs_sink},
-  delta_base: %{fingerprint: old_fingerprint, source: host_owned_base_ref})
+  %{metadata: metadata_sink, rootfs: rootfs_sink},
+  delta_source: fn base_fingerprint -> MyHost.base_ref(base_fingerprint) end)
 ```
+
+`delta_source:` is Go's `DeltaSourceRetriever`: it receives the source
+fingerprint of each `root.delta-<fingerprint>` file and returns an opaque base
+source or `nil`. The first match by source fingerprint is converted.
 
 `MyHost.DeltaConverter` implements `SimpleStreams.DeltaAdapter`. Its `convert/3`
 receives a unique `call_id`, absolute `deadline`, verified connection/context,
-opaque host base source and native delta/rootfs manifests. Call
+opaque host base source (as `base.source`) and native delta/rootfs manifests. Call
 `request.download_delta.(delta_sink)` synchronously once to receive checksum-
 verified delta bytes, then emit converted rootfs chunks through the acknowledged
-emitter. Root output must match the native size and SHA-256. Repeated/reentrant
+emitter. As natively, converted output is checked by the combined image
+fingerprint, not against the full rootfs manifest. Repeated/reentrant
 or foreign calls and failed acknowledgements reject further output. Delta plus
 converted-output bytes share the remaining aggregate stream budget. Resources
 are host-owned; `cleanup/3` receives the call identity and completion/failure/
@@ -497,8 +521,8 @@ OCI alias architecture keys use the host-supplied local architecture, which
 can differ from the inspected image architecture. The result returns a new
 immutable cache and native alias models; invalid local configuration and the
 pinned VM-type rejection occur before adapter work. No platform CLI is invoked.
-SimpleStreams connection-info remains missing; OCI connection info and HTTP
-are compared with the pinned client under S11.
+OCI and SimpleStreams connection info and HTTP are compared with the pinned
+client under S11 and S12.
 
 
 Image pull/push failures preserve an inner `:uncertain` as the top-level kind;
@@ -519,8 +543,9 @@ without edits by omitting `--write`.
 
 `SimpleStreams.connection_info/1` returns the canonical explicit HTTPS origin
 and native protocol/default fields without a request or credential-file read.
-Certificate PEM is empty because a CA/fingerprint reference is not a supplied
-server PEM; the native CA-configured getter has the same result. TLS verification
+Its certificate is the explicit `certificate:` PEM, empty by default: a
+CA/fingerprint reference is never read as a server PEM, and the native
+CA-configured getter has the same result. TLS verification
 still uses the connection's explicit trust and client-key references when needed.
 
 `RequestContext.new!(timeout: milliseconds)` creates an explicit local lifetime
@@ -1121,8 +1146,8 @@ Approved exclusions:
 - trying each address a server advertises
 - cluster forwarding beyond host project and target routing
 
-Copies whose source is a SimpleStreams server stay with S12. OCI sources are
-certified with S11 (below). Real-daemon image acceptance is separately recorded.
+OCI and SimpleStreams sources are certified with S11 and S12 (below).
+Real-daemon image acceptance is separately recorded.
 
 The OCI image server (stream contract S11) is **certified** by
 `s11_oci_image_server_v1` (2026-10-31), matching the pinned `ProtocolOCI`
@@ -1150,6 +1175,23 @@ Approved differences: a failed lookup is not cached for a later `image/2`,
 registry credentials are a separate option rather than URL user information.
 Installed adapter conversion, registry TLS and authentication and real-daemon
 pulls remain separately recorded.
+
+A refreshed `SimpleStreams` value can likewise be the source of
+`Images.copy/4`, `ImageInstances.create/5` and `rebuild/6`, as the pinned
+callers accept a `ProtocolSimpleStreams` source (S12):
+
+- A pull tells the target protocol `simplestreams`, the approved origin, the
+  explicit certificate and the fingerprint (or, for an instance, the alias when
+  one is given). SimpleStreams images are public; a private image fails before
+  any request with "Private images aren't supported by the simplestreams
+  protocol". Registry credentials are refused.
+- A relay downloads through `SimpleStreams.image_file/4` into the relay's
+  sinks and uploads a unified or split image named after the image filename.
+- A push requests the target's push token, returns "Exporting images is not
+  supported by the simplestreams protocol" and cancels the token.
+
+Target requests and the image files fetched agree with the unchanged pinned
+callers on Unix and mutual HTTPS targets.
 
 Consoles (stream contract S02) are **certified** by `s02_console_v1`
 (2026-10-28). It completes console attachment
