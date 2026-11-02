@@ -100,6 +100,7 @@ defmodule Opsmaru.Incus.RawChannel do
               received: 0,
               written: 0,
               pending: nil,
+              armed: false,
               read_eof: false,
               notify_read_eof: false,
               write_eof: false
@@ -107,8 +108,7 @@ defmodule Opsmaru.Incus.RawChannel do
 
             case enqueue(state, initial) do
               {:ok, state} ->
-                rearm(state)
-                {:ok, state}
+                {:ok, rearm(state)}
 
               _ ->
                 transport.close(socket)
@@ -172,8 +172,7 @@ defmodule Opsmaru.Incus.RawChannel do
   def handle_call({:recv, timeout}, from, state) do
     case :queue.out(state.queue) do
       {{:value, bytes}, queue} ->
-        state = %{state | queue: queue, queued: state.queued - 1}
-        rearm(state)
+        state = rearm(%{state | queue: queue, queued: state.queued - 1})
         {:reply, {:ok, bytes}, state}
 
       {:empty, _} ->
@@ -226,11 +225,9 @@ defmodule Opsmaru.Incus.RawChannel do
 
   @impl true
   def handle_info({tag, socket, bytes}, %{socket: socket} = state) when tag in [:tcp, :ssl] do
-    case enqueue(state, bytes) do
+    case enqueue(%{state | armed: false}, bytes) do
       {:ok, state} ->
-        state = deliver(state)
-        rearm(state)
-        {:noreply, state}
+        {:noreply, state |> deliver() |> rearm()}
 
       _ ->
         terminate_error(state, :overflow)
@@ -254,7 +251,8 @@ defmodule Opsmaru.Incus.RawChannel do
   end
 
   def handle_info({tag, socket, _}, %{socket: socket} = state)
-      when tag in [:tcp_error, :ssl_error], do: terminate_error(state, :channel_io)
+      when tag in [:tcp_error, :ssl_error],
+      do: terminate_error(state, :channel_io)
 
   def handle_info({:read_timeout, tag}, %{pending: {from, tag, _}} = state) do
     GenServer.reply(from, {:error, %Error{kind: :deadline}})
@@ -304,12 +302,18 @@ defmodule Opsmaru.Incus.RawChannel do
     %{state | queue: queue, queued: state.queued - 1, pending: nil}
   end
 
-  defp rearm(%{read_eof: false} = state) do
-    if state.queued < state.connection.queue_limit, do: setopts(state, active: :once)
-    :ok
+  # At most one active-once delivery is outstanding: one already in the mailbox
+  # still needs queue space, so the socket is armed again only after it is handled.
+  defp rearm(%{read_eof: false, armed: false} = state) do
+    if state.queued < state.connection.queue_limit do
+      setopts(state, active: :once)
+      %{state | armed: true}
+    else
+      state
+    end
   end
 
-  defp rearm(_), do: :ok
+  defp rearm(state), do: state
   defp setopts(%{transport: :gen_tcp} = state, opts), do: :inet.setopts(state.socket, opts)
   defp setopts(state, opts), do: :ssl.setopts(state.socket, opts)
   defp fail(state, kind), do: {:stop, :normal, {:error, %Error{kind: kind}}, state}
