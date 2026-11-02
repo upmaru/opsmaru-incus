@@ -46,8 +46,7 @@ defmodule Opsmaru.Incus.Migration do
 
   @doc "Wait for authoritative target completion within its budget; source completion is separate."
   def wait_target(%__MODULE__{} = migration, opts \\ []) do
-    with true <-
-           Keyword.keyword?(opts) and Keyword.keys(opts) -- [:timeout, :poll_interval] == [],
+    with true <- Keyword.keyword?(opts) and Keyword.keys(opts) -- [:timeout, :poll_interval] == [],
          {:ok, operation} <- target(migration),
          {:ok, current} <- Operation.wait(operation, opts) do
       {:ok, %{migration | target: current}}
@@ -189,9 +188,7 @@ defmodule Opsmaru.Incus.Migration do
          Enum.all?(data, fn {name, value} ->
            is_binary(name) and byte_size(name) in 1..128 and is_binary(value) and
              byte_size(value) in 1..4096
-         end),
-       do: {:ok, data},
-       else: {:error, %Error{kind: :invalid_migration_secrets}}
+         end), do: {:ok, data}, else: {:error, %Error{kind: :invalid_migration_secrets}}
   end
 
   defp failure(state, error, operation) do

@@ -225,8 +225,7 @@ defmodule Opsmaru.Incus.ServerYaml do
   defp block_indicator?(<<c, _::binary>>) when c in ~c"#,[]{}&*!|>'\"%@`", do: true
 
   defp block_indicator?(<<c, rest::binary>>)
-       when c in [??, ?:, ?-] and (rest == "" or binary_part(rest, 0, 1) == " "),
-       do: true
+       when c in [??, ?:, ?-] and (rest == "" or binary_part(rest, 0, 1) == " "), do: true
 
   defp block_indicator?(text),
     do: String.contains?(text, [": ", " #"]) or String.ends_with?(text, ":")
