@@ -190,6 +190,11 @@ defmodule Opsmaru.Incus.Transfer do
         with :ok <- handler.({:headers, acc.headers}),
              do: collect(rest, ref, connection, sink, acc)
 
+      # Like the pinned DownloadFileHash, an origin error status is final once its
+      # headers arrive; its body is never read.
+      {:origin_events, _} ->
+        {:done, acc}
+
       _ ->
         collect(rest, ref, connection, sink, acc)
     end

@@ -301,7 +301,11 @@ defmodule Opsmaru.Incus.SimpleStreamsReferenceTest do
        "images"},
       {:empty_body_never_falls_back, Map.put(ok, @index, {200, ""}), true, "images"},
       {:missing_file_invalidates, Map.put(ok, "/images/root-meta", {404, ""}), true, "file"},
-      {:refills, ok, true, "images"}
+      {:refills, ok, true, "images"},
+      # The status alone invalidates; a body past max_response_bytes is never read.
+      {:oversized_missing_file_invalidates,
+       Map.put(ok, "/images/root-meta", {404, :binary.copy("x", 9 * 1_048_576)}), true, "file"},
+      {:refills_again, ok, true, "images"}
     ]
 
     for {label, route, expired, action} <- steps do
