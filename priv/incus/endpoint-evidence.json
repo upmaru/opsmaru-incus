@@ -2,7 +2,7 @@
   "schema": 1,
   "reference_revision": "13f3992766142d5087fff2e362cd2e1a75294fe8",
   "source": {"path": "doc/rest-api.yaml", "sha256": "7b4e07375da92f30e7eadf766f1bbdf40bf9968ee305a16be1afe5998e72e91f"},
-  "inventory_complete": false,
+  "inventory_complete": true,
   "classification_inventory": "priv/incus/endpoint-inventory.json",
   "complete_port": false,
   "scope": "Selected 247 pairs: 245 prior pairs plus the two S09 SFTP rows. All 247 are complete under reviewed completion records (native wait, events, exec, all eight B01 mutations, conditional instance PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10 administrative rows, all 24 B05 PATCH rows, 28 stream-free B08 storage rows, all nineteen stream-free B11 rows, all three B07 rows, B12, the eight S07 rows, the eight S04 rows, the nineteen S06 rows, the six S10 rows, the three S05 rows, the two S02 rows, the two S08 NBD rows and the two S09 SFTP rows). Full classification is separate. No automatic tool export or acceptance claim.",

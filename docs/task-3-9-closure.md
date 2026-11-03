@@ -1,7 +1,7 @@
 # Task 3.9 closure ledger
 
-Task 3.9 is open. This ledger records remaining behavior, not an exception that
-closes the task. The unchanged reference is Incus v7.0.1 revision
+Task 3.9 is closed by the closing review below. This ledger records the
+evidence behind it, not an exception that closes the task. The unchanged reference is Incus v7.0.1 revision
 `13f3992766142d5087fff2e362cd2e1a75294fe8`. Real Incus acceptance is task 4.3;
 installed Macus gateway/runtime/hardware acceptance remains consumer-owned.
 
@@ -14,15 +14,15 @@ On 2026-10-13 the user approved task 3.9 completion against a verified Incus
 REST endpoint/method inventory, native streaming/upgrade contracts and the public
 client behavior required by `add-incus-operations`. Literal Go declaration parity
 is a separate claim: keep this declaration ledger and `complete_port=false`
-truthful even when the task's behavioral gate is eventually satisfied. The 273
-JSON method descriptors map to 193 distinct catalogue routes. The full classified
+truthful even when the task's behavioral gate is satisfied. The 307 JSON method
+descriptors (268 named-Go, 39 REST) map to 223 distinct catalogue routes. The full classified
 REST inventory now includes all 247 documented pairs and one supplemental server
 POST repair row; mapping a route does not certify its supported contract.
 
-## Current behavioral checklist — audited 2026-10-15
+## Behavioral checklist — audited 2026-10-15 (historical)
 
 This checklist started at `47b1918` (PR #9) and now includes the approved
-conditional instance PATCH, ten-method inspection, full classification, four conditional resource PATCH, B01 lifecycle and B03 completion-record slices. Sections below it are chronological evidence and may describe gaps since superseded.
+conditional instance PATCH, ten-method inspection, full classification, four conditional resource PATCH, B01 lifecycle and B03 completion-record slices. The closing review supersedes its counts and open items; sections below it are chronological evidence and may describe gaps since superseded.
 A checked item means the stated bounded behavior has evidence, not that its
 entire endpoint, protocol or Go declaration is complete. The audit changed no support status. The new four-method batch adds bounded typed implementations; endpoint/declaration parity and tool exports remain separate.
 
@@ -146,14 +146,17 @@ missing typed implementations, one equivalent POST route and one repair mismatch
   completion-race and lost-reply evidence. Broader endpoint scope remains open.
 - [x] Define finite certification criteria and assign all endpoint/stream
   obligations in [task-3-9-backlog.md](task-3-9-backlog.md).
-- [ ] Complete required B01–B12 contracts and S01–S12 streaming obligations;
-  classification is complete, behavioral certification remains open. Preserve
-  already fixture-verified scopes and do not infer completion from source links.
-- [ ] Add reviewed completion records for every remaining finite supported contract.
-  Ninety-seven rows plus S01/S03 are complete; the operation WebSocket and instance
-  creation rows stay partial while S02/S06/S10 are open. No Go declaration is promoted.
+- [x] Complete required B01–B12 contracts and S01–S12 streaming obligations;
+  all 247 rows, the supplemental repair row and S01–S12 are complete or certified
+  under reviewed records, with broader variants supported or approved-excluded.
+- [x] Add reviewed completion records for every finite supported contract: 207
+  records. The operation WebSocket row completes with S02 and instance creation
+  with S10. No Go declaration is promoted.
 
-### The selected 103 pairs: verified scope and next closure obligation
+### The selected 103 pairs: verified scope and next closure obligation (historical)
+
+Every pair below is now complete; its "remaining" column predates the records
+whose supported views and approved exclusions replaced it.
 
 `resource_slice_test.exs` provides the shared **Unix** official typed-method
 request/result, project/member, extension and native-error baseline. Shared TLS
@@ -167,7 +170,7 @@ additional scoped evidence, not a repetition of that baseline.
 | GET instances, instance and state | 3 | **Complete** (`b02_instances_v1`, `b02_instance_v1`, `b02_instance_state_v1`) with every mapped method. core_inspection_v1: catalogue queries with container samples, populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Other recursion/filter/all-projects/instance-type/field/error/cluster variants remain open. |
 | PATCH instance | 1 | **Complete** (`b04_instance_patch_v1`). Conditional typed InstancePut, explicit ETag, native empty sync result, Unix/mutual-HTTPS transport and independent failure/lifetime fixtures | Unconditional updates, full field/cluster behavior and real-daemon merge acceptance remain unverified. |
 | PATCH project/profile/image/instance snapshot | 4 | Explicit ETag, valid field presence, scoped routes, native 200 empty sync versus 202 snapshot acceptance, errors, uncertain response loss and lifetime cleanup on Unix/mutual HTTPS | Conditional subset only; B05 certification, unconditional variants, additional fields/cluster/rejections and real-daemon merge/expiry acceptance remain separate. |
-| POST instance; PUT instance/state; DELETE instance | 4 | PUT instance, PUT state and DELETE instance are **complete** (`b01_update_instance_v1`, `b01_update_instance_state_v1`, `b01_delete_instance_v1`); POST instance stays partial while S06/S10 are open. initial_mutation_lifecycle_v1: named-Go submission plus native /wait composition; populated update and restore bodies, applicable PUT ETags, running/success/failure, rejection, uncertainty/no replay and binding on both transports | Additional source/state/body/extension/error/cluster variants and real-daemon effects remain unverified. |
+| POST instance; PUT instance/state; DELETE instance | 4 | PUT instance, PUT state and DELETE instance are **complete** (`b01_update_instance_v1`, `b01_update_instance_state_v1`, `b01_delete_instance_v1`); POST instance is complete under `s10_migration_v1`. initial_mutation_lifecycle_v1: named-Go submission plus native /wait composition; populated update and restore bodies, applicable PUT ETags, running/success/failure, rejection, uncertainty/no replay and binding on both transports | Additional source/state/body/extension/error/cluster variants and real-daemon effects remain unverified. |
 | GET snapshots and snapshot | 2 | **Complete** (`b02_instance_snapshots_v1`, `b02_instance_snapshot_v1`) with every mapped method. core_inspection_v1: catalogue list/get queries, populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Names/other recursion, stateful/expiry/field/error/cluster variants remain open. |
 | POST/DELETE snapshot | 2 | **Complete** (`b01_create_instance_snapshot_v1`, `b01_delete_instance_snapshot_v1`). initial_mutation_lifecycle_v1: native acceptance/wait outcomes, rejection, response loss/no replay and binding on both transports; instance PUT separately verifies restore-body linkage | Additional snapshot fields/expiry/stateful/cluster/error behavior and real-daemon restore effects remain unverified. |
 | GET images and image | 2 | **Complete** (`b02_images_v1`, `b02_image_v1`) with every mapped method. core_inspection_v1: catalogue list/get populated/empty/corrupt/403/404 fields, binding/ETags and byte/readiness/lifetime cleanup on both transports | Public/private/filter/all-projects/recursion/field/error variants remain open; alias/export/token behavior is separate. |
@@ -177,7 +180,7 @@ additional scoped evidence, not a repetition of that baseline.
 | GET native operation wait | 1 | **Complete** (`b03_native_wait_v1`): finite timeout queries, gated bodies, ETags, running/completed/failed/cancelled snapshots, 403/404, EOF and pre-header loss, local lifetime cleanup and preflight on Unix/mutual HTTPS | None within the record. Approved exclusions: `?public`, arbitrary/empty secrets (rejected before I/O) and cluster forwarding; timeout=-1 rejection is an approved difference. Real-daemon timeout behavior is separate acceptance. |
 | GET events | 1 | **Complete** (`b03_events_v1`, S03): named-Go type/all-projects/project/target upgrade targets, native 400/403/404, Event fields, listener/send matrix, inbound bounds, deadline/cancellation and peer closure on Unix/mutual HTTPS | None within the record. Approved exclusions: cluster forwarding and callback ordering. Real-daemon event streams are separate acceptance. |
 | POST exec | 1 | **Complete** (`b03_exec_v1`, S01): named-Go collected, non-waiting, interactive PTY and record-output submission with user/group/cwd/size, extension guards, control frames, native 400/403/404 and upgrade targets; independent channel-failure, status, redaction, limit, lifetime and peer-closure fixtures on Unix/mutual HTTPS | None within the record. Approved exclusions: recorded-output retrieval (B07), cluster forwarding, arbitrary producers and tool capture/truncation policy. Real-daemon exec/PTY is separate acceptance. |
-| GET operation WebSocket | 1 | Exec channels, barriers, bounded queues/frames, control and write-lifetime cleanup | Classify non-exec channel contracts and secret/query scope separately; exec evidence does not close console/events/migration. |
+| GET operation WebSocket | 1 | Exec channels, barriers, bounded queues/frames, control and write-lifetime cleanup | **Complete** under `s02_console_v1`, with exec (S01) and migration (S10) channels certified by their own records. |
 
 Primary evidence: `test/client_test.exs`, `test/discovery_helpers_test.exs`,
 `test/resource_slice_test.exs`, `test/operation_test.exs`,
@@ -196,15 +199,15 @@ file/image transfers. They remain foundation classification obligations.
 | Contract | Existing bounded implementation/evidence | Remaining scope or evidence decision |
 | --- | --- | --- |
 | Live exec | `Session.run/collect/exec`; `test/exec_output_test.exs`, `test/session_test.exs` | S01 certified by `b03_exec_v1` on Unix/mutual HTTPS: bounded noninteractive collection plus interactive host-owned channels. Recorded-output retrieval stays B07; tools own capture/truncation/schema policy. |
-| Static and dynamic console WebSocket | `Session.console`, `DynamicConsole`; `test/dynamic_console_reference_test.exs` includes native frames, repeated attachments, TLS, bounds and peer cleanup | Full native callback/reader/writer orchestration and all console types/options remain partial. Earlier blanket “dynamic console missing” notes are superseded. |
+| Static and dynamic console WebSocket | `Session.console`, `DynamicConsole`; `test/dynamic_console_reference_test.exs` includes native frames, repeated attachments, TLS, bounds and peer cleanup | S02 certified by `s02_console_v1` (2026-10-28) on Unix/mutual HTTPS: `console` and `vga` types, size and `force`, native channel order and the detach close frame. Host-driven channels, local checks before the POST and fail-closed channel secrets are approved differences; the public WebSocket view and cluster forwarding are approved exclusions. |
 | Events and operation callbacks | `EventListener`, `Events`; `test/event_contract_test.exs`, `test/event_listener_test.exs`, `test/event_send_test.exs`, `test/operation_handler_test.exs` | S03 certified by `b03_events_v1` on Unix/mutual HTTPS. Explicit listener ownership is a recorded difference; Go callback order is never asserted. Operation handler orchestration stays with its own rows. |
-| Instance/volume file GET/POST/DELETE | `Files`, `FileHeaders`; `test/file_reference_test.exs`, `test/file_variants_reference_test.exs`, `test/file_headers_reference_test.exs` | HEAD is absent; reconcile link/type/mode/query variants and both-transport failure matrix. Directory metadata and binary sinks already have separate evidence. |
-| Image import/export/private token | `Images`; `test/image_transfer_test.exs`, `test/private_image_reference_test.exs` | Unified/split bytes, private token encoding, aliases and copy uncertainty have evidence; remaining compression/header/options and multipart failure cases need bounded classification. |
-| Instance/volume/bucket archives | `Files`; `test/file_variants_reference_test.exs`, `test/backup_variants_test.exs` | Export/import/direct POST are implemented; classify each archive/name/pool/config/device/ISO variant and TLS/failure evidence rather than treating backups as absent. |
-| Metrics, logs, console log, templates, debug memory | `Streams`; `test/streams_test.exs` | Typed byte/header/error and TLS evidence exists. Recorded exec log paths and debug repair are separate missing wrappers; define the remaining per-helper option contracts. |
-| Raw instance/volume SFTP and NBD | `RawChannel`, explicit Incus helpers; `test/native_upgrade_reference_test.exs`, `test/volume_upgrade_reference_test.exs`, `test/raw_channel_test.exs`, `test/tls_stream_test.exs` | Raw transport/half-close/coalesced-byte/bounds evidence exists. NBD protocol implementation stays caller-owned; record all request options and the approved coalesced-byte oracle difference. |
+| Instance/volume file GET/POST/DELETE | `Files`, `FileHeaders`; `test/file_reference_test.exs`, `test/file_variants_reference_test.exs`, `test/file_headers_reference_test.exs` | S04 certified by `s04_file_transfer_v1` (2026-10-26) on Unix/mutual HTTPS, with typed HEAD helpers (B06) evidenced by independent fixtures because the pinned client has none. Agent-mode file access and cluster forwarding are approved exclusions. |
+| Image import/export/private token | `Images`; `test/image_transfer_test.exs`, `test/private_image_reference_test.exs` | S05 certified by `s05_image_transfer_v1` (2026-10-28): every `CreateImage` source, unified/split/OCI upload and download, push export and pull/push/relay copy with explicit `Images.wait_copy/2`. Explicit copy cleanup and the other recorded S05 differences are approved; `/dev/incus/sock`, advertised-address fallback, the public views and cluster forwarding are approved exclusions. |
+| Instance/volume/bucket archives | `Files`; `test/file_variants_reference_test.exs`, `test/backup_variants_test.exs` | S06 certified by `s06_archives_v1` (2026-10-26) across 19 rows: backup control planes, exports, direct backup POST and imports including ISO and the shared import modes, on Unix/mutual HTTPS. Cluster forwarding is an approved exclusion. |
+| Metrics, logs, console log, templates, debug memory | `Streams`; `test/streams_test.exs` | S07 certified by `s07_byte_streams_v1` (2026-10-26) on Unix/mutual HTTPS. Recorded exec output (B07) and debug repair (B12) have their own completed records; the console type selector and cluster forwarding are approved exclusions. |
+| Raw instance/volume SFTP and NBD | `RawChannel`, explicit Incus helpers; `test/native_upgrade_reference_test.exs`, `test/volume_upgrade_reference_test.exs`, `test/raw_channel_test.exs`, `test/tls_stream_test.exs` | S08 certified by `s08_raw_upgrades_v1` (2026-10-29), completing both NBD rows; S09 completes the SFTP rows. Kept coalesced 101 bytes and the write refusal after a TLS backend half-close are approved differences; the NBD payload protocol stays caller-owned and real-daemon payload acceptance stays separate. |
 | Typed SFTP | `SFTP`; `test/sftp_operations_reference_test.exs`, `test/sftp_session_test.exs`, `test/sftp_helpers_reference_test.exs` | S09 certified by `s09_typed_sftp_v1` (2026-10-30), completing both SFTP rows with S08: the pinned `pkg/sftp` client with shared sessions, every path/metadata call and `*sftp.File` I/O. Reporting a failed final upload write is an approved difference. |
-| Copy/migration negotiation and relay | `Migration`, `Copy`, `ImageInstances`; `test/copy_negotiation_reference_test.exs`, `test/copy_guards_test.exs`, `test/migration_test.exs` | Recorded boolean/locality/cluster/project/member combinations, identities and relay cleanup have evidence. Enumerate remaining channel/option/remote-wait cases and single-origin differences; do not restart an already implemented copy port. |
+| Copy/migration negotiation and relay | `Migration`, `Copy`, `ImageInstances`; `test/copy_negotiation_reference_test.exs`, `test/copy_guards_test.exs`, `test/migration_test.exs` | S10 certified by `s10_migration_v1` (2026-10-27): rename, migrate, volume create and the collection POST, local/pull/push/relay copies, remote wait/cancel and live channels on Unix/mutual HTTPS. Strict fail-closed relay is an approved difference; advertised-address fallback and cluster forwarding are approved exclusions. Image copy is certified with S05. |
 | OCI host-adapter handoff | `OCI`, `Images`, `ImageInstances`; `test/oci_test.exs`, `test/oci_origin_reference_test.exs`, `test/image_copy_contract_test.exs`, `test/copy_negotiation_reference_test.exs` | S11 certified by `s11_oci_image_server_v1` (2026-10-31), naming every `ProtocolOCI` declaration: projections, metadata bytes, origin helpers and OCI sources of copies and image-based create/rebuild. Uncached failed lookups, the host-supplied local architecture and separate registry credentials are approved differences; installed conversion and registry authentication remain separate. |
 | SimpleStreams HTTPS and host delta | `SimpleStreams`, `Images`, `ImageInstances`; `test/simple_streams_test.exs`, `test/simple_streams_reference_test.exs`, `test/image_copy_contract_test.exs`, `test/copy_negotiation_reference_test.exs` | S12 certified by `s12_simplestreams_image_server_v1` (2026-11-02), naming every `ProtocolSimpleStreams` declaration: projections, error text, fingerprint checks, host cache and delta adapters, origin helpers and SimpleStreams sources of copies and image-based create/rebuild. Explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture are approved differences; installed conversion and cache storage remain separate. |
 
@@ -213,8 +216,8 @@ file/image transfers. They remain foundation classification obligations.
 - [x] Separate missing implementation, contract/evidence work, source differences
   and separately owned acceptance for every row. New scope exclusions still need
   explicit approval; existing boundaries are retained. No blanket “full matrix” gate.
-- [ ] Finish independent review and canonical/both-platform/immutable-consumer
-  checks for each implemented slice. Real Incus acceptance requires fresh explicit
+- [x] Finish independent review and canonical/both-platform/immutable-consumer
+  checks for each implemented slice (closing review, 2026-11-03). Real Incus acceptance requires fresh explicit
   opt-in and isolated state; historical 4.3 and Macus hardware are separate gates.
 
 ### Ten inspection contracts — fixture-verified
@@ -2043,9 +2046,72 @@ review.
   no expiry and ignored delta sources.
 - Approved differences: explicit `refresh/1`, one deterministic delta, the
   decoder's JSON error detail and the host cache adapter (2026-11-02); the
-  host-supplied local architecture (2026-10-12). Hosts see progress through
+  library's transport error kinds in place of Go `net/http` connection error
+  text (2026-11-03); the host-supplied local architecture (2026-10-12). Hosts see progress through
   their own sinks, and a failed relay upload is reported (S05, 2026-10-28).
 - Approved boundary: no `/dev/incus/sock` download, HTTP attempt before HTTPS
   or xdelta3 discovery (section 4b, 2026-10-12). Installed delta conversion
   and cache storage, public servers and real-daemon pulls stay separately
   recorded.
+
+## Closing review — 2026-11-03
+
+The closure gate ran once over merged develop (`0652e04`, S12) on
+`feature/incus-task-3-9-closing-review`. Four fresh review agents each took
+one part of the gate with the source, tests and ledgers, not this ledger's
+conclusion: the completion records, `coverage.json`, the client behavior
+`add-incus-operations` needs, and the library boundaries. Each finding below
+was reproduced before it was acted on.
+
+Fixed in this PR:
+
+- [x] `DynamicConsole` and `EventListener` `format_status/1` returned a map
+  with only `:state`, which OTP 27 rejects with an "unknown keys" fallback.
+  All five owned channel processes now use one helper that keeps OTP's keys
+  and also hides the last message and debug log, which can carry frames or
+  exec input (`test/redaction_test.exs`; the old callbacks fail it).
+- [x] S02 and S08 claimed both transports, but their capacity, owner-loss,
+  caller-loss, blocked-write, peer-closure, bounds and lifetime tests ran over
+  Unix only. Those tests now run over Unix and mutual HTTPS.
+- [x] S12 had no cancellation case; the binary-sink lifetime test now covers
+  host cancellation, and the S12 kind requires the case.
+- [x] Nothing checked `coverage.json` against its generator; `check:reference`
+  now runs `scripts/update-incus-coverage.py --check`. The inventory test
+  requires every partial mapping to name an existing implementation and
+  evidence. Five helper mappings whose evidence has no Go oracle now say so.
+- [x] The global flags are derived: `behavior_complete` is allowed only when
+  every documented and supplemental row is complete and every stream contract
+  certified, and `inventory_complete` only when the manifest equals the
+  normalized pinned pairs. Negative fixtures cover a partial row, the repair
+  route, an open protocol and an extra native pair; `complete_port` stays false.
+- [x] Stale ledger text: the streaming table, the historical checklists, the
+  backlog classification table and counts, two stream `remaining` notes and
+  the foundation coverage summary now match the records.
+- [x] The isolated consumer pin moves to `0652e04`, which builds and passes.
+
+Reviewed and kept, with reasons:
+
+- The validator checks record structure, anchors and approvals, not that a
+  test exercises a case; approvals are dated strings. Reviewers sampled about
+  25 records across kinds and found their tests do exercise the claimed cases
+  on both transports. Selector exclusions inside supported views stay free
+  text in `selectors` and `excluded_scope`.
+- A WorkScope capacity refusal reports a non-GET as `uncertain` although it
+  was never sent. It errs toward no replay and stays as is.
+- `add-incus-operations` needs operation get/wait/cancel by ID, bounded exec
+  and truncation. The client provides them through the completed
+  `GetOperation`, `GetOperationWait` (server-side timeout) and
+  `DeleteOperation` calls, `Session.exec/3` with `Session.signal/2` and
+  host sinks; which of them a tool uses, its truncation policy and its
+  input validation are that change's tool-layer work. No tool or gateway
+  code exists here yet.
+- Go declaration parity is unchanged: 1239 partial and 41 missing of 1,280,
+  `complete_port=false`. Installed OCI/delta adapters, real-Incus acceptance
+  (task 4.3) and Macus hardware stay separately recorded.
+
+Local results on the closing branch: `mise run check` passes 2058 tests,
+formatting, warning-free compile, strict Credo and strict OpenSpec;
+`mise run check:reference` passes the verifier tests, 188 constants and the
+coverage drift check; the isolated consumer passes at `0652e04`. CI on the
+closing PR runs both platforms and the consumer at its head. With those gates,
+task 3.9 is ticked.

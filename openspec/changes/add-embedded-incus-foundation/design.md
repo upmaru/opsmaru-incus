@@ -163,6 +163,14 @@ scope" text in the closure ledger's streaming table and the open B01/B02
 variant items are reconciled with the completion records that superseded
 them; no exclusion is added that was not already approved.
 
+The closing review enables `behavior_complete` only after the existing per-row,
+supplemental-route and protocol completion-record validation, and only when all
+those entries are complete. The evidence manifest's `inventory_complete` means
+exact equality with the normalized pinned REST pairs, not declaration parity.
+Negative fixtures retain coverage for incomplete rows, supplemental routes,
+rowless protocols, omitted native pairs and any `complete_port=true` claim.
+No runtime behavior changes are part of this bookkeeping transition.
+
 #### Approved slice: S12 SimpleStreams certification (2026-11-02)
 
 Certify stream contract S12 by matching the pinned `ProtocolSimpleStreams`

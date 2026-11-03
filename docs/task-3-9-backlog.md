@@ -3,25 +3,28 @@
 Audited at Incus v7.0.1 `13f3992766142d5087fff2e362cd2e1a75294fe8`
 after merged PR #13 (`8e9ce89`), with B01 bounded mutation lifecycle and B02 core inspection evidence added. The authoritative classified rows are in
 [`endpoint-inventory.json`](../priv/incus/endpoint-inventory.json). This is a
-classified backlog, updated with bounded implementation evidence; it does not claim behavioral completion.
+classified backlog, updated with bounded implementation evidence. Every row and
+stream contract is now complete or certified under reviewed records; the
+closing review (2026-11-03, `docs/task-3-9-closure.md`) closes task 3.9. Later
+sections are chronological and keep the counts of their own audits.
 
 ## Inventory result
 
 All **247 documented endpoint/method pairs** and **293 operation views** are
 classified: 46 views are additional query/access variants, including ten public
 access views. `?public` documents untrusted/public behavior; it is not an invented
-wire selector. All **273 catalogue descriptors** map to these rows. No documented
+wire selector. All **307 catalogue descriptors** (273 at this audit) map to these rows. No documented
 pair or view is left unclassified.
 
-| Classification | Pairs | What still needs closing |
+| Classification | Pairs now (at this audit) | Original closing obligation |
 | --- | ---: | --- |
-| Exact JSON catalogue mapping | 188 | Certify a finite supported contract, reusing existing native fixtures. |
-| Custom-volume-only catalogue mapping | 5 | Certify native custom-only backup scope; the server rejects other backup subtypes. |
-| Explicit discovery/binary/upgrade helper | 22 | Certify the helper's finite options, streams, errors and cleanup. |
-| Missing typed implementation | 30 | Implement and verify, or obtain an explicit user-approved exclusion. |
-| Equivalent volume collection POST | 1 | Same native handler as typed-volume POST; certify supported route/body behavior or resolve scope. |
-| Incorrect documented GET repair | 1 | Retain the source discrepancy; actual mutation is POST, below. |
-| **Documented total** | **247** | No classification is a completion claim. |
+| Exact JSON catalogue mapping | 214 (188) | Certify a finite supported contract, reusing existing native fixtures. |
+| Custom-volume-only catalogue mapping | 7 (5) | Certify native custom-only backup scope; the server rejects other backup subtypes. |
+| Explicit discovery/binary/upgrade helper | 25 (22) | Certify the helper's finite options, streams, errors and cleanup. |
+| Missing typed implementation | 0 (30) | Implement and verify, or obtain an explicit user-approved exclusion. |
+| Equivalent volume collection POST | 0 (1) | Same native handler as typed-volume POST; now a catalogue mapping (S10). |
+| Incorrect documented GET repair | 1 (1) | Retain the source discrepancy; actual mutation is POST, below. |
+| **Documented total** | **247** | All 247 are complete under reviewed records; classification itself is not a completion claim. |
 
 The standard Go AST extractor accounts for **246 public v1.0 registered pairs**,
 including image suffix actions. Root discovery is a separately checked source
@@ -77,7 +80,8 @@ helper queries are classified separately. Selector-compatible candidates do not
 establish public access or body semantics. Copied verified scopes must exactly
 match the selected evidence entries, including absence on unrelated rows.
 
-No new exclusions are approved. Existing bounded implementations still need
+This audit approved no new exclusions; the later completion records carry each
+approved exclusion with its date. Existing bounded implementations then needed
 contract certification; this count must not imply that only 32 tests or changes
 remain, nor that every remaining method requires a new implementation.
 
@@ -117,13 +121,13 @@ the Incus REST document and remain in the completion gate.
 | S03: Events and callbacks | **Certified** by `b03_events_v1`: type/all-projects/target selectors, native rejection, Event fields, capacity/callback/owner/caller-loss, bounds and peer closure on both transports. | Explicit listener ownership; native callback order is unspecified. |
 | S04: Files | **Certified** by `s04_file_transfer_v1` (2026-10-26): instance and volume file read/create/delete and the B06 HEAD helpers on both transports, every volume type. Agent-mode file access and cluster forwarding are approved exclusions. Original obligation: certify file/directory/symlink, uid/gid/mode, overwrite/append, path/routing, binary bounds and native failures; HEAD remains B06. | Acknowledged host sources/sinks; no implicit host files. |
 | S05: Image binary handoff | **Certified** by `s05_image_transfer_v1` (2026-10-28), completing three rows: image creation, upload and copy target, image download and push export. Covers every `CreateImage` source kind, unified/split/OCI upload and download with every header, push export, and pull/push/relay image copy with an explicit `Images.wait_copy/2` and lost replies without replay, on both transports. Explicit cleanup, an uncancelled token after a failed export, the early push guard and a relay wait that reports failure are approved differences. The `?public` views, the local socket download path, advertised-address fallback and cluster forwarding are approved exclusions. Original obligation: Enumerate supported unified/split/compression/header/token modes; link existing private-token/copy/uncertainty evidence and identify uncovered cases. | Host-owned sources/sinks/staging; no implicit tools. |
-| S06: Archives | **Certified** by `s06_archives_v1` (2026-10-26), completing all 19 S06 rows: instance, volume and bucket backup list/get/create/rename/delete/export, JSON bucket creation, direct backup POST and instance (name/pool/config/device), volume, ISO and bucket imports on both transports. The instance and volume import rows are shared with S10 and stay partial. Cluster forwarding is an approved exclusion. Original obligation: Enumerate instance/volume/bucket import/export/direct POST, name/pool/config/device and ISO modes; reconcile existing fixtures and remaining transport/failure evidence. | No implicit host filesystem state. |
+| S06: Archives | **Certified** by `s06_archives_v1` (2026-10-26), completing all 19 S06 rows: instance, volume and bucket backup list/get/create/rename/delete/export, JSON bucket creation, direct backup POST and instance (name/pool/config/device), volume, ISO and bucket imports on both transports. The instance and volume import rows are shared with S10 and complete with it. Cluster forwarding is an approved exclusion. Original obligation: Enumerate instance/volume/bucket import/export/direct POST, name/pool/config/device and ISO modes; reconcile existing fixtures and remaining transport/failure evidence. | No implicit host filesystem state. |
 | S07: Auxiliary byte streams | **Certified** by `s07_byte_streams_v1` (2026-10-26): metrics, ACL log, instance log file, console log, debug memory and metadata template list/download/upload/delete on both transports, with exact selectors, headers, native failures, byte/chunk/deadline bounds and mid-stream cancellation and caller-loss cleanup. The console `type` selector and cluster forwarding are approved exclusions. | Recorded output remains B07; repair remains B12. |
 | S08: Raw SFTP/NBD | **Certified** by `s08_raw_upgrades_v1` (2026-10-29), completing two rows: instance NBD and custom volume NBD. Covers the raw `Incus.nbd/3`, `Incus.sftp/2`, `Incus.volume_nbd/5` and `Incus.volume_sftp/4` 101 byte channels against the pinned `GetInstanceNBDConn`, `GetInstanceFileSFTPConn`, `GetStoragePoolVolumeBlockNBDConn` and `GetStoragePoolVolumeFileSFTPConn`: instance `reuse` and volume `writable`, host project/target routing, Upgrade and Connection headers, names escaped like Go's `url.PathEscape` and sent unchecked, initial and echoed bytes, backend half-close, native 403/404 sent once without retry, the `instance_nbd`, `custom_volume_sftp` and `storage_volume_nbd` guards before I/O, typed options, bad framing, response-byte and handshake-deadline bounds, caller loss, blocked writes, explicit close and lifetime, on both transports. Coalesced protocol bytes kept with the 101 response (the pinned rawConn discards them) and `write_closed` writes after a backend half-close over mutual HTTPS (OTP TLS ends the connection on close_notify; incusd never half-closes, and Unix matches Go) are approved differences. Cluster forwarding and real-daemon NBD export and SFTP file semantics are approved exclusions; the NBD payload protocol stays caller-owned. The instance and volume SFTP rows also wait on S09. Original obligation: Certify instance/volume path, instance reuse and volume writable options, 101/coalesced bytes, half-close and bounds against existing evidence; retain approved oracle byte-loss difference. | Raw NBD payload protocol is caller-owned. |
 | S09: Typed SFTP | **Certified** by `s09_typed_sftp_v1` (2026-10-30), completing two rows with S08: instance SFTP and custom volume SFTP. Matches the pinned `pkg/sftp` v1.13.10 client the Incus helpers return: shared pipelined sessions, every path and metadata call, Go's walk/glob/match/join/split helpers and `SFTP.File` cursor and positional I/O with pipelined reads, one-at-a-time writes, host sink/source transfers and Go's per-file lock, compared with the pinned client through a `pkg/sftp` server fixture on Unix and mutual HTTPS. Reporting a failed final upload write is an approved difference; cluster forwarding and real-daemon acceptance are approved exclusions. |
 | S10: Copy/migration | **Certified** by `s10_migration_v1` (2026-10-27), completing five rows plus the collection volume POST: instance creation, instance and snapshot rename/migrate, volume create and custom volume rename/migrate. Covers local, pull, push and relay copies of instances, snapshots and volumes, live `control`/`fs`/`criu` channels, remote wait and cancel, and lost replies without replay, on both transports. Strict fail-closed relay, explicit relay and destination-only `wait_target`/`cancel_target` are approved differences. Cluster forwarding and advertised-address fallback are approved exclusions. Image copy is certified with S05 and the operation WebSocket row with S02. Original obligation: Enumerate existing local/pull/push/relay instance/snapshot/volume/image combinations, approved address/channel sets, remote wait and no-replay cleanup; resolve any unsupported options explicitly. | Host approves origins; preserve source and target identities; no following arbitrary addresses. |
 | S11: OCI adapter | **Certified** by `s11_oci_image_server_v1` (2026-10-31), a rowless record naming every pinned `ProtocolOCI` declaration plus the OCI-source paths of `CopyImage`, `CreateInstanceFromImage` and `RebuildInstanceFromImage`. Covers passive construction with an explicit registry certificate, native alias normalization, layer fingerprints, architectures and image JSON, the immutable bounded cache and Go's cache-miss order, Go's `metadata.yaml` bytes handed to the adapter, unsupported-method errors, origin connection info and HTTP, acknowledged binary conversion with bounds, deadlines, owner loss and cleanup, and OCI sources of pull, push and relay copies and image-based instance create and rebuild, with Go-escaped registry credentials for daemon pulls, on Unix and mutual HTTPS targets. An uncached failed lookup, the host-supplied local architecture and separate registry credentials are approved differences. Original obligation: Map all public OCI behaviors to projection/cache/options/bounds/cleanup evidence and explicitly rejected methods. | Explicit host conversion/credentials/state; installed adapter acceptance separate. |
-| S12: SimpleStreams | **Certified** by `s12_simplestreams_image_server_v1` (2026-11-02), a rowless record naming every pinned `ProtocolSimpleStreams` declaration plus the SimpleStreams-source paths of `CopyImage`, `CreateInstanceFromImage` and `RebuildInstanceFromImage`. Covers passive construction with an explicit server certificate, native catalog, image, alias and file-manifest projections, Go's catalog and download error text, per-file SHA-256 and combined fingerprint checks, an optional host cache adapter with Go's expiry, stale fallback and 404 invalidation, host delta sources and conversion with bounds, deadlines, owner loss and cleanup, unsupported-method errors, origin connection info and HTTP, and SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild on Unix and mutual HTTPS targets. Explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture are approved differences. Original obligation: Map catalog selectors, checksum/full-file/delta, refresh/cache/fallback and unsupported methods to existing evidence; resolve uncovered modes. | Explicit verified HTTPS; optional host delta; no socket probe/HTTP downgrade/tool discovery; installed converter separate. |
+| S12: SimpleStreams | **Certified** by `s12_simplestreams_image_server_v1` (2026-11-02), a rowless record naming every pinned `ProtocolSimpleStreams` declaration plus the SimpleStreams-source paths of `CopyImage`, `CreateInstanceFromImage` and `RebuildInstanceFromImage`. Covers passive construction with an explicit server certificate, native catalog, image, alias and file-manifest projections, Go's catalog and download error text, per-file SHA-256 and combined fingerprint checks, an optional host cache adapter with Go's expiry, stale fallback and 404 invalidation, host delta sources and conversion with bounds, deadlines, owner loss and cleanup, unsupported-method errors, origin connection info and HTTP, and SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild on Unix and mutual HTTPS targets. Explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter, transport error kinds in place of Go `net/http` text (2026-11-03) and the host-supplied local architecture are approved differences. Original obligation: Map catalog selectors, checksum/full-file/delta, refresh/cache/fallback and unsupported methods to existing evidence; resolve uncovered modes. | Explicit verified HTTPS; optional host delta; no socket probe/HTTP downgrade/tool discovery; installed converter separate. |
 
 ## Certification rule and checklist
 
@@ -149,10 +153,10 @@ No exhaustive cross-product of every possible field/error is required.
 - [x] Identify real missing implementations separately from missing evidence.
 - [x] Assign all rows and twelve streaming contracts finite backlog obligations.
 - [x] Preserve the ten fixture-verified inspection scopes and existing bounded slices.
-- [ ] Finish B01–B12: implement/verify the required contracts or record explicit approvals.
+- [x] Finish B01–B12: implement/verify the required contracts or record explicit approvals.
 - [x] Finish S01–S12 certification within the existing approved host/protocol boundaries.
-- [ ] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. All 247 rows (all four B03, all eight B01, B04, twenty B02, 51 B09, all forty B10, all 24 B05, 28 stream-free B08, nineteen stream-free B11, all three B07, B12, the eight S07 rows, the eight S04 rows, including both B06 rows, the nineteen S06 rows, the six S10 rows, including the collection volume POST, the three S05 rows, the two S02 rows, the two S08 NBD rows and the two S09 SFTP rows) plus S01 to S12 are complete.
-- [ ] Independently review and pass canonical/reference/platform/immutable-consumer checks for closing slices.
+- [x] Add reviewed completion records for finite contracts; classification alone cannot set behavior_complete. All 247 rows (all four B03, all eight B01, B04, twenty B02, 51 B09, all forty B10, all 24 B05, 28 stream-free B08, nineteen stream-free B11, all three B07, B12, the eight S07 rows, the eight S04 rows, including both B06 rows, the nineteen S06 rows, the six S10 rows, including the collection volume POST, the three S05 rows, the two S02 rows, the two S08 NBD rows and the two S09 SFTP rows) plus S01 to S12 are complete.
+- [x] Independently review and pass canonical/reference/platform/immutable-consumer checks for closing slices (closing review, 2026-11-03).
 
 Installed OCI/delta converters, explicitly opted-in isolated real-Incus acceptance
 and consumer-owned Macus hardware remain separate acceptance records. No automatic
@@ -189,13 +193,13 @@ accepted handle, not completion. No endpoint or declaration is promoted to parit
   terminal completion race, native rejection and lost-reply identity without replay.
 - [x] Record initial_mutation_lifecycle_v1 on exactly eight partial rows, with
   checked methods/cases/transports/evidence and copied full-ledger scopes.
-- [ ] Verify broader body/source/state/extension/error/cluster variants or obtain
-  explicit scope decisions; real-daemon lifecycle acceptance remains separate.
+- [x] Verify broader body/source/state/extension/error/cluster variants or obtain
+  explicit scope decisions (closed by the B01, B04 and S10 completion records); real-daemon lifecycle acceptance remains separate.
 
 There are now 28 explicitly fixture-verified scopes (nineteen inspection methods,
 connect/2 discovery and eight lifecycle methods), within the same 36 partial selected endpoint pairs.
 This closes the listed bounded evidence obligations, not all B01 endpoint behavior
-or task 3.9. The 32 missing typed implementations and 28 selector gaps are unchanged.
+or task 3.9. The 32 missing typed implementations and 28 selector gaps were unchanged by this batch.
 Other backlog batches and shared tool implementation remain outside this batch.
 
 The ledger is curated audit data. `test/endpoint_evidence_test.exs` independently
@@ -214,7 +218,7 @@ missing/duplicate views, stale sources/methods and completion overclaims.
 - [x] Check scoped binding, applicable getter ETags, byte/readiness rejection and
   deadline/cancellation with actual peer EOF for all ten new contracts.
 - [x] Record core_inspection_v1 on exactly ten partial rows in both ledgers.
-- [ ] Close additional recursion/filter/all-projects/private-image/instance-type,
+- [x] Close additional recursion/filter/all-projects/private-image/instance-type,
   field/error/cluster and discovery/auth variants or obtain explicit scope decisions.
 
 B02 now has initial scoped evidence for all twenty assigned rows. Together with

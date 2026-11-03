@@ -70,7 +70,7 @@ Pin an implemented immutable revision of this repository:
 
 ```elixir
 {:opsmaru_incus, git: "https://github.com/upmaru/opsmaru-incus.git",
- ref: "465e901ad1d85796f6fc1e2941a04b92434ea8de"}
+ ref: "0652e041a101ee85a01c20bf0fd313d2fc1a011d"}
 ```
 
 `test/consumer/revision.txt` records the independently verified revision; its

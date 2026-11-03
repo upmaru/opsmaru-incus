@@ -181,7 +181,13 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 
 - **WHEN** an endpoint row or stream contract is marked complete or certified
 - **THEN** a completion record lists it with its methods/helpers, supported and approved-excluded views, selector treatment, bodies/modes, result fields, locally rejected variants, approved differences, required cases and evidence kinds on Unix and mutual HTTPS, and every stream contract linked to the row is certified
-- **AND** validation rejects removed cases, transports or evidence, unlisted views, unapproved exclusions, completion claimed for an unrelated, missing-typed or open-stream row, and any change to global completion, complete_port or Go declaration statuses
+- **AND** validation rejects removed cases, transports or evidence, unlisted views, unapproved exclusions and completion claimed for an unrelated, missing-typed or open-stream row; global behavioral completion requires every documented and supplemental server row complete and every protocol certified, without promoting complete_port or Go declaration statuses
+
+#### Scenario: Final behavioral closure
+
+- **WHEN** the final independent review and canonical, reference, platform and immutable-consumer checks pass
+- **THEN** Task 3.9 closes against all 247 documented pairs, the supplemental repair POST, all 293 documented views and S01–S12 within their approved scopes; the evidence manifest covers exactly the pinned normalized native pairs
+- **AND** global completion cannot conceal a missing or incomplete row, a supplemental route, an open protocol or invalid evidence; `complete_port=false`, Go declaration statuses and separately owned installed-adapter, real-Incus and Macus acceptance remain unchanged
 
 ### Requirement: Truthful backend compatibility
 
