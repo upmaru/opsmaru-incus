@@ -31,7 +31,7 @@ defmodule Opsmaru.Incus.SFTP do
   use GenServer
   import Bitwise
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Context, Error, RawChannel, RequestContext, Transport}
+  alias Opsmaru.Incus.{Context, Error, RawChannel, Redaction, RequestContext, Transport}
   alias Opsmaru.Incus.SFTP
   alias Opsmaru.Incus.SFTP.{Packet, Stat, StatVFS}
   alias Opsmaru.Incus.SFTP.Path, as: SPath
@@ -1174,7 +1174,7 @@ defmodule Opsmaru.Incus.SFTP do
   end
 
   @impl true
-  def format_status(status), do: %{status | state: :private_sftp_session}
+  def format_status(status), do: Redaction.status(status, :private_sftp_session)
   defp error(kind), do: {:error, %Error{kind: kind}}
   defp as_error(%Error{} = error), do: error
   defp as_error(kind), do: %Error{kind: kind}

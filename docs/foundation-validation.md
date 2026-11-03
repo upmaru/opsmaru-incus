@@ -35,8 +35,9 @@ The earlier exact-head run at `61cbb45` passed macOS/Linux CI and immutable
 consumers: https://github.com/upmaru/opsmaru/actions/runs/38199888936. It predates
 these corrections and does not establish their platform acceptance.
 
-Current coverage is 916 partial and 364 missing declarations of 1,280;
-`complete_port` remains false. Foundation tasks 3.9 and 4.3 stay open. Gateway
+Current coverage is 1239 partial and 41 missing declarations of 1,280;
+`complete_port` remains false. Task 3.9 closes with the 2026-11-03 closing
+review in `docs/task-3-9-closure.md`; foundation task 4.3 stays open. Gateway
 implementation stays at 0/19 and has separate acceptance. Installed OCI adapter,
 real Incus and Macus installed/VZ/hardware gates remain unverified. The rest of
 this document records historical slices against their own revisions.

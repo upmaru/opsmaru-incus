@@ -16,7 +16,7 @@ defmodule Opsmaru.Incus.DynamicConsole do
   """
   use GenServer
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Context, Error, Operation, Session, Transport, WebSocket}
+  alias Opsmaru.Incus.{Context, Error, Operation, Redaction, Session, Transport, WebSocket}
   defstruct [:pid, :operation]
 
   def open(client, instance, body, opts \\ []) do
@@ -218,7 +218,7 @@ defmodule Opsmaru.Incus.DynamicConsole do
   end
 
   @impl true
-  def format_status(_), do: %{state: "native dynamic console redacted"}
+  def format_status(status), do: Redaction.status(status, "native dynamic console redacted")
 
   defp channel_ref?(state, ref),
     do:

@@ -24,10 +24,11 @@ run = [
 ]
 
 [tasks."check:reference"]
-description = "Go inventory/schema verifier tests and generated constants check"
+description = "Go inventory/schema verifier tests, generated constants and coverage ledger checks"
 run = [
   "GO111MODULE=off go test ./scripts ./scripts/incus-model-schema",
   "python3 scripts/check-incus-constants.py",
+  "python3 scripts/update-incus-coverage.py --check",
 ]
 
 [tasks."check:consumer"]

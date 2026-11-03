@@ -443,8 +443,9 @@ default) implements `SimpleStreams.CacheAdapter` in place of Go's cache
 directory, with the same namespace, expiry, stale fallback and 404 invalidation;
 shared code writes no files. Approved differences: `refresh/1` is explicit
 where Go loads lazily, one deterministic delta is converted, a catalog JSON
-decoding error's detail is the Elixir decoder's, and the local architecture is
-host-supplied. These fixture results do not establish installed converter or
+decoding error's detail is the Elixir decoder's, a connection, TLS or timeout
+failure is the library's error kind rather than Go `net/http` text, and the
+local architecture is host-supplied. These fixture results do not establish installed converter or
 cache, public server or real-backend acceptance.
 
 

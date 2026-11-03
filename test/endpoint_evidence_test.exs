@@ -63,12 +63,79 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
           put_in(audit, ["entries"], [Map.put(first, "documented_views", []) | rest]),
           %{audit | "server_sources" => %{}},
           %{audit | "supplemental_server_entries" => []},
-          %{audit | "behavior_complete" => true},
+          %{audit | "complete_port" => true},
           %{audit | "stream_contracts" => []}
         ] do
       assert_raise ExUnit.AssertionError, fn ->
         EndpointInventory.validate!(changed, native)
       end
+    end
+  end
+
+  test "global closure cannot hide a coherent partial row, supplemental route or rowless protocol",
+       %{native: native} do
+    audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
+    row = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/certificates"))
+    partial = row |> Map.put("behavior_complete", false) |> Map.delete("completion_record")
+    root = Path.join(System.tmp_dir!(), "op-closure-#{System.unique_integer([:positive])}")
+    File.mkdir!(root)
+    on_exit(fn -> File.rm_rf!(root) end)
+    path = Path.join(root, "evidence.json")
+
+    selected =
+      update_in(@manifest, ["entries"], fn entries ->
+        Enum.map(entries, fn entry ->
+          if entry["completion_record"] == row["completion_record"],
+            do: entry |> Map.put("status", "partial") |> Map.delete("completion_record"),
+            else: entry
+        end)
+      end)
+
+    File.write!(path, Jason.encode!(selected))
+
+    partial_row =
+      audit
+      |> Map.put("selected_evidence", path)
+      |> Map.update!(
+        "entries",
+        &Enum.map(&1, fn entry -> if entry == row, do: partial, else: entry end)
+      )
+      |> update_in(["completion_records"], &Map.delete(&1, row["completion_record"]))
+
+    partial_repair =
+      update_in(audit, ["supplemental_server_entries"], fn [repair] ->
+        [repair |> Map.put("behavior_complete", false) |> Map.delete("completion_record")]
+      end)
+
+    open_protocol =
+      audit
+      |> update_in(["stream_contracts"], fn contracts ->
+        Enum.map(contracts, fn contract ->
+          if contract["id"] == "S12",
+            do:
+              contract
+              |> Map.put("status", "open_contract_certification")
+              |> Map.delete("completion_record"),
+            else: contract
+        end)
+      end)
+      |> update_in(["completion_records"], &Map.delete(&1, "s12_simplestreams_image_server_v1"))
+
+    for changed <- [partial_row, partial_repair, open_protocol] do
+      # These are valid partial ledgers. Only the global completion claim is invalid.
+      assert :ok = EndpointInventory.validate!(%{changed | "behavior_complete" => false}, native)
+
+      assert_raise ExUnit.AssertionError, ~r/incomplete behavioral gate/, fn ->
+        EndpointInventory.validate!(changed, native)
+      end
+    end
+  end
+
+  test "complete evidence inventory cannot omit a newly enumerated native pair", %{native: native} do
+    changed = Map.update!(native, "pairs", &(&1 ++ ["GET /1.0/future-endpoint"]))
+
+    assert_raise ExUnit.AssertionError, ~r/misleading inventory completeness/, fn ->
+      EndpointEvidence.validate!(@manifest, changed)
     end
   end
 
@@ -584,7 +651,8 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     assert for(%{"status" => "certified", "id" => id} <- audit["stream_contracts"], do: id) ==
              ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08", "S09", "S10", "S11", "S12"]
 
-    refute audit["behavior_complete"] or audit["complete_port"]
+    assert audit["behavior_complete"]
+    refute audit["complete_port"]
     image_transfer = ["completion_records", "s05_image_transfer_v1"]
     s05 = get_in(audit, image_transfer)
 
@@ -655,7 +723,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
 
     assert length(s12["declarations"]) == 24
     assert "client/function/ConnectSimpleStreams" in s12["declarations"]
-    assert length(s12["approved_differences"]) == 7
+    assert length(s12["approved_differences"]) == 8
 
     refute Enum.any?(
              audit["entries"],
@@ -1098,7 +1166,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
          server_patch ++ ["cases"],
          &Map.put(&1, "restore_rejection", ["rest_patch"])
        ), "missing completion case"},
-      {%{audit | "behavior_complete" => true}, ""},
+      {%{audit | "complete_port" => true}, ""},
       {%{audit | "complete_port" => true}, ""}
     ]
   end
@@ -1202,7 +1270,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
   for {field, value, message} <- [
         {"reference_revision", "stale", "stale reference"},
         {"source", %{}, "stale REST source"},
-        {"inventory_complete", true, "false"},
+        {"inventory_complete", false, "misleading inventory completeness"},
         {"complete_port", true, "false"}
       ] do
     test "rejects misleading or stale #{field}", %{native: native} do

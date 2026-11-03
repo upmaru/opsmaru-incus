@@ -6,7 +6,18 @@ defmodule Opsmaru.Incus.WebSocket do
   """
   use GenServer
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Context, Error, HTTP, RequestContext, Response, Transport, Upgrade}
+
+  alias Opsmaru.Incus.{
+    Context,
+    Error,
+    HTTP,
+    Redaction,
+    RequestContext,
+    Response,
+    Transport,
+    Upgrade
+  }
+
   alias Opsmaru.Incus.HTTP.Response, as: HTTPResponse
   defstruct [:pid, :ref]
 
@@ -424,6 +435,6 @@ defmodule Opsmaru.Incus.WebSocket do
   end
 
   @impl true
-  def format_status(status), do: %{status | state: :private_native_websocket}
+  def format_status(status), do: Redaction.status(status, :private_native_websocket)
   defp now, do: System.monotonic_time(:millisecond)
 end

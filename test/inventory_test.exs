@@ -113,16 +113,17 @@ defmodule Opsmaru.Incus.InventoryTest do
     assert Enum.count(simplestreams, &(&1["status"] == "partial")) == 20
     refute Enum.any?(simplestreams, &(&1["status"] == "missing"))
 
-    assert Enum.all?(simplestreams, fn entry ->
-             entry["status"] == "missing" or
-               hd(entry["evidence"]) == "test/simple_streams_test.exs"
-           end)
+    assert Enum.all?(simplestreams, &(hd(&1["evidence"]) == "test/simple_streams_test.exs"))
 
     for entry <- coverage["entries"] do
       assert entry["status"] in ["partial", "missing"]
 
       if entry["status"] == "missing",
         do: assert(entry["elixir"] == nil and entry["evidence"] == [])
+
+      # A partial mapping names an implementation that exists and its evidence.
+      if entry["status"] == "partial",
+        do: assert(File.regular?(entry["elixir"]) and entry["evidence"] != [], entry["id"])
 
       for evidence <- entry["evidence"], do: assert(File.regular?(evidence))
     end

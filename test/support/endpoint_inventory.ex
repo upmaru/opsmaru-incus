@@ -35,7 +35,7 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     "oci_image_server" =>
       ~w(construction readiness alias_normalization projection fingerprint architectures alias_architectures vm_rejection unsupported_methods immutable_cache cache_miss failed_lookup connection_info certificate http_requests uncertain_http disconnect metadata_yaml binary_sinks stream_bounds foreign_emitter inspection_bounds deadline cancellation caller_loss cleanup host_failures redaction copy_pull copy_push copy_relay registry_credentials private_images instance_create instance_rebuild approved_origin preflight),
     "simplestreams_image_server" =>
-      ~w(construction readiness connection_info certificate http_requests disconnect explicit_refresh projection aliases alias_architectures unsupported_methods catalog_errors catalog_limits image_files file_checksum combined_fingerprint download_errors stream_bounds cache_expiry stale_fallback cache_invalidation cache_failures delta_manifest delta_source delta_fallback delta_failures deadline caller_loss cleanup redaction copy_pull copy_push copy_relay private_images instance_create instance_rebuild approved_origin preflight),
+      ~w(construction readiness connection_info certificate http_requests disconnect explicit_refresh projection aliases alias_architectures unsupported_methods catalog_errors catalog_limits image_files file_checksum combined_fingerprint download_errors stream_bounds cache_expiry stale_fallback cache_invalidation cache_failures delta_manifest delta_source delta_fallback delta_failures deadline cancellation caller_loss cleanup redaction copy_pull copy_push copy_relay private_images instance_create instance_rebuild approved_origin preflight),
     "binary_download" =>
       ~w(request populated routing native_400 native_403 native_404 byte_bounds deadline cancellation acknowledged_sink no_implicit_delete preflight),
     "read_contract" =>
@@ -71,7 +71,8 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     assert audit["source"] == %{"path" => native["source"], "sha256" => native["sha256"]}
     assert audit["server_sources"] == native["server_sources"], "stale server sources"
     assert audit["classification_complete"] == true
-    assert audit["behavior_complete"] == false and audit["complete_port"] == false
+    assert is_boolean(audit["behavior_complete"])
+    assert audit["complete_port"] == false
     rows = audit["entries"]
     keys = Enum.map(rows, & &1["pair"])
     assert length(keys) == 247 and length(Enum.uniq(keys)) == 247, "duplicate or missing pairs"
@@ -116,6 +117,13 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     extras!(audit, server, keys, methods)
     links!(audit)
     completion!(audit, selected, Map.new(methods, &{&1["name"], &1}))
+
+    if audit["behavior_complete"] do
+      assert Enum.all?(rows ++ audit["supplemental_server_entries"], & &1["behavior_complete"]) and
+               Enum.all?(audit["stream_contracts"], &(&1["status"] == "certified")),
+             "incomplete behavioral gate"
+    end
+
     :ok
   end
 

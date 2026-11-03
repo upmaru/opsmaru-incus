@@ -20,7 +20,6 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     assert manifest["source"] == %{"path" => native["source"], "sha256" => native["sha256"]},
            "stale REST source"
 
-    assert manifest["inventory_complete"] == false
     assert manifest["complete_port"] == false
     assert manifest["catalogue_contracts"] == ~w(query extension guards body model result)
     assert length(manifest["entries"]) == 247
@@ -52,6 +51,10 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
           cache
         end
       end)
+
+    # Checked after every row, so a row's own error is reported first.
+    assert manifest["inventory_complete"] == MapSet.equal?(MapSet.new(pairs), native_pairs),
+           "misleading inventory completeness"
 
     inspection!(manifest)
     mutation!(manifest)

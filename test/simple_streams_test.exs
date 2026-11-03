@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.SimpleStreamsTest do
   use ExUnit.Case, async: false
-  alias Opsmaru.Incus.{Connection, Context, Error, HTTP, Model, SimpleStreams}
+  alias Opsmaru.Incus.{Connection, Context, Error, HTTP, Model, RequestContext, SimpleStreams}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../.integration/simplestreams-driver", __DIR__)
   @http_driver Path.expand("../.integration/simplestreams-http-driver", __DIR__)
@@ -518,16 +518,24 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
              SimpleStreams.image_file(client, fp, %{})
   end
 
-  for cause <- [:deadline, :owner_loss] do
+  for cause <- [:deadline, :owner_loss, :cancellation] do
     test "#{cause} kills a stalled exit-trapping binary sink without replay", %{
       identity: identity
     } do
       {client, fixture} = download_client(identity, "metadata", "rootfs")
       fp = fingerprint(client)
-      # Owner loss gets a deadline it cannot reach, so only the owner's exit can
-      # kill the sink; the deadline case leaves room to monitor the sink first.
+      # Owner loss and cancellation get a deadline they cannot reach, so only the
+      # owner's exit or the host's cancel can kill the sink; the deadline case
+      # leaves room to monitor the sink first.
       stream_timeout = if unquote(cause) == :deadline, do: 500, else: 30_000
-      client = %{client | connection: %{client.connection | stream_timeout: stream_timeout}}
+      scope = RequestContext.new!(timeout: 30_000)
+
+      connection =
+        if unquote(cause) == :cancellation,
+          do: Connection.with_context(client.connection, scope),
+          else: client.connection
+
+      client = %{client | connection: %{connection | stream_timeout: stream_timeout}}
       parent = self()
 
       owner =
@@ -551,10 +559,13 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
       assert_receive {:sink, worker}, 1000
       monitor = Process.monitor(worker)
       if unquote(cause) == :owner_loss, do: Process.exit(owner, :kill)
+      if unquote(cause) == :cancellation, do: RequestContext.cancel(scope)
       assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 2_000
 
-      if unquote(cause) == :deadline,
-        do: assert_receive({:download_result, {:error, %Error{kind: :deadline}}}, 2_000)
+      if unquote(cause) != :owner_loss do
+        kind = if unquote(cause) == :deadline, do: :deadline, else: :canceled
+        assert_receive {:download_result, {:error, %Error{kind: ^kind}}}, 2_000
+      end
 
       assert Enum.count(HTTPFixture.requests(fixture), &(&1.target == "/images/meta.tar.xz")) == 1
       refute Enum.any?(HTTPFixture.requests(fixture), &(&1.target == "/images/root.squashfs"))
