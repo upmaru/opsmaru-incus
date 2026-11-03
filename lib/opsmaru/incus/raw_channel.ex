@@ -11,7 +11,7 @@ defmodule Opsmaru.Incus.RawChannel do
   """
   use GenServer
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Context, Error, Response, Transport, Upgrade}
+  alias Opsmaru.Incus.{Context, Error, Redaction, Response, Transport, Upgrade}
   defstruct [:pid, :ref]
 
   def open(client, path, protocol) when protocol in ["sftp", "nbd"] do
@@ -332,6 +332,6 @@ defmodule Opsmaru.Incus.RawChannel do
   end
 
   @impl true
-  def format_status(status), do: %{status | state: :private_native_channel}
+  def format_status(status), do: Redaction.status(status, :private_native_channel)
   defp now, do: System.monotonic_time(:millisecond)
 end

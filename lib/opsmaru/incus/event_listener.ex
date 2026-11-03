@@ -7,7 +7,7 @@ defmodule Opsmaru.Incus.EventListener do
   No listener is created by loading the application or constructing a client.
   """
   use GenServer
-  alias Opsmaru.Incus.{Error, Events, Model, RequestContext, Transport, WebSocket}
+  alias Opsmaru.Incus.{Error, Events, Model, Redaction, RequestContext, Transport, WebSocket}
 
   @failures [
     :deadline,
@@ -197,7 +197,8 @@ defmodule Opsmaru.Incus.EventListener do
   end
 
   @impl true
-  def format_status(_), do: %{state: "owner-bound event listener; payloads/callbacks redacted"}
+  def format_status(status),
+    do: Redaction.status(status, "owner-bound event listener; payloads/callbacks redacted")
 
   defp valid_handler?(types, callback),
     do:
