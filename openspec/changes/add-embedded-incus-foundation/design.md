@@ -129,6 +129,40 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved closing review (2026-11-03)
+
+With every endpoint row complete and S01–S12 certified, run the closure
+gate once over the merged result. The work lands in one PR.
+
+User decisions (2026-11-03):
+
+- Independent review uses fresh subagents, each given one part of the
+  gate and the source, tests and ledgers rather than this conclusion:
+  the completion records against their methods, views, cases, transports
+  and evidence; `coverage.json` against the Go declaration inventory;
+  the client behavior the `add-incus-operations` catalogue requires; and
+  the library boundaries (no started process, socket probe, credential or
+  backend connection, optional Plug/Cowboy/tama_mcp). Each finding is
+  reproduced before it is acted on; confirmed defects are fixed in this
+  PR with evidence, or the gate stays open.
+- The isolated consumer pin moves to the merged S12 revision on develop,
+  and `check:consumer` builds that revision.
+- When every gate passes, task 3.9 and the remaining backlog and closure
+  boxes are ticked in this PR. `complete_port` stays false, every Go
+  declaration status is unchanged, and installed OCI/delta adapters,
+  real-Incus acceptance (task 4.3) and Macus hardware stay separate.
+- S12 returns the library's transport error kinds where the pinned client
+  returns Go's `net/http` connection error text, which comes from the Go
+  runtime and the host's sockets. This is recorded on the S12 record as an
+  approved difference; stale-cache fallback on those errors still matches.
+
+The gate: macOS and Linux library CI, `mise run check` (strict Credo,
+formatting and strict OpenSpec) and `mise run check:reference`, the
+isolated consumer build, and the independent review. Stale "remaining
+scope" text in the closure ledger's streaming table and the open B01/B02
+variant items are reconciled with the completion records that superseded
+them; no exclusion is added that was not already approved.
+
 #### Approved slice: S12 SimpleStreams certification (2026-11-02)
 
 Certify stream contract S12 by matching the pinned `ProtocolSimpleStreams`

@@ -33,6 +33,7 @@ The client SHALL maintain a pinned official-client method/type inventory, source
 
 - **WHEN** task 3.9 is evaluated for completion
 - **THEN** the verified endpoint/method, streaming/upgrade and consumer-required behavior inventory has implementation and evidence while the separate Go declaration ledger retains partial/missing entries and approved differences
+- **AND** the task is ticked only after macOS and Linux library checks, the canonical and reference checks, an isolated consumer build of a pushed immutable revision and an independent review whose reproduced findings are fixed; real-backend, installed-adapter and Macus hardware acceptance stay separately recorded
 
 #### Scenario: Selected endpoint evidence inventory
 
