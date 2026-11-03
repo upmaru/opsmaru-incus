@@ -14,6 +14,8 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
   @driver Path.expand("../.integration/incus-dynamic-console-driver", __DIR__)
   @extensions ["instances", "console", "console_vga_type", "console_force"]
   @payload <<255, 0, 128, 42>>
+  @transports [{"unix", :unix}, {"mutual HTTPS", :https}]
+  @fds %{"control" => "private-control", "0" => "private-data"}
 
   setup_all do
     File.mkdir_p!(Path.dirname(@driver))
@@ -97,98 +99,99 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
     refute inspect(console) =~ "private-control"
   end
 
-  test "attachment capacity, invalid control and owner isolation preserve accepted operation", %{
-    root: root,
-    context: context
-  } do
-    fixture = backend(root)
+  for {label, transport} <- @transports do
+    test "#{label} attachment capacity, invalid control and owner isolation preserve accepted operation",
+         %{root: root, context: context} do
+      {fixture, client} = served_backend(unquote(transport), root, context)
 
-    assert {:ok, console} =
-             DynamicConsole.open(client(fixture, context), "fixture", %{}, max_attachments: 1)
+      assert {:ok, console} = DynamicConsole.open(client, "fixture", %{}, max_attachments: 1)
 
-    assert {:ok, channel} = DynamicConsole.attach(console)
+      assert {:ok, channel} = DynamicConsole.attach(console)
 
-    assert {:error, %Error{kind: :capacity, operation: "/1.0/operations/console-id"}} =
-             DynamicConsole.attach(console)
+      assert {:error, %Error{kind: :capacity, operation: "/1.0/operations/console-id"}} =
+               DynamicConsole.attach(console)
 
-    assert {:error, %Error{kind: :invalid_console_arguments}} =
-             DynamicConsole.control(console, [])
+      assert {:error, %Error{kind: :invalid_console_arguments}} =
+               DynamicConsole.control(console, [])
 
-    assert {:error, %Error{kind: :invalid_console_arguments}} =
-             DynamicConsole.control(console, %{unsupported: self()})
+      assert {:error, %Error{kind: :invalid_console_arguments}} =
+               DynamicConsole.control(console, %{unsupported: self()})
 
-    assert {:error, %Error{kind: :owner_mismatch}} =
-             Task.async(fn -> DynamicConsole.attach(console) end) |> Task.await()
+      assert {:error, %Error{kind: :owner_mismatch}} =
+               Task.async(fn -> DynamicConsole.attach(console) end) |> Task.await()
 
-    assert Process.alive?(console.pid)
+      assert Process.alive?(console.pid)
 
-    for request <- WebSocketFixture.requests(fixture) do
-      assert URI.decode_query(URI.parse(request.target).query || "")
-             |> Map.take(["project", "target"]) == %{"project" => "p +", "target" => "m +"}
+      for request <- WebSocketFixture.requests(fixture) do
+        assert URI.decode_query(URI.parse(request.target).query || "")
+               |> Map.take(["project", "target"]) == %{"project" => "p +", "target" => "m +"}
+      end
+
+      assert :ok = DynamicConsole.detach(console, channel)
+      assert :ok = DynamicConsole.close(console)
+      assert Enum.count(WebSocketFixture.requests(fixture), &(&1.method == "POST")) == 1
     end
-
-    assert :ok = DynamicConsole.detach(console, channel)
-    assert :ok = DynamicConsole.close(console)
-    assert Enum.count(WebSocketFixture.requests(fixture), &(&1.method == "POST")) == 1
   end
 
-  for role <- ["private-control", "private-data"], kind <- [:overflow, :frame_limit] do
-    test "#{role} #{kind} remains visible to the host after asynchronous channel failure", %{
-      root: root,
-      context: context
-    } do
+  for {label, transport} <- @transports,
+      role <- ["private-control", "private-data"],
+      kind <- [:overflow, :frame_limit] do
+    test "#{label} #{role} #{kind} remains visible to the host after asynchronous channel failure",
+         %{
+           root: root,
+           context: context
+         } do
       role = unquote(role)
       kind = unquote(kind)
       parent = self()
+      {listener, connect} = listener(unquote(transport), root, "channel-error")
 
       fixture =
         start_supervised!(
           {HTTPFixture,
-           transport: :gen_tcp,
-           path: Path.join(root, "channel-error"),
-           handler: fn request ->
-             if request.method == "POST" do
-               accepted(%{"control" => "private-control", "0" => "private-data"})
-             else
-               %{
-                 upgrade: fn adapter, socket ->
-                   secret = URI.decode_query(URI.parse(request.target).query)["secret"]
+           listener ++
+             [
+               handler: fn request ->
+                 if request.method == "POST" do
+                   accepted(%{"control" => "private-control", "0" => "private-data"})
+                 else
+                   %{
+                     upgrade: fn adapter, socket ->
+                       secret = URI.decode_query(URI.parse(request.target).query)["secret"]
 
-                   accept =
-                     Base.encode64(
-                       :crypto.hash(
-                         :sha,
-                         request.headers["sec-websocket-key"] <>
-                           "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-                       )
-                     )
+                       accept =
+                         Base.encode64(
+                           :crypto.hash(
+                             :sha,
+                             request.headers["sec-websocket-key"] <>
+                               "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+                           )
+                         )
 
-                   :ok =
-                     adapter.send(
-                       socket,
-                       "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: #{accept}\r\n\r\n"
-                     )
+                       :ok =
+                         adapter.send(
+                           socket,
+                           "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: #{accept}\r\n\r\n"
+                         )
 
-                   send(parent, {:peer, secret, self()})
+                       send(parent, {:peer, secret, self()})
 
-                   receive do
-                     {:emit, wire} ->
-                       adapter.send(socket, wire)
-                       adapter.recv(socket, 0, 1000)
-                   after
-                     3000 -> :ok
-                   end
+                       receive do
+                         {:emit, wire} ->
+                           adapter.send(socket, wire)
+                           adapter.recv(socket, 0, 1000)
+                       after
+                         3000 -> :ok
+                       end
+                     end
+                   }
                  end
-               }
-             end
-           end}
+               end
+             ]}
         )
 
       connection =
-        Connection.unix!(
-          HTTPFixture.endpoint(fixture).socket,
-          [owner: :fixture] ++ error_budgets(kind)
-        )
+        connect.(HTTPFixture.endpoint(fixture), [owner: :fixture] ++ error_budgets(kind))
 
       client = %Incus{
         connection: connection,
@@ -240,60 +243,62 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
     end
   end
 
-  for closure <- [:close_frame, :disconnect] do
-    test "remote control #{closure} promptly releases console attachments and retains accepted identity",
+  for {label, transport} <- @transports, closure <- [:close_frame, :disconnect] do
+    test "#{label} remote control #{closure} promptly releases console attachments and retains accepted identity",
          %{root: root, context: context} do
       closure = unquote(closure)
       parent = self()
+      {listener, connect} = listener(unquote(transport), root, "control-eof")
 
       fixture =
         start_supervised!(
           {HTTPFixture,
-           transport: :gen_tcp,
-           path: Path.join(root, "control-eof"),
-           handler: fn request ->
-             if request.method == "POST" do
-               accepted(%{"control" => "private-control", "0" => "private-data"})
-             else
-               %{
-                 upgrade: fn adapter, socket ->
-                   secret = URI.decode_query(URI.parse(request.target).query)["secret"]
+           listener ++
+             [
+               handler: fn request ->
+                 if request.method == "POST" do
+                   accepted(%{"control" => "private-control", "0" => "private-data"})
+                 else
+                   %{
+                     upgrade: fn adapter, socket ->
+                       secret = URI.decode_query(URI.parse(request.target).query)["secret"]
 
-                   accept =
-                     Base.encode64(
-                       :crypto.hash(
-                         :sha,
-                         request.headers["sec-websocket-key"] <>
-                           "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-                       )
-                     )
+                       accept =
+                         Base.encode64(
+                           :crypto.hash(
+                             :sha,
+                             request.headers["sec-websocket-key"] <>
+                               "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+                           )
+                         )
 
-                   :ok =
-                     adapter.send(
-                       socket,
-                       "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: #{accept}\r\n\r\n"
-                     )
+                       :ok =
+                         adapter.send(
+                           socket,
+                           "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: #{accept}\r\n\r\n"
+                         )
 
-                   send(parent, {:peer, secret, self()})
+                       send(parent, {:peer, secret, self()})
 
-                   receive do
-                     {:emit, :close_frame} ->
-                       adapter.send(socket, WebSocketFixture.frame(8, <<1000::16>>))
-                       adapter.recv(socket, 0, 1000)
+                       receive do
+                         {:emit, :close_frame} ->
+                           adapter.send(socket, WebSocketFixture.frame(8, <<1000::16>>))
+                           adapter.recv(socket, 0, 1000)
 
-                     {:emit, :disconnect} ->
-                       :ok
-                   after
-                     3000 -> :ok
-                   end
+                         {:emit, :disconnect} ->
+                           :ok
+                       after
+                         3000 -> :ok
+                       end
+                     end
+                   }
                  end
-               }
-             end
-           end}
+               end
+             ]}
         )
 
       client = %Incus{
-        connection: Connection.unix!(HTTPFixture.endpoint(fixture).socket, owner: :fixture),
+        connection: connect.(HTTPFixture.endpoint(fixture), owner: :fixture),
         context: context,
         server: %Server{api_extensions: @extensions}
       }
@@ -332,16 +337,16 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
                    1000
   end
 
-  for {cause, observer_delay} <- [{:owner_loss, 0}, {:control_close, 0}, {:owner_loss, 600}] do
-    test "#{cause} releases blocked attachments (observer delay #{observer_delay} ms)", %{
-      root: root,
-      context: context
-    } do
+  for {label, transport} <- @transports,
+      {cause, observer_delay} <- [{:owner_loss, 0}, {:control_close, 0}, {:owner_loss, 600}] do
+    test "#{label} #{cause} releases blocked attachments (observer delay #{observer_delay} ms)",
+         %{root: root, context: context} do
+      transport = unquote(transport)
       parent = self()
-      fixture = blocked_console_fixture(root, parent)
+      {fixture, connect} = blocked_console_fixture(transport, root, parent)
 
       connection =
-        Connection.unix!(HTTPFixture.endpoint(fixture).socket,
+        connect.(HTTPFixture.endpoint(fixture),
           owner: :fixture,
           timeout: 30_000,
           stream_timeout: 30_000,
@@ -386,7 +391,7 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
       writers =
         Enum.map(channels, fn channel ->
           socket = :sys.get_state(channel.pid).conn |> Mint.HTTP.get_socket()
-          :ok = :inet.setopts(socket, sndbuf: 1024)
+          :ok = small_socket_buffer(transport, socket)
 
           Task.async(fn ->
             Enum.reduce_while(1..64, :still_buffering, fn _, _ ->
@@ -399,7 +404,7 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
         end)
 
       for channel <- channels do
-        await_blocked_write(channel.pid, System.monotonic_time(:millisecond) + 5_000)
+        await_blocked_write(transport, channel.pid, System.monotonic_time(:millisecond) + 5_000)
       end
 
       control = :sys.get_state(console.pid).control
@@ -420,19 +425,22 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
   defp end_blocked_console(:owner_loss, owner, _), do: Process.exit(owner, :kill)
   defp end_blocked_console(:control_close, _, peer), do: send(peer, :close_control)
 
-  for call <- [:attach, :control] do
-    test "owner loss stops a console blocked inside #{call} and all owned channels", %{
+  for {label, transport} <- @transports, call <- [:attach, :control] do
+    test "#{label} owner loss stops a console blocked inside #{call} and all owned channels", %{
       root: root,
       context: context
     } do
+      transport = unquote(transport)
       parent = self()
       counter = :atomics.new(1, [])
 
-      fixture =
-        blocked_console_fixture(root, parent, stalled_attachment: {unquote(call), counter})
+      {fixture, connect} =
+        blocked_console_fixture(transport, root, parent,
+          stalled_attachment: {unquote(call), counter}
+        )
 
       connection =
-        Connection.unix!(HTTPFixture.endpoint(fixture).socket,
+        connect.(HTTPFixture.endpoint(fixture),
           owner: :fixture,
           timeout: 30_000,
           stream_timeout: 30_000,
@@ -481,12 +489,15 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
       end)
 
       socket = :sys.get_state(control.pid).conn |> Mint.HTTP.get_socket()
-      :ok = :inet.setopts(socket, sndbuf: 1024)
+      :ok = small_socket_buffer(transport, socket)
       send(owner, :block)
 
       case unquote(call) do
-        :attach -> assert_receive {:stalled_upgrade, _}, 5_000
-        :control -> await_blocked_write(control.pid, System.monotonic_time(:millisecond) + 5_000)
+        :attach ->
+          assert_receive {:stalled_upgrade, _}, 5_000
+
+        :control ->
+          await_blocked_write(transport, control.pid, System.monotonic_time(:millisecond) + 5_000)
       end
 
       monitors =
@@ -504,112 +515,148 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
     end
   end
 
-  defp await_blocked_write(pid, deadline) do
+  defp await_blocked_write(transport, pid, deadline) do
     {:current_stacktrace, stack} = Process.info(pid, :current_stacktrace)
 
-    unless Enum.any?(stack, fn {module, function, _, _} ->
-             module in [:prim_inet, :gen_tcp] and function == :send
-           end) do
+    unless Enum.any?(stack, &blocked_write_frame?(transport, &1)) do
       assert System.monotonic_time(:millisecond) < deadline, inspect(stack)
       Process.sleep(1)
-      await_blocked_write(pid, deadline)
+      await_blocked_write(transport, pid, deadline)
     end
   end
 
-  defp blocked_console_fixture(root, parent, opts \\ []) do
-    start_supervised!(
-      {HTTPFixture,
-       transport: :gen_tcp,
-       path: Path.join(root, "blocked-console"),
-       handler: fn request ->
-         if request.method == "POST" do
-           accepted(%{"control" => "private-control", "0" => "private-data"})
-         else
-           %{
-             upgrade: fn transport, socket ->
-               secret = URI.decode_query(URI.parse(request.target).query)["secret"]
+  defp blocked_write_frame?(:unix, {module, function, _, _}),
+    do: module in [:prim_inet, :gen_tcp] and function == :send
 
-               case opts[:stalled_attachment] do
-                 {:attach, counter} when secret == "private-data" ->
-                   if :atomics.add_get(counter, 1, 1) > 1 do
-                     send(parent, {:stalled_upgrade, self()})
-                     send(parent, {:stalled_peer_closed, transport.recv(socket, 0, 30_000)})
+  # TLS application data is written by the connection's sender process; the
+  # channel waits inside that synchronous call while the sender's socket is full.
+  defp blocked_write_frame?(:https, {module, function, _, _}),
+    do: {module, function} in [{:ssl, :send}, {:tls_sender, :call}, {:tls_sender, :send_data}]
+
+  defp small_socket_buffer(:unix, socket), do: :inet.setopts(socket, sndbuf: 1024)
+  defp small_socket_buffer(:https, socket), do: :ssl.setopts(socket, sndbuf: 1024)
+
+  defp listener(:unix, root, name),
+    do: {[transport: :gen_tcp, path: Path.join(root, name)], &Connection.unix!(&1.socket, &2)}
+
+  defp listener(:https, root, name) do
+    identity = TLSIdentity.generate(root, name, "localhost")
+    tls = [cacertfile: identity.cafile, certfile: identity.certfile, keyfile: identity.keyfile]
+
+    {[
+       transport: :ssl,
+       certfile: identity.certfile,
+       keyfile: identity.keyfile,
+       peer_options: [
+         cacertfile: identity.cafile,
+         verify: :verify_peer,
+         fail_if_no_peer_cert: true
+       ]
+     ], &Connection.https!(&1.url, &2 ++ [tls: tls])}
+  end
+
+  defp blocked_console_fixture(transport, root, parent, opts \\ []) do
+    {listener, connect} = listener(transport, root, "blocked-console")
+
+    fixture =
+      start_supervised!(
+        {HTTPFixture,
+         listener ++
+           [
+             handler: fn request ->
+               if request.method == "POST" do
+                 accepted(%{"control" => "private-control", "0" => "private-data"})
+               else
+                 %{
+                   upgrade: fn transport, socket ->
+                     secret = URI.decode_query(URI.parse(request.target).query)["secret"]
+
+                     case opts[:stalled_attachment] do
+                       {:attach, counter} when secret == "private-data" ->
+                         if :atomics.add_get(counter, 1, 1) > 1 do
+                           send(parent, {:stalled_upgrade, self()})
+                           send(parent, {:stalled_peer_closed, transport.recv(socket, 0, 30_000)})
+                         end
+
+                       _ ->
+                         :ok
+                     end
+
+                     accept =
+                       Base.encode64(
+                         :crypto.hash(
+                           :sha,
+                           request.headers["sec-websocket-key"] <>
+                             "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+                         )
+                       )
+
+                     :ok =
+                       transport.send(
+                         socket,
+                         "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: #{accept}\r\n\r\n"
+                       )
+
+                     send(parent, {:blocked_peer, secret, self()})
+
+                     receive do
+                       :close_control ->
+                         transport.send(socket, WebSocketFixture.frame(8, <<1000::16>>))
+                     after
+                       30_000 -> :ok
+                     end
                    end
-
-                 _ ->
-                   :ok
-               end
-
-               accept =
-                 Base.encode64(
-                   :crypto.hash(
-                     :sha,
-                     request.headers["sec-websocket-key"] <>
-                       "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-                   )
-                 )
-
-               :ok =
-                 transport.send(
-                   socket,
-                   "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: #{accept}\r\n\r\n"
-                 )
-
-               send(parent, {:blocked_peer, secret, self()})
-
-               receive do
-                 :close_control -> transport.send(socket, WebSocketFixture.frame(8, <<1000::16>>))
-               after
-                 30_000 -> :ok
+                 }
                end
              end
-           }
-         end
-       end}
-    )
+           ]}
+      )
+
+    {fixture, connect}
   end
 
-  test "owner exit closes control and attachments without cancelling the backend", %{
-    root: root,
-    context: context
-  } do
-    fixture = backend(root)
-    parent = self()
+  for {label, transport} <- @transports do
+    test "#{label} owner exit closes control and attachments without cancelling the backend", %{
+      root: root,
+      context: context
+    } do
+      {fixture, client} = served_backend(unquote(transport), root, context)
+      parent = self()
 
-    owner =
-      spawn(fn ->
-        {:ok, console} = DynamicConsole.open(client(fixture, context), "fixture", %{})
-        {:ok, channel} = DynamicConsole.attach(console)
-        send(parent, {:console, console, channel})
+      owner =
+        spawn(fn ->
+          {:ok, console} = DynamicConsole.open(client, "fixture", %{})
+          {:ok, channel} = DynamicConsole.attach(console)
+          send(parent, {:console, console, channel})
 
-        receive do
-          :stop -> :ok
-        end
-      end)
+          receive do
+            :stop -> :ok
+          end
+        end)
 
-    assert_receive {:console, console, channel}, 1000
-    cm = Process.monitor(console.pid)
-    am = Process.monitor(channel.pid)
-    send(owner, :stop)
-    assert_receive {:DOWN, ^cm, :process, _, :normal}, 1000
-    assert_receive {:DOWN, ^am, :process, _, :normal}, 1000
-    refute Enum.any?(WebSocketFixture.requests(fixture), &(&1.method == "DELETE"))
-  end
+      assert_receive {:console, console, channel}, 1000
+      cm = Process.monitor(console.pid)
+      am = Process.monitor(channel.pid)
+      send(owner, :stop)
+      assert_receive {:DOWN, ^cm, :process, _, :normal}, 1000
+      assert_receive {:DOWN, ^am, :process, _, :normal}, 1000
+      refute Enum.any?(WebSocketFixture.requests(fixture), &(&1.method == "DELETE"))
+    end
 
-  test "the total console lifetime releases every channel and leaves native identity available",
-       %{root: root, context: context} do
-    fixture = backend(root)
-    client = client(fixture, context)
-    client = %{client | connection: %{client.connection | stream_timeout: 100}}
-    assert {:ok, console} = DynamicConsole.open(client, "fixture", %{})
-    assert {:ok, channel} = DynamicConsole.attach(console)
-    cm = Process.monitor(console.pid)
-    am = Process.monitor(channel.pid)
-    assert_receive {:DOWN, ^cm, :process, _, :normal}, 1000
-    assert_receive {:DOWN, ^am, :process, _, :normal}, 1000
-    assert console.operation.response.operation == "/1.0/operations/console-id"
-    assert Enum.count(WebSocketFixture.requests(fixture), &(&1.method == "POST")) == 1
-    refute Enum.any?(WebSocketFixture.requests(fixture), &(&1.method == "DELETE"))
+    test "#{label} the total console lifetime releases every channel and leaves native identity available",
+         %{root: root, context: context} do
+      {fixture, client} = served_backend(unquote(transport), root, context)
+      client = %{client | connection: %{client.connection | stream_timeout: 100}}
+      assert {:ok, console} = DynamicConsole.open(client, "fixture", %{})
+      assert {:ok, channel} = DynamicConsole.attach(console)
+      cm = Process.monitor(console.pid)
+      am = Process.monitor(channel.pid)
+      assert_receive {:DOWN, ^cm, :process, _, :normal}, 1000
+      assert_receive {:DOWN, ^am, :process, _, :normal}, 1000
+      assert console.operation.response.operation == "/1.0/operations/console-id"
+      assert Enum.count(WebSocketFixture.requests(fixture), &(&1.method == "POST")) == 1
+      refute Enum.any?(WebSocketFixture.requests(fixture), &(&1.method == "DELETE"))
+    end
   end
 
   test "malformed accepted metadata and failed attachments never replay the mutation", %{
@@ -850,6 +897,31 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
          http_handler: fn _ -> accepted(fds) end},
         id: make_ref()
       )
+
+  defp served_backend(transport, root, context) do
+    {listener, connect} = listener(transport, root, "s-#{System.unique_integer([:positive])}")
+
+    fixture =
+      start_supervised!(
+        {WebSocketFixture,
+         listener ++
+           [api_extensions: @extensions, http_handler: fn _ -> accepted(@fds) end]},
+        id: make_ref()
+      )
+
+    client = %Incus{
+      connection:
+        connect.(WebSocketFixture.endpoint(fixture),
+          owner: :fixture,
+          project: "p +",
+          member: "m +"
+        ),
+      context: context,
+      server: %Server{api_extensions: @extensions}
+    }
+
+    {fixture, client}
+  end
 
   defp client(fixture, context, selected \\ true),
     do: %Incus{
