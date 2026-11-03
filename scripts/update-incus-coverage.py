@@ -1,5 +1,6 @@
 """Regenerate evidence mappings; never upgrade a fixture slice to full parity."""
 import json
+import sys
 from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 def load(path): return json.loads((root/path).read_text())
@@ -197,6 +198,8 @@ for entry in inv['entries']:
   row.update(status='partial',elixir='lib/opsmaru/incus/api.ex',evidence=['test/resource_slice_test.exs'] + (['test/session_test.exs'] if name in ['ExecInstance','ConsoleInstance'] else []) + (['test/console_contract_test.exs'] if name == 'ConsoleInstance' else []) + (['test/migration_test.exs'] if name.startswith('Migrate') else []) + (['test/sync_mutation_contract_test.exs'] if name in s10_control + s05_control else []) + (['test/image_contract_test.exs'] if name == 'CreateImage' else []) + (['test/image_copy_contract_test.exs'] if name in s05_copy else []),note='Pinned official method request/result differential, unavailable-extension and native-error slice. Convenience orchestration and full parity remain separate.')
  elif entry['kind'] in ['method','interface_method','function'] and (entry['name'] in helpers or name in helpers):
   impl,evidence=helpers.get(entry['name'],helpers.get(name));row.update(status='partial',elixir=impl,evidence=evidence,note='Bounded helper slice only; consult public coverage limitations before use.')
+  # No pinned Go oracle runs for these helpers; their evidence is independent fixtures only.
+  if evidence in (['test/client_test.exs'],['test/operation_test.exs']): row['note'] += ' Independent fixture evidence only, not a pinned Go differential.'
  elif entry['package']=='client' and entry['kind'] in ['method','interface_method'] and name in event_subscriptions:
   row.update(status='partial',elixir='lib/opsmaru/incus/events.ex',evidence=['test/event_contract_test.exs','test/event_listener_test.exs','test/web_socket_test.exs','test/tls_stream_test.exs'],note='Explicit owner-bound subscription. The GET /1.0/events endpoint row and S03 are complete under reviewed record b03_events_v1: type/all-projects selectors, host project/target routing, native 400/403/404 upgrade rejection and Event fields compared with the unchanged pinned client over Unix and verified mutual HTTPS, with independent listener, send, bound, lifetime and peer-closure evidence. The pinned shared per-project connection and asynchronous mutable listener are not reproduced; cluster forwarding and callback ordering are excluded. Endpoint completion is not Go declaration parity.')
  elif entry['package']=='shared/api' and entry['kind']=='type' and name in models:
@@ -231,5 +234,10 @@ for entry in inv['entries']:
  entries.append(row)
 for row in entries:
  for path in row['evidence']: assert (root/path).is_file(), path
-(root/'priv/incus/coverage.json').write_text(json.dumps(dict(reference_revision=inv['reference']['revision'],complete_port=False,endpoint_evidence='priv/incus/endpoint-evidence.json',endpoint_inventory='priv/incus/endpoint-inventory.json',entries=entries),indent=2)+'\n')
+text=json.dumps(dict(reference_revision=inv['reference']['revision'],complete_port=False,endpoint_evidence='priv/incus/endpoint-evidence.json',endpoint_inventory='priv/incus/endpoint-inventory.json',entries=entries),indent=2)+'\n'
+# --check (check:reference) fails when the committed ledger drifts from this generator.
+if '--check' in sys.argv[1:]:
+ if (root/'priv/incus/coverage.json').read_text()!=text: sys.exit('priv/incus/coverage.json is stale; run scripts/update-incus-coverage.py')
+else:
+ (root/'priv/incus/coverage.json').write_text(text)
 print(f"{len(methods)} JSON method descriptors (named Go methods plus explicit REST slices); {sum(x['status']=='partial' for x in entries)} partial declaration mappings; {sum(x['status']=='missing' for x in entries)} missing declarations; complete_port=false")

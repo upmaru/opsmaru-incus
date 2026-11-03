@@ -2747,7 +2747,7 @@
       "evidence": [
         "test/client_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Bounded helper slice only; consult public coverage limitations before use. Independent fixture evidence only, not a pinned Go differential."
     },
     {
       "id": "client/interface_method/InstanceServer.IsClustered",
@@ -3585,7 +3585,7 @@
       "evidence": [
         "test/client_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Bounded helper slice only; consult public coverage limitations before use. Independent fixture evidence only, not a pinned Go differential."
     },
     {
       "id": "client/method/ProtocolIncus.ConsoleInstance",
@@ -6285,7 +6285,7 @@
       "evidence": [
         "test/client_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Bounded helper slice only; consult public coverage limitations before use. Independent fixture evidence only, not a pinned Go differential."
     },
     {
       "id": "client/method/ProtocolIncus.IsAgent",
@@ -7332,7 +7332,7 @@
       "evidence": [
         "test/operation_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Bounded helper slice only; consult public coverage limitations before use. Independent fixture evidence only, not a pinned Go differential."
     },
     {
       "id": "client/method/operation.GetWebsocket",
@@ -7370,7 +7370,7 @@
       "evidence": [
         "test/operation_test.exs"
       ],
-      "note": "Bounded helper slice only; consult public coverage limitations before use."
+      "note": "Bounded helper slice only; consult public coverage limitations before use. Independent fixture evidence only, not a pinned Go differential."
     },
     {
       "id": "client/method/operation.WaitContext",
