@@ -40,7 +40,10 @@ defmodule OpsmaruIncus.MixProject do
       # Native multipart/content-type parsing and the strict YAML subset decoder.
       {:cowlib, "~> 2.20"},
       {:yamerl, "~> 0.10"},
-      {:plug, "~> 1.20", only: :test},
+      # Optional for hosts; required in test for the HTTP fixtures.
+      {:plug, "~> 1.20", optional: true},
+      # Optional MCP binding (Opsmaru.Incus.MCP.Tools.*); compiled only when present.
+      {:tama_mcp, "~> 0.1.1 or ~> 0.2.0", optional: true},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end

@@ -1,0 +1,4276 @@
+{
+  "operations": [
+    {
+      "bounds": {
+        "default_items": 100,
+        "max_input_bytes": 16384,
+        "max_items": 500,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "List local image aliases, in native order, up to `limit` items with the native total.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 100,
+            "description": "Maximum items to return (default 100); the result reports the native total.",
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "incus_image_alias_list",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "description": "Native item total before truncation.",
+                "type": "integer"
+              },
+              "items": {
+                "items": {
+                  "description": "Native ImageAliases item.",
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "items",
+              "count",
+              "truncated"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetImageAliases"
+      ],
+      "scope": "incus.read",
+      "title": "List image aliases"
+    },
+    {
+      "bounds": {
+        "default_wait_seconds": 10,
+        "max_input_bytes": 65536,
+        "max_output_bytes": 262144,
+        "max_wait_seconds": 60
+      },
+      "confirmation": {
+        "field": "confirm",
+        "value": "the full fingerprint"
+      },
+      "description": "Delete a local image by its full fingerprint. Requires `confirm` to repeat the fingerprint.",
+      "destructive": true,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "confirm": {
+            "description": "Repeat the full fingerprint to confirm.",
+            "maxLength": 1024,
+            "type": "string"
+          },
+          "fingerprint": {
+            "description": "Full 64-character image fingerprint.",
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "wait_seconds": {
+            "default": 10,
+            "description": "Seconds to wait for completion (default 10). Capped by the host connection timeout; the result reports the effective wait.",
+            "maximum": 60,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fingerprint",
+          "confirm"
+        ],
+        "type": "object"
+      },
+      "name": "incus_image_delete",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "operation": {
+                "description": "Latest native Operation snapshot, if known.",
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "operation_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "description": "completed or failed when the outcome was observed; running when it was not observed within the wait; uncertain when the request may have been accepted without a decoded response.",
+                "enum": [
+                  "completed",
+                  "failed",
+                  "running",
+                  "uncertain"
+                ],
+                "type": "string"
+              },
+              "wait_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "waited_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "status",
+              "operation_id",
+              "operation",
+              "waited_seconds"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "DeleteImage",
+        "GetOperationWait"
+      ],
+      "scope": "incus.delete",
+      "title": "Delete image"
+    },
+    {
+      "bounds": {
+        "max_input_bytes": 16384,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "Read one local image.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "fingerprint": {
+            "description": "Image fingerprint or unique prefix.",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[0-9a-f]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fingerprint"
+        ],
+        "type": "object"
+      },
+      "name": "incus_image_get",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "item": {
+                "description": "Native Image record.",
+                "type": "object"
+              }
+            },
+            "required": [
+              "item"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetImage"
+      ],
+      "scope": "incus.read",
+      "title": "Get image"
+    },
+    {
+      "bounds": {
+        "default_items": 100,
+        "max_input_bytes": 16384,
+        "max_items": 500,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "List local images, in native order, up to `limit` items with the native total.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 100,
+            "description": "Maximum items to return (default 100); the result reports the native total.",
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "incus_image_list",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "description": "Native item total before truncation.",
+                "type": "integer"
+              },
+              "items": {
+                "items": {
+                  "description": "Native Images item.",
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "items",
+              "count",
+              "truncated"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetImages"
+      ],
+      "scope": "incus.read",
+      "title": "List images"
+    },
+    {
+      "bounds": {
+        "default_wait_seconds": 10,
+        "max_input_bytes": 65536,
+        "max_output_bytes": 262144,
+        "max_wait_seconds": 60
+      },
+      "confirmation": null,
+      "description": "Create a container or VM from an image, optionally starting it, and wait boundedly for the native operation.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "additionalProperties": {
+              "maxLength": 16384,
+              "type": "string"
+            },
+            "description": "Native config keys. raw.*, volatile.*, security.privileged and similar keys need host approval.",
+            "maxProperties": 256,
+            "propertyNames": {
+              "description": "Config key.",
+              "maxLength": 512,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "description": {
+            "description": "Instance description.",
+            "maxLength": 4096,
+            "type": "string"
+          },
+          "devices": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              "maxProperties": 64,
+              "propertyNames": {
+                "description": "Device key.",
+                "maxLength": 255,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "description": "Native devices. Without host approval only a pool-backed disk without a host path and a nic on a managed network are allowed.",
+            "maxProperties": 64,
+            "propertyNames": {
+              "description": "Device name.",
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "ephemeral": {
+            "description": "Delete the instance when it stops.",
+            "type": "boolean"
+          },
+          "image": {
+            "additionalProperties": false,
+            "oneOf": [
+              {
+                "required": [
+                  "alias"
+                ]
+              },
+              {
+                "required": [
+                  "fingerprint"
+                ]
+              }
+            ],
+            "properties": {
+              "alias": {
+                "description": "Image alias.",
+                "maxLength": 255,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "type": "string"
+              },
+              "fingerprint": {
+                "description": "Image fingerprint or unique prefix.",
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[0-9a-f]+$",
+                "type": "string"
+              },
+              "remote": {
+                "description": "Host-approved image remote name; omit for a local image. Never a URL.",
+                "maxLength": 255,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "name": {
+            "description": "New instance name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "profiles": {
+            "description": "Profiles, in order (native default when omitted).",
+            "items": {
+              "description": "Profile name.",
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "type": "array"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "start": {
+            "description": "Start after creation.",
+            "type": "boolean"
+          },
+          "type": {
+            "description": "Instance type (default container).",
+            "enum": [
+              "container",
+              "virtual-machine"
+            ],
+            "type": "string"
+          },
+          "wait_seconds": {
+            "default": 10,
+            "description": "Seconds to wait for completion (default 10). Capped by the host connection timeout; the result reports the effective wait.",
+            "maximum": 60,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "image"
+        ],
+        "type": "object"
+      },
+      "name": "incus_instance_create",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "operation": {
+                "description": "Latest native Operation snapshot, if known.",
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "operation_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "description": "completed or failed when the outcome was observed; running when it was not observed within the wait; uncertain when the request may have been accepted without a decoded response.",
+                "enum": [
+                  "completed",
+                  "failed",
+                  "running",
+                  "uncertain"
+                ],
+                "type": "string"
+              },
+              "wait_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "waited_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "status",
+              "operation_id",
+              "operation",
+              "waited_seconds"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "CreateInstance",
+        "GetOperationWait"
+      ],
+      "scope": "incus.write",
+      "title": "Create instance"
+    },
+    {
+      "bounds": {
+        "default_wait_seconds": 10,
+        "max_input_bytes": 65536,
+        "max_output_bytes": 262144,
+        "max_wait_seconds": 60
+      },
+      "confirmation": {
+        "field": "confirm",
+        "value": "the instance name"
+      },
+      "description": "Delete a stopped instance and its snapshots. Requires `confirm` to repeat the instance name.",
+      "destructive": true,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "confirm": {
+            "description": "Repeat the instance name to confirm.",
+            "maxLength": 1024,
+            "type": "string"
+          },
+          "name": {
+            "description": "Instance name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "wait_seconds": {
+            "default": 10,
+            "description": "Seconds to wait for completion (default 10). Capped by the host connection timeout; the result reports the effective wait.",
+            "maximum": 60,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "confirm"
+        ],
+        "type": "object"
+      },
+      "name": "incus_instance_delete",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "operation": {
+                "description": "Latest native Operation snapshot, if known.",
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "operation_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "description": "completed or failed when the outcome was observed; running when it was not observed within the wait; uncertain when the request may have been accepted without a decoded response.",
+                "enum": [
+                  "completed",
+                  "failed",
+                  "running",
+                  "uncertain"
+                ],
+                "type": "string"
+              },
+              "wait_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "waited_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "status",
+              "operation_id",
+              "operation",
+              "waited_seconds"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "DeleteInstance",
+        "GetOperationWait"
+      ],
+      "scope": "incus.delete",
+      "title": "Delete instance"
+    },
+    {
+      "bounds": {
+        "default_timeout_seconds": 30,
+        "kill_grace_seconds": 5,
+        "max_args": 64,
+        "max_capture_bytes": 65536,
+        "max_env": 64,
+        "max_input_bytes": 1048576,
+        "max_output_bytes": 262144,
+        "max_stdin_bytes": 65536,
+        "max_stream_bytes": 67108864,
+        "max_timeout_seconds": 300
+      },
+      "confirmation": null,
+      "description": "Run one noninteractive command in a named instance with bounded stdin, captured output and duration. Output beyond 64 KiB per stream is counted and truncated; a command still running at the timeout is killed.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "description": "Argument vector; no shell is implied.",
+            "items": {
+              "maxLength": 4096,
+              "type": "string"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "type": "array"
+          },
+          "cwd": {
+            "description": "Absolute working directory inside the instance.",
+            "maxLength": 4096,
+            "pattern": "^/[^\\x00]*$",
+            "type": "string"
+          },
+          "environment": {
+            "additionalProperties": {
+              "maxLength": 4096,
+              "type": "string"
+            },
+            "maxProperties": 64,
+            "propertyNames": {
+              "description": "Variable name.",
+              "maxLength": 256,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "group": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "instance": {
+            "description": "Instance to run in.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "stdin": {
+            "description": "UTF-8 standard input (at most 64 KiB), closed after sending.",
+            "maxLength": 65536,
+            "type": "string"
+          },
+          "timeout_seconds": {
+            "default": 30,
+            "description": "Duration limit (default 30). Capped by the host stream timeout; the result reports the effective limit.",
+            "maximum": 300,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "user": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "instance",
+          "command"
+        ],
+        "type": "object"
+      },
+      "name": "incus_instance_exec",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "exit_status": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "operation": {
+                "description": "Latest native Operation snapshot, if known.",
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "operation_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "output_limited": {
+                "type": "boolean"
+              },
+              "status": {
+                "description": "completed or failed when the outcome was observed; running when it was not observed within the wait; uncertain when the request may have been accepted without a decoded response.",
+                "enum": [
+                  "completed",
+                  "failed",
+                  "running",
+                  "uncertain"
+                ],
+                "type": "string"
+              },
+              "stderr": {
+                "type": "string"
+              },
+              "stderr_bytes": {
+                "description": "Bytes produced, including discarded ones.",
+                "type": "integer"
+              },
+              "stderr_encoding": {
+                "enum": [
+                  "utf-8",
+                  "base64"
+                ],
+                "type": "string"
+              },
+              "stderr_truncated": {
+                "type": "boolean"
+              },
+              "stdout": {
+                "type": "string"
+              },
+              "stdout_bytes": {
+                "description": "Bytes produced, including discarded ones.",
+                "type": "integer"
+              },
+              "stdout_encoding": {
+                "enum": [
+                  "utf-8",
+                  "base64"
+                ],
+                "type": "string"
+              },
+              "stdout_truncated": {
+                "type": "boolean"
+              },
+              "timed_out": {
+                "type": "boolean"
+              },
+              "timeout_seconds": {
+                "type": "integer"
+              },
+              "wait_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "waited_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "status",
+              "operation_id",
+              "operation",
+              "waited_seconds"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "ExecInstance",
+        "stream:S01"
+      ],
+      "scope": "incus.exec",
+      "title": "Run a command in an instance"
+    },
+    {
+      "bounds": {
+        "max_input_bytes": 16384,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "Read an instance's native configuration and its ETag.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "Instance name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "incus_instance_get",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "etag": {
+                "description": "Native ETag for a conditional update.",
+                "type": "string"
+              },
+              "item": {
+                "description": "Native Instance record.",
+                "type": "object"
+              }
+            },
+            "required": [
+              "item",
+              "etag"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetInstance"
+      ],
+      "scope": "incus.read",
+      "title": "Get instance"
+    },
+    {
+      "bounds": {
+        "default_items": 100,
+        "max_input_bytes": 16384,
+        "max_items": 500,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "List instances (containers and VMs), in native order, up to `limit` items with the native total.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 100,
+            "description": "Maximum items to return (default 100); the result reports the native total.",
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "type": {
+            "description": "Only list instances of this type.",
+            "enum": [
+              "container",
+              "virtual-machine"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "incus_instance_list",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "description": "Native item total before truncation.",
+                "type": "integer"
+              },
+              "items": {
+                "items": {
+                  "description": "Native Instances item.",
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "items",
+              "count",
+              "truncated"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetInstances"
+      ],
+      "scope": "incus.read",
+      "title": "List instances"
+    },
+    {
+      "bounds": {
+        "default_wait_seconds": 10,
+        "max_input_bytes": 65536,
+        "max_output_bytes": 262144,
+        "max_wait_seconds": 60
+      },
+      "confirmation": null,
+      "description": "Snapshot an instance (Incus names it when `name` is omitted) and wait boundedly for the native operation.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "instance": {
+            "description": "Instance name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "name": {
+            "description": "Snapshot name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "stateful": {
+            "description": "Include runtime state.",
+            "type": "boolean"
+          },
+          "wait_seconds": {
+            "default": 10,
+            "description": "Seconds to wait for completion (default 10). Capped by the host connection timeout; the result reports the effective wait.",
+            "maximum": 60,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "instance"
+        ],
+        "type": "object"
+      },
+      "name": "incus_instance_snapshot_create",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "operation": {
+                "description": "Latest native Operation snapshot, if known.",
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "operation_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "description": "completed or failed when the outcome was observed; running when it was not observed within the wait; uncertain when the request may have been accepted without a decoded response.",
+                "enum": [
+                  "completed",
+                  "failed",
+                  "running",
+                  "uncertain"
+                ],
+                "type": "string"
+              },
+              "wait_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "waited_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "status",
+              "operation_id",
+              "operation",
+              "waited_seconds"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "CreateInstanceSnapshot",
+        "GetOperationWait"
+      ],
+      "scope": "incus.write",
+      "title": "Create instance snapshot"
+    },
+    {
+      "bounds": {
+        "default_wait_seconds": 10,
+        "max_input_bytes": 65536,
+        "max_output_bytes": 262144,
+        "max_wait_seconds": 60
+      },
+      "confirmation": {
+        "field": "confirm",
+        "value": "`<instance>/<snapshot>`"
+      },
+      "description": "Delete one instance snapshot. Requires `confirm` to repeat `<instance>/<snapshot>`.",
+      "destructive": true,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "confirm": {
+            "description": "Repeat `<instance>/<snapshot>` to confirm.",
+            "maxLength": 1024,
+            "type": "string"
+          },
+          "instance": {
+            "description": "Instance name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "name": {
+            "description": "Snapshot name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "wait_seconds": {
+            "default": 10,
+            "description": "Seconds to wait for completion (default 10). Capped by the host connection timeout; the result reports the effective wait.",
+            "maximum": 60,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "instance",
+          "name",
+          "confirm"
+        ],
+        "type": "object"
+      },
+      "name": "incus_instance_snapshot_delete",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "operation": {
+                "description": "Latest native Operation snapshot, if known.",
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "operation_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "description": "completed or failed when the outcome was observed; running when it was not observed within the wait; uncertain when the request may have been accepted without a decoded response.",
+                "enum": [
+                  "completed",
+                  "failed",
+                  "running",
+                  "uncertain"
+                ],
+                "type": "string"
+              },
+              "wait_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "waited_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "status",
+              "operation_id",
+              "operation",
+              "waited_seconds"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "DeleteInstanceSnapshot",
+        "GetOperationWait"
+      ],
+      "scope": "incus.delete",
+      "title": "Delete instance snapshot"
+    },
+    {
+      "bounds": {
+        "max_input_bytes": 16384,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "Read one instance snapshot.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "instance": {
+            "description": "Instance name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "name": {
+            "description": "Snapshot name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "instance",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "incus_instance_snapshot_get",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "item": {
+                "description": "Native InstanceSnapshot record.",
+                "type": "object"
+              }
+            },
+            "required": [
+              "item"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetInstanceSnapshot"
+      ],
+      "scope": "incus.read",
+      "title": "Get instance snapshot"
+    },
+    {
+      "bounds": {
+        "default_items": 100,
+        "max_input_bytes": 16384,
+        "max_items": 500,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "List an instance's snapshots, in native order, up to `limit` items with the native total.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "instance": {
+            "description": "Instance name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "limit": {
+            "default": 100,
+            "description": "Maximum items to return (default 100); the result reports the native total.",
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "instance"
+        ],
+        "type": "object"
+      },
+      "name": "incus_instance_snapshot_list",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "description": "Native item total before truncation.",
+                "type": "integer"
+              },
+              "items": {
+                "items": {
+                  "description": "Native InstanceSnapshots item.",
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "items",
+              "count",
+              "truncated"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetInstanceSnapshots"
+      ],
+      "scope": "incus.read",
+      "title": "List instance snapshots"
+    },
+    {
+      "bounds": {
+        "default_wait_seconds": 10,
+        "max_input_bytes": 65536,
+        "max_output_bytes": 262144,
+        "max_wait_seconds": 60
+      },
+      "confirmation": {
+        "field": "confirm",
+        "value": "`<instance>/<snapshot>`"
+      },
+      "description": "Restore an instance to a snapshot, discarding its current state. Requires `confirm` to repeat `<instance>/<snapshot>`.",
+      "destructive": true,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "confirm": {
+            "description": "Repeat `<instance>/<snapshot>` to confirm.",
+            "maxLength": 1024,
+            "type": "string"
+          },
+          "instance": {
+            "description": "Instance name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "snapshot": {
+            "description": "Snapshot name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "stateful": {
+            "description": "Restore runtime state too.",
+            "type": "boolean"
+          },
+          "wait_seconds": {
+            "default": 10,
+            "description": "Seconds to wait for completion (default 10). Capped by the host connection timeout; the result reports the effective wait.",
+            "maximum": 60,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "instance",
+          "snapshot",
+          "confirm"
+        ],
+        "type": "object"
+      },
+      "name": "incus_instance_snapshot_restore",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "operation": {
+                "description": "Latest native Operation snapshot, if known.",
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "operation_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "description": "completed or failed when the outcome was observed; running when it was not observed within the wait; uncertain when the request may have been accepted without a decoded response.",
+                "enum": [
+                  "completed",
+                  "failed",
+                  "running",
+                  "uncertain"
+                ],
+                "type": "string"
+              },
+              "wait_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "waited_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "status",
+              "operation_id",
+              "operation",
+              "waited_seconds"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "UpdateInstance",
+        "GetOperationWait"
+      ],
+      "scope": "incus.delete",
+      "title": "Restore instance snapshot"
+    },
+    {
+      "bounds": {
+        "max_input_bytes": 16384,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "Read an instance's runtime state.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "Instance name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "incus_instance_state_get",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "item": {
+                "description": "Native InstanceState record.",
+                "type": "object"
+              }
+            },
+            "required": [
+              "item"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetInstanceState"
+      ],
+      "scope": "incus.read",
+      "title": "Get instance state"
+    },
+    {
+      "bounds": {
+        "default_wait_seconds": 10,
+        "max_input_bytes": 65536,
+        "max_output_bytes": 262144,
+        "max_wait_seconds": 60
+      },
+      "confirmation": null,
+      "description": "Start, stop, restart, freeze or unfreeze an instance and wait boundedly for the native operation.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "start",
+              "stop",
+              "restart",
+              "freeze",
+              "unfreeze"
+            ],
+            "type": "string"
+          },
+          "force": {
+            "description": "Force stop or restart.",
+            "type": "boolean"
+          },
+          "name": {
+            "description": "Instance name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "stateful": {
+            "description": "Save or restore runtime state.",
+            "type": "boolean"
+          },
+          "timeout": {
+            "default": -1,
+            "description": "Native clean-shutdown timeout in seconds for stop/restart; -1 (default) waits for the guest.",
+            "maximum": 3600,
+            "minimum": -1,
+            "type": "integer"
+          },
+          "wait_seconds": {
+            "default": 10,
+            "description": "Seconds to wait for completion (default 10). Capped by the host connection timeout; the result reports the effective wait.",
+            "maximum": 60,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "action"
+        ],
+        "type": "object"
+      },
+      "name": "incus_instance_state_update",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "operation": {
+                "description": "Latest native Operation snapshot, if known.",
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "operation_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "description": "completed or failed when the outcome was observed; running when it was not observed within the wait; uncertain when the request may have been accepted without a decoded response.",
+                "enum": [
+                  "completed",
+                  "failed",
+                  "running",
+                  "uncertain"
+                ],
+                "type": "string"
+              },
+              "wait_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "waited_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "status",
+              "operation_id",
+              "operation",
+              "waited_seconds"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "UpdateInstanceState",
+        "GetOperationWait"
+      ],
+      "scope": "incus.write",
+      "title": "Change instance state"
+    },
+    {
+      "bounds": {
+        "default_wait_seconds": 10,
+        "max_input_bytes": 65536,
+        "max_output_bytes": 262144,
+        "max_wait_seconds": 60
+      },
+      "confirmation": null,
+      "description": "Change an instance's config, devices, profiles, description or ephemeral flag with a conditional PATCH of only the given fields. Without `etag` the current ETag is read first.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "additionalProperties": {
+              "maxLength": 16384,
+              "type": "string"
+            },
+            "description": "Native config keys. raw.*, volatile.*, security.privileged and similar keys need host approval.",
+            "maxProperties": 256,
+            "propertyNames": {
+              "description": "Config key.",
+              "maxLength": 512,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "description": {
+            "description": "Instance description.",
+            "maxLength": 4096,
+            "type": "string"
+          },
+          "devices": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              "maxProperties": 64,
+              "propertyNames": {
+                "description": "Device key.",
+                "maxLength": 255,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "description": "Native devices. Without host approval only a pool-backed disk without a host path and a nic on a managed network are allowed.",
+            "maxProperties": 64,
+            "propertyNames": {
+              "description": "Device name.",
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "ephemeral": {
+            "description": "Delete the instance when it stops.",
+            "type": "boolean"
+          },
+          "etag": {
+            "description": "ETag from incus_instance_get; a concurrent change fails natively.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "type": "string"
+          },
+          "name": {
+            "description": "Instance name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "profiles": {
+            "description": "Profiles, in order (native default when omitted).",
+            "items": {
+              "description": "Profile name.",
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "type": "array"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "incus_instance_update",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "etag_source": {
+                "description": "Whether the PATCH used the given ETag or one read just before it.",
+                "enum": [
+                  "input",
+                  "read"
+                ],
+                "type": "string"
+              },
+              "operation": {
+                "description": "Latest native Operation snapshot, if known.",
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "operation_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "description": "completed or failed when the outcome was observed; running when it was not observed within the wait; uncertain when the request may have been accepted without a decoded response.",
+                "enum": [
+                  "completed",
+                  "failed",
+                  "running",
+                  "uncertain"
+                ],
+                "type": "string"
+              },
+              "wait_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "waited_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "status",
+              "operation_id",
+              "operation",
+              "waited_seconds"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "PatchInstance",
+        "GetInstance"
+      ],
+      "scope": "incus.write",
+      "title": "Update instance"
+    },
+    {
+      "bounds": {
+        "max_input_bytes": 16384,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "Read one network.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "Network name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "incus_network_get",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "item": {
+                "description": "Native Network record.",
+                "type": "object"
+              }
+            },
+            "required": [
+              "item"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetNetwork"
+      ],
+      "scope": "incus.read",
+      "title": "Get network"
+    },
+    {
+      "bounds": {
+        "default_items": 100,
+        "max_input_bytes": 16384,
+        "max_items": 500,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "List networks, in native order, up to `limit` items with the native total.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 100,
+            "description": "Maximum items to return (default 100); the result reports the native total.",
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "incus_network_list",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "description": "Native item total before truncation.",
+                "type": "integer"
+              },
+              "items": {
+                "items": {
+                  "description": "Native Networks item.",
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "items",
+              "count",
+              "truncated"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetNetworks"
+      ],
+      "scope": "incus.read",
+      "title": "List networks"
+    },
+    {
+      "bounds": {
+        "max_input_bytes": 16384,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "Request cancellation of a running native operation that allows it. Reports `unsupported` when the operation cannot be cancelled and `already_final` when it has finished; completion stays authoritative.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "operation_id": {
+            "description": "Native Incus operation UUID, as returned by a mutation or the operation list.",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation_id"
+        ],
+        "type": "object"
+      },
+      "name": "incus_operation_cancel",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "cancellation": {
+                "enum": [
+                  "requested",
+                  "unsupported",
+                  "already_final",
+                  "uncertain"
+                ],
+                "type": "string"
+              },
+              "operation": {
+                "description": "Latest native Operation snapshot, if known.",
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "operation_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "description": "completed or failed when the outcome was observed; running when it was not observed within the wait; uncertain when the request may have been accepted without a decoded response.",
+                "enum": [
+                  "completed",
+                  "failed",
+                  "running",
+                  "uncertain"
+                ],
+                "type": "string"
+              },
+              "wait_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "waited_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "status",
+              "operation_id",
+              "operation",
+              "waited_seconds"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetOperation",
+        "DeleteOperation"
+      ],
+      "scope": "incus.write",
+      "title": "Cancel operation"
+    },
+    {
+      "bounds": {
+        "max_input_bytes": 16384,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "Read a native operation's current state by its UUID.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "operation_id": {
+            "description": "Native Incus operation UUID, as returned by a mutation or the operation list.",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation_id"
+        ],
+        "type": "object"
+      },
+      "name": "incus_operation_get",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "operation": {
+                "description": "Latest native Operation snapshot, if known.",
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "operation_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "description": "completed or failed when the outcome was observed; running when it was not observed within the wait; uncertain when the request may have been accepted without a decoded response.",
+                "enum": [
+                  "completed",
+                  "failed",
+                  "running",
+                  "uncertain"
+                ],
+                "type": "string"
+              },
+              "wait_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "waited_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "status",
+              "operation_id",
+              "operation",
+              "waited_seconds"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetOperation"
+      ],
+      "scope": "incus.read",
+      "title": "Get operation"
+    },
+    {
+      "bounds": {
+        "default_items": 100,
+        "max_input_bytes": 16384,
+        "max_items": 500,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "List background operations, in native order, up to `limit` items with the native total.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 100,
+            "description": "Maximum items to return (default 100); the result reports the native total.",
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "incus_operation_list",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "description": "Native item total before truncation.",
+                "type": "integer"
+              },
+              "items": {
+                "items": {
+                  "description": "Native Operations item.",
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "items",
+              "count",
+              "truncated"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetOperations"
+      ],
+      "scope": "incus.read",
+      "title": "List operations"
+    },
+    {
+      "bounds": {
+        "default_wait_seconds": 10,
+        "max_input_bytes": 16384,
+        "max_output_bytes": 262144,
+        "max_wait_seconds": 60
+      },
+      "confirmation": null,
+      "description": "Wait up to `wait_seconds` for a native operation to finish, using the server-side wait, and return its state.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "operation_id": {
+            "description": "Native Incus operation UUID, as returned by a mutation or the operation list.",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "wait_seconds": {
+            "default": 10,
+            "description": "Seconds to wait for completion (default 10). Capped by the host connection timeout; the result reports the effective wait.",
+            "maximum": 60,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "operation_id"
+        ],
+        "type": "object"
+      },
+      "name": "incus_operation_wait",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "operation": {
+                "description": "Latest native Operation snapshot, if known.",
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "operation_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "description": "completed or failed when the outcome was observed; running when it was not observed within the wait; uncertain when the request may have been accepted without a decoded response.",
+                "enum": [
+                  "completed",
+                  "failed",
+                  "running",
+                  "uncertain"
+                ],
+                "type": "string"
+              },
+              "wait_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "waited_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "status",
+              "operation_id",
+              "operation",
+              "waited_seconds"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetOperationWait"
+      ],
+      "scope": "incus.read",
+      "title": "Wait for operation"
+    },
+    {
+      "bounds": {
+        "max_input_bytes": 16384,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "Read one profile.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "Profile name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "incus_profile_get",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "item": {
+                "description": "Native Profile record.",
+                "type": "object"
+              }
+            },
+            "required": [
+              "item"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetProfile"
+      ],
+      "scope": "incus.read",
+      "title": "Get profile"
+    },
+    {
+      "bounds": {
+        "default_items": 100,
+        "max_input_bytes": 16384,
+        "max_items": 500,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "List profiles, in native order, up to `limit` items with the native total.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 100,
+            "description": "Maximum items to return (default 100); the result reports the native total.",
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "incus_profile_list",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "description": "Native item total before truncation.",
+                "type": "integer"
+              },
+              "items": {
+                "items": {
+                  "description": "Native Profiles item.",
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "items",
+              "count",
+              "truncated"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetProfiles"
+      ],
+      "scope": "incus.read",
+      "title": "List profiles"
+    },
+    {
+      "bounds": {
+        "max_input_bytes": 16384,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "Read one project.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "Project name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "incus_project_get",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "item": {
+                "description": "Native Project record.",
+                "type": "object"
+              }
+            },
+            "required": [
+              "item"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetProject"
+      ],
+      "scope": "incus.read",
+      "title": "Get project"
+    },
+    {
+      "bounds": {
+        "default_items": 100,
+        "max_input_bytes": 16384,
+        "max_items": 500,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "List projects, in native order, up to `limit` items with the native total.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 100,
+            "description": "Maximum items to return (default 100); the result reports the native total.",
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "name": "incus_project_list",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "description": "Native item total before truncation.",
+                "type": "integer"
+              },
+              "items": {
+                "items": {
+                  "description": "Native Projects item.",
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "items",
+              "count",
+              "truncated"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetProjects"
+      ],
+      "scope": "incus.read",
+      "title": "List projects"
+    },
+    {
+      "bounds": {
+        "max_input_bytes": 16384,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "Read the Incus server's native discovery record (API version, extensions, environment) with a fresh request.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "name": "incus_server_get",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "item": {
+                "description": "Native Server record.",
+                "type": "object"
+              }
+            },
+            "required": [
+              "item"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "helper:connect"
+      ],
+      "scope": "incus.read",
+      "title": "Get Incus server"
+    },
+    {
+      "bounds": {
+        "max_input_bytes": 16384,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "Read one storage pool.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "Storage pool name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "incus_storage_pool_get",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "item": {
+                "description": "Native StoragePool record.",
+                "type": "object"
+              }
+            },
+            "required": [
+              "item"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetStoragePool"
+      ],
+      "scope": "incus.read",
+      "title": "Get storage pool"
+    },
+    {
+      "bounds": {
+        "default_items": 100,
+        "max_input_bytes": 16384,
+        "max_items": 500,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "List storage pools, in native order, up to `limit` items with the native total.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 100,
+            "description": "Maximum items to return (default 100); the result reports the native total.",
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "incus_storage_pool_list",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "description": "Native item total before truncation.",
+                "type": "integer"
+              },
+              "items": {
+                "items": {
+                  "description": "Native StoragePools item.",
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "items",
+              "count",
+              "truncated"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetStoragePools"
+      ],
+      "scope": "incus.read",
+      "title": "List storage pools"
+    },
+    {
+      "bounds": {
+        "max_input_bytes": 16384,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "Read one storage volume.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "Volume name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "pool": {
+            "description": "Storage pool name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "type": {
+            "description": "Volume type.",
+            "enum": [
+              "custom",
+              "container",
+              "virtual-machine",
+              "image"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "pool",
+          "type"
+        ],
+        "type": "object"
+      },
+      "name": "incus_storage_volume_get",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "item": {
+                "description": "Native StoragePoolVolume record.",
+                "type": "object"
+              }
+            },
+            "required": [
+              "item"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetStoragePoolVolume"
+      ],
+      "scope": "incus.read",
+      "title": "Get storage volume"
+    },
+    {
+      "bounds": {
+        "default_items": 100,
+        "max_input_bytes": 16384,
+        "max_items": 500,
+        "max_output_bytes": 262144
+      },
+      "confirmation": null,
+      "description": "List a pool's storage volumes, in native order, up to `limit` items with the native total.",
+      "destructive": false,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 100,
+            "description": "Maximum items to return (default 100); the result reports the native total.",
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "pool": {
+            "description": "Storage pool name.",
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          },
+          "project": {
+            "description": "Native Incus project. The host decides which projects the caller may use.",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f/]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pool"
+        ],
+        "type": "object"
+      },
+      "name": "incus_storage_volume_list",
+      "output_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "description": "Native item total before truncation.",
+                "type": "integer"
+              },
+              "items": {
+                "items": {
+                  "description": "Native StoragePoolVolumes item.",
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "items",
+              "count",
+              "truncated"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "error_code": {
+                    "type": "integer"
+                  },
+                  "http_status": {
+                    "type": "integer"
+                  },
+                  "items": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "operation_id": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "required_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "requires": [
+        "GetStoragePoolVolumes"
+      ],
+      "scope": "incus.read",
+      "title": "List storage volumes"
+    }
+  ],
+  "unavailable": [
+    {
+      "name": "incus_instance_copy",
+      "reason": "deferred by scope (2026-11-04): copy and migration are not in the initial catalogue"
+    },
+    {
+      "name": "incus_instance_move",
+      "reason": "deferred by scope (2026-11-04): copy and migration are not in the initial catalogue"
+    },
+    {
+      "name": "incus_instance_rename",
+      "reason": "deferred by scope (2026-11-04): copy and migration are not in the initial catalogue"
+    }
+  ]
+}
