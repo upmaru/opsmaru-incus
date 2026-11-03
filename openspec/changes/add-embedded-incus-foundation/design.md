@@ -129,6 +129,98 @@ the task's completion unit. Do not promote mappings or `complete_port` merely
 because task 3.9 closes. Installed OCI/delta adapters, direct-backend acceptance
 and consumer-owned Macus hardware evidence remain separately recorded gates.
 
+#### Approved slice: S12 SimpleStreams certification (2026-11-02)
+
+Certify stream contract S12 by matching the pinned `ProtocolSimpleStreams`
+client (`client/simplestreams.go`, `client/simplestreams_images.go` and
+`shared/simplestreams`) within the explicit verified-HTTPS boundary of
+section 4b. That includes its use as the source of an image copy or an
+image-based instance create or rebuild. Like S11, S12 has no REST endpoint
+rows of its own, so a rowless record lists the pinned declarations it
+covers. The work lands in one PR.
+
+User decisions (2026-11-02):
+
+- Go's optional disk cache becomes an optional host cache adapter. The
+  library keeps Go's rules: entries are named by the file name inside a
+  namespace of the hex SHA-256 of the stream URL; an entry younger than
+  the expiry (default one hour) is used without a request; a connection
+  error or non-200 reply falls back to any cached entry, even an expired
+  one; a fresh 200 body replaces the entry; and a 404 while downloading a
+  file invalidates the namespace. The host stores the bytes, so shared
+  code writes no files.
+- `refresh/1` stays explicit and returns a new immutable client; reads on
+  an unloaded client return `catalog_not_loaded`. Go loads lazily on the
+  first call and keeps the catalog in memory. This is an approved
+  difference.
+- Delta sources come from a host retriever, as Go's
+  `DeltaSourceRetriever`: `delta_source: fun(fingerprint)` receives each
+  `root.delta-<fingerprint>` source fingerprint and returns an opaque base
+  source or `nil`. The first match in sorted fingerprint order is
+  converted. Go walks its file map in random order and applies every
+  match; one deterministic delta is an approved difference. This replaces
+  the `delta_base` option.
+- After the download, the SHA-256 of the delivered metadata then rootfs
+  bytes, including converted rootfs bytes, must equal the image
+  fingerprint, failing with Go's "Image fingerprint doesn't match. Got %s
+  expected %s". As in Go, requesting only one part of a split image fails
+  this check.
+- A catalog JSON decoding error carries Go's prefix, URL and quoted body,
+  for example "Failed decoding stream JSON from %q: <detail> (%q)". Only
+  the decoder's detail wording differs from Go's `encoding/json`. This is
+  an approved difference.
+- Each file is checked by SHA-256 only, as Go's `DownloadFileHash` does,
+  failing with "Hash mismatch for <url>: <got> != <expected>". The
+  manifest size is no longer enforced; `max_stream_bytes` still bounds the
+  total.
+
+The PR covers:
+
+- `SimpleStreams.new!/3` with an optional `certificate:` PEM, Go's
+  `TLSServerCert`, reported by `connection_info/1` and sent to targets as
+  the source certificate; it stays empty by default. The stream URL drops
+  a trailing `/` as `ConnectSimpleStreams` does.
+- Go's error text and order: unprefixed image lookup errors in
+  `GetImageFile`, "No file requested" before the lookup, "Unable to fetch
+  <url>: <status>" (and "resource not found" for 404) and "No content in
+  download from %q" for catalog and file requests, wrapped in "Failed
+  parsing stream: " or "Failed parsing products: " as Go wraps them.
+- a SimpleStreams source in copies:
+  - pull: one `CreateImage` with source protocol `simplestreams`, the
+    approved origin as the server, the explicit certificate, the
+    fingerprint and Go's empty project. SimpleStreams images are public,
+    so no secret is requested; a non-public image fails before any request
+    with "Private images aren't supported by the simplestreams protocol".
+  - push: the target's push token is requested, the copy fails with the
+    native "Exporting images is not supported by the simplestreams
+    protocol" error, and the token is cancelled, as for OCI.
+  - relay: downloads through `SimpleStreams.image_file/4` into the relay's
+    metadata and rootfs sinks, then uploads a unified or split image named
+    after the image's filename, as Go does.
+- a SimpleStreams source in instance create and rebuild: Go's pull source
+  fields (type `image`, mode `pull`, protocol `simplestreams`, the
+  certificate, the alias when one is given, otherwise the fingerprint),
+  keeping the caller's source project as given.
+- differential evidence: the SimpleStreams oracle gains the certificate,
+  cache, error, combined-fingerprint and delta-retriever cases through the
+  unchanged client (the delta case replaces only xdelta3 with a fixture
+  command on the oracle's PATH, since the pinned code discovers it there);
+  the image copy and copy negotiation drivers gain a SimpleStreams source
+  built with the unchanged `ConnectSimpleStreams`, compared on Unix and
+  mutual HTTPS.
+- a rowless completion record of kind `simplestreams_image_server`, which
+  must list every `ProtocolSimpleStreams` declaration, `ConnectSimpleStreams`
+  and the three `ProtocolIncus` copy and create declarations. S12 becomes
+  certified, so every stream contract is certified. The endpoint manifest
+  stays at 247.
+
+Approved boundaries, already recorded in section 4b: no `/dev/incus/sock`
+download, no HTTP attempt before HTTPS and no xdelta3 discovery; the host
+delta adapter converts. `GetImageAliasArchitectures` and preferred aliases
+keep the host-supplied architecture. Installed delta and cache adapters and
+real-daemon acceptance stay separate. Task 3.9, `complete_port` and every
+Go declaration status are unchanged.
+
 #### Approved slice: S11 OCI image server certification (2026-10-31)
 
 Certify stream contract S11 by matching the pinned `ProtocolOCI` client

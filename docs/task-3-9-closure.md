@@ -206,7 +206,7 @@ file/image transfers. They remain foundation classification obligations.
 | Typed SFTP | `SFTP`; `test/sftp_operations_reference_test.exs`, `test/sftp_session_test.exs`, `test/sftp_helpers_reference_test.exs` | S09 certified by `s09_typed_sftp_v1` (2026-10-30), completing both SFTP rows with S08: the pinned `pkg/sftp` client with shared sessions, every path/metadata call and `*sftp.File` I/O. Reporting a failed final upload write is an approved difference. |
 | Copy/migration negotiation and relay | `Migration`, `Copy`, `ImageInstances`; `test/copy_negotiation_reference_test.exs`, `test/copy_guards_test.exs`, `test/migration_test.exs` | Recorded boolean/locality/cluster/project/member combinations, identities and relay cleanup have evidence. Enumerate remaining channel/option/remote-wait cases and single-origin differences; do not restart an already implemented copy port. |
 | OCI host-adapter handoff | `OCI`, `Images`, `ImageInstances`; `test/oci_test.exs`, `test/oci_origin_reference_test.exs`, `test/image_copy_contract_test.exs`, `test/copy_negotiation_reference_test.exs` | S11 certified by `s11_oci_image_server_v1` (2026-10-31), naming every `ProtocolOCI` declaration: projections, metadata bytes, origin helpers and OCI sources of copies and image-based create/rebuild. Uncached failed lookups, the host-supplied local architecture and separate registry credentials are approved differences; installed conversion and registry authentication remain separate. |
-| SimpleStreams HTTPS and host delta | `SimpleStreams`; `test/simple_streams_test.exs` | All 20 concrete methods have partial mappings. Catalog/architecture/formats/checksums/full-file/delta/bounds/cleanup have evidence; refresh/cache/fallback variants and installed converter acceptance remain separate. |
+| SimpleStreams HTTPS and host delta | `SimpleStreams`, `Images`, `ImageInstances`; `test/simple_streams_test.exs`, `test/simple_streams_reference_test.exs`, `test/image_copy_contract_test.exs`, `test/copy_negotiation_reference_test.exs` | S12 certified by `s12_simplestreams_image_server_v1` (2026-11-02), naming every `ProtocolSimpleStreams` declaration: projections, error text, fingerprint checks, host cache and delta adapters, origin helpers and SimpleStreams sources of copies and image-based create/rebuild. Explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture are approved differences; installed conversion and cache storage remain separate. |
 
 - [x] Map explicit helpers to all documented routes and assign S01–S12 finite
   streaming obligations in the full inventory; source anchors do not certify completion.
@@ -2004,3 +2004,48 @@ stays at 247 pairs, and Go declaration statuses are unchanged.
   requirement and temporary directories (section 4a, 2026-10-11). Installed
   adapter conversion, registry TLS and authentication and real-daemon pulls
   stay separately recorded.
+
+## S12 SimpleStreams certification
+
+Approved 2026-11-02. One PR certifies S12 under
+`s12_simplestreams_image_server_v1`, a rowless record of kind
+`simplestreams_image_server`. It names every `ProtocolSimpleStreams` method,
+`ConnectSimpleStreams`, and the SimpleStreams-source paths of `CopyImage`,
+`CreateInstanceFromImage` and `RebuildInstanceFromImage`; the validator
+requires all of them and every named client function. Every stream contract is
+now certified. The selected manifest stays at 247 pairs, Go declaration
+statuses are unchanged, and task 3.9 and `complete_port` wait for the closing
+review.
+
+- [x] `SimpleStreams.new!/3` takes an explicit `certificate:` PEM, Go's
+  `TLSServerCert`, reported by connection info and sent to targets.
+- [x] Catalog and download failures carry Go's text and wrapping ("Failed
+  parsing stream: ...", "Unable to fetch <url>: <status>", "resource not
+  found", "No content in download from ...", "Hash mismatch for ..."), and
+  `GetImageFile` lookups are unprefixed, as natively.
+- [x] Each file is checked by SHA-256 only, and the delivered metadata then
+  rootfs bytes must hash to the image fingerprint, so a single-part request of
+  a split image fails as in Go (user decisions 2026-11-02).
+- [x] An optional host cache adapter keeps Go's cache-directory namespace,
+  one-hour default expiry, stale fallback on errors and non-200 replies, and
+  invalidation on a 404 image file, without shared code writing files (user
+  decision 2026-11-02). The differential compares the cache directory byte
+  for byte with the unchanged client's.
+- [x] `delta_source:` is Go's `DeltaSourceRetriever`; the differential runs the
+  unchanged client with a fixture `xdelta3` first on its PATH.
+- [x] A SimpleStreams source works with `Images.copy/4` (pull, relay, and a
+  push that requests the target token, fails natively and cancels it) and
+  with `ImageInstances.create/5` and `rebuild/6`. Target requests and fetched
+  image files agree with the unchanged pinned callers on Unix and mutual
+  HTTPS.
+- [x] Mutation probes fail the new tests: no stale fallback, no combined
+  fingerprint check, a status without its reason phrase, no 404 invalidation,
+  no expiry and ignored delta sources.
+- Approved differences: explicit `refresh/1`, one deterministic delta, the
+  decoder's JSON error detail and the host cache adapter (2026-11-02); the
+  host-supplied local architecture (2026-10-12). Hosts see progress through
+  their own sinks, and a failed relay upload is reported (S05, 2026-10-28).
+- Approved boundary: no `/dev/incus/sock` download, HTTP attempt before HTTPS
+  or xdelta3 discovery (section 4b, 2026-10-12). Installed delta conversion
+  and cache storage, public servers and real-daemon pulls stay separately
+  recorded.

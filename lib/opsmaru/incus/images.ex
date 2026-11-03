@@ -1,7 +1,18 @@
 defmodule Opsmaru.Incus.Images do
   @moduledoc "Native image transfers; host-owned sources/sinks and no mutation replay."
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Context, Error, ImageCopy, ImageSource, Model, OCI, Operation, Transfer}
+
+  alias Opsmaru.Incus.{
+    Context,
+    Error,
+    ImageCopy,
+    ImageSource,
+    Model,
+    OCI,
+    Operation,
+    SimpleStreams,
+    Transfer
+  }
 
   def import(client, image, metadata_source, opts \\ []) do
     with {:ok, model} <- Model.decode("ImagesPost", Model.encode(image)),
@@ -147,6 +158,11 @@ defmodule Opsmaru.Incus.Images do
   a username-only URL) adds Go's escaped user information to the server URL for a
   private registry. A relay converts through the host adapter. A push fails like
   Go: the target's push token is requested and, after the native error, cancelled.
+
+  A `SimpleStreams` source works the same way, as the pinned `CopyImage` takes a
+  `ProtocolSimpleStreams` source: a pull hands the target protocol `simplestreams`
+  and the explicit certificate, a relay downloads through `SimpleStreams.image_file/4`
+  into the relay sinks, and a push fails natively after its token is cancelled.
   """
   def copy(target, source, image, opts \\ []) do
     with :ok <- Context.authorize(target.context, target.connection),
@@ -229,11 +245,11 @@ defmodule Opsmaru.Incus.Images do
   defp text?(value, min),
     do: is_binary(value) and byte_size(value) in min..1024 and String.valid?(value)
 
-  # The pinned isSameServer compares protocols too: an OCI registry is never the
+  # The pinned isSameServer compares protocols too: an image server is never the
   # target, even behind a shared origin.
   defp same_backend?(one, two),
     do:
-      not ImageSource.oci?(two) and
+      not ImageSource.image_server?(two) and
         one.connection.transport == two.connection.transport and
         one.connection.address == two.connection.address and
         one.connection.project == two.connection.project and
@@ -272,7 +288,7 @@ defmodule Opsmaru.Incus.Images do
 
   # The pinned CopyImage has no push check of its own; ExportImage on an Incus source does.
   defp push_source(source) do
-    if ImageSource.oci?(source),
+    if ImageSource.image_server?(source),
       do: :ok,
       else: Incus.require_extension(source, "images_push_relay")
   end
@@ -346,35 +362,33 @@ defmodule Opsmaru.Incus.Images do
     with {:ok, copy} <-
            accept(%ImageCopy{mode: "push"}, :target, target, "CreateImage", %{}, body) do
       case token_secret(copy.target.response) do
-        secret when is_binary(secret) and is_struct(source, OCI) ->
-          # As natively: the OCI export fails, then the token is cancelled.
-          _ = Operation.cancel(copy.target)
-          {:error, error} = OCI.unsupported(source, "ExportImage")
-          copy_failure(copy, error)
-
         secret when is_binary(secret) ->
-          export = %{
-            "target" => url,
-            "certificate" => ImageSource.certificate(target),
-            "secret" => secret,
-            "project" => target.connection.project || "default",
-            "profiles" => opts[:profiles]
-          }
-
-          # A failed export keeps the token handle; the host cancels it explicitly.
-          accept(
-            copy,
-            :source,
-            source,
-            "ExportImage",
-            %{"fingerprint" => image["fingerprint"]},
-            export
-          )
+          if ImageSource.image_server?(source) do
+            # As natively: the image server's export fails, then the token is cancelled.
+            _ = Operation.cancel(copy.target)
+            {:error, error} = ImageSource.export(source)
+            copy_failure(copy, error)
+          else
+            export(copy, target, source, image, url, secret, opts)
+          end
 
         _ ->
           unread_secret(copy, :target)
       end
     end
+  end
+
+  defp export(copy, target, source, image, url, secret, opts) do
+    export = %{
+      "target" => url,
+      "certificate" => ImageSource.certificate(target),
+      "secret" => secret,
+      "project" => target.connection.project || "default",
+      "profiles" => opts[:profiles]
+    }
+
+    # A failed export keeps the token handle; the host cancels it explicitly.
+    accept(copy, :source, source, "ExportImage", %{"fingerprint" => image["fingerprint"]}, export)
   end
 
   defp accept(copy, side, client, method, args, body) do
@@ -444,6 +458,15 @@ defmodule Opsmaru.Incus.Images do
     # The pinned conversion always yields both parts, so the upload is split.
     case OCI.image_file(source, image["fingerprint"], sinks) do
       {:ok, _} -> {:ok, %{result: %{names: %{metadata: "", rootfs: ""}}}}
+      {:error, error} -> copy_failure(copy, error)
+    end
+  end
+
+  defp relay_download(copy, %SimpleStreams{} = source, image, sinks) do
+    # The pinned GetImageFile names each part it returned; a combined image has
+    # no rootfs part, so the upload is unified.
+    case SimpleStreams.image_file(source, image["fingerprint"], sinks) do
+      {:ok, parts} -> {:ok, %{result: %{names: Map.new(parts, &{elem(&1, 0), elem(&1, 1).name})}}}
       {:error, error} -> copy_failure(copy, error)
     end
   end

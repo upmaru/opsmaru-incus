@@ -83,9 +83,10 @@
       "status": "partial",
       "elixir": "lib/opsmaru/incus/simple_streams.ex",
       "evidence": [
-        "test/simple_streams_test.exs"
+        "test/simple_streams_test.exs",
+        "test/simple_streams_reference_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/interface_method/HTTPTransporter.Transport",
@@ -7116,7 +7117,7 @@
       "evidence": [
         "test/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.DoHTTP",
@@ -7125,25 +7126,29 @@
       "evidence": [
         "test/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.ExportImage",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/simple_streams.ex",
       "evidence": [
-        "test/simple_streams_test.exs"
+        "test/simple_streams_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetConnectionInfo",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/simple_streams.ex",
       "evidence": [
-        "test/simple_streams_test.exs"
+        "test/simple_streams_test.exs",
+        "test/simple_streams_reference_test.exs",
+        "test/image_copy_contract_test.exs",
+        "test/copy_negotiation_reference_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetHTTPClient",
@@ -7152,16 +7157,17 @@
       "evidence": [
         "test/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImage",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/simple_streams.ex",
       "evidence": [
-        "test/simple_streams_test.exs"
+        "test/simple_streams_test.exs",
+        "test/simple_streams_reference_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAlias",
@@ -7170,7 +7176,7 @@
       "evidence": [
         "test/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasArchitectures",
@@ -7179,7 +7185,7 @@
       "evidence": [
         "test/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasNames",
@@ -7188,7 +7194,7 @@
       "evidence": [
         "test/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliasType",
@@ -7197,7 +7203,7 @@
       "evidence": [
         "test/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageAliases",
@@ -7206,16 +7212,18 @@
       "evidence": [
         "test/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageFile",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/simple_streams.ex",
       "evidence": [
-        "test/simple_streams_test.exs"
+        "test/simple_streams_test.exs",
+        "test/simple_streams_reference_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageFingerprints",
@@ -7224,25 +7232,27 @@
       "evidence": [
         "test/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImageSecret",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/simple_streams.ex",
       "evidence": [
-        "test/simple_streams_test.exs"
+        "test/simple_streams_test.exs",
+        "test/image_copy_contract_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImages",
       "status": "partial",
       "elixir": "lib/opsmaru/incus/simple_streams.ex",
       "evidence": [
-        "test/simple_streams_test.exs"
+        "test/simple_streams_test.exs",
+        "test/simple_streams_reference_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesAllProjects",
@@ -7251,7 +7261,7 @@
       "evidence": [
         "test/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesAllProjectsWithFilter",
@@ -7260,7 +7270,7 @@
       "evidence": [
         "test/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetImagesWithFilter",
@@ -7269,7 +7279,7 @@
       "evidence": [
         "test/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetPrivateImage",
@@ -7278,7 +7288,7 @@
       "evidence": [
         "test/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/ProtocolSimpleStreams.GetPrivateImageFile",
@@ -7287,7 +7297,7 @@
       "evidence": [
         "test/simple_streams_test.exs"
       ],
-      "note": "Explicit verified-HTTPS SimpleStreams slice: pinned catalog/image/alias/file-manifest/unsupported differential; independent checksummed binary/deadline/owner fixtures. No socket discovery, HTTP downgrade or disk cache. Explicit host delta callback, checksum, budget and cleanup fixtures pass; installed conversion and full protocol parity remain unverified. Passive CA-configured origin metadata has pinned differential and no-I/O evidence. Origin HTTP/disconnect have pinned differential and independent bounds/no-redirect evidence."
+      "note": "S12 is certified under reviewed record s12_simplestreams_image_server_v1, which names every ProtocolSimpleStreams declaration. Over explicit verified HTTPS: pinned catalog, image, alias and file-manifest projections, catalog and download error text, per-file and combined fingerprint checks, an optional host cache adapter with the pinned expiry, stale fallback and 404 invalidation, host delta sources, unsupported-method errors, connection info with the explicit certificate and origin HTTP, compared with the unchanged SimpleStreams client; SimpleStreams sources of pull, push and relay copies and image-based instance create and rebuild compared with the unchanged CopyImage, CreateInstanceFromImage and RebuildInstanceFromImage on Unix and verified HTTPS targets; independent binary, budget, deadline, owner and cleanup fixtures. Approved differences: explicit refresh, one deterministic delta, the decoder's JSON error detail, the host cache adapter and the host-supplied local architecture; no socket probe, HTTP attempt or tool discovery. Installed delta conversion and cache storage, public servers and real-daemon pulls remain unverified; this is not Go declaration parity."
     },
     {
       "id": "client/method/oidcTransport.RoundTrip",

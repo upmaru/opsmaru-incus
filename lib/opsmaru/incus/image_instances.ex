@@ -7,7 +7,8 @@ defmodule Opsmaru.Incus.ImageInstances do
   The source may be a resolved `OCI` value, as for the pinned helpers: the target
   pulls with protocol `oci`, the registry certificate and the caller's own source
   project. `:registry_credentials` (`{username, password}`) adds Go's escaped user
-  information to the server URL for a private registry.
+  information to the server URL for a private registry. A `SimpleStreams` source
+  pulls the same way with protocol `simplestreams` and its explicit certificate.
   """
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Context, Error, Images, ImageSource, Model, NativeInput, Operation}
@@ -116,26 +117,26 @@ defmodule Opsmaru.Incus.ImageInstances do
     end
   end
 
-  # The pinned helper keeps the caller's source project; an OCI registry has none of
+  # The pinned helper keeps the caller's source project; an image server has none of
   # its own, while an Incus source keeps its bound selection (approved difference).
   defp image_project(source, fields) do
-    if ImageSource.oci?(source),
+    if ImageSource.image_server?(source),
       do: fields["project"] || "",
       else: source.connection.project || fields["project"] || ""
   end
 
   defp source_project(source, fields) do
-    if ImageSource.oci?(source) or
+    if ImageSource.image_server?(source) or
          fields["project"] in [nil, "", source.connection.project || "default"],
        do: :ok,
        else: {:error, %Error{kind: :image_project_mismatch}}
   end
 
-  # The pinned isSameServer compares protocols too: an OCI registry is never the
+  # The pinned isSameServer compares protocols too: an image server is never the
   # target, even behind a shared origin.
   defp same_backend?(target, source),
     do:
-      not ImageSource.oci?(source) and
+      not ImageSource.image_server?(source) and
         target.connection.transport == source.connection.transport and
         target.connection.address == source.connection.address and
         (target.connection.project || "default") == (source.connection.project || "default") and

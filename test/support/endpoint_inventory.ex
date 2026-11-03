@@ -34,6 +34,8 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
       ~w(request routing version_extensions path_operations compound_operations path_helpers attributes status_errors open_flags cursor_io positional_io end_of_file short_reads pipelined_reads read_ahead sequential_writes concurrent_uploads host_sources host_sinks file_attributes fsync closed_files file_lock shared_sessions opener_lifetime request_deadline response_loss_no_replay frame_failures in_flight_bound caller_loss packet_bounds preflight),
     "oci_image_server" =>
       ~w(construction readiness alias_normalization projection fingerprint architectures alias_architectures vm_rejection unsupported_methods immutable_cache cache_miss failed_lookup connection_info certificate http_requests uncertain_http disconnect metadata_yaml binary_sinks stream_bounds foreign_emitter inspection_bounds deadline cancellation caller_loss cleanup host_failures redaction copy_pull copy_push copy_relay registry_credentials private_images instance_create instance_rebuild approved_origin preflight),
+    "simplestreams_image_server" =>
+      ~w(construction readiness connection_info certificate http_requests disconnect explicit_refresh projection aliases alias_architectures unsupported_methods catalog_errors catalog_limits image_files file_checksum combined_fingerprint download_errors stream_bounds cache_expiry stale_fallback cache_invalidation cache_failures delta_manifest delta_source delta_fallback delta_failures deadline caller_loss cleanup redaction copy_pull copy_push copy_relay private_images instance_create instance_rebuild approved_origin preflight),
     "binary_download" =>
       ~w(request populated routing native_400 native_403 native_404 byte_bounds deadline cancellation acknowledged_sink no_implicit_delete preflight),
     "read_contract" =>
@@ -48,6 +50,9 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
   @rowless %{
     "oci_image_server" =>
       {["client/method/ProtocolOCI.", "client/function/ConnectOCI"],
+       ~w(client/method/ProtocolIncus.CopyImage client/method/ProtocolIncus.CreateInstanceFromImage client/method/ProtocolIncus.RebuildInstanceFromImage)},
+    "simplestreams_image_server" =>
+      {["client/method/ProtocolSimpleStreams.", "client/function/ConnectSimpleStreams"],
        ~w(client/method/ProtocolIncus.CopyImage client/method/ProtocolIncus.CreateInstanceFromImage client/method/ProtocolIncus.RebuildInstanceFromImage)}
   }
   # A documented route the daemon does not register, reconciled to the route it does

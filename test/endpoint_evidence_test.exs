@@ -582,7 +582,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            ]
 
     assert for(%{"status" => "certified", "id" => id} <- audit["stream_contracts"], do: id) ==
-             ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08", "S09", "S10", "S11"]
+             ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08", "S09", "S10", "S11", "S12"]
 
     refute audit["behavior_complete"] or audit["complete_port"]
     image_transfer = ["completion_records", "s05_image_transfer_v1"]
@@ -646,6 +646,21 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     assert "client/method/ProtocolIncus.CopyImage" in s11["declarations"]
     assert length(s11["approved_differences"]) == 5
     refute Enum.any?(audit["entries"], &(&1["completion_record"] == "s11_oci_image_server_v1"))
+
+    # S12 likewise names every pinned SimpleStreams declaration.
+    s12 = get_in(audit, ["completion_records", "s12_simplestreams_image_server_v1"])
+
+    assert {s12["kind"], s12["stream_contracts"], s12["rows"], s12["methods"]} ==
+             {"simplestreams_image_server", ["S12"], [], []}
+
+    assert length(s12["declarations"]) == 24
+    assert "client/function/ConnectSimpleStreams" in s12["declarations"]
+    assert length(s12["approved_differences"]) == 7
+
+    refute Enum.any?(
+             audit["entries"],
+             &(&1["completion_record"] == "s12_simplestreams_image_server_v1")
+           )
   end
 
   for part <- 1..4 do
@@ -800,6 +815,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     raw_upgrade = ["completion_records", "s08_raw_upgrades_v1"]
     typed_sftp = ["completion_records", "s09_typed_sftp_v1"]
     oci = ["completion_records", "s11_oci_image_server_v1"]
+    streams = ["completion_records", "s12_simplestreams_image_server_v1"]
     events = ["completion_records", "b03_events_v1"]
     socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
     head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
@@ -853,7 +869,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
       {update_in(audit, ["stream_contracts"], fn contracts ->
          Enum.map(contracts, fn contract ->
            if contract["id"] == "S12",
-             do: %{contract | "status" => "certified"},
+             do: Map.delete(contract, "completion_record"),
              else: contract
          end)
        end), "unsupported certification claim"},
@@ -983,6 +999,30 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
        "unrelated completion record"},
       {put_in(audit, oci ++ ["kind"], "image_transfer"), "empty completion record"},
       {update_in(audit, oci ++ ["approved_differences"], fn [first | rest] ->
+         [Map.delete(first, "approved") | rest]
+       end), "unapproved exclusion"},
+      # S12 certification needs every pinned SimpleStreams declaration, the cache,
+      # delta and fingerprint cases, real client functions and no REST rows.
+      {update_in(
+         audit,
+         streams ++ ["declarations"],
+         &List.delete(&1, "client/method/ProtocolSimpleStreams.GetImageFile")
+       ), "stale completion declarations"},
+      {update_in(
+         audit,
+         streams ++ ["declarations"],
+         &List.delete(&1, "client/method/ProtocolIncus.CopyImage")
+       ), "stale completion declarations"},
+      {update_in(audit, streams ++ ["cases"], &Map.delete(&1, "stale_fallback")),
+       "missing completion case"},
+      {update_in(audit, streams ++ ["cases"], &Map.delete(&1, "combined_fingerprint")),
+       "missing completion case"},
+      {update_in(audit, streams ++ ["cases"], &Map.delete(&1, "delta_source")),
+       "missing completion case"},
+      {put_in(audit, streams ++ ["functions"], [["Opsmaru.Incus.SimpleStreams", "cache", 1]]),
+       "missing public client function"},
+      {put_in(audit, streams ++ ["rows"], ["GET /1.0/images"]), "unrelated completion record"},
+      {update_in(audit, streams ++ ["approved_differences"], fn [first | rest] ->
          [Map.delete(first, "approved") | rest]
        end), "unapproved exclusion"},
       # S09 certification needs the pipelining, lock and host transfer cases, the

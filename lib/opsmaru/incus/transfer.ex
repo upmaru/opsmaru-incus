@@ -34,7 +34,7 @@ defmodule Opsmaru.Incus.Transfer do
   @doc false
   def download_origin_events(%{connection: %{transport: :https}} = client, path, handler),
     do:
-      run(client, "GET", path, [], nil, {:events, handler}, fn _, path ->
+      run(client, "GET", path, [], nil, {:origin_events, handler}, fn _, path ->
         SimpleStreams.path(path)
       end)
 
@@ -186,9 +186,14 @@ defmodule Opsmaru.Incus.Transfer do
     acc = %{acc | headers: native_headers}
 
     case sink do
-      {:events, handler} when acc.status in 200..299 ->
+      {tag, handler} when tag in [:events, :origin_events] and acc.status in 200..299 ->
         with :ok <- handler.({:headers, acc.headers}),
              do: collect(rest, ref, connection, sink, acc)
+
+      # Like the pinned DownloadFileHash, an origin error status is final once its
+      # headers arrive; its body is never read.
+      {:origin_events, _} ->
+        {:done, acc}
 
       _ ->
         collect(rest, ref, connection, sink, acc)
@@ -197,7 +202,7 @@ defmodule Opsmaru.Incus.Transfer do
 
   defp deliver(<<>>, _, _), do: :ok
 
-  defp deliver(data, {:events, handler}, maximum),
+  defp deliver(data, {tag, handler}, maximum) when tag in [:events, :origin_events],
     do: deliver(data, fn chunk -> handler.({:data, chunk}) end, maximum)
 
   defp deliver(data, sink, maximum) do
@@ -206,7 +211,8 @@ defmodule Opsmaru.Incus.Transfer do
     if sink.(chunk) == :ok, do: deliver(rest, sink, maximum), else: {:error, :sink_failed}
   end
 
-  defp finish(acc, {:events, handler}) when acc.status in 200..299 do
+  defp finish(acc, {tag, handler})
+       when tag in [:events, :origin_events] and acc.status in 200..299 do
     case handler.(:done) do
       {:ok, result} ->
         {:ok,
@@ -225,6 +231,11 @@ defmodule Opsmaru.Incus.Transfer do
         failed(acc.method, kind)
     end
   end
+
+  # An origin download reports its status line as the pinned DownloadFileHash does;
+  # its body is never decoded as a native response.
+  defp finish(%{status: status}, {:origin_events, _}),
+    do: {:error, %Error{kind: :native, http_status: status}}
 
   defp finish(%{method: "HEAD", status: status}, _sink) when status >= 400,
     do: {:error, %Error{kind: :native, http_status: status}}
@@ -266,7 +277,9 @@ defmodule Opsmaru.Incus.Transfer do
                "transfer-encoding",
                "authorization"
              ]
-         end), do: :ok, else: {:error, :invalid_headers}
+         end),
+       do: :ok,
+       else: {:error, :invalid_headers}
   end
 
   defp failed(method, kind),

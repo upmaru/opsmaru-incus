@@ -15,7 +15,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
     Server
   }
 
-  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
+  alias Opsmaru.TestSupport.{HTTPFixture, SimpleStreamsFixture, TLSIdentity}
   @driver Path.expand("../.integration/copy-negotiation-driver", __DIR__)
   @extensions ~w(storage_api_local_volume_handling storage_api_remote_volume_handling storage_api_project storage_volume_project_move storage_api_volume_snapshots custom_volume_refresh custom_volume_refresh_exclude_older_snapshots container_push container_push_target container_only_migration container_incremental_copy virtual-machines container_snapshot_stateful_migration dependent cluster_migration_inconsistent_copy instance_allow_inconsistent_copy)
 
@@ -700,6 +700,101 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
       assert fields["protocol"] == "oci" and fields["mode"] == "pull", inspect(action)
       assert fields["server"] == target_endpoint.url
     end
+  end
+
+  for action <- [:create, :rebuild], transport <- [:unix, :https] do
+    test "#{transport} S12 SimpleStreams-source image #{action} matches the pinned helper", %{
+      root: root
+    } do
+      for {source_fields, pinned} <- [
+            {%{"alias" => "fixture/edge", "project" => "caller"}, true},
+            {%{}, false},
+            {%{"alias" => "edge"}, true}
+          ] do
+        compare_streams_image(root, unquote(action), unquote(transport), source_fields, pinned)
+      end
+    end
+  end
+
+  test "S12 SimpleStreams-source image create refuses private images and credentials before any request",
+       %{root: root} do
+    {target, target_fixture, target_endpoint} = fixture(root, "streams-target", :https)
+    server = SimpleStreamsFixture.start(root, true)
+    image = %{server.image | "public" => false}
+    body = %{"name" => "from-streams"}
+    source = %{simplestreams: true, url: server.origin, certificate: server.certificate}
+
+    native =
+      reference(%{
+        action: "create-image",
+        target: target_endpoint,
+        source: source,
+        image: image,
+        body: body
+      })
+
+    assert native["error"] == "Private images aren't supported by the simplestreams protocol"
+
+    assert {:error, %Error{kind: :native, message: message}} =
+             ImageInstances.create(target, server.client, image, body,
+               approved_origin: server.origin
+             )
+
+    assert message == native["error"]
+
+    assert {:error, %Error{kind: :invalid_image_arguments}} =
+             ImageInstances.create(target, server.client, server.image, body,
+               approved_origin: server.origin,
+               registry_credentials: {"user", "s3cret"}
+             )
+
+    assert posts(target_fixture) == []
+    assert SimpleStreamsFixture.downloads(server) == []
+  end
+
+  defp compare_streams_image(root, action, transport, source_fields, pinned) do
+    name = "streams-target-#{System.unique_integer([:positive])}"
+    {target, target_fixture, target_endpoint} = fixture(root, name, transport)
+    server = SimpleStreamsFixture.start(root, pinned)
+    body = %{"source" => source_fields}
+    body = if action == :create, do: Map.put(body, "name", "from-streams"), else: body
+
+    expected =
+      reference(%{
+        action: if(action == :create, do: "create-image", else: "rebuild-image"),
+        target: target_endpoint,
+        source: %{simplestreams: true, url: server.origin, certificate: server.certificate},
+        image: server.image,
+        body: body,
+        parent: "existing"
+      })
+
+    refute expected["error"], inspect(expected)
+    native = posts(target_fixture) |> List.last()
+    opts = [approved_origin: server.origin]
+
+    assert {:ok, _operation} =
+             if(action == :create,
+               do: ImageInstances.create(target, server.client, server.image, body, opts),
+               else:
+                 ImageInstances.rebuild(
+                   target,
+                   server.client,
+                   server.image,
+                   "existing",
+                   body,
+                   opts
+                 )
+             )
+
+    actual = posts(target_fixture) |> List.last()
+    assert actual.target == native.target
+    label = inspect({action, transport, source_fields, pinned})
+    assert Jason.decode!(actual.body) == Jason.decode!(native.body), label
+    fields = Jason.decode!(actual.body)["source"]
+    assert fields["protocol"] == "simplestreams" and fields["mode"] == "pull"
+    assert fields["certificate"] == server.certificate
+    assert SimpleStreamsFixture.downloads(server) == []
   end
 
   defp compare_oci_image(root, action, transport, source_fields, credentials, pinned) do
