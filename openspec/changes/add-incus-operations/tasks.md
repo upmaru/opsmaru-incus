@@ -1,10 +1,10 @@
 # Tasks
 
-Planning only. No durable tasks, target registry or connector work belongs to this change.
+No durable tasks, target registry or connector work belongs to this change. Scope decisions are recorded in design.md ("Approved scope (2026-11-04)").
 
 ## 1. Descriptors and host contract
 
-- [ ] 1.1 Define `Opsmaru.Incus.Operations` descriptors and `all/0`, and resolve the canonical naming scheme; verify stable names/schemas via snapshot tests and that each descriptor calls only public client functions.
+- [ ] 1.1 Define `Opsmaru.Incus.Operations` descriptors and `all/0` under the approved `incus_<resource>_<verb>` names; verify stable names/schemas via snapshot tests and that each descriptor calls only public client functions.
 - [ ] 1.2 Define the `Opsmaru.Incus.Operations.Host` binding; verify missing/failing callbacks, forged connection/owner input and unauthorized projects deny with zero fake-backend requests.
 - [ ] 1.3 Implement scope and destructive-confirmation enforcement; verify read-only callers, missing or mismatched confirmation and wrong scopes cannot reach the backend.
 

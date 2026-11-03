@@ -8,7 +8,7 @@ Provides one shared definition of Incus operations that hosts expose to agents, 
 
 ### Requirement: Shared operation descriptors
 
-The library SHALL define each supported Incus operation once with a canonical name, description, input/output schemas, required scope, destructive flag and bounds, executed only through the public Incus client. Descriptor names and schemas SHALL be stable public contract.
+The library SHALL define each supported Incus operation once with a canonical name, description, input/output schemas, required scope, destructive flag and bounds, executed only through the public Incus client. Canonical names SHALL follow `incus_<resource>_<verb>` using lowercase letters, digits and underscores, at most 64 characters. Descriptor names and schemas SHALL be stable public contract.
 
 #### Scenario: Same contract in two hosts
 
@@ -17,7 +17,12 @@ The library SHALL define each supported Incus operation once with a canonical na
 
 ### Requirement: Host-supplied trust
 
-Operations SHALL obtain their connection, context and authorization only from the host binding for an authenticated caller. Tool input MUST NOT select sockets, URLs, credentials, owner identity or host paths. Missing or failing host binding SHALL deny before backend access.
+Operations SHALL obtain their connection, context, granted scopes and authorization only from the host binding for an authenticated caller. Tool input MUST NOT select sockets, URLs, credentials, owner identity or host paths; image servers are named in input only by a host-approved remote name. Restricted instance configuration and devices SHALL be denied unless the host explicitly allows them. Missing or failing host binding SHALL deny before backend access.
+
+#### Scenario: Restricted instance input
+
+- **WHEN** create or update input sets a `raw.*` key, `security.privileged` or a disk device with a host path and the host has not allowed restricted input
+- **THEN** the call is denied before backend access
 
 #### Scenario: Forged backend input
 
@@ -79,7 +84,12 @@ The library SHALL provide TamaMCP tool modules for the shared operations when `t
 
 Each exported operation SHALL record the client methods it uses and their verification evidence. Operations depending on client behavior without evidence MUST NOT be exported, and tool success MUST NOT count as client coverage.
 
-#### Scenario: Pending client area
+#### Scenario: Unevidenced client method
 
-- **WHEN** an operation would require client methods still open in foundation task 3.9
-- **THEN** it is not exported and the catalogue documents it as unavailable
+- **WHEN** an operation would require a client method without recorded implementation and verification evidence
+- **THEN** it is not exported and the catalogue documents it as unavailable with the missing methods
+
+#### Scenario: Deferred by scope
+
+- **WHEN** a caller looks for instance copy, rename or move
+- **THEN** the catalogue lists them as unavailable by scope and exports no tool for them
