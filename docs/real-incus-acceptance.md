@@ -87,7 +87,8 @@ credentials and raw journals are ignored and are not committed.
 
 - [x] Foundation 4.3: direct native inspection, mutation, operation and stream
   behavior over Unix and verified authenticated HTTPS.
-- [ ] Foundation 3.9: complete remaining supported client/model/helper coverage.
+- [x] Foundation 3.9: complete remaining supported client/model/helper coverage
+  (closed by the 2026-11-03 closing review in `docs/task-3-9-closure.md`).
 - [ ] Installed OCI/delta conversion adapter acceptance.
 - [ ] Embeddable gateway acceptance.
 - [ ] Macus Elixir integration, packaging and full hardware/guest acceptance.
