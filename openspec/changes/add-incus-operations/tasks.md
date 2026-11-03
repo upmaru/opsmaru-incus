@@ -24,6 +24,6 @@ No durable tasks, target registry or connector work belongs to this change. Scop
 
 ## 4. Consumer and acceptance
 
-- [ ] 4.1 Extend the isolated consumer fixture to compose the tools in a host TamaMCP server; verify a clean build from a pushed revision.
+- [x] 4.1 Extend the isolated consumer fixture to compose the tools in a host TamaMCP server; verify a clean build from a pushed revision. Evidence: `test/consumer` composes the shared tools with `consumer_runtime_status` in `FoundationConsumer.MCP` and runs a shared tool through a host binding over a private Unix backend; `test/consumer/client_only` builds without `tama_mcp`. `mise run check:consumer` passed both from GitHub at pushed revision `9d7c9306d95ae35942a8f7e54fd07dbc3e63127b`, now the pin in `test/consumer/revision.txt`.
 - [ ] 4.2 With explicit isolated real-Incus opt-in, exercise inspection, a scoped mutation, exec and operation polling; record evidence separately from fixture, Macus composition and hardware acceptance. Prepared: `scripts/accept-incus-operations.exs` (documented in `docs/real-incus-acceptance.md`); not run, awaiting explicit opt-in.
 - [x] 4.3 Document the catalogue, scopes, bounds and host binding. Evidence: `docs/incus-operations.md` (catalogue table checked against the descriptors by `test/operations_catalogue_test.exs`, scopes, bounds, host binding, results, TamaMCP composition, evidence classes), README link and the 4.2 runner in `docs/real-incus-acceptance.md`.
