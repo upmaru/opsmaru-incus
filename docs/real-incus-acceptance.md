@@ -83,6 +83,30 @@ Host DNS must resolve the verified hostname. The local run used a private
 process-local Erlang `inetrc`, without modifying system DNS. Private state,
 credentials and raw journals are ignored and are not committed.
 
+## Shared operations (add-incus-operations task 4.2)
+
+Not yet run; it needs the same explicit opt-in, a fresh isolated project and
+private credentials. `scripts/accept-incus-operations.exs` exercises the
+shared operations through `Opsmaru.Incus.Operations.run/3` with a fixed
+acceptance host binding, over Unix and, when `https` is given, verified HTTPS:
+server/project/instance inspection, a project denial that never reaches the
+backend, instance create and start with native operation polling by ID, bounded
+exec (stdin, exit status, 100,000-byte truncation and a killed 2 s timeout),
+snapshot create, a refused and then a confirmed restore, confirmed snapshot
+and instance deletion. The configuration uses the fields above (without
+`pool`) plus `image`, a local image alias in the default project; the run
+project shares the default project's images and profiles. Requests may take
+65 s so the tools can use their full 60 s wait. Each step is journaled to
+`report`; nothing is retried and failures keep their state.
+
+```sh
+OPSMARU_OPERATIONS_ACCEPTANCE_CONFIG=/absolute/private/run/config.json \
+  mise exec -- mix run --no-start scripts/accept-incus-operations.exs
+```
+
+This is separate from fixture, consumer, Macus composition and hardware
+evidence, and tool success never counts as client coverage.
+
 ## Separate gates
 
 - [x] Foundation 4.3: direct native inspection, mutation, operation and stream
@@ -90,6 +114,7 @@ credentials and raw journals are ignored and are not committed.
 - [x] Foundation 3.9: complete remaining supported client/model/helper coverage
   (closed by the 2026-11-03 closing review in `docs/task-3-9-closure.md`).
 - [ ] Installed OCI/delta conversion adapter acceptance.
+- [ ] Shared operations acceptance (`add-incus-operations` task 4.2).
 - [ ] Embeddable gateway acceptance.
 - [ ] Macus Elixir integration, packaging and full hardware/guest acceptance.
 
