@@ -41,7 +41,9 @@ review in `docs/task-3-9-closure.md`; foundation task 4.3 passed separately on
 2026-10-12 against an isolated Incus 7.0.1 backend (see below). Gateway
 implementation stays at 0/19 and has separate acceptance. Installed OCI/delta
 conversion adapter and Macus installed/VZ/hardware gates remain unverified. The
-rest of this document records historical slices against their own revisions.
+change is archived as `openspec/changes/archive/2026-11-03-add-embedded-incus-foundation`;
+its requirements now live in `openspec/specs/`. The rest of this document records
+historical slices against their own revisions.
 
 
 This is fixture/library evidence for `add-embedded-incus-foundation`, not full
