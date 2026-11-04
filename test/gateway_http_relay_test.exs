@@ -141,6 +141,43 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
       assert RawHTTP.header(result, "keep-alive") == []
     end
 
+    test "HEAD and bodyless statuses keep their framing", context do
+      {_, connection} =
+        backend(context, fn conn ->
+          {conn, _, _} = StreamBackend.read_body(conn)
+
+          case conn.head do
+            %{method: "HEAD"} ->
+              StreamBackend.write(
+                conn,
+                "HTTP/1.1 200 OK\r\ncontent-length: 1234\r\netag: \"h\"\r\n\r\n"
+              )
+
+            %{target: "/1.0/no-content"} ->
+              StreamBackend.write(conn, "HTTP/1.1 204 No Content\r\netag: \"n\"\r\n\r\n")
+
+            _ ->
+              StreamBackend.write(conn, "HTTP/1.1 304 Not Modified\r\netag: \"m\"\r\n\r\n")
+          end
+        end)
+
+      mount(context, connection)
+      head = RawHTTP.request(context.port, "HEAD", "/1.0/instances/c1/files?path=%2Fx", [auth()])
+      assert {head.status, head.body} == {200, ""}
+      assert RawHTTP.header(head, "content-length") == ["1234"]
+      assert RawHTTP.header(head, "etag") == [~s("h")]
+
+      for {target, status, etag} <- [
+            {"/1.0/no-content", 204, ~s("n")},
+            {"/1.0/cached", 304, ~s("m")}
+          ] do
+        response = get(context, target)
+        assert {response.status, response.body} == {status, ""}
+        assert RawHTTP.header(response, "etag") == [etag]
+        assert RawHTTP.header(response, "transfer-encoding") == []
+      end
+    end
+
     test "every exchange uses its own backend connection", context do
       {backend, connection} =
         backend(context, fn conn ->
