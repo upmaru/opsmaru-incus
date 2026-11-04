@@ -207,7 +207,11 @@ defmodule OpsmaruOperationsAcceptance do
 
   # Each step is journaled before and after; nothing is retried.
   defp step(report, transport, operation, input, caller) do
-    input = if operation == "incus_server_get", do: Map.delete(input, "project"), else: input
+    input =
+      if operation in ["incus_server_get", "incus_project_get"],
+        do: Map.delete(input, "project"),
+        else: input
+
     entry = %{"transport" => transport, "operation" => operation, "outcome" => "pending"}
     update(report, &Map.update!(&1, "steps", fn steps -> steps ++ [entry] end))
 

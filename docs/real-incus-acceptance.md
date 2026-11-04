@@ -85,8 +85,32 @@ credentials and raw journals are ignored and are not committed.
 
 ## Shared operations (add-incus-operations task 4.2)
 
-Not yet run; it needs the same explicit opt-in, a fresh isolated project and
-private credentials. `scripts/accept-incus-operations.exs` exercises the
+Passed on 2026-11-04 over Unix only, with the user's explicit opt-in, against
+the user's Macus appliance at `unix:///Users/zacksiri/.tama/incus-mac/incus.sock`:
+Incus 7.0.1 on guest kernel `6.18.60-0-lts` with a ZFS default pool, booted
+from the requalified pin in draft upmaru/macus#10. The library under test was
+`69d893a991cbe89e569ca281460202860fbebeba`; the runner carried only the fix
+below. HTTPS was not exercised. Before the run an Alpine 3.24 container image
+(`502c4d50dd5f`) was imported into `default` as `opsmaru-acceptance-alpine`
+and deleted after the pass.
+
+Run `opsmaru-acceptance-20261104-ops-v2` passed all 16 journaled steps and was
+cleaned: inspection; a project denial without backend access; instance create
+and start (`08598418-f721-4679-b769-e173ee6e4892`) then `incus_operation_get`
+and `incus_operation_wait` by that ID; exec with stdin, stderr and exit 3
+(`ef2f9dc3-4886-45d7-82ee-0e347c0faf9d`), a 100,000-byte stdout truncated to
+64 KiB (`8ce06e7d-c561-418e-823d-b7411e450685`) and `sleep 60` killed at 2 s
+with exit 137 (`56069d9e-559a-4fdd-80af-efb921a64a4e`); snapshot create, a
+refused restore with `confirm: "yes"`, then a confirmed restore and snapshot
+deletion; forced stop and confirmed instance deletion.
+
+The first run, `opsmaru-acceptance-20261104-ops-v1`, stopped at its second step
+because the runner sent `project` to `incus_project_get`, which takes none
+(schema rejection, no backend request). That was a runner bug, fixed before
+v2. As with the foundation runs, its failure state was kept: the empty project
+remains for the operator.
+
+`scripts/accept-incus-operations.exs` exercises the
 shared operations through `Opsmaru.Incus.Operations.run/3` with a fixed
 acceptance host binding, over Unix and, when `https` is given, verified HTTPS:
 server/project/instance inspection, a project denial that never reaches the
@@ -114,7 +138,7 @@ evidence, and tool success never counts as client coverage.
 - [x] Foundation 3.9: complete remaining supported client/model/helper coverage
   (closed by the 2026-11-03 closing review in `docs/task-3-9-closure.md`).
 - [ ] Installed OCI/delta conversion adapter acceptance.
-- [ ] Shared operations acceptance (`add-incus-operations` task 4.2).
+- [x] Shared operations acceptance (`add-incus-operations` task 4.2), Unix only; HTTPS not exercised.
 - [ ] Embeddable gateway acceptance.
 - [ ] Macus Elixir integration, packaging and full hardware/guest acceptance.
 
