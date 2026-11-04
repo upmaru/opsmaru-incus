@@ -4,8 +4,9 @@
 canonical `incus_<resource>_<verb>` name, input/output JSON schemas, a required
 scope, a destructive-confirmation rule and bounds. Macus and central Opsmaru
 expose the same descriptors, so names and schemas are public contract from the
-first consumer pin. The optional `Opsmaru.Incus.MCP.Tools.*` modules expose them
-as TamaMCP tools. Nothing here starts a process, endpoint, task store or
+first consumer pin. The library defines and runs them; how a host exposes
+them to agents (MCP tools, a search/execute index, a REST surface) is the
+host's choice. Nothing here starts a process, endpoint, task store or
 connection.
 
 Every operation runs synchronously through the public `Opsmaru.Incus` client.
@@ -188,35 +189,21 @@ and match each tool's output schema.
   (`timed_out` or `output_limited`). An exit not observed is `running` with
   the operation identity.
 
-## TamaMCP binding
+## Exposing operations
 
-With `{:tama_mcp, "~> 0.1.1 or ~> 0.2.0"}` in the host,
-`Opsmaru.Incus.MCP.Tools` generates one `TamaMCP.Tool` per exported operation
-(`task: :disabled`, the descriptor's scope and schemas). Register them on the
-host's own server; a host tool reusing a canonical name fails compilation:
-
-```elixir
-defmodule MyHost.MCP do
-  use TamaMCP.Server, name: "my-host", version: "1.0.0"
-  alias Opsmaru.Incus.MCP.Tools
-  require Tools
-  Tools.register()
-  tool MyHost.Tools.RuntimeStatus, name: "my_host_runtime_status"
-end
-```
-
-The host's TamaMCP authorization adapter puts its operations host module in the
-decision's `assigns` under `:opsmaru_incus_host`. Tools receive the
-`TamaMCP.Context` as the caller and `context.scopes` as the grants; TamaMCP
-also filters `tools/list` and rejects calls by scope before the tool runs.
-Results are returned as `structuredContent` plus the same JSON as text; errors
-are tool results with `isError: true`. No task capability is advertised.
+The library ships no protocol binding. A host builds its own over `all/0`,
+`fetch/1`, `describe/1` and `run/3`, for example one tool per operation, or a
+`search` tool over `describe/1` plus an `execute` tool that calls `run/3`.
+If one tool fronts many operations, pass the caller's verified scopes to
+`run/3`: it enforces each operation's own scope, so access to the fronting
+tool does not grant every operation. An earlier optional TamaMCP binding was
+removed on 2026-11-04 by user decision, before any consumer pinned it.
 
 ## Evidence classes
 
 | Class | Where | Status |
 | --- | --- | --- |
-| Fixtures | `test/operations_*_test.exs`, `test/mcp_tools_test.exs` over fake Unix and mutual HTTPS Incus | run by `mise run check` |
-| Isolated consumers | `test/consumer` (host TamaMCP server) and `test/consumer/client_only` (no `tama_mcp`) | run by `mise run check:consumer` at a pushed revision |
+| Fixtures | `test/operations_*_test.exs` over fake Unix and mutual HTTPS Incus | run by `mise run check` |
+| Isolated consumers | `test/consumer` (Macus-compatible host running an operation through its binding) and `test/consumer/client_only` (no `tama_mcp`, Plug, Cowboy or Phoenix) | run by `mise run check:consumer` at a pushed revision |
 | Real Incus | explicit isolated opt-in (task 4.2) | recorded separately in [real-incus-acceptance.md](real-incus-acceptance.md) |
 | Macus composition and hardware | Macus `add-elixir-server` | consumer-owned |

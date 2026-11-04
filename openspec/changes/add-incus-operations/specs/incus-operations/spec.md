@@ -66,19 +66,19 @@ Inputs, outputs, list sizes and deadlines SHALL be bounded per operation, with e
 - **WHEN** a command produces more output than the exec capture limit
 - **THEN** the result is truncated with an explicit indicator and other requests remain responsive
 
-### Requirement: Optional MCP binding
+### Requirement: Host-owned exposure
 
-The library SHALL provide TamaMCP tool modules for the shared operations when `tama_mcp` is available, and SHALL compile without it. The binding MUST NOT start an endpoint, server, task store or process.
+The library SHALL expose the catalogue and a run function without any protocol binding, and SHALL compile without MCP, Plug, Cowboy or Phoenix dependencies. It MUST NOT start an endpoint, server, task store or process. Each run SHALL enforce the operation's own scope from the host-supplied grants, whatever protocol fronts it.
 
 #### Scenario: Client-only consumer
 
-- **WHEN** a consumer depends on the library without `tama_mcp`
-- **THEN** it compiles and uses the client and descriptors without MCP modules or warnings
+- **WHEN** a consumer depends on the library without `tama_mcp`, Plug, Cowboy or Phoenix
+- **THEN** it compiles without warnings and uses the client and descriptors
 
-#### Scenario: Host composition
+#### Scenario: One tool fronting many operations
 
-- **WHEN** a host includes the shared tool modules in its own TamaMCP server with its runtime tools
-- **THEN** all tools are discoverable through one endpoint under the host's authorization and duplicate names fail compilation
+- **WHEN** a host exposes several operations through one tool and a caller with only the read scope requests a deletion
+- **THEN** the run is denied with a stable permission failure before backend access
 
 ### Requirement: Evidence-backed catalogue
 

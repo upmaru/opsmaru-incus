@@ -2,8 +2,8 @@ defmodule Opsmaru.Incus.Operations.Host do
   @moduledoc """
   Host binding for shared Incus operations. The host owns every trust decision.
 
-  For an authenticated `caller` (a host-owned term, for MCP the
-  `TamaMCP.Context`), the host returns the trusted backend and authorizes each
+  For an authenticated `caller` (a host-owned term, such as the host's MCP
+  request context), the host returns the trusted backend and authorizes each
   operation with its validated input. Tool input never selects a socket, URL,
   credential, owner or host path; the operation selects a native `project`
   from input only after `authorize/3` returns `:ok`.

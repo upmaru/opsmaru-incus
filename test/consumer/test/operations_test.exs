@@ -1,18 +1,28 @@
 defmodule FoundationConsumer.OperationsTest do
   use ExUnit.Case
   alias Opsmaru.Incus.{Connection, Context, Operations}
-  alias Opsmaru.Incus.MCP.Tools
 
-  test "shared Incus tools compose with host tools in one host server" do
-    shared = Enum.map(Tools.all(), &elem(&1, 0))
-    assert shared == Enum.map(Operations.all(), & &1.name)
-    assert FoundationConsumer.MCP.tool_names() == Enum.sort(["consumer_runtime_status" | shared])
-    module = FoundationConsumer.MCP.tool("incus_instance_list")
-    assert module.task_policy() == :disabled and module.scopes() == ["incus.read"]
+  # A host binding: the trusted backend comes from host state, never tool input.
+  defmodule IncusHost do
+    @behaviour Opsmaru.Incus.Operations.Host
+
+    @impl true
+    def binding(%{backend: {connection, context}}, _operation), do: {:ok, connection, context}
+    def binding(_caller, _operation), do: {:error, :no_backend}
+
+    @impl true
+    def authorize(_caller, _operation, input),
+      do: if(Map.get(input, "project", "default") == "default", do: :ok, else: {:error, :project})
+  end
+
+  test "the shared catalogue is available to a host without starting anything" do
+    names = Enum.map(Operations.all(), & &1.name)
+    assert "incus_instance_list" in names and names == Enum.sort(names)
+    assert {:ok, %{scope: "incus.read"}} = Operations.fetch("incus_instance_list")
     refute Process.whereis(Opsmaru.Supervisor)
   end
 
-  test "a shared tool runs through the host binding over a private Unix backend" do
+  test "a shared operation runs through the host binding over a private Unix backend" do
     root = Path.join(System.tmp_dir!(), "op-consumer-ops-#{System.unique_integer([:positive])}")
     File.mkdir!(root)
     File.chmod!(root, 0o700)
@@ -60,33 +70,29 @@ defmodule FoundationConsumer.OperationsTest do
       {Connection.unix!(path, owner: :consumer),
        Context.new!(owner: :consumer, identity: :verified, ready?: fn -> true end)}
 
-    context = %TamaMCP.Context{
-      scopes: ["incus.read"],
-      assigns: %{opsmaru_incus_host: FoundationConsumer.IncusHost, backend: backend}
-    }
+    caller = %{backend: backend}
 
-    module = FoundationConsumer.MCP.tool("incus_instance_list")
+    run =
+      &Operations.run("incus_instance_list", &1,
+        host: IncusHost,
+        caller: &2,
+        scopes: ["incus.read"]
+      )
 
-    assert {:ok, %TamaMCP.Response{is_error: true}} =
-             module.call(%{"project" => "other"}, context)
-
+    assert {:error, %{"kind" => "unauthorized"}} = run.(%{"project" => "other"}, caller)
     refute_receive {:request, _}, 30
 
-    assert {:ok,
-            %TamaMCP.Response{
-              is_error: false,
-              structured_content: %{"items" => [%{"name" => "vm1"}]}
-            }} =
-             module.call(%{}, context)
-
+    assert {:ok, %{"items" => [%{"name" => "vm1"}], "count" => 1}} = run.(%{}, caller)
     assert_receive {:request, "GET /1.0 HTTP/1.1"}
     assert_receive {:request, "GET /1.0/instances?recursion=1 HTTP/1.1"}
 
-    assert {:ok,
-            %TamaMCP.Response{
-              is_error: true,
-              structured_content: %{"error" => %{"kind" => "host_binding_failed"}}
-            }} =
-             module.call(%{}, %{context | assigns: %{}})
+    assert {:error, %{"kind" => "host_binding_failed"}} = run.(%{}, %{})
+
+    assert {:error, %{"kind" => "permission_denied"}} =
+             Operations.run("incus_instance_delete", %{"name" => "vm1", "confirm" => "vm1"},
+               host: IncusHost,
+               caller: caller,
+               scopes: ["incus.read"]
+             )
   end
 end

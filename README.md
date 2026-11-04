@@ -28,8 +28,7 @@ used by [Macus](https://github.com/upmaru/macus) and central
 See [docs/embedding.md](docs/embedding.md) for host context and connection
 setup, [docs/incus-client.md](docs/incus-client.md) for the public API and
 [docs/incus-operations.md](docs/incus-operations.md) for the shared agent
-operations and their optional TamaMCP tools (`tama_mcp` is an optional
-dependency; client-only consumers compile without it).
+operations.
 
 ## Development
 

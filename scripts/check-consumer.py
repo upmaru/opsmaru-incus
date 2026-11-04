@@ -30,7 +30,7 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
         shutil.copy(root / "consumer/mix.lock", env["OPSMARU_INCUS_FIXTURE_LOCK_OUTPUT"])
 
     # A client-only consumer without tama_mcp, Plug, Cowboy or Phoenix: the
-    # optional MCP binding must vanish and the library must compile cleanly.
+    # library and its operation descriptors must compile without warnings.
     shutil.copytree(source / "test/consumer/client_only", root / "client")
     shutil.copy(source / "mise.toml", root / "client/mise.toml")
     for args in [["mise", "trust"], ["mise", "exec", "--", "mix", "deps.get"],
@@ -44,4 +44,4 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
     for args in [["mise", "exec", "--", "mix", "compile", "--warnings-as-errors"],
                  ["mise", "exec", "--", "mix", "test"]]:
         subprocess.run(args, cwd=root / "client", env=env, check=True)
-    print(f"Isolated consumers (host MCP and client-only) passed at {revision}; installed/runtime acceptance remains separate")
+    print(f"Isolated consumers (Macus-compatible host and client-only) passed at {revision}; installed/runtime acceptance remains separate")

@@ -23,11 +23,13 @@ TamaMCP (`:tama_mcp`, used by Macus at 0.1.1) defines tools as modules using `Ta
 
 ## Decisions
 
-### 1. Protocol-neutral descriptors with an optional MCP binding
+### 1. Protocol-neutral descriptors; bindings are host-owned
 
 Each operation is a descriptor in `Opsmaru.Incus.Operations` with an immutable canonical name (for example `incus_instance_list`), description, input/output JSON schemas, required scope, destructive flag, bounds and a run function `(client, input, opts)` that uses only public `Opsmaru.Incus` calls. `Opsmaru.Incus.Operations.all/0` lists them for hosts and documentation.
 
-`Opsmaru.Incus.MCP.Tools.*` wraps each descriptor as a `TamaMCP.Tool` module with matching scopes and schemas, task policy that never creates tasks, and a `call/2` that resolves the host binding and invokes the descriptor. `tama_mcp` is declared `optional: true` and these modules compile only when it is present. A helper documents the canonical name for each tool module so hosts register them under those names; duplicate names fail the host's compilation as TamaMCP already enforces.
+Hosts expose the descriptors to agents themselves: one MCP tool per operation, a search/execute index over `describe/1`, or a REST surface. When one tool fronts many operations, the host passes the caller's verified scopes to `run/3`, which enforces each operation's own scope.
+
+**Revision (2026-11-04).** The plan first included an optional TamaMCP binding (`Opsmaru.Incus.MCP.Tools.*`, one `TamaMCP.Tool` per descriptor, `tama_mcp` optional). It was implemented, then removed by user decision before any consumer pinned it, because how agents will reach the operations is still open (one candidate is a host-side index exposing only `search` and `execute`). The library adds no MCP or Plug dependency.
 
 Alternative: write tools directly against TamaMCP. That would tie a future REST surface and direct callers to MCP types, and force every consumer to depend on TamaMCP.
 
@@ -51,7 +53,7 @@ Initial operations: server info; list/get instances, images, projects, profiles,
 
 ### 5. Verification
 
-Fixture tests use the existing fake Unix/HTTPS Incus endpoints: schemas, scope and confirmation denial with zero backend requests, forged connection fields, bounds and truncation, accepted/completed/uncertain mutation results and exec limits. The TamaMCP binding is tested with TamaMCP's conformance helpers and a fixture host server. The isolated consumer fixture compiles the library with and without `tama_mcp`. Real-Incus checks reuse the explicit opt-in acceptance environment. Macus composition and hardware acceptance are Macus's.
+Fixture tests use the existing fake Unix/HTTPS Incus endpoints: schemas, scope and confirmation denial with zero backend requests, forged connection fields, bounds and truncation, accepted/completed/uncertain mutation results and exec limits. The isolated consumer fixtures run an operation through a host binding and compile the library without `tama_mcp`, Plug, Cowboy or Phoenix. Real-Incus checks reuse the explicit opt-in acceptance environment. Macus composition and hardware acceptance are Macus's.
 
 ### 6. Approved scope (2026-11-04)
 
@@ -59,7 +61,7 @@ User decisions (2026-11-04), made before implementation:
 
 - **Names.** Canonical names are `incus_<resource>_<verb>` in lowercase snake case (underscores only, at most 64 characters), so they pass strict client tool-name rules. Names and input/output schemas are public contract from the first consumer pin.
 - **Copy/migration deferred.** Instance copy, rename and move stay out of the initial catalogue by scope, not for missing evidence (3.9 is closed and S10 is certified). `Opsmaru.Incus.Operations.unavailable/0` lists them with that reason.
-- **TamaMCP.** `{:tama_mcp, "~> 0.1.1 or ~> 0.2.0", optional: true}`. The binding uses only API both lines share: `use TamaMCP.Tool, task: :disabled, scopes: [...]`, `raw_input_schema/1`, `raw_output_schema/1`, `call/2` and `TamaMCP.Response`. It declares no `annotations:` because 0.1.1 fails to compile them. Local tests and the consumer use 0.1.1, Macus's pin.
+- **TamaMCP (withdrawn).** The approved optional `{:tama_mcp, "~> 0.1.1 or ~> 0.2.0", optional: true}` binding was removed on 2026-11-04 (see decision 1).
 - **Curated create/update input.** Instance create accepts `name`, `type` (`container` or `virtual-machine`), an image source (`alias` or `fingerprint`, optionally a host-named `remote`), `profiles`, `config`, `devices`, `ephemeral`, `description` and `start`. The input never carries `source.server`, a URL, a secret or a certificate: a `remote` is a name the host resolves through its optional `image_remote/2` callback, and absent that callback only local images are accepted. Restricted input is denied unless the host's optional `allow_restricted?/3` callback allows it: config keys `raw.*`, `volatile.*`, `security.privileged`, `security.idmap.*`, `security.syscalls.*`, `linux.kernel_modules`, and any device other than a `disk` with a `pool` and non-path `source` (or the root disk) or a `nic` with a `network` and no `nictype`/`parent`.
 - **Update is a conditional PATCH.** `incus_instance_update` sends only the present curated fields (`config`, `devices`, `profiles`, `description`, `ephemeral`) through the evidenced conditional instance PATCH. The client requires an ETag; when the caller gives none, the tool reads the instance first and uses its ETag, and reports which ETag it used. A concurrent change surfaces as the native 412.
 - **Instance types.** Create accepts containers and VMs; the host may refuse VMs in `authorize/3`. Inspection passes VM-shaped native data through unchanged, and fixtures include VM samples.
@@ -75,7 +77,7 @@ User decisions (2026-11-04), made before implementation:
 - Optional `image_remote(caller, name)` returns `{:ok, %{"server" => url, "protocol" => protocol}}` for host-approved image servers.
 - Optional `allow_restricted?(caller, operation, items)` returns `true` to allow the listed restricted config keys/devices.
 
-Direct callers use `Opsmaru.Incus.Operations.run(name, input, host: module, caller: term, scopes: [scope])`; the scopes are the host-verified grants, never tool input. The MCP binding reads the host module from the authorization decision's `assigns` (`:opsmaru_incus_host`), the caller from the `TamaMCP.Context` and the scopes from `context.scopes`. A missing host assign denies before backend access. Order: input schema/bounds, scope, confirmation, binding, authorize, then backend access.
+Direct callers use `Opsmaru.Incus.Operations.run(name, input, host: module, caller: term, scopes: [scope])`; the scopes are the host-verified grants, never tool input. Order: input schema/bounds, scope, confirmation, binding, authorize, then backend access.
 
 #### Results
 
@@ -104,7 +106,7 @@ Each descriptor names the native client methods it uses. `Opsmaru.Incus.Operatio
 
 - Tool contract drift between Macus and central -> single descriptors, canonical names and schema snapshots in tests.
 - Long mutations exceed an MCP request -> bounded wait plus native operation identity and polling tools; durable tasks later.
-- Optional dependency complexity -> compile-time guards and consumer builds with and without `tama_mcp`.
+- Hosts building their own exposure diverge -> descriptors, canonical names and the schema snapshot stay the single contract; `run/3` enforces scope and confirmation whatever fronts it.
 - Catalogue appears complete while client coverage is partial -> per-operation evidence links; unsupported operations not exported.
 
 ## Migration Plan
