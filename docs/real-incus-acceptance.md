@@ -107,8 +107,8 @@ deletion; forced stop and confirmed instance deletion.
 The first run, `opsmaru-acceptance-20261104-ops-v1`, stopped at its second step
 because the runner sent `project` to `incus_project_get`, which takes none
 (schema rejection, no backend request). That was a runner bug, fixed before
-v2. As with the foundation runs, its failure state was kept: the empty project
-remains for the operator.
+v2. As with the foundation runs, its failure state was kept; the empty project
+was deleted afterwards at the user's request (2026-11-04).
 
 `scripts/accept-incus-operations.exs` exercises the
 shared operations through `Opsmaru.Incus.Operations.run/3` with a fixed
