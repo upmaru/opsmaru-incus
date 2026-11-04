@@ -4,7 +4,13 @@
       name: "default",
       files: %{
         included: ["lib/", "test/", "config/", "scripts/**/*.exs", "mix.exs"],
-        excluded: ["test/consumer/_build/", "test/consumer/deps/"]
+        excluded: [
+          "test/consumer/_build/",
+          "test/consumer/deps/",
+          # Verbatim Macus transfer; its digest is checked in
+          # priv/incus/gateway-transfer.json, so it is not restyled here.
+          "test/support/gateway/cowboy_upgrade_fixture.ex"
+        ]
       },
       strict: true,
       checks: %{

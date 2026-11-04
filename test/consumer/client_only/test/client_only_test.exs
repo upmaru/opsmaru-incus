@@ -15,4 +15,13 @@ defmodule ClientOnlyConsumer.Test do
 
     assert Application.spec(:opsmaru_incus, :mod) == []
   end
+
+  test "gateway configuration is available but its web adapters are not compiled" do
+    refute Code.ensure_loaded?(Plug.Conn)
+    refute Code.ensure_loaded?(:cowboy_req)
+    assert Code.ensure_loaded?(Opsmaru.Incus.Gateway)
+    assert Code.ensure_loaded?(Opsmaru.Incus.Gateway.Policy)
+    refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.Plug)
+    refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.HTTPRelay)
+  end
 end
