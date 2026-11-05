@@ -297,6 +297,15 @@ if Code.ensure_loaded?(Plug.Conn) do
               fail(conn, interrupted(reason, state.sent_outcome))
           end
 
+        {:headers, ^ref, trailers} ->
+          case Headers.trailers(trailers) do
+            {:ok, _} ->
+              identity_body(conn, socket, ref, state, headers, chunks, bytes, rest)
+
+            :error ->
+              fail(conn, Failure.new(502, "Invalid backend identity trailer", state.sent_outcome))
+          end
+
         {:done, ^ref} ->
           finish_identity(conn, state, headers, chunks, limit)
 
@@ -412,8 +421,8 @@ if Code.ensure_loaded?(Plug.Conn) do
         {:DOWN, ^monitor, :process, _, _} ->
           {:error, :admission}
 
-        {:gateway_revoked, ^lease_pid} ->
-          {:error, :revoked}
+        {:gateway_stopped, ^lease_pid, reason} when reason in [:admission, :revoked] ->
+          {:error, reason}
       after
         timeout -> {:error, if(remaining(state.deadline) == 0, do: :lifetime, else: :idle)}
       end
@@ -437,8 +446,8 @@ if Code.ensure_loaded?(Plug.Conn) do
       after
         0 ->
           cond do
-            not Lease.valid?(state.lease) -> {:error, :revoked}
             not Process.alive?(state.admission) -> {:error, :admission}
+            not Lease.valid?(state.lease) -> {:error, :revoked}
             remaining(state.deadline) == 0 -> {:error, :lifetime}
             true -> :ok
           end

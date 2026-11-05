@@ -1,9 +1,12 @@
 defmodule Opsmaru.Incus.Gateway.Lease do
   @moduledoc """
-  Exchange-local revocation guard reusable by HTTP, WebSocket and raw adapters.
+  Exchange-local admission/revocation guard reusable by protocol adapters.
 
   Created only for an admitted exchange, never on dependency load. Rechecks
-  the original grant through Policy with a hard callback deadline. The entire
+  the original grant through Policy with a hard callback deadline. Every
+  exchange, including anonymous local discovery/enrollment, monitors its
+  original admission pid. Anonymous exchanges acquire no grant and skip grant
+  rechecks, but still terminate when their admission stops. The entire
   polling period, callback budget and interruption grace fit inside
   `recheck_interval` (at most five seconds). An adapter must supply an
   interruption function that closes blocked frontend I/O; the guard also ends
@@ -13,7 +16,7 @@ defmodule Opsmaru.Incus.Gateway.Lease do
 
   alias Opsmaru.Incus.Gateway.Policy
 
-  defstruct [:pid, :valid]
+  defstruct [:pid, :valid, :admission]
 
   def start(gateway, request, admitted, interrupt) do
     owner = self()
@@ -22,15 +25,23 @@ defmodule Opsmaru.Incus.Gateway.Lease do
 
     pid =
       spawn(fn ->
-        monitor = Process.monitor(owner)
-        loop(gateway, request, admitted, interrupt, owner, monitor, valid)
+        monitors = {Process.monitor(owner), Process.monitor(admitted.admission)}
+        loop(gateway, request, admitted, interrupt, owner, monitors, valid)
       end)
 
-    %__MODULE__{pid: pid, valid: valid}
+    %__MODULE__{pid: pid, valid: valid, admission: admitted.admission}
   end
 
-  def valid?(%__MODULE__{pid: pid, valid: valid}),
-    do: Process.alive?(pid) and :atomics.get(valid, 1) == 1
+  def check(%__MODULE__{pid: pid, valid: valid, admission: admission}) do
+    cond do
+      not Process.alive?(admission) -> {:error, :admission}
+      :atomics.get(valid, 1) == -1 -> {:error, :admission}
+      not Process.alive?(pid) or :atomics.get(valid, 1) == 0 -> {:error, :revoked}
+      true -> :ok
+    end
+  end
+
+  def valid?(lease), do: check(lease) == :ok
 
   def stop(%__MODULE__{pid: pid}) do
     monitor = Process.monitor(pid)
@@ -41,7 +52,8 @@ defmodule Opsmaru.Incus.Gateway.Lease do
     end
   end
 
-  defp loop(gateway, request, admitted, interrupt, owner, monitor, valid) do
+  defp loop(gateway, request, admitted, interrupt, owner, monitors, valid) do
+    {owner_monitor, admission_monitor} = monitors
     budget = min(gateway.callback_timeout, div(gateway.recheck_interval, 4))
     grace = min(50, div(gateway.recheck_interval, 4))
     # Reserve both a previously in-flight successful check and the next check:
@@ -49,23 +61,31 @@ defmodule Opsmaru.Incus.Gateway.Lease do
     interval = gateway.recheck_interval - 2 * budget - grace
 
     receive do
-      {:DOWN, ^monitor, :process, ^owner, _} -> :ok
+      {:DOWN, ^owner_monitor, :process, ^owner, _} ->
+        :ok
+
+      {:DOWN, ^admission_monitor, :process, _, _} ->
+        invalidate(:admission, owner, owner_monitor, valid, interrupt, grace)
     after
       interval ->
-        if Policy.recheck(gateway, request, admitted.grant) == :ok do
-          loop(gateway, request, admitted, interrupt, owner, monitor, valid)
+        if admitted.anonymous or Policy.recheck(gateway, request, admitted.grant) == :ok do
+          loop(gateway, request, admitted, interrupt, owner, monitors, valid)
         else
-          :atomics.put(valid, 1, 0)
-          send(owner, {:gateway_revoked, self()})
-
-          receive do
-            {:DOWN, ^monitor, :process, ^owner, _} -> :ok
-          after
-            grace ->
-              interrupt.()
-              Process.exit(owner, :kill)
-          end
+          invalidate(:revoked, owner, owner_monitor, valid, interrupt, grace)
         end
+    end
+  end
+
+  defp invalidate(reason, owner, monitor, valid, interrupt, grace) do
+    :atomics.put(valid, 1, if(reason == :admission, do: -1, else: 0))
+    send(owner, {:gateway_stopped, self(), reason})
+
+    receive do
+      {:DOWN, ^monitor, :process, ^owner, _} -> :ok
+    after
+      grace ->
+        interrupt.()
+        Process.exit(owner, :kill)
     end
   end
 end

@@ -152,7 +152,8 @@ URLs made from the advertised addresses. Guest/NAT/socket addresses must not
 become migration fallback endpoints. The pinned client keeps the TLS connection
 certificate as its pin. Native non-200 errors pass through unchanged. Invalid,
 encoded or oversized successful identity bodies fail with a native-shaped
-`502`, without committing backend bytes. The changed representation gets a new
+`502`, without committing backend bytes. Valid identity trailers are validated and dropped before rewriting; their
+ETag/digest values describe the original representation. The changed representation gets a new
 content length and drops the backend's ETag/digest validators, which describe
 the original bytes. Workload responses retain their native validators.
 
@@ -190,6 +191,15 @@ use `Policy.callback`; a timeout, raise, missing callback or any other result
 denies access. Active checks use at most `min(callback_timeout,
 recheck_interval / 4)` milliseconds. `recheck_interval` defaults to **5000 ms**
 and may only be tightened (4–5000 ms).
+
+Every local or relayed exchange, including anonymous discovery/enrollment,
+monitors its original admission pid through `Gateway.Lease`. Admission loss
+terminates blocked I/O, so a restarted admission cannot leave old holders
+running outside its capacity. Local routes check admission before/after body
+reads, before host callbacks and immediately before committing a response. A
+trust callback that may have completed when admission is lost reports an
+uncertain outcome; no callback is replayed. Anonymous leases monitor admission
+without requesting or rechecking a grant.
 
 An exchange-local `Gateway.Lease` reserves time for both a previously in-flight
 check and the next check, plus interruption grace, inside that maximum. It runs

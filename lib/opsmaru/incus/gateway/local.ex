@@ -4,14 +4,12 @@ if Code.ensure_loaded?(Plug.Conn) do
     alias Opsmaru.Incus.Gateway.{Failure, Headers, HTTPRelay, Identity, Lease, Policy}
 
     def serve(conn, gateway, request, admitted) do
-      lease =
-        if not admitted.anonymous,
-          do: Lease.start(gateway, request, admitted, HTTPRelay.interrupter(conn))
+      lease = Lease.start(gateway, request, admitted, HTTPRelay.interrupter(conn))
 
       try do
         dispatch(conn, gateway, request, admitted, lease)
       after
-        if lease, do: Lease.stop(lease)
+        Lease.stop(lease)
       end
     end
 
@@ -46,7 +44,7 @@ if Code.ensure_loaded?(Plug.Conn) do
     defp discovery(conn, gateway, request, :none, lease) do
       with {:ok, identity} <- Identity.load(gateway, request),
            :ok <- live(lease) do
-        respond(conn, gateway, Identity.discovery(request.path, identity), [])
+        respond(conn, gateway, Identity.discovery(request.path, identity), [], lease)
       else
         {:error, failure} -> HTTPRelay.fail(conn, failure)
       end
@@ -57,7 +55,7 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     defp certificates(conn, gateway, request, admitted, framing, lease) do
       with {:ok, action, fingerprint} <- action(request),
-           {:ok, body, conn} <- read(conn, gateway, framing),
+           {:ok, body, conn} <- read(conn, gateway, framing, lease),
            :ok <- claims(body),
            {:ok, if_match} <- precondition(conn),
            :ok <- live(lease) do
@@ -82,8 +80,11 @@ if Code.ensure_loaded?(Plug.Conn) do
           )
 
         case {result, live(lease)} do
+          {_, {:error, failure}} ->
+            HTTPRelay.fail(conn, %{failure | outcome: outcome})
+
           {{:ok, {:ok, body, headers}}, :ok} ->
-            send_json(conn, body, headers)
+            send_json(conn, body, headers, lease, outcome)
 
           {{:ok, {:invalid, status}}, :ok} ->
             HTTPRelay.fail(
@@ -130,14 +131,22 @@ if Code.ensure_loaded?(Plug.Conn) do
       end
     end
 
-    defp read(conn, _, :none), do: {:ok, %{}, conn}
-
-    defp read(conn, gateway, _) do
-      deadline = System.monotonic_time(:millisecond) + gateway.max_lifetime
-      read_body(conn, gateway, deadline, [], 0)
+    defp read(conn, _, :none, lease) do
+      with :ok <- live(lease), do: {:ok, %{}, conn}
     end
 
-    defp read_body(conn, gateway, deadline, chunks, size) do
+    defp read(conn, gateway, _, lease) do
+      deadline = System.monotonic_time(:millisecond) + gateway.max_lifetime
+      read_body(conn, gateway, deadline, [], 0, lease)
+    end
+
+    defp read_body(conn, gateway, deadline, chunks, size, lease) do
+      with :ok <- live(lease) do
+        read_live_body(conn, gateway, deadline, chunks, size, lease)
+      end
+    end
+
+    defp read_live_body(conn, gateway, deadline, chunks, size, lease) do
       timeout = min(gateway.idle_timeout, max(1, deadline - System.monotonic_time(:millisecond)))
 
       case Plug.Conn.read_body(conn,
@@ -149,24 +158,30 @@ if Code.ensure_loaded?(Plug.Conn) do
              read_timeout: timeout
            ) do
         {status, data, conn} when status in [:ok, :more] ->
-          size = size + byte_size(data)
-
-          cond do
-            size > min(gateway.max_identity_bytes, gateway.max_request_bytes) ->
-              {:error, Failure.new(413, "Certificate body exceeds the gateway limit", :not_sent)}
-
-            System.monotonic_time(:millisecond) >= deadline ->
-              {:error, Failure.new(408, "Certificate body timed out", :not_sent)}
-
-            status == :more ->
-              read_body(conn, gateway, deadline, [data | chunks], size)
-
-            true ->
-              decode_body(conn, Enum.reverse([data | chunks]))
+          with :ok <- live(lease) do
+            accumulate(conn, gateway, deadline, chunks, size, lease, status, data)
           end
 
         _ ->
           {:error, Failure.new(400, "Invalid certificate body", :not_sent)}
+      end
+    end
+
+    defp accumulate(conn, gateway, deadline, chunks, size, lease, status, data) do
+      size = size + byte_size(data)
+
+      cond do
+        size > min(gateway.max_identity_bytes, gateway.max_request_bytes) ->
+          {:error, Failure.new(413, "Certificate body exceeds the gateway limit", :not_sent)}
+
+        System.monotonic_time(:millisecond) >= deadline ->
+          {:error, Failure.new(408, "Certificate body timed out", :not_sent)}
+
+        status == :more ->
+          read_body(conn, gateway, deadline, [data | chunks], size, lease)
+
+        true ->
+          decode_body(conn, Enum.reverse([data | chunks]))
       end
     end
 
@@ -227,12 +242,19 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     defp response_claims(_), do: :ok
 
-    defp respond(conn, gateway, envelope, headers) do
+    defp respond(conn, gateway, envelope, headers, lease) do
+      case live(lease) do
+        :ok -> respond_live(conn, gateway, envelope, headers, lease)
+        {:error, failure} -> HTTPRelay.fail(conn, failure)
+      end
+    end
+
+    defp respond_live(conn, gateway, envelope, headers, lease) do
       body = Jason.encode!(envelope)
 
       if byte_size(body) <= min(gateway.max_identity_bytes, gateway.max_response_bytes) and
            :erlang.external_size(headers) <= gateway.max_header_bytes do
-        send_json(conn, body, headers)
+        send_json(conn, body, headers, lease)
       else
         HTTPRelay.fail(
           conn,
@@ -241,17 +263,28 @@ if Code.ensure_loaded?(Plug.Conn) do
       end
     end
 
-    defp send_json(conn, body, headers) do
-      %{conn | resp_headers: [{"content-type", "application/json"} | headers]}
-      |> Plug.Conn.send_resp(200, body)
+    defp send_json(conn, body, headers, lease, outcome \\ :not_sent) do
+      case live(lease) do
+        :ok ->
+          %{conn | resp_headers: [{"content-type", "application/json"} | headers]}
+          |> Plug.Conn.send_resp(200, body)
+
+        {:error, failure} ->
+          HTTPRelay.fail(conn, %{failure | outcome: outcome})
+      end
     end
 
-    defp live(nil), do: :ok
-
     defp live(lease) do
-      if Lease.valid?(lease),
-        do: :ok,
-        else: {:error, Failure.new(403, "Authorization expired or revoked", :not_sent)}
+      case Lease.check(lease) do
+        :ok ->
+          :ok
+
+        {:error, :admission} ->
+          {:error, Failure.new(503, "Gateway admission stopped", :not_sent)}
+
+        {:error, :revoked} ->
+          {:error, Failure.new(403, "Authorization expired or revoked", :not_sent)}
+      end
     end
   end
 end
