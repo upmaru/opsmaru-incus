@@ -93,6 +93,7 @@ defmodule Opsmaru.Incus.Transfer do
                {:ok, socket} <- upload_source(socket, ref, source, connection, deadline) do
             receive_response(socket, ref, connection, deadline, sink, %{
               method: method,
+              deadline: deadline,
               status: nil,
               headers: %{},
               bytes: 0,
@@ -160,7 +161,7 @@ defmodule Opsmaru.Incus.Transfer do
 
     if acc.bytes + byte_size(data) <= maximum do
       if sink && acc.status in 200..299 do
-        with :ok <- deliver(data, sink, connection.max_chunk_bytes),
+        with :ok <- deliver(data, sink, connection.max_chunk_bytes, acc.deadline),
              do: collect(rest, ref, connection, sink, %{acc | bytes: acc.bytes + byte_size(data)})
       else
         collect(rest, ref, connection, sink, %{
@@ -200,15 +201,23 @@ defmodule Opsmaru.Incus.Transfer do
     end
   end
 
-  defp deliver(<<>>, _, _), do: :ok
+  defp deliver(<<>>, _, _, _), do: :ok
 
-  defp deliver(data, {tag, handler}, maximum) when tag in [:events, :origin_events],
-    do: deliver(data, fn chunk -> handler.({:data, chunk}) end, maximum)
+  defp deliver(data, {tag, handler}, maximum, deadline) when tag in [:events, :origin_events],
+    do: deliver(data, fn chunk -> handler.({:data, chunk}) end, maximum, deadline)
 
-  defp deliver(data, sink, maximum) do
+  # Sink time counts against the stream deadline here in the worker, so a sink that
+  # outlives it never completes the transfer even if the bounded caller and its
+  # guard are scheduled late and the worker's result reaches the caller first.
+  defp deliver(data, sink, maximum, deadline) do
     size = min(byte_size(data), maximum)
     <<chunk::binary-size(size), rest::binary>> = data
-    if sink.(chunk) == :ok, do: deliver(rest, sink, maximum), else: {:error, :sink_failed}
+
+    cond do
+      sink.(chunk) != :ok -> {:error, :sink_failed}
+      remaining(deadline) == 0 -> {:error, :deadline}
+      true -> deliver(rest, sink, maximum, deadline)
+    end
   end
 
   defp finish(acc, {tag, handler})
