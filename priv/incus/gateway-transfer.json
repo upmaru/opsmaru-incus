@@ -8,7 +8,7 @@
       "source": "server/test/support/cowboy_upgrade_fixture.ex",
       "destination": "test/support/gateway/cowboy_upgrade_fixture.ex",
       "source_sha256": "a2256b35fe9137c73eb26a7a8398bf7bd016782e40a0617b94534ca16c49a024",
-      "transferred_sha256": "9a2d9559e134cbf08c90c4825dcf42ffb0a30b125689a2dadbc7f9ca0e7d9606"
+      "transferred_sha256": "4db9c2a7e0ac0e2b9011a820d2c972b8103f9f962244807e6f3f250fa444113c"
     },
     {
       "source": "LICENSE",

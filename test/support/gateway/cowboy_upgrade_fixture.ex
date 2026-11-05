@@ -139,13 +139,24 @@ defmodule Opsmaru.TestSupport.Gateway.CowboyUpgradeHandler do
 end
 
 defmodule Opsmaru.TestSupport.Gateway.CowboyTunnel do
-  @moduledoc "Fixture-only socket takeover with one active read per direction."
+  @moduledoc """
+  Fixture-only socket takeover with one active read per direction.
+
+  Each direction writes through its own writer process, so a write blocked on one
+  peer never stops the tunnel reading the other. A single-process relay deadlocks
+  when both peers write at once: blocked sending to a backend that is itself
+  blocked echoing back, with only 8 KiB Unix socket buffers on macOS. A read is
+  re-armed only after its bytes are written (per-direction backpressure), and a
+  write still blocked after one second closes the tunnel.
+  """
 
   # Cowboy calls this in its connection process after sending HTTP 101. Both
   # descriptors belong to that process, not the now-terminated request worker.
   def takeover(_parent, _ref, client, transport, _opts, buffer, state) do
     backend = state.backend
     send(state.observer, {:tunnel_started, self()})
+    to_backend = writer()
+    to_client = writer()
 
     try do
       :ok =
@@ -155,8 +166,20 @@ defmodule Opsmaru.TestSupport.Gateway.CowboyTunnel do
       :ok = transport.send(client, state.backend_buffer)
       :ok = :inet.setopts(backend, active: :once)
       :ok = transport.setopts(client, active: :once)
-      relay(client, transport, backend, false, false)
+
+      relay(%{
+        client: client,
+        transport: transport,
+        backend: backend,
+        to_backend: to_backend,
+        to_client: to_client,
+        pending: 0,
+        client_closed: false,
+        backend_closed: false
+      })
     after
+      Process.exit(to_backend, :kill)
+      Process.exit(to_client, :kill)
       :gen_tcp.close(backend)
       transport.close(client)
       send(state.observer, {:tunnel_closed, self()})
@@ -167,31 +190,62 @@ defmodule Opsmaru.TestSupport.Gateway.CowboyTunnel do
     exit(:normal)
   end
 
-  defp relay(_client, _transport, _backend, true, true), do: :ok
+  # Runs one direction's writes in order and reports each result to the tunnel.
+  defp writer do
+    tunnel = self()
 
-  defp relay(client, transport, backend, client_closed, backend_closed) do
-    timeout = if client_closed or backend_closed, do: 1_000, else: 5_000
+    spawn(fn ->
+      monitor = Process.monitor(tunnel)
+      write_loop(tunnel, monitor)
+    end)
+  end
+
+  defp write_loop(tunnel, monitor) do
+    receive do
+      {:write, tag, write} ->
+        send(tunnel, {:written, tag, write.()})
+        write_loop(tunnel, monitor)
+
+      {:DOWN, ^monitor, :process, _, _} ->
+        :ok
+    end
+  end
+
+  # Both peers closed and every queued write (data, then shutdown) finished.
+  defp relay(%{client_closed: true, backend_closed: true, pending: 0}), do: :ok
+
+  defp relay(%{client: client, transport: transport, backend: backend} = state) do
+    timeout = if state.client_closed or state.backend_closed, do: 1_000, else: 5_000
 
     receive do
       {:ssl, ^client, bytes} ->
-        if :gen_tcp.send(backend, bytes) == :ok do
-          :ok = transport.setopts(client, active: :once)
-          relay(client, transport, backend, client_closed, backend_closed)
-        end
+        relay(write(state, :to_backend, :client_bytes, fn -> :gen_tcp.send(backend, bytes) end))
 
       {:tcp, ^backend, bytes} ->
-        if transport.send(client, bytes) == :ok do
-          :ok = :inet.setopts(backend, active: :once)
-          relay(client, transport, backend, client_closed, backend_closed)
-        end
+        relay(write(state, :to_client, :backend_bytes, fn -> transport.send(client, bytes) end))
+
+      {:written, :client_bytes, :ok} ->
+        if state.client_closed or transport.setopts(client, active: :once) == :ok,
+          do: relay(%{state | pending: state.pending - 1})
+
+      {:written, :backend_bytes, :ok} ->
+        if state.backend_closed or :inet.setopts(backend, active: :once) == :ok,
+          do: relay(%{state | pending: state.pending - 1})
+
+      # A data write failed or stayed blocked past its send timeout.
+      {:written, tag, _} when tag in [:client_bytes, :backend_bytes] ->
+        :ok
+
+      {:written, :shutdown, _} ->
+        relay(%{state | pending: state.pending - 1})
 
       {:ssl_closed, ^client} ->
-        :gen_tcp.shutdown(backend, :write)
-        relay(client, transport, backend, true, backend_closed)
+        state = write(state, :to_backend, :shutdown, fn -> :gen_tcp.shutdown(backend, :write) end)
+        relay(%{state | client_closed: true})
 
       {:tcp_closed, ^backend} ->
-        transport.shutdown(client, :write)
-        relay(client, transport, backend, client_closed, true)
+        state = write(state, :to_client, :shutdown, fn -> transport.shutdown(client, :write) end)
+        relay(%{state | backend_closed: true})
 
       {:ssl_error, ^client, _} ->
         :ok
@@ -201,6 +255,11 @@ defmodule Opsmaru.TestSupport.Gateway.CowboyTunnel do
     after
       timeout -> :ok
     end
+  end
+
+  defp write(state, direction, tag, fun) do
+    send(Map.fetch!(state, direction), {:write, tag, fun})
+    %{state | pending: state.pending + 1}
   end
 end
 
