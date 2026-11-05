@@ -159,7 +159,7 @@ defmodule Opsmaru.Incus.Gateway.Policy do
     String.contains?(path, [<<0>>, "\\"]) or
       Enum.any?(String.split(path, "/"), fn segment ->
         case decode(segment) do
-          {:ok, decoded} -> decoded in [".", ".."] or String.contains?(decoded, <<0>>)
+          {:ok, decoded} -> decoded in [".", ".."] or String.contains?(decoded, [<<0>>, "\\"])
           :error -> true
         end
       end)

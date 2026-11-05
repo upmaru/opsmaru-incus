@@ -1,3 +1,17 @@
+defmodule Opsmaru.Incus.GatewayHTTPRelayTest.SlowChunkAdapter do
+  # Plug adapter whose chunk delivery is slow, so the relay is busy while
+  # backend data waits in its mailbox.
+  def send_chunked(state, _status, _headers), do: {:ok, nil, state}
+
+  def chunk(state, data) do
+    Process.sleep(state.delay)
+    send(state.observer, {:chunk, IO.iodata_to_binary(data)})
+    :ok
+  end
+
+  def send_resp(state, _status, _headers, _body), do: {:ok, nil, state}
+end
+
 defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
   # Tasks 3.1-3.3: streamed native HTTP relay over Unix and verified HTTPS,
   # bounded binary transfers and framing guards, and truthful failures.
@@ -7,6 +21,8 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
   # which Ranch logs as an error.
   @moduletag :capture_log
 
+  alias Opsmaru.Incus.Gateway.{HTTPRelay, Policy, Request}
+  alias Opsmaru.Incus.GatewayHTTPRelayTest.SlowChunkAdapter
   alias Opsmaru.TestSupport.TLSIdentity
 
   @operation "/1.0/operations/3c1a8a6e-7a0e-4f5b-9a55-6a2f1a7e0c11"
@@ -651,6 +667,64 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
       response = Task.await(task, 5_000)
       assert response.status == 503
       assert native(response.body)["metadata"]["gateway"]["outcome"] == "sent"
+      assert_receive {:backend_closed, _}, 2_000
+    end
+
+    test "admission stopped during authorization sends nothing to the backend", context do
+      {backend, connection} = backend(context, reply(200, %{"type" => "sync"}))
+      admission = context.admission
+
+      # The slot disappears while the host decides; a bodyless DELETE would
+      # otherwise be sent whole by the first backend write.
+      mount(context, connection,
+        host_config: %{
+          authorize: fn _request ->
+            ref = Process.monitor(admission)
+            Process.exit(admission, :kill)
+            assert_receive {:DOWN, ^ref, :process, _, _}
+            {:ok, :fixture_grant}
+          end
+        }
+      )
+
+      response = RawHTTP.request(context.port, "DELETE", "/1.0/instances/c1", [auth()])
+      assert response.status == 503
+      assert native(response.body)["metadata"]["gateway"]["outcome"] == "not_sent"
+      assert StreamBackend.accepted(backend) == 0
+    end
+
+    test "a busy download is ended at its lifetime even with backend data queued", context do
+      {_, connection} =
+        backend(context, fn conn ->
+          {conn, _, _} = StreamBackend.read_body(conn)
+
+          # The whole response is queued at the gateway before the deadline.
+          StreamBackend.write(
+            conn,
+            "HTTP/1.1 200 OK\r\ntransfer-encoding: chunked\r\n\r\n" <>
+              "5\r\nfirst\r\n6\r\nsecond\r\n0\r\n\r\n"
+          )
+
+          StreamBackend.await_close(conn)
+        end)
+
+      gateway = mount(context, connection, max_lifetime: 300)
+      {:ok, slot} = Admission.acquire(context.admission)
+      admitted = %Policy.Admitted{slot: slot, admission: elem(slot, 0), grant: :fixture_grant}
+      path = "/1.0/instances/c1/logs/console.log"
+      request = %Request{protocol: :http, method: "GET", path: path, query: "", peer: %{}}
+
+      # Delivering the first chunk outlasts the lifetime, as a slow caller would.
+      conn = %{
+        Plug.Test.conn(:get, path)
+        | adapter: {SlowChunkAdapter, %{observer: self(), delay: 600}}
+      }
+
+      assert catch_exit(HTTPRelay.relay(conn, gateway, request, admitted)) ==
+               :gateway_stream_aborted
+
+      assert_received {:chunk, "first"}
+      refute_received {:chunk, "second"}
       assert_receive {:backend_closed, _}, 2_000
     end
   end

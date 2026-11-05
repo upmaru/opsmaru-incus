@@ -58,8 +58,9 @@ adapter Macus uses.
 Every request takes the same path before any backend socket opens:
 
 1. Route check on the original encoded `request_path`: only `/`, `/1.0` and
-   `/1.0/*`; dot segments, NUL and backslashes are refused (`400`). An encoded
-   `/` inside a segment is kept, since image aliases use it.
+   `/1.0/*`; dot segments, NUL and backslashes, raw or percent-encoded, are
+   refused (`400`). An encoded `/` inside a segment is kept, since image
+   aliases use it.
 2. Selection parsing on the raw query. Duplicate `project`, `target` or
    `all-projects` values, `;` separators and malformed escapes are refused
    (`400`). The backend parses with Go's `url.ParseQuery` and falls back to
@@ -109,7 +110,14 @@ whose `metadata.gateway.outcome` states what the backend may have seen:
 | `uncertain` | Request bytes may have reached the backend; a mutation may have been accepted. Reconcile with `/1.0/operations` before retrying. |
 
 `metadata.gateway.operation` carries a known operation URL when one was seen.
-Timeouts are `504`, backend failures `502`, admission loss `503`.
+Timeouts are `504`, backend failures `502`, admission loss `503`. Admission is
+checked again before the backend connection opens and before the request is
+sent, so an admission that stopped while the host callbacks ran is reported
+`not_sent` with no backend contact.
+
+`max_lifetime` and admission are checked before every backend read and before
+each chunk is forwarded, so a busy stream with data already queued still stops
+at its deadline.
 
 After a response is committed, the gateway cannot send an error. On HTTP/1.x it
 ends the caller's Cowboy connection without a final chunk (Ranch logs the

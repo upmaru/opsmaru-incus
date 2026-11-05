@@ -59,6 +59,9 @@ defmodule Opsmaru.Incus.GatewayPolicyTest do
             "/1.0/instances/./c1",
             "/1.0/instances/a%00",
             "/1.0/instances/a\\b",
+            "/1.0/instances/a%5Cb",
+            "/1.0/instances/a%5cb",
+            "/1.0/instances/a%00b",
             "/1.0/instances/%zz"
           ],
           do: assert({:error, %{status: 400}} = Policy.route(path), path)

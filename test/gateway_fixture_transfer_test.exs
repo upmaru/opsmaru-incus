@@ -95,8 +95,11 @@ defmodule Opsmaru.Incus.GatewayFixtureTransferTest do
         assert_receive {:backend_request, request}
         assert request =~ "GET #{target} HTTP/1.1"
         payload = :binary.copy(<<0, 255, 2, 128>>, 131_072)
-        :ok = :ssl.send(socket, payload)
+        # Read the echo while sending: the fixture closes a peer whose writes
+        # stay blocked for over a second, as a non-reading caller would.
+        sender = Task.async(fn -> :ssl.send(socket, payload) end)
         assert receive_exact(socket, "", byte_size(payload)) == payload
+        assert Task.await(sender) == :ok
         assert NativeBackend.accepted(backend) == 1
         :ssl.close(socket)
         assert_receive {:backend_closed, _}, 2_000

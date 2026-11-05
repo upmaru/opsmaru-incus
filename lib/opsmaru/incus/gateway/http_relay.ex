@@ -22,6 +22,7 @@ if Code.ensure_loaded?(Plug.Conn) do
       state = %{
         gateway: gateway,
         method: request.method,
+        admission: admitted.admission,
         monitor: monitor,
         deadline: now() + gateway.max_lifetime,
         sent_outcome: if(request.method in @safe, do: :sent, else: :uncertain)
@@ -47,19 +48,29 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     defp unsized_body?(_), do: false
 
+    # Admission can stop while the host callbacks run; its slot is then gone,
+    # so no backend connection is opened for it.
     defp connect(conn, request, headers, body, state) do
       connection = state.gateway.connection
 
-      case Transport.open(connection, min(state.deadline, now() + connection.timeout)) do
-        {:ok, socket} ->
-          try do
-            exchange(conn, socket, request, headers, body, state)
-          after
-            Mint.HTTP.close(socket)
-          end
+      with :ok <- live(state),
+           {:ok, socket} <-
+             open(connection, min(state.deadline, now() + connection.timeout)) do
+        try do
+          exchange(conn, socket, request, headers, body, state)
+        after
+          Mint.HTTP.close(socket)
+        end
+      else
+        {:error, :backend} -> fail(conn, Failure.new(502, "Backend is unavailable", :not_sent))
+        {:error, reason} -> fail(conn, interrupted(reason, :not_sent))
+      end
+    end
 
-        {:error, _} ->
-          fail(conn, Failure.new(502, "Backend is unavailable", :not_sent))
+    defp open(connection, deadline) do
+      case Transport.open(connection, deadline) do
+        {:ok, socket} -> {:ok, socket}
+        {:error, _} -> {:error, :backend}
       end
     end
 
@@ -70,13 +81,17 @@ if Code.ensure_loaded?(Plug.Conn) do
       headers = backend_headers(state.gateway.connection, headers)
       mint_body = if body == :none, do: nil, else: :stream
 
-      # From here request bytes may reach the backend.
-      case Mint.HTTP.request(socket, request.method, target, headers, mint_body) do
-        {:ok, socket, ref} ->
-          case upload(conn, socket, ref, body, state, 0) do
-            {:ok, conn, socket} -> respond(conn, socket, ref, state)
-            {:error, conn, failure} -> fail(conn, failure)
-          end
+      # Last check before request bytes may reach the backend.
+      with :ok <- live(state),
+           {:ok, socket, ref} <-
+             Mint.HTTP.request(socket, request.method, target, headers, mint_body) do
+        case upload(conn, socket, ref, body, state, 0) do
+          {:ok, conn, socket} -> respond(conn, socket, ref, state)
+          {:error, conn, failure} -> fail(conn, failure)
+        end
+      else
+        {:error, reason} when reason in [:admission, :lifetime] ->
+          fail(conn, interrupted(reason, :not_sent))
 
         {:error, _, _} ->
           fail(conn, Failure.new(502, "Backend request failed", state.sent_outcome))
@@ -124,7 +139,7 @@ if Code.ensure_loaded?(Plug.Conn) do
         end
       else
         {:error, reason} when reason in [:admission, :lifetime] ->
-          {:error, conn, interrupted(reason, state)}
+          {:error, conn, interrupted(reason, state.sent_outcome)}
 
         _ ->
           {:error, conn, Failure.new(408, "Request body was not received", state.sent_outcome)}
@@ -165,7 +180,7 @@ if Code.ensure_loaded?(Plug.Conn) do
     defp head(conn, socket, ref, state, status) do
       case await(socket, state) do
         {:ok, socket, responses} -> head_responses(conn, socket, ref, state, status, responses)
-        {:error, reason} -> fail(conn, interrupted(reason, state))
+        {:error, reason} -> fail(conn, interrupted(reason, state.sent_outcome))
       end
     end
 
@@ -231,7 +246,8 @@ if Code.ensure_loaded?(Plug.Conn) do
         {:data, ^ref, data} ->
           bytes = bytes + byte_size(data)
 
-          if bytes > state.gateway.max_response_bytes do
+          # A busy stream never idles, so its lifetime is checked per chunk.
+          if bytes > state.gateway.max_response_bytes or live(state) != :ok do
             abort(conn)
           else
             case Plug.Conn.chunk(conn, data) do
@@ -277,7 +293,13 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     defp trailers(_, _), do: :ok
 
+    # Admission loss and the lifetime deadline take priority over backend data
+    # that is already queued.
     defp await(socket, state) do
+      with :ok <- live(state), do: receive_backend(socket, state)
+    end
+
+    defp receive_backend(socket, state) do
       raw = Mint.HTTP.get_socket(socket)
       monitor = state.monitor
       timeout = min(state.gateway.idle_timeout, remaining(state.deadline))
@@ -304,24 +326,31 @@ if Code.ensure_loaded?(Plug.Conn) do
       end
     end
 
+    # The DOWN message of an admission that was already exiting when it was
+    # monitored can arrive late; `Process.alive?/1` is false once it exits.
     defp live(state) do
       monitor = state.monitor
 
       receive do
         {:DOWN, ^monitor, :process, _, _} -> {:error, :admission}
       after
-        0 -> if remaining(state.deadline) == 0, do: {:error, :lifetime}, else: :ok
+        0 ->
+          cond do
+            not Process.alive?(state.admission) -> {:error, :admission}
+            remaining(state.deadline) == 0 -> {:error, :lifetime}
+            true -> :ok
+          end
       end
     end
 
-    defp interrupted(:admission, state),
-      do: Failure.new(503, "Gateway admission stopped", state.sent_outcome)
+    defp interrupted(:admission, outcome),
+      do: Failure.new(503, "Gateway admission stopped", outcome)
 
-    defp interrupted(reason, state) when reason in [:idle, :lifetime],
-      do: Failure.new(504, "Backend response timed out", state.sent_outcome)
+    defp interrupted(reason, outcome) when reason in [:idle, :lifetime],
+      do: Failure.new(504, "Backend response timed out", outcome)
 
-    defp interrupted(_, state),
-      do: Failure.new(502, "Backend response failed", state.sent_outcome)
+    defp interrupted(_, outcome),
+      do: Failure.new(502, "Backend response failed", outcome)
 
     defp operation(headers) do
       case List.keyfind(headers, "location", 0) do
