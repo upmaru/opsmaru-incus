@@ -1,9 +1,9 @@
 name: CI
-# One run per commit: pull requests into the long-lived branches, and pushes
-# after merge. Feature branches get CI through their PR.
+# One run per commit: every pull request (including stacked PRs whose base is
+# another feature branch), and pushes to the long-lived branches after merge.
+# Feature branch pushes never trigger on their own; they get CI through their PR.
 on:
   pull_request:
-    branches: [develop, main]
   push:
     branches: [develop, main]
   workflow_dispatch:
@@ -16,7 +16,10 @@ jobs:
       matrix:
         os: [ubuntu-24.04, macos-15]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 35
+    # Measured Nov 2026: `mise run check` takes 31-35 min on both OSes (nearly all
+    # of it the sync `mix test` suite) and reference + consumer add ~1.5 min, so
+    # whole jobs ran 32-35 min. 60 leaves headroom as the suite grows.
+    timeout-minutes: 60
     env:
       # Hostile web settings: the library must ignore them.
       PHX_SERVER: 'true'
