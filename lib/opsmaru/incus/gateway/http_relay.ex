@@ -11,16 +11,20 @@ if Code.ensure_loaded?(Plug.Conn) do
     # may have reached the backend: failures after that point report
     # `:uncertain` for mutations and are never retried.
 
-    alias Opsmaru.Incus.Gateway.{Failure, Headers}
+    alias Opsmaru.Incus.Gateway.{Failure, Headers, Identity, Lease}
     alias Opsmaru.Incus.Transport
 
     @safe ~w(GET HEAD)
 
     def relay(conn, gateway, request, admitted) do
       monitor = Process.monitor(admitted.admission)
+      lease = Lease.start(gateway, request, admitted, interrupter(conn))
 
       state = %{
         gateway: gateway,
+        lease: lease,
+        identity: request.method == "GET" and request.path == "/1.0",
+        request: request,
         method: request.method,
         admission: admitted.admission,
         monitor: monitor,
@@ -35,13 +39,36 @@ if Code.ensure_loaded?(Plug.Conn) do
                gateway.max_request_bytes,
                unsized_body?(conn)
              ) do
-          {:ok, headers, body} -> connect(conn, request, headers, body, state)
-          {:error, failure} -> fail(conn, failure)
+          {:ok, headers, body} ->
+            case identity(state) do
+              {:ok, state} -> connect(conn, request, headers, body, state)
+              {:error, failure} -> fail(conn, failure)
+            end
+
+          {:error, failure} ->
+            fail(conn, failure)
         end
       after
+        Lease.stop(lease)
         Process.demonitor(monitor, [:flush])
       end
     end
+
+    defp identity(%{identity: true} = state) do
+      case Identity.load(state.gateway, state.request) do
+        {:ok, identity} -> {:ok, %{state | identity: identity}}
+        error -> error
+      end
+    end
+
+    defp identity(state), do: {:ok, state}
+
+    @doc false
+    def interrupter(%Plug.Conn{adapter: {Plug.Cowboy.Conn, %{pid: pid, version: version}}})
+        when version in [:"HTTP/1.1", :"HTTP/1.0"],
+        do: fn -> Process.exit(pid, :kill) end
+
+    def interrupter(_), do: fn -> :ok end
 
     defp unsized_body?(%Plug.Conn{adapter: {Plug.Cowboy.Conn, req}}),
       do: :cowboy_req.has_body(req) and :cowboy_req.body_length(req) == :undefined
@@ -90,7 +117,7 @@ if Code.ensure_loaded?(Plug.Conn) do
           {:error, conn, failure} -> fail(conn, failure)
         end
       else
-        {:error, reason} when reason in [:admission, :lifetime] ->
+        {:error, reason} when reason in [:admission, :lifetime, :revoked] ->
           fail(conn, interrupted(reason, :not_sent))
 
         {:error, _, _} ->
@@ -138,7 +165,7 @@ if Code.ensure_loaded?(Plug.Conn) do
           end
         end
       else
-        {:error, reason} when reason in [:admission, :lifetime] ->
+        {:error, reason} when reason in [:admission, :lifetime, :revoked] ->
           {:error, conn, interrupted(reason, state.sent_outcome)}
 
         _ ->
@@ -217,8 +244,12 @@ if Code.ensure_loaded?(Plug.Conn) do
     defp commit(conn, socket, ref, state, status, headers, rest) do
       case Headers.response(headers) do
         {:ok, headers} ->
-          conn = Plug.Conn.send_chunked(%{conn | resp_headers: headers}, status)
-          body_responses(conn, socket, ref, state, 0, rest)
+          if is_map(state.identity) and status == 200 do
+            identity_body(conn, socket, ref, state, headers, [], 0, rest)
+          else
+            conn = Plug.Conn.send_chunked(%{conn | resp_headers: headers}, status)
+            body_responses(conn, socket, ref, state, 0, rest)
+          end
 
         :error ->
           fail(
@@ -229,6 +260,72 @@ if Code.ensure_loaded?(Plug.Conn) do
               state.sent_outcome,
               operation(headers)
             )
+          )
+      end
+    end
+
+    # GET /1.0 is the sole buffered backend body. Errors remain native streams.
+    defp identity_body(conn, socket, ref, state, headers, chunks, bytes, []) do
+      case await(socket, state) do
+        {:ok, socket, responses} ->
+          identity_body(conn, socket, ref, state, headers, chunks, bytes, responses)
+
+        {:error, reason} ->
+          fail(conn, interrupted(reason, state.sent_outcome))
+      end
+    end
+
+    defp identity_body(conn, socket, ref, state, headers, chunks, bytes, [response | rest]) do
+      limit = min(state.gateway.max_identity_bytes, state.gateway.max_response_bytes)
+
+      case response do
+        {:data, ^ref, data} when bytes + byte_size(data) <= limit ->
+          case live(state) do
+            :ok ->
+              identity_body(
+                conn,
+                socket,
+                ref,
+                state,
+                headers,
+                [data | chunks],
+                bytes + byte_size(data),
+                rest
+              )
+
+            {:error, reason} ->
+              fail(conn, interrupted(reason, state.sent_outcome))
+          end
+
+        {:done, ^ref} ->
+          finish_identity(conn, state, headers, chunks, limit)
+
+        _ ->
+          fail(
+            conn,
+            Failure.new(502, "Invalid or oversized backend identity", state.sent_outcome)
+          )
+      end
+    end
+
+    defp finish_identity(conn, state, headers, chunks, limit) do
+      with :ok <- live(state),
+           false <- List.keymember?(headers, "content-encoding", 0),
+           {:ok, body} <-
+             Identity.rewrite(IO.iodata_to_binary(Enum.reverse(chunks)), state.identity, limit),
+           :ok <- live(state) do
+        # The old length and validators describe different bytes after mediation.
+        headers =
+          Enum.reject(headers, fn {name, _} ->
+            name in ~w(content-length etag content-md5 digest)
+          end)
+
+        %{conn | resp_headers: headers} |> Plug.Conn.send_resp(200, body)
+      else
+        _ ->
+          fail(
+            conn,
+            Failure.new(502, "Invalid or oversized backend identity", state.sent_outcome)
           )
       end
     end
@@ -302,6 +399,7 @@ if Code.ensure_loaded?(Plug.Conn) do
     defp receive_backend(socket, state) do
       raw = Mint.HTTP.get_socket(socket)
       monitor = state.monitor
+      lease_pid = state.lease.pid
       timeout = min(state.gateway.idle_timeout, remaining(state.deadline))
 
       receive do
@@ -313,6 +411,9 @@ if Code.ensure_loaded?(Plug.Conn) do
 
         {:DOWN, ^monitor, :process, _, _} ->
           {:error, :admission}
+
+        {:gateway_revoked, ^lease_pid} ->
+          {:error, :revoked}
       after
         timeout -> {:error, if(remaining(state.deadline) == 0, do: :lifetime, else: :idle)}
       end
@@ -336,12 +437,16 @@ if Code.ensure_loaded?(Plug.Conn) do
       after
         0 ->
           cond do
+            not Lease.valid?(state.lease) -> {:error, :revoked}
             not Process.alive?(state.admission) -> {:error, :admission}
             remaining(state.deadline) == 0 -> {:error, :lifetime}
             true -> :ok
           end
       end
     end
+
+    defp interrupted(:revoked, outcome),
+      do: Failure.new(403, "Authorization expired or revoked", outcome)
 
     defp interrupted(:admission, outcome),
       do: Failure.new(503, "Gateway admission stopped", outcome)

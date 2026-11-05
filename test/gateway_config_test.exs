@@ -52,6 +52,8 @@ defmodule Opsmaru.Incus.GatewayConfigTest do
     assert gateway.max_response_bytes == connection.max_stream_bytes
     assert gateway.max_chunk_bytes == connection.max_chunk_bytes
     assert gateway.callback_timeout == 1_000
+    assert gateway.recheck_interval == 5_000
+    assert gateway.max_identity_bytes == 1_048_576
   end
 
   test "invalid configuration fails before any use", %{connection: connection} do
@@ -68,6 +70,8 @@ defmodule Opsmaru.Incus.GatewayConfigTest do
           base ++ [callback_timeout: 0],
           base ++ [callback_timeout: 60_000],
           base ++ [idle_timeout: :infinity],
+          base ++ [max_identity_bytes: 0],
+          base ++ [max_identity_bytes: 4_194_305],
           base ++ [max_chunk_bytes: 2_000_000],
           base ++ [max_header_bytes: 10],
           base ++ [unknown: true],

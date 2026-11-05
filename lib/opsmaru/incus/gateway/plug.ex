@@ -20,7 +20,9 @@ if Code.ensure_loaded?(Plug.Conn) do
     refuses it with `500` rather than relaying a reconstructed body.
 
     Every request goes through `Opsmaru.Incus.Gateway.Policy` (admission,
-    readiness, authorization) before a backend socket opens. WebSocket and
+    readiness, authorization, expiry/revocation) before a backend socket opens.
+    Discovery and certificate trust use bounded host callbacks; authenticated
+    GET `/1.0` buffers/replaces public identity. See `docs/gateway.md`. WebSocket and
     SFTP/NBD upgrades are refused with `501` in this revision.
 
     Response streaming is tested with Plug.Cowboy. When a response that has
@@ -33,7 +35,7 @@ if Code.ensure_loaded?(Plug.Conn) do
     @behaviour Plug
 
     alias Opsmaru.Incus.Gateway
-    alias Opsmaru.Incus.Gateway.{Failure, HTTPRelay, Policy}
+    alias Opsmaru.Incus.Gateway.{Failure, HTTPRelay, Local, Policy}
 
     @impl true
     def init(opts) do
@@ -78,7 +80,11 @@ if Code.ensure_loaded?(Plug.Conn) do
            {:ok, request} <- Policy.request(fields(conn, authorization)),
            {:ok, admitted} <- Policy.admit(gateway, request) do
         try do
-          HTTPRelay.relay(conn, gateway, request, admitted)
+          if Local.local?(request) or admitted.anonymous do
+            Local.serve(conn, gateway, request, admitted)
+          else
+            HTTPRelay.relay(conn, gateway, request, admitted)
+          end
         after
           Policy.release(admitted)
         end

@@ -24,7 +24,7 @@ defmodule Opsmaru.Incus.Gateway.Policy do
 
   defmodule Admitted do
     @moduledoc false
-    defstruct [:slot, :admission, :grant]
+    defstruct [:slot, :admission, :grant, anonymous: false]
   end
 
   @implemented [:http]
@@ -63,8 +63,9 @@ defmodule Opsmaru.Incus.Gateway.Policy do
     case Admission.acquire(gateway.admission, holder) do
       {:ok, slot} ->
         case check_host(gateway, request) do
-          {:ok, grant} ->
-            {:ok, %Admitted{slot: slot, admission: elem(slot, 0), grant: grant}}
+          {:ok, grant, anonymous} ->
+            {:ok,
+             %Admitted{slot: slot, admission: elem(slot, 0), grant: grant, anonymous: anonymous}}
 
           {:error, failure} ->
             Admission.release(slot)
@@ -87,15 +88,51 @@ defmodule Opsmaru.Incus.Gateway.Policy do
     config = gateway.host_config
     timeout = gateway.callback_timeout
 
-    with {:ready, {:ok, true}} <- {:ready, callback(fn -> host.ready?(config) end, timeout)},
-         {:authorized, {:ok, {:ok, grant}}} <-
-           {:authorized, callback(fn -> host.authorize(request, config) end, timeout)},
-         :ok <- implemented(request) do
-      {:ok, grant}
-    else
-      {:ready, _} -> {:error, Failure.new(503, "Gateway host is not ready", :not_sent)}
-      {:authorized, _} -> {:error, Failure.new(403, "not authorized", :not_sent)}
-      {:error, failure} -> {:error, failure}
+    case callback(fn -> host.ready?(config) end, timeout) do
+      {:ok, true} -> authorize(gateway, request)
+      _ -> {:error, Failure.new(503, "Gateway host is not ready", :not_sent)}
+    end
+  end
+
+  defp authorize(gateway, request) do
+    result =
+      callback(
+        fn -> gateway.host.authorize(request, gateway.host_config) end,
+        gateway.callback_timeout
+      )
+
+    case result do
+      {:ok, {:ok, grant}} ->
+        with :ok <- implemented(request),
+             :ok <- recheck(gateway, request, grant) do
+          {:ok, grant, false}
+        end
+
+      {:ok, {:error, :unauthenticated}} ->
+        if anonymous_route?(request),
+          do: {:ok, nil, true},
+          else: {:error, Failure.new(403, "not authorized", :not_sent)}
+
+      _ ->
+        {:error, Failure.new(403, "not authorized", :not_sent)}
+    end
+  end
+
+  defp anonymous_route?(%Request{protocol: :http, method: "GET", path: path}),
+    do: path in ["/", "/1.0"]
+
+  defp anonymous_route?(%Request{protocol: :http, method: "POST", path: "/1.0/certificates"}),
+    do: true
+
+  defp anonymous_route?(_), do: false
+
+  @doc "Shared bounded expiry/revocation check; never obtains another grant."
+  def recheck(gateway, request, grant) do
+    timeout = min(gateway.callback_timeout, div(gateway.recheck_interval, 4))
+
+    case callback(fn -> gateway.host.valid?(request, grant, gateway.host_config) end, timeout) do
+      {:ok, true} -> :ok
+      _ -> {:error, Failure.new(403, "Authorization expired or revoked", :not_sent)}
     end
   end
 
@@ -108,11 +145,18 @@ defmodule Opsmaru.Incus.Gateway.Policy do
   @doc false
   # Run one host callback in its own monitored process with a hard deadline.
   def callback(fun, timeout) do
+    owner = self()
+    deadline = System.monotonic_time(:millisecond) + timeout
+
     {pid, monitor} =
       spawn_monitor(fn ->
+        worker = self()
+        spawn(fn -> watch_callback(owner, worker, deadline) end)
+
         result =
           try do
-            {:ok, fun.()}
+            value = fun.()
+            if System.monotonic_time(:millisecond) <= deadline, do: {:ok, value}, else: :failed
           rescue
             _ -> :failed
           catch
@@ -134,6 +178,18 @@ defmodule Opsmaru.Incus.Gateway.Policy do
         end
 
         {:error, :timeout}
+    end
+  end
+
+  defp watch_callback(owner, worker, deadline) do
+    owner_monitor = Process.monitor(owner)
+    worker_monitor = Process.monitor(worker)
+
+    receive do
+      {:DOWN, ^owner_monitor, :process, ^owner, _} -> Process.exit(worker, :kill)
+      {:DOWN, ^worker_monitor, :process, ^worker, _} -> :ok
+    after
+      max(0, deadline - System.monotonic_time(:millisecond)) -> Process.exit(worker, :kill)
     end
   end
 

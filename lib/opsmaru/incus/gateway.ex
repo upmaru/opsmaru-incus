@@ -17,6 +17,11 @@ defmodule Opsmaru.Incus.Gateway do
     * `:host_config` - opaque host term passed to every callback; redacted.
     * `:admission` - the name or pid of a host-started
       `Opsmaru.Incus.Gateway.Admission`. A missing or stopped admission denies.
+    * `:recheck_interval` - maximum active expiry/revocation latency in ms,
+      including callback and interruption budgets (default/maximum 5000).
+      Hosts may tighten it to 4..5000 ms.
+    * `:max_identity_bytes` - bounded discovery/trust/server-identity bodies
+      (default 1 MiB, maximum 4 MiB).
     * `:callback_timeout` - per host callback budget in ms (default 1000).
     * `:idle_timeout` - longest silence from the backend or caller in ms
       (default: the connection's `stream_timeout`).
@@ -44,6 +49,8 @@ defmodule Opsmaru.Incus.Gateway do
     :max_request_bytes,
     :max_response_bytes,
     :max_chunk_bytes,
+    recheck_interval: 5_000,
+    max_identity_bytes: 1_048_576,
     callback_timeout: 1_000,
     max_lifetime: 3_600_000,
     max_header_bytes: 65_536
@@ -56,6 +63,8 @@ defmodule Opsmaru.Incus.Gateway do
     :host,
     :host_config,
     :admission,
+    :recheck_interval,
+    :max_identity_bytes,
     :callback_timeout,
     :idle_timeout,
     :max_lifetime,
@@ -89,6 +98,8 @@ defmodule Opsmaru.Incus.Gateway do
         )
       )
 
+    bounded!(gateway.recheck_interval, 4..5_000, "recheck_interval")
+    bounded!(gateway.max_identity_bytes, 1..4_194_304, "max_identity_bytes")
     bounded!(gateway.callback_timeout, 1..30_000, "callback_timeout")
     bounded!(gateway.idle_timeout, 1..3_600_000, "idle_timeout")
     bounded!(gateway.max_lifetime, 1..86_400_000, "max_lifetime")

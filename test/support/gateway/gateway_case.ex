@@ -9,13 +9,13 @@ defmodule Opsmaru.TestSupport.GatewayCase do
 
   alias Opsmaru.Incus.{Connection, Gateway}
   alias Opsmaru.Incus.Gateway.Admission
-  alias Opsmaru.TestSupport.{GatewayHost, GatewayServer, RawHTTP, StreamBackend}
+  alias Opsmaru.TestSupport.{GatewayHost, GatewayServer, RawHTTP, StreamBackend, TLSIdentity}
 
   using do
     quote do
       alias Opsmaru.Incus.{Connection, Gateway}
       alias Opsmaru.Incus.Gateway.Admission
-      alias Opsmaru.TestSupport.{GatewayHost, GatewayServer, RawHTTP, StreamBackend}
+      alias Opsmaru.TestSupport.{GatewayHost, GatewayServer, RawHTTP, StreamBackend, TLSIdentity}
       import Opsmaru.TestSupport.GatewayCase
     end
   end
@@ -36,7 +36,15 @@ defmodule Opsmaru.TestSupport.GatewayCase do
       File.rm_rf!(root)
     end)
 
-    %{root: root, admission: admission, port: port}
+    identity =
+      TLSIdentity.generate(root, "gateway-public", "gateway.example.com")
+
+    %{
+      root: root,
+      admission: admission,
+      port: port,
+      public_certificate: File.read!(identity.certfile)
+    }
   end
 
   @doc "Start a scripted Unix backend; returns `{pid, connection}`."
@@ -66,6 +74,14 @@ defmodule Opsmaru.TestSupport.GatewayCase do
               %{
                 observer: self(),
                 ready: true,
+                valid: fn _, _ -> true end,
+                identity: %{
+                  origin: "https://gateway.example.com:8443",
+                  addresses: ["gateway.example.com:8443"],
+                  certificate: context.public_certificate,
+                  connection: connection,
+                  api_extensions: ["certificate_update"]
+                },
                 authorize: &GatewayHost.default_authorize/1
               },
               host_config

@@ -52,10 +52,10 @@ defmodule Opsmaru.Incus.GatewayAdmissionTest do
 
     mount(context, connection)
     GatewayServer.put_gateway(%{GatewayServer.gateway() | admission: admission})
-    first = Task.async(fn -> get(context, "/1.0") end)
+    first = Task.async(fn -> get(context, "/1.0/instances") end)
     assert_receive {:holding, worker}, 2_000
 
-    second = get(context, "/1.0")
+    second = get(context, "/1.0/instances")
     assert second.status == 503
     assert native(second.body)["error"] == "Gateway is at capacity"
     assert StreamBackend.accepted(backend) == 1
@@ -66,7 +66,7 @@ defmodule Opsmaru.Incus.GatewayAdmissionTest do
     send(worker, :release)
     assert Task.await(first).status == 200
     wait_until(fn -> Admission.count(admission) == 0 end)
-    third = Task.async(fn -> get(context, "/1.0") end)
+    third = Task.async(fn -> get(context, "/1.0/instances") end)
     assert_receive {:holding, worker}, 2_000
     send(worker, :release)
     assert Task.await(third).status == 200
@@ -75,7 +75,7 @@ defmodule Opsmaru.Incus.GatewayAdmissionTest do
   test "denied or failed callbacks hold no slot", context do
     {_, connection} = backend(context, reply(200, %{}))
     mount(context, connection, host_config: %{ready: false})
-    for _ <- 1..10, do: assert(get(context, "/1.0").status == 503)
+    for _ <- 1..10, do: assert(get(context, "/1.0/instances").status == 503)
     assert Admission.count(context.admission) == 0
   end
 
@@ -108,7 +108,7 @@ defmodule Opsmaru.Incus.GatewayAdmissionTest do
     {_, connection} = backend(context, reply(200, %{}))
     mount(context, connection)
     GatewayServer.put_gateway(%{GatewayServer.gateway() | admission: GatewayAdmissionRestart})
-    assert get(context, "/1.0").status == 200
+    assert get(context, "/1.0/instances").status == 200
   end
 
   test "two hosts' admissions are independent", context do
@@ -116,7 +116,7 @@ defmodule Opsmaru.Incus.GatewayAdmissionTest do
     {:ok, _} = Admission.acquire(other, self())
     {_, connection} = backend(context, reply(200, %{}))
     mount(context, connection)
-    assert get(context, "/1.0").status == 200
+    assert get(context, "/1.0/instances").status == 200
     assert Admission.count(other) == 1
   end
 

@@ -16,10 +16,26 @@ defmodule Opsmaru.TestSupport.GatewayHost do
     config.authorize.(request)
   end
 
+  @impl true
+  def valid?(request, grant, config), do: config.valid.(request, grant)
+
+  @impl true
+  def identity(_request, config) do
+    case config.identity do
+      callback when is_function(callback, 0) -> callback.()
+      identity -> {:ok, identity}
+    end
+  end
+
+  @impl true
+  def certificates(action, request, grant, input, config),
+    do: config.certificates.(action, request, grant, input)
+
   @doc "Default policy: one bearer token, projects nil (native default) or \"allowed\"."
   def default_authorize(request) do
     cond do
-      request.authorization != "Bearer fixture-token" -> {:error, :unauthenticated}
+      request.authorization == nil -> {:error, :unauthenticated}
+      request.authorization != "Bearer fixture-token" -> {:error, :forbidden}
       request.project not in [nil, "allowed"] -> {:error, :forbidden}
       request.all_projects -> {:error, :forbidden}
       true -> {:ok, :fixture_grant}

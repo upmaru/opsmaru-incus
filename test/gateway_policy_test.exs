@@ -229,9 +229,9 @@ defmodule Opsmaru.Incus.GatewayPolicyTest do
       assert_receive {:backend_request, %{target: ^target, method: "GET"}}
 
       assert get(context, "/").status == 200
-      assert_receive {:backend_request, %{target: "/"}}
-      assert get(context, "/1.0").status == 200
-      assert_receive {:backend_request, %{target: "/1.0"}}
+      refute_receive {:backend_request, %{target: "/"}}
+      assert get(context, "/1.0/instances").status == 200
+      assert_receive {:backend_request, %{target: "/1.0/instances"}}
     end
 
     test "unknown native routes are authorized and relayed like any other", context do

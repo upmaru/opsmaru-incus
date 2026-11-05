@@ -149,7 +149,7 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
         end)
 
       mount(context, connection)
-      result = get(context, "/1.0")
+      result = get(context, "/1.0/instances")
       assert result.status == 200
       # Cowboy writes repeated fields as one comma-joined field (RFC 9110 5.3).
       assert RawHTTP.header(result, "x-incus-a") == ["1, 2"]
@@ -205,7 +205,7 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
 
       results =
         1..4
-        |> Enum.map(fn _ -> Task.async(fn -> get(context, "/1.0") end) end)
+        |> Enum.map(fn _ -> Task.async(fn -> get(context, "/1.0/instances") end) end)
         |> Task.await_many(5_000)
 
       assert Enum.all?(results, &(&1.status == 200))
@@ -242,16 +242,19 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
     test "relays with mutual TLS and the gateway's own client identity", context do
       {_, url} = https_backend(context, context.server, reply(200, %{"type" => "sync"}))
       mount(context, https_connection(url, context.server.cafile, context.client))
-      response = get(context, "/1.0?project=allowed")
+      response = get(context, "/1.0/instances?project=allowed")
       assert response.status == 200
-      assert_receive {:backend_request, %{target: "/1.0?project=allowed", headers: headers}}
+
+      assert_receive {:backend_request,
+                      %{target: "/1.0/instances?project=allowed", headers: headers}}
+
       refute List.keymember?(headers, "authorization", 0)
     end
 
     test "wrong upstream trust or keys fail before any request is sent", context do
       {backend, url} = https_backend(context, context.other, reply(200, %{}))
       mount(context, https_connection(url, context.server.cafile, context.client))
-      response = get(context, "/1.0")
+      response = get(context, "/1.0/instances")
       assert response.status == 502
       assert native(response.body)["metadata"]["gateway"]["outcome"] == "not_sent"
       refute_receive {:backend_request, _}, 100
@@ -259,7 +262,7 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
       # A client identity the backend does not trust.
       {_, url} = https_backend(context, context.server, reply(200, %{}))
       mount(context, https_connection(url, context.server.cafile, context.other))
-      assert get(context, "/1.0").status == 502
+      assert get(context, "/1.0/instances").status == 502
       refute_receive {:backend_request, _}, 100
       assert StreamBackend.accepted(backend) <= 1
     end
@@ -430,7 +433,7 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
       assert response.status == 413
       assert native(response.body)["metadata"]["gateway"]["outcome"] == "not_sent"
 
-      response = get(context, "/1.0", [auth(), {"x-large", :binary.copy("y", 4_096)}])
+      response = get(context, "/1.0/instances", [auth(), {"x-large", :binary.copy("y", 4_096)}])
       assert response.status == 431
       assert StreamBackend.accepted(backend) == 0
     end
@@ -496,7 +499,7 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
           end)
 
         mount(context, connection)
-        response = get(context, "/1.0")
+        response = get(context, "/1.0/instances")
         assert response.status == 502, bytes
         assert native(response.body)["metadata"]["gateway"]["outcome"] == "sent"
         refute RawHTTP.header(response, "x-bad") != []
