@@ -1,9 +1,7 @@
 defmodule Opsmaru.Incus.SimpleStreamsTest do
-  # Serial: run beside other async modules, an owner-loss sink was found dead before
-  # its owner was killed (CI, Nov 2026); kept serial until that is explained.
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus.{Connection, Context, Error, HTTP, Model, RequestContext, SimpleStreams}
-  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
+  alias Opsmaru.TestSupport.{HTTPFixture, Monitor, TLSIdentity}
   @driver Path.expand("../.integration/simplestreams-driver", __DIR__)
   @http_driver Path.expand("../.integration/simplestreams-http-driver", __DIR__)
   @info_driver Path.expand("../.integration/origin-info-driver", __DIR__)
@@ -559,7 +557,7 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
 
       on_exit(fn -> if Process.alive?(owner), do: Process.exit(owner, :kill) end)
       assert_receive {:sink, worker}, 1000
-      monitor = Process.monitor(worker)
+      monitor = Monitor.monitor!(worker)
       if unquote(cause) == :owner_loss, do: Process.exit(owner, :kill)
       if unquote(cause) == :cancellation, do: RequestContext.cancel(scope)
       assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 2_000
@@ -864,7 +862,7 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
       on_exit(fn -> if Process.alive?(owner), do: Process.exit(owner, :kill) end)
       assert_receive {:converting, worker}, 2_000
       assert_receive {:delta_call, ^worker, request}
-      monitor = Process.monitor(worker)
+      monitor = Monitor.monitor!(worker)
       if unquote(cause) == :owner_loss, do: Process.exit(owner, :kill)
       assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 2_000
       expected = if unquote(cause) == :deadline, do: :deadline, else: :owner_lost
