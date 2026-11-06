@@ -579,6 +579,36 @@ defmodule Opsmaru.Incus.EventListenerTest do
         assert_peer_closed()
       end
     end
+
+    test "#{transport} a channel failure between reads keeps its precise kind", %{root: root} do
+      parent = self()
+      large = Jason.encode!(%{@event | "metadata" => %{"pad" => String.duplicate("x", 2_048)}})
+
+      {client, _} =
+        fixture(unquote(transport), root, [max_response_bytes: 1_024],
+          response_frames: fn _, _ ->
+            send(parent, {:frames_gate, self()})
+            receive do: (:release -> WebSocketFixture.frame(1, large))
+          end
+        )
+
+      {:ok, listener} = EventListener.open(client)
+      assert :ok = EventListener.send_event(listener, @event)
+      assert_receive {:frames_gate, gate}, 5_000
+
+      # Suspension takes effect between callbacks, so no read is pending at the
+      # channel when the oversized frame ends it.
+      :ok = :sys.suspend(listener.pid)
+      channel = :sys.get_state(listener.pid).channel.pid
+      monitor = Process.monitor(channel)
+      send(gate, :release)
+      assert_receive {:DOWN, ^monitor, :process, ^channel, _}, 5_000
+      :ok = :sys.resume(listener.pid)
+
+      assert {:error, %Error{kind: :overflow}} = EventListener.wait(listener)
+      refute EventListener.active?(listener)
+      assert_peer_closed()
+    end
   end
 
   # Every fixture reports how the client ended the stream to the test process.

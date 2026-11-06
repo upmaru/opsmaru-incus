@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.NativeWaitReferenceTest do
-  use ExUnit.Case, async: true
+  # Serial: its expiring deadline must also cover the HTTPS connection.
+  use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Model, RequestContext, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, Timing, TLSIdentity, WireComparison}

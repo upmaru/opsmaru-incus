@@ -16,10 +16,10 @@ jobs:
       matrix:
         os: [ubuntu-24.04, macos-15]
     runs-on: ${{ matrix.os }}
-    # Measured Nov 2026: `mise run check` takes 31-35 min on both OSes (nearly all
-    # of it the sync `mix test` suite) and reference + consumer add ~1.5 min, so
-    # whole jobs ran 32-35 min. 60 leaves headroom as the suite grows.
-    timeout-minutes: 60
+    # Measured Nov 2026 with the parallel suite: whole jobs take ~10 min on
+    # ubuntu-24.04 (4 cores) and ~9 min on macos-15 (3 cores), down from 32-35 min
+    # serial. 30 leaves headroom for a cold Go cache and a growing suite.
+    timeout-minutes: 30
     env:
       # Hostile web settings: the library must ignore them.
       PHX_SERVER: 'true'

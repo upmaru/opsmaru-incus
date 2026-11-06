@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.OCIOriginReferenceTest do
-  use ExUnit.Case, async: true
+  # Serial: it waits only 1 s for the fixture to see the dispatched request.
+  use ExUnit.Case, async: false
   alias Opsmaru.Incus.{Connection, Context, Error, HTTP, OCI, RequestContext}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @info_driver Path.expand("../.integration/oci-origin-info-driver", __DIR__)

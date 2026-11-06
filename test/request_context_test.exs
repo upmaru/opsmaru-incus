@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.RequestContextTest do
-  use ExUnit.Case, async: true
+  # Serial: a 20 ms pause must let a poll reply be recorded before it cancels.
+  use ExUnit.Case, async: false
   alias Opsmaru.Incus
 
   alias Opsmaru.Incus.{
