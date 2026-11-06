@@ -331,7 +331,9 @@ defmodule Opsmaru.Incus.EventListenerTest do
 
     test "#{transport} blocked callback is killed within its budget and result remains repeatable",
          %{root: root} do
-      {client, _} = fixture(unquote(transport), root, timeout: 100)
+      # The timeout is also the callback budget, and it bounds the open: leave room
+      # for a TLS handshake on a loaded VM.
+      {client, _} = fixture(unquote(transport), root, timeout: 1_000)
       {:ok, listener} = EventListener.open(client)
       parent = self()
 

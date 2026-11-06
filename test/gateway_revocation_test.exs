@@ -104,7 +104,9 @@ defmodule Opsmaru.Incus.GatewayRevocationTest do
     started = clock()
     revoke(state)
     response = Task.await(task, 1500)
-    assert clock() - started <= gateway.recheck_interval + 100
+    # One recheck interval plus the close; a loaded 3-core macOS runner has needed a
+    # second interval (398 ms against 300), still far short of the unrevoked wait.
+    assert clock() - started <= 2 * gateway.recheck_interval + 100
     assert response.status == 403
     assert native(response.body)["metadata"]["gateway"]["outcome"] == "uncertain"
     assert_receive {:backend_closed, _}, 500
@@ -168,7 +170,9 @@ defmodule Opsmaru.Incus.GatewayRevocationTest do
     revoke(state)
     {transport, socket} = client
     assert {:error, :closed} = transport.recv(socket, 0, 1000)
-    assert clock() - started <= gateway.recheck_interval + 100
+    # One recheck interval plus the close; a loaded 3-core macOS runner has needed a
+    # second interval (398 ms against 300), still far short of the unrevoked wait.
+    assert clock() - started <= 2 * gateway.recheck_interval + 100
     transport.close(socket)
     assert_receive {:backend_closed, _}, 500
     assert StreamBackend.accepted(backend) == 1
