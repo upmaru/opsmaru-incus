@@ -24,8 +24,8 @@ context: |
   never replay possibly accepted mutations. Fixture, isolated consumer,
   real-Incus and Macus hardware evidence are distinct. This repository also
   owns the optional native gateway mechanics (add-embeddable-incus-gateway)
-  and the shared Incus operation/MCP tool definitions (add-incus-operations);
-  Plug, Cowboy and tama_mcp are optional dependencies so client-only
+  and the protocol-neutral shared Incus operations (add-incus-operations);
+  Plug and Cowboy are optional gateway dependencies so client-only
   consumers carry no web stack. Durable tasks, central registry, OIDC and
   connectors belong to upmaru/opsmaru; Swift/VZ, the public endpoint, gateway
   policy/trust, runtime tools and packaging belong to upmaru/macus. The first
