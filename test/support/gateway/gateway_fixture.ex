@@ -85,8 +85,9 @@ defmodule Opsmaru.TestSupport.GatewayServer do
     :ok
   end
 
-  def clear do
-    :ets.delete(@table, {:gateway, self()})
+  @doc "Forget `owner`'s gateway; `on_exit` callbacks pass the test pid explicitly."
+  def clear(owner \\ self()) do
+    :ets.delete(@table, {:gateway, owner})
     :ok
   end
 

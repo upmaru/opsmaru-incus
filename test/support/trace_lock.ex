@@ -25,11 +25,15 @@ defmodule Opsmaru.TestSupport.TraceLock do
           :global.trans({__MODULE__, self()}, fn ->
             send(test, {__MODULE__, :held, self()})
 
-            receive do
-              :release -> :ok
-            end
+            Process.sleep(:infinity)
           end)
         end)
+
+      # Registered before waiting, so a test that times out here still stops its
+      # holder. :global releases a lock when its holder exits, so killing it covers
+      # both a holder that took the lock and one still waiting for it.
+      ExUnit.Callbacks.on_exit(fn -> Process.exit(holder, :kill) end)
+      Process.put(__MODULE__, holder)
 
       receive do
         {__MODULE__, :held, ^holder} -> :ok
@@ -37,8 +41,6 @@ defmodule Opsmaru.TestSupport.TraceLock do
         120_000 -> raise "timed out waiting for the VM-wide trace lock"
       end
 
-      Process.put(__MODULE__, holder)
-      ExUnit.Callbacks.on_exit(fn -> send(holder, :release) end)
       :ok
     end
   end

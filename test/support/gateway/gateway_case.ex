@@ -33,10 +33,12 @@ defmodule Opsmaru.TestSupport.GatewayCase do
     File.chmod!(root, 0o700)
     admission = start_supervised!({Admission, max_exchanges: 8})
     {ref, port} = GatewayServer.start_http()
+    # on_exit runs in another process: clear this test's row, not that one's.
+    test = self()
 
     on_exit(fn ->
       GatewayServer.stop(ref)
-      GatewayServer.clear()
+      GatewayServer.clear(test)
       File.rm_rf!(root)
     end)
 
