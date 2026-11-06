@@ -11,11 +11,13 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
   finally runs it live against a fresh copy of the same tree.
 
   Go's pipelined `WriteTo` keeps reading ahead until it handles the end of the
-  file, so how many reads it sends past the end depends on timing. The replay
-  therefore skips recorded reads answered with end of file that our client did
-  not send, and answers our extra reads with end of file only when they start at
-  or past an offset already answered that way on the same handle. Both are
-  listed and checked; nothing else may differ.
+  file, so how many reads it sends past the end depends on timing. Its dispatcher
+  is not awaited, so on a loaded VM one more read can follow the handle's close
+  and be answered with a failure. The replay therefore skips recorded reads our
+  client did not send that start at or past an end of file already seen on the
+  same handle and were answered with end of file, or with failure once that
+  handle was closed. It answers our extra reads with end of file only past such
+  an offset. Both are listed and checked; nothing else may differ.
   """
   use ExUnit.Case, async: true
   alias Opsmaru.Incus
@@ -87,10 +89,12 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
     replay = backend(base, transport, identity, {:replay, exchange, self()})
     assert {:ok, session} = open(client(replay, identity), kind)
     ours = run(session, steps)
-    assert_steps(ours, native["steps"], steps)
     SFTP.close(session)
     assert_receive {:sftp_replay_done, mismatches, remaining, read_ahead}, 5_000
-    assert mismatches == []
+    # Request mismatches first: they name the packet that diverged, where a step
+    # result only shows the failure status the replay answered it with.
+    assert mismatches == [], inspect({mismatches, read_ahead}, limit: :infinity)
+    assert_steps(ours, native["steps"], steps)
     assert remaining == 0
     if script == :paths, do: assert(read_ahead == [])
 
@@ -107,7 +111,7 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
     read = fn id, offset -> <<5, id::32, 1::32, "h", offset::64, 131_072::32>> end
     eof = fn id -> <<101, id::32, 1::32, 0::32, 0::32>> end
     close = {<<4, 9::32, 1::32, "h">>, <<101, 9::32, 0::32, 0::32, 0::32>>}
-    state = %{mismatches: [], read_ahead: [], eof: %{}}
+    state = %{mismatches: [], read_ahead: [], eof: %{}, closed: MapSet.new()}
 
     # An ordinary end-of-file read our client did not send is a mismatch.
     {_, _, missed} = answer(elem(close, 0), [{read.(1, 0), eof.(1)}, close], state)
@@ -129,6 +133,21 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
 
     {_, _, crossed} = answer(elem(close, 0), rest, seen)
     assert [{_, _}] = crossed.mismatches
+
+    # A late read past the end fails once its handle is closed: skipped then only.
+    failed = fn id -> <<101, id::32, 4::32, 0::32, 0::32>> end
+    stat = {<<8, 3::32, 1::32, "g">>, <<101, 3::32, 0::32, 0::32, 0::32>>}
+    exchange = [{read.(1, 0), eof.(1)}, close, {read.(2, 131_072), failed.(2)}, stat]
+    {_, rest, seen} = answer(read.(7, 0), exchange, state)
+    {_, rest, closed} = answer(elem(close, 0), rest, seen)
+    assert {_, [], late} = answer(elem(stat, 0), rest, closed)
+    assert late.mismatches == []
+    assert [{:skipped, _}] = late.read_ahead
+
+    exchange = [{read.(1, 0), eof.(1)}, {read.(2, 131_072), failed.(2)}, close]
+    {_, rest, seen} = answer(read.(7, 0), exchange, state)
+    {_, _, open} = answer(elem(close, 0), rest, seen)
+    assert [{_, _}] = open.mismatches
   end
 
   test "Go path helpers agree with the pinned sftp.Join, Split and Match", %{base: base} do
@@ -775,7 +794,8 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
   defp replay(transport, socket, {version, exchange}, parent) do
     {:ok, _init} = receive_frame(transport, socket)
     :ok = transport.send(socket, frame(version))
-    replay_loop(transport, socket, exchange, parent, %{mismatches: [], read_ahead: [], eof: %{}})
+    state = %{mismatches: [], read_ahead: [], eof: %{}, closed: MapSet.new()}
+    replay_loop(transport, socket, exchange, parent, state)
   end
 
   defp replay_loop(transport, socket, exchange, parent, state) do
@@ -786,10 +806,16 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
         replay_loop(transport, socket, exchange, parent, state)
 
       :closed ->
+        # Late read-ahead may also trail our last request.
+        {late, remaining} =
+          Enum.split_with(exchange, fn {read, reply} -> skippable?(read, reply, state) end)
+
+        read_ahead =
+          Enum.reverse(state.read_ahead) ++ for({read, _} <- late, do: {:skipped, read})
+
         send(
           parent,
-          {:sftp_replay_done, Enum.reverse(state.mismatches), length(exchange),
-           Enum.reverse(state.read_ahead)}
+          {:sftp_replay_done, Enum.reverse(state.mismatches), length(remaining), read_ahead}
         )
     end
   end
@@ -800,7 +826,8 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
         {<<^type, _::32, ^rest::binary>>, <<reply_type, _::32, reply::binary>> = recorded}
         | exchange
       ] ->
-        {<<reply_type, id::32, reply::binary>>, exchange, note_eof(ours, recorded, state)}
+        state = ours |> note_eof(recorded, state) |> note_close(ours, recorded)
+        {<<reply_type, id::32, reply::binary>>, exchange, state}
 
       [{read, reply} | rest] ->
         if skippable?(read, reply, state),
@@ -816,6 +843,10 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
   # that start at or past an end already seen on the same handle may be skipped.
   defp skippable?(<<5, _::binary>> = read, <<101, _::32, 1::32, _::binary>>, state),
     do: past_eof(read, state)
+
+  # Go's unawaited read-ahead dispatcher sent it after the handle was closed.
+  defp skippable?(<<5, _::32, rest::binary>> = read, <<101, _::32, 4::32, _::binary>>, state),
+    do: past_eof(read, state) and MapSet.member?(state.closed, elem(read_position(rest), 0))
 
   defp skippable?(_, _, _), do: false
 
@@ -841,6 +872,15 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
   end
 
   defp note_eof(_, _, state), do: state
+
+  defp note_close(
+         state,
+         <<4, _::32, length::32, handle::binary-size(length)>>,
+         <<101, _::32, 0::32, _::binary>>
+       ),
+       do: %{state | closed: MapSet.put(state.closed, handle)}
+
+  defp note_close(state, _, _), do: state
 
   # Our extra read-ahead must start at or past an offset already answered with
   # end of file on the same handle.
