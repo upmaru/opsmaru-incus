@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.RequestContextTest do
   use ExUnit.Case, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
   alias Opsmaru.Incus
 
   alias Opsmaru.Incus.{
@@ -299,7 +300,7 @@ defmodule Opsmaru.Incus.RequestContextTest do
       end)
 
     assert_receive {:sink, pid}, 1_000
-    monitor = Process.monitor(pid)
+    monitor = monitor!(pid)
     RequestContext.cancel(scope)
     assert {:error, %Error{kind: :canceled}} = Task.await(task, 500)
     assert_receive {:DOWN, ^monitor, :process, ^pid, :killed}, 500
@@ -319,7 +320,7 @@ defmodule Opsmaru.Incus.RequestContextTest do
     scope = RequestContext.new!(timeout: 3_000)
     scoped = Incus.with_context(original, scope)
     {:ok, channel} = WebSocket.open(scoped, "/1.0/events")
-    monitor = Process.monitor(channel.pid)
+    monitor = monitor!(channel.pid)
     RequestContext.cancel(scope)
     assert_receive {:DOWN, ^monitor, :process, _, :killed}, 500
     assert original.connection.request_context == nil
@@ -446,8 +447,8 @@ defmodule Opsmaru.Incus.RequestContextTest do
 
     assert :ok = EventListener.send_event(listener, %{"type" => "logging", "metadata" => %{}})
     assert_receive {:callback, pid}, 1_000
-    callback = Process.monitor(pid)
-    monitor = Process.monitor(listener.pid)
+    callback = monitor!(pid)
+    monitor = monitor!(listener.pid)
     RequestContext.cancel(scope)
     assert_receive {:DOWN, ^monitor, :process, _, :killed}, 500
     assert_receive {:DOWN, ^callback, :process, _, :killed}, 500
@@ -476,7 +477,7 @@ defmodule Opsmaru.Incus.RequestContextTest do
     scope = RequestContext.new!(timeout: 3_000)
     {:ok, channel} = Incus.sftp(Incus.with_context(client(fixture), scope), "fixture")
     assert {:ok, <<0, 255, 128>>} = RawChannel.recv(channel)
-    monitor = Process.monitor(channel.pid)
+    monitor = monitor!(channel.pid)
     RequestContext.cancel(scope)
     assert_receive {:DOWN, ^monitor, :process, _, :killed}, 500
     assert_receive {:closed, {:error, :closed}}, 1_000

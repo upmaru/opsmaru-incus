@@ -1,6 +1,7 @@
 defmodule Opsmaru.Incus.WebSocketFailureTest do
   # Its write-budget tests set VM-wide trace patterns on WebSocket.now/0 and setopts under TraceLock.
   use ExUnit.Case, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
   alias Opsmaru.Incus
 
   alias Opsmaru.Incus.{
@@ -94,7 +95,7 @@ defmodule Opsmaru.Incus.WebSocketFailureTest do
       assert_receive {:peer, ^tag, process}, 1_000
       reader = Task.async(fn -> WebSocket.recv(channel, 1_000) end)
       await_reader(channel, System.monotonic_time(:millisecond) + 1_000)
-      monitor = Process.monitor(channel.pid)
+      monitor = monitor!(channel.pid)
       send(process, :drop)
       assert {:error, %Error{kind: :channel_io}} = Task.await(reader)
       ref = channel.ref

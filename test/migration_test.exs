@@ -2,7 +2,7 @@ defmodule Opsmaru.Incus.MigrationTest do
   use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Migration, Server}
-  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture}
+  alias Opsmaru.TestSupport.{HTTPFixture, Timing, TLSIdentity, WebSocketFixture}
 
   setup do
     root = Path.join(System.tmp_dir!(), "op-migrate-#{System.unique_integer([:positive])}")
@@ -280,11 +280,14 @@ defmodule Opsmaru.Incus.MigrationTest do
     secrets = %{"control" => "control-secret", "fs" => "data-secret"}
     migration = relay_handles(source, target, secrets, secrets)
     before = System.monotonic_time(:millisecond)
+    # The deadline also covers opening four channels; 100 ms could expire mid-upgrade
+    # on a loaded VM and report the upgrade instead.
+    timeout = Timing.expiring_deadline()
 
     assert {:error, %Error{kind: :deadline, response: %{accepted: ^migration}}} =
-             Migration.relay(migration, timeout: 100)
+             Migration.relay(migration, timeout: timeout)
 
-    assert System.monotonic_time(:millisecond) - before < 700
+    assert System.monotonic_time(:millisecond) - before < timeout + 600
     assert length(WebSocketFixture.requests(source)) == 2
     assert length(WebSocketFixture.requests(target)) == 2
     refute inspect(migration) =~ "control-secret"

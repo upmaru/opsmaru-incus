@@ -843,6 +843,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
   # The receive-expiry tests set VM-wide trace patterns on Mint.HTTP.recv/3 and
   # Transport.receive_response/5 under TraceLock. The contract checks run in the shards below.
   use ExUnit.Case, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
 
   import Opsmaru.Incus.InspectionContractTest.Contract,
     only: [backend: 4, client: 2, discovery: 0, tmp_root!: 0]
@@ -931,7 +932,7 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     # Force the actual socket timeout to win; neither competing observer can end the worker.
     assert :erlang.suspend_process(guard)
     assert :erlang.suspend_process(caller)
-    monitor = Process.monitor(worker)
+    monitor = monitor!(worker)
     assert_receive {^tag, :entered}, 10_000
     assert_receive {:DOWN, ^monitor, :process, ^worker, :normal}, 10_000
     assert_receive {^tag, :closed, {:error, :closed}}, 10_000

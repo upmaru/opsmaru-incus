@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.EventSendTest do
   use ExUnit.Case, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Events, Server}
   alias Opsmaru.TestSupport.{TLSIdentity, WebSocketFixture}
@@ -89,7 +90,7 @@ defmodule Opsmaru.Incus.EventSendTest do
 
       on_exit(fn -> if Process.alive?(owner), do: Process.exit(owner, :kill) end)
       assert_receive {:channel, channel}, 5_000
-      monitor = Process.monitor(channel.pid)
+      monitor = monitor!(channel.pid)
       Process.exit(owner, :kill)
       assert_receive {:DOWN, ^monitor, :process, _, :normal}, 1000
       assert_peer_closed()

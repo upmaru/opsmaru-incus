@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.EventListenerTest do
   use ExUnit.Case, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
   import ExUnit.CaptureLog
   alias Opsmaru.Incus
 
@@ -345,7 +346,7 @@ defmodule Opsmaru.Incus.EventListenerTest do
 
       assert :ok = EventListener.send_event(listener, @event)
       assert_receive {:callback, worker}, 1_000
-      monitor = Process.monitor(worker)
+      monitor = monitor!(worker)
       assert {:error, %Error{kind: :callback_timeout}} = EventListener.wait(listener)
       assert {:error, %Error{kind: :callback_timeout}} = EventListener.wait(listener)
       assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 1_000
@@ -409,8 +410,8 @@ defmodule Opsmaru.Incus.EventListenerTest do
       assert {:error, %Error{kind: :owner_mismatch}} = GenServer.call(listener.pid, :disconnect)
       send(owner, :send)
       assert_receive {:blocked, worker}, 1_000
-      worker_monitor = Process.monitor(worker)
-      listener_monitor = Process.monitor(listener.pid)
+      worker_monitor = monitor!(worker)
+      listener_monitor = monitor!(listener.pid)
       Process.exit(owner, :kill)
       assert_receive {:DOWN, ^worker_monitor, :process, ^worker, :killed}, 1_000
       assert_receive {:DOWN, ^listener_monitor, :process, _, :normal}, 1_000
@@ -434,7 +435,7 @@ defmodule Opsmaru.Incus.EventListenerTest do
 
       assert :ok = EventListener.send_event(listener, @event)
       assert_receive {:trapping_callback, worker}, 1_000
-      monitor = Process.monitor(worker)
+      monitor = monitor!(worker)
       Process.exit(listener.pid, :kill)
       assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 1_000
       assert_peer_closed()

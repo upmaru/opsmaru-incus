@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.TransferTest do
   use ExUnit.Case, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Transfer}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
@@ -171,7 +172,7 @@ defmodule Opsmaru.Incus.TransferTest do
       on_exit(fn -> if Process.alive?(owner), do: Process.exit(owner, :kill) end)
       assert_receive {:blocked, worker}, 5_000
       on_exit(fn -> if Process.alive?(worker), do: Process.exit(worker, :kill) end)
-      monitor = Process.monitor(worker)
+      monitor = monitor!(worker)
       Process.exit(owner, :kill)
       assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 500
       assert Process.alive?(self())

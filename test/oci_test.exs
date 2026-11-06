@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.OCITest do
   use ExUnit.Case, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
   alias Opsmaru.Incus.{Connection, Context, Error, Model, OCI, RequestContext}
   @driver Path.expand("../.integration/oci-driver", __DIR__)
 
@@ -562,7 +563,7 @@ defmodule Opsmaru.Incus.OCITest do
     scoped = %{original | connection: Connection.with_context(original.connection, scope)}
     task = Task.async(fn -> OCI.resolve(scoped, "alpine") end)
     assert_receive {:blocked_adapter, pid}, 500
-    monitor = Process.monitor(pid)
+    monitor = monitor!(pid)
     RequestContext.cancel(scope)
     assert {:error, %Error{kind: :adapter_canceled}} = Task.await(task, 500)
     assert_receive {:DOWN, ^monitor, :process, ^pid, :killed}, 500
