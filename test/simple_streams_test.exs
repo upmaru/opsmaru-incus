@@ -1,5 +1,7 @@
 defmodule Opsmaru.Incus.SimpleStreamsTest do
-  use ExUnit.Case, async: true
+  # Serial: run beside other async modules, an owner-loss sink was found dead before
+  # its owner was killed (CI, Nov 2026); kept serial until that is explained.
+  use ExUnit.Case, async: false
   alias Opsmaru.Incus.{Connection, Context, Error, HTTP, Model, RequestContext, SimpleStreams}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../.integration/simplestreams-driver", __DIR__)
