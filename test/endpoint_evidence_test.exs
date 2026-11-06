@@ -1,5 +1,7 @@
 defmodule Opsmaru.Incus.EndpointEvidenceTest do
   use ExUnit.Case, async: true
+  # Deterministic CPU-bound validation; slow CI runners have taken over 60 s per test.
+  @moduletag timeout: 180_000
   alias Opsmaru.TestSupport.{EndpointEvidence, EndpointInventory}
   @manifest Jason.decode!(File.read!("priv/incus/endpoint-evidence.json"))
 
@@ -1349,6 +1351,7 @@ end
 for shard <- 0..(Opsmaru.Incus.EndpointEvidenceTest.completion_shards() - 1) do
   defmodule Module.concat(Opsmaru.Incus.EndpointEvidenceTest, "Completion#{shard}") do
     use ExUnit.Case, async: true
+    @moduletag timeout: 180_000
     alias Opsmaru.Incus.EndpointEvidenceTest, as: Evidence
     alias Opsmaru.TestSupport.EndpointInventory
 

@@ -893,7 +893,10 @@ defmodule Opsmaru.Incus.InspectionContractTest do
       )
 
     original = client(fixture, identity)
-    context = RequestContext.new!(timeout: Timing.expiring_deadline())
+    # The worker must still have budget left when it reaches recv, after a TLS
+    # handshake on a loaded VM, or it reports the deadline without reading.
+    timeout = if identity, do: 3 * Timing.expiring_deadline(), else: Timing.expiring_deadline()
+    context = RequestContext.new!(timeout: timeout)
     scoped = Incus.with_context(original, context)
 
     caller =
