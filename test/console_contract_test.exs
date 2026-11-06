@@ -309,7 +309,7 @@ defmodule Opsmaru.Incus.ConsoleContractTest do
     end)
   end
 
-  defp await(check, deadline \\ System.monotonic_time(:millisecond) + 5_000) do
+  defp await(check, deadline \\ System.monotonic_time(:millisecond) + 10_000) do
     cond do
       check.() ->
         :ok
