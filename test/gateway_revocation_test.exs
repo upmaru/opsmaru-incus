@@ -203,7 +203,10 @@ defmodule Opsmaru.Incus.GatewayRevocationTest do
     started = clock()
     revoke(state)
     assert_receive {:backend_closed, _}, 1000
-    assert clock() - started <= gateway.recheck_interval + 150
+    # One recheck interval (250 ms here) plus the guard's close. A loaded 3-core
+    # macOS runner has overshot interval + 150 (423 ms), so allow a second interval:
+    # unrevoked, the 64 MiB download into a 1 KiB receive buffer never finishes.
+    assert clock() - started <= 2 * gateway.recheck_interval + 100
     transport.close(socket)
     assert StreamBackend.accepted(backend) == 1
     assert_received {:host_authorize, _}
