@@ -221,7 +221,9 @@ defmodule Opsmaru.Incus.HTTPReferenceTest do
   test "silent responses have a bounded deadline and independent handles retain their own origin",
        %{root: root} do
     {silent, client, _, _} = fixture(root, :gen_tcp, fn _ -> %{wire_chunks: [{1000, ""}]} end)
-    client = %{client | connection: %{client.connection | timeout: 200}}
+    # Long enough for the fixture to record the request on a loaded VM, well short
+    # of the reply it never sends within 1 s.
+    client = %{client | connection: %{client.connection | timeout: 500}}
     {:ok, handle} = HTTP.client(client)
     started = System.monotonic_time(:millisecond)
     assert {:error, %Error{kind: :uncertain}} = HTTP.request(handle, "POST", "/1.0/raw")

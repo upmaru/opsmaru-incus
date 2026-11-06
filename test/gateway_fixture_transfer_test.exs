@@ -2,8 +2,7 @@ defmodule Opsmaru.Incus.GatewayFixtureTransferTest do
   # Task 1.3: transferred Macus upgrade fixtures with provenance, the Incus
   # v7.0.1 pin, and fake Unix/verified HTTPS denial/framing fixtures, without
   # Macus source or runtime.
-  # Serial: it runs beside the gateway suite, which shares one global fixture.
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   import ExUnit.CaptureLog
 
   alias Opsmaru.TestSupport.Gateway.{CowboyUpgradeHandler, NativeBackend}

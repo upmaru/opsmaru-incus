@@ -1,9 +1,17 @@
 defmodule Opsmaru.Incus.ExecOutputTest do
-  # Serial: it sets VM-wide trace patterns on Session.exec/4.
-  use ExUnit.Case, async: false
+  # Its blocked-stdin tests set a VM-wide trace pattern on Session.exec/4 under TraceLock.
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Operation, RequestContext, Server, Session}
-  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture, WireComparison}
+
+  alias Opsmaru.TestSupport.{
+    HTTPFixture,
+    TLSIdentity,
+    TraceLock,
+    WebSocketFixture,
+    WireComparison
+  }
+
   @driver Path.expand("../.integration/exec-io-driver", __DIR__)
   @body %{
     "command" => ["fixture-command"],
@@ -515,6 +523,9 @@ defmodule Opsmaru.Incus.ExecOutputTest do
 
   for mode <- [:deadline, :cancellation], transport <- [:gen_tcp, :ssl] do
     test "run #{mode} interrupts a confirmed blocked stdin write over #{transport}", %{root: root} do
+      # Before anything starts a clock: none may run while waiting for the lock.
+      TraceLock.acquire!()
+
       {client, fixture, _} =
         fixture(root, unquote(transport), input_gate: true, control: true, read_timeout: 30_000)
 
@@ -531,7 +542,7 @@ defmodule Opsmaru.Incus.ExecOutputTest do
       # tcp_wmem/tcp_rmem maxima); exceed them so the write stays blocked.
       pairs = if unquote(transport) == :ssl, do: 16_777_216, else: 2_097_152
       stdin = :binary.copy(<<0, 255>>, pairs)
-      timeout = if unquote(mode) == :deadline, do: 10_000, else: 30_000
+      timeout = if unquote(mode) == :deadline, do: 5_000, else: 30_000
 
       runner =
         Task.async(fn ->

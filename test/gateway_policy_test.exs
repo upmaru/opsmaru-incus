@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.GatewayPolicyTest do
   # Tasks 2.1 and 2.2: shared authorization/readiness/backend binding before any
   # backend access, and canonical root/API mounting beside host routes.
-  use Opsmaru.TestSupport.GatewayCase, async: false
+  use Opsmaru.TestSupport.GatewayCase, async: true
 
   alias Opsmaru.Incus.Gateway.Policy
 

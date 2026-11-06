@@ -1,6 +1,5 @@
 defmodule Opsmaru.Incus.OCIOriginReferenceTest do
-  # Serial: it waits only 1 s for the fixture to see the dispatched request.
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus.{Connection, Context, Error, HTTP, OCI, RequestContext}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @info_driver Path.expand("../.integration/oci-origin-info-driver", __DIR__)
@@ -201,7 +200,9 @@ defmodule Opsmaru.Incus.OCIOriginReferenceTest do
     fixture =
       fixture(identity, fn _ ->
         send(parent, :dispatched)
-        Process.sleep(200)
+
+        # Outlast the cancellation however slow the VM; the response is never read.
+        Process.sleep(5_000)
         %{status: 200, body: %{}}
       end)
 
@@ -212,7 +213,7 @@ defmodule Opsmaru.Incus.OCIOriginReferenceTest do
     task =
       Task.async(fn -> OCI.http_request(client, "POST", "/v2/mutation", body: <<0, 255>>) end)
 
-    assert_receive :dispatched, 1_000
+    assert_receive :dispatched, 2_500
     RequestContext.cancel(scope)
     assert {:error, %Error{kind: :uncertain}} = Task.await(task, 1_000)
     assert length(HTTPFixture.requests(fixture)) == 1

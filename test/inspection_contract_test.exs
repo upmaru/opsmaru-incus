@@ -6,7 +6,7 @@ defmodule Opsmaru.Incus.InspectionContractTest.Contract do
   import ExUnit.Callbacks, only: [on_exit: 1, start_supervised!: 2]
 
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Connection, Context, Error, RequestContext, Server, Transport}
+  alias Opsmaru.Incus.{Connection, Context, Error, RequestContext, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, ModelSamples, Timing, TLSIdentity, WireComparison}
 
   @names ~w(GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume GetInstances GetInstance GetInstanceState GetInstanceSnapshots GetInstanceSnapshot GetImages GetImage GetOperations GetOperation)
@@ -840,16 +840,16 @@ defmodule Opsmaru.Incus.InspectionContractTest.Contract do
 end
 
 defmodule Opsmaru.Incus.InspectionContractTest do
-  # Serial: these tests set VM-wide trace patterns on Mint.HTTP.recv/3 and
-  # Transport.receive_response/5. The contract checks run in the async shards below.
-  use ExUnit.Case, async: false
+  # The receive-expiry tests set VM-wide trace patterns on Mint.HTTP.recv/3 and
+  # Transport.receive_response/5 under TraceLock. The contract checks run in the shards below.
+  use ExUnit.Case, async: true
 
   import Opsmaru.Incus.InspectionContractTest.Contract,
     only: [backend: 4, client: 2, discovery: 0, tmp_root!: 0]
 
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Error, RequestContext, Transport}
-  alias Opsmaru.TestSupport.{HTTPFixture, Timing, TLSIdentity}
+  alias Opsmaru.TestSupport.{HTTPFixture, Timing, TLSIdentity, TraceLock}
 
   @discovery discovery()
 
@@ -861,6 +861,9 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     test "#{transport} socket receive expiry retains deadline despite delayed observation", %{
       root: root
     } do
+      # Before anything starts a clock: none may run while waiting for the lock.
+      TraceLock.acquire!()
+
       identity =
         if unquote(transport) == :https, do: TLSIdentity.generate(root, "expiry", "localhost")
 

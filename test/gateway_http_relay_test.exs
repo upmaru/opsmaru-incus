@@ -15,7 +15,7 @@ end
 defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
   # Tasks 3.1-3.3: streamed native HTTP relay over Unix and verified HTTPS,
   # bounded binary transfers and framing guards, and truthful failures.
-  use Opsmaru.TestSupport.GatewayCase, async: false
+  use Opsmaru.TestSupport.GatewayCase, async: true
 
   # Aborting a committed HTTP/1.1 response ends its Cowboy connection process,
   # which Ranch logs as an error.

@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.GatewayIdentityTest do
-  use Opsmaru.TestSupport.GatewayCase, async: false
+  use Opsmaru.TestSupport.GatewayCase, async: true
 
   alias Opsmaru.Incus.Gateway.{Identity, Policy}
   alias Opsmaru.TestSupport.{CertificateHost, TLSIdentity}

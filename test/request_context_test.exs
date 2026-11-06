@@ -1,6 +1,5 @@
 defmodule Opsmaru.Incus.RequestContextTest do
-  # Serial: a 20 ms pause must let a poll reply be recorded before it cancels.
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
 
   alias Opsmaru.Incus.{
@@ -398,8 +397,9 @@ defmodule Opsmaru.Incus.RequestContextTest do
         Operation.wait_with_context(operation, scope, timeout: 10_000, poll_interval: 60_000)
       end)
 
-    assert_receive :polled, 500
-    Process.sleep(20)
+    assert_receive :polled, 2_000
+    # Cancel only once the waiter has recorded that reply and is pausing for the next poll.
+    assert pausing?(task.pid, 2_000)
     RequestContext.cancel(scope)
 
     assert {:error, %Error{kind: :canceled, operation: "/1.0/operations/op", response: latest}} =
@@ -565,5 +565,28 @@ defmodule Opsmaru.Incus.RequestContextTest do
 
     assert status == 0, out
     Jason.decode!(out)
+  end
+
+  defp pausing?(pid, budget) do
+    paused =
+      case Process.info(pid, :current_stacktrace) do
+        {:current_stacktrace, stack} ->
+          Enum.any?(stack, &match?({Operation, :sleep_until, _, _}, &1))
+
+        nil ->
+          false
+      end
+
+    cond do
+      paused ->
+        true
+
+      budget <= 0 ->
+        false
+
+      true ->
+        Process.sleep(5)
+        pausing?(pid, budget - 5)
+    end
   end
 end

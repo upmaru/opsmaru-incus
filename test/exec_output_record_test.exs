@@ -79,14 +79,15 @@ defmodule Opsmaru.Incus.ExecOutputRecordTest do
                  )
                )
 
-      # A stalled sink is cut off by the stream deadline, without retry.
+      # A stalled sink is cut off by the stream deadline, without retry. The deadline
+      # also covers connecting, so it leaves room for TLS on a loaded VM.
       assert {:error, %Error{kind: :deadline}} =
                Streams.instance_exec_output(
-                 client(fixture, identity, stream_timeout: 50),
+                 client(fixture, identity, stream_timeout: 500),
                  "vm one",
                  "exec output.stdout",
                  fn _ ->
-                   Process.sleep(200)
+                   Process.sleep(1_000)
                    :ok
                  end
                )

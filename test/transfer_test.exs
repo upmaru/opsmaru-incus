@@ -1,6 +1,5 @@
 defmodule Opsmaru.Incus.TransferTest do
-  # Serial: owner-loss checks wait briefly for transfer workers to start.
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Transfer}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
@@ -88,7 +87,9 @@ defmodule Opsmaru.Incus.TransferTest do
           else: %{raw: ""}
       end)
 
-    client = client(fixture, context, max_stream_bytes: 3, stream_timeout: 30)
+    # The deadline covers connecting too: leave room for that on a loaded VM, and
+    # let the stalled sink below outlast it.
+    client = client(fixture, context, max_stream_bytes: 3, stream_timeout: 300)
 
     assert {:error, %Error{kind: :stream_limit}} =
              Transfer.download(client, "/1.0/files", fn _ -> :ok end)
@@ -97,7 +98,7 @@ defmodule Opsmaru.Incus.TransferTest do
 
     assert {:error, %Error{kind: :deadline}} =
              Transfer.download(client, "/1.0/files", fn _ ->
-               Process.sleep(100)
+               Process.sleep(1_000)
                :ok
              end)
 
@@ -163,7 +164,7 @@ defmodule Opsmaru.Incus.TransferTest do
 
       owner = spawn(fn -> trapped_transfer(unquote(mode), client, block) end)
       on_exit(fn -> if Process.alive?(owner), do: Process.exit(owner, :kill) end)
-      assert_receive {:blocked, worker}, 1_000
+      assert_receive {:blocked, worker}, 5_000
       on_exit(fn -> if Process.alive?(worker), do: Process.exit(worker, :kill) end)
       monitor = Process.monitor(worker)
       Process.exit(owner, :kill)

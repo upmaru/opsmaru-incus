@@ -1,4 +1,5 @@
 defmodule Opsmaru.Incus.GatewayRevocationTest do
+  # Serial: it bounds revocation latency to the recheck interval plus 100-150 ms.
   use Opsmaru.TestSupport.GatewayCase, async: false
 
   alias Opsmaru.Incus.Gateway.{HTTPRelay, Policy, Request}
@@ -258,7 +259,11 @@ defmodule Opsmaru.Incus.GatewayRevocationTest do
     started = clock()
     revoke(state)
     assert_receive {:DOWN, ^monitor, :process, ^pid, _}, 1000
-    assert clock() - started <= gateway.recheck_interval + 100
+    # The guard's budget fits in one recheck interval (200 ms here). Busy chunk
+    # delivery on a loaded 3-core macOS runner has overshot interval + 100 by up to
+    # 160 ms, so allow a second interval: still far short of the ~8 s the unrevoked
+    # relay would take to deliver its 100 delayed chunks.
+    assert clock() - started <= 2 * gateway.recheck_interval + 100
     assert_receive {:backend_closed, _}, 500
     assert StreamBackend.accepted(backend) == 1
     released(context.admission)

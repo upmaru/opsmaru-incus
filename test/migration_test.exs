@@ -1,6 +1,5 @@
 defmodule Opsmaru.Incus.MigrationTest do
-  # Serial: relay timeouts are short, and a loaded VM can expire them.
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Migration, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture}
@@ -230,7 +229,7 @@ defmodule Opsmaru.Incus.MigrationTest do
       target: operation.(target_fixture, "target")
     }
 
-    assert {:ok, ^migration} = Migration.relay(migration, timeout: 1000)
+    assert {:ok, ^migration} = Migration.relay(migration, timeout: 5_000)
     assert_receive {:relayed, 2, ^bytes}
     # Native operation metadata stays accepted; stream EOF is not workload completion.
     assert migration.source.url == "/1.0/operations/source"
@@ -255,7 +254,7 @@ defmodule Opsmaru.Incus.MigrationTest do
 
     secrets = %{"control" => "control-secret", "fs" => "data-secret"}
     migration = relay_handles(source, target, secrets, secrets)
-    assert {:ok, ^migration} = Migration.relay(migration, timeout: 1000)
+    assert {:ok, ^migration} = Migration.relay(migration, timeout: 5_000)
 
     for _ <- 1..2 do
       assert_receive {:target_frame, 2, ^bytes}
@@ -320,14 +319,14 @@ defmodule Opsmaru.Incus.MigrationTest do
     migration = relay_handles(source, target, secrets, secrets, HTTPFixture)
 
     assert {:error, %Error{kind: :native, http_status: 403, response: %{accepted: ^migration}}} =
-             Migration.relay(migration, timeout: 1000)
+             Migration.relay(migration, timeout: 5_000)
 
     for {name, secret} <- [
           {"cleanup-source", "control-secret"},
           {"cleanup-target", "control-secret"},
           {"cleanup-source", "fs-secret"}
         ] do
-      assert_receive {:relay_peer_closed, ^name, ^secret, {:error, :closed}}, 1000
+      assert_receive {:relay_peer_closed, ^name, ^secret, {:error, :closed}}, 2_000
     end
 
     for fixture <- [source, target] do
@@ -346,13 +345,13 @@ defmodule Opsmaru.Incus.MigrationTest do
     on_exit(fn -> if Process.alive?(caller), do: Process.exit(caller, :kill) end)
 
     for name <- ["owner-source", "owner-target"], secret <- Map.values(secrets) do
-      assert_receive {:relay_peer_opened, ^name, ^secret}, 1000
+      assert_receive {:relay_peer_opened, ^name, ^secret}, 2_000
     end
 
     Process.exit(caller, :kill)
 
     for name <- ["owner-source", "owner-target"], secret <- Map.values(secrets) do
-      assert_receive {:relay_peer_closed, ^name, ^secret, {:error, :closed}}, 1000
+      assert_receive {:relay_peer_closed, ^name, ^secret, {:error, :closed}}, 2_000
     end
 
     assert migration.source.url == "/1.0/operations/source"
@@ -444,7 +443,7 @@ defmodule Opsmaru.Incus.MigrationTest do
     migration = %{migration | target: %{migration.target | client: target_client}}
 
     {result, log} =
-      ExUnit.CaptureLog.with_log(fn -> Migration.relay(migration, timeout: 1000) end)
+      ExUnit.CaptureLog.with_log(fn -> Migration.relay(migration, timeout: 5_000) end)
 
     assert {:error,
             %Error{
@@ -549,7 +548,7 @@ defmodule Opsmaru.Incus.MigrationTest do
 
     %Incus{
       connection:
-        Connection.unix!(HTTPFixture.endpoint(fixture).socket, owner: name, timeout: 200),
+        Connection.unix!(HTTPFixture.endpoint(fixture).socket, owner: name, timeout: 2_000),
       context: Context.new!(owner: name, identity: name, ready?: fn -> true end),
       server: %Server{
         api_extensions: [],

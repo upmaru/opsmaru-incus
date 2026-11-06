@@ -183,9 +183,11 @@ defmodule Opsmaru.Incus.FileTransferContractTest do
         assert {"", {:error, %Error{kind: :stream_limit}}} =
                  with_sink(&read(client(fixture, identity, max_stream_bytes: 3), target, &1))
 
+        # The deadline also covers connecting (TLS on a loaded VM); the sink outlasts
+        # it, so the read after the first chunk is past the deadline.
         assert {:error, %Error{kind: :deadline}} =
-                 read(client(fixture, identity, stream_timeout: 50), target, fn _ ->
-                   Process.sleep(200)
+                 read(client(fixture, identity, stream_timeout: 500), target, fn _ ->
+                   Process.sleep(1_000)
                    :ok
                  end)
 

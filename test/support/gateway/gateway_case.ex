@@ -4,8 +4,9 @@ defmodule Opsmaru.TestSupport.GatewayCase do
   host-started admission, a host-owned Plug.Cowboy listener mounting the
   gateway, and helpers for a scripted Unix backend.
 
-  Modules using it must be `async: false`: the fixture router resolves the
-  gateway from one global `:persistent_term` key (`GatewayServer`).
+  Each test's gateway is bound to its own listener (`GatewayServer`), so
+  modules using it may run `async: true`. Keep a module serial when its evidence
+  is a latency bound (revocation, the lease's admission-loss grace).
   """
 
   use ExUnit.CaseTemplate

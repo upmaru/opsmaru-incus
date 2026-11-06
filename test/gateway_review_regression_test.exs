@@ -1,4 +1,5 @@
 defmodule Opsmaru.Incus.GatewayReviewRegressionTest do
+  # Serial: an exchange must answer within the lease's 50 ms grace after admission loss.
   use Opsmaru.TestSupport.GatewayCase, async: false
   @moduletag :capture_log
 

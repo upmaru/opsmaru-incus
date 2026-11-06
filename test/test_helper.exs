@@ -5,3 +5,6 @@ ExUnit.start(max_cases: System.schedulers_online())
 
 # :opsmaru_incus has no application callback; this only starts :ssl and friends.
 {:ok, _} = Application.ensure_all_started(:opsmaru_incus)
+
+# Gateway fixture routing; owned by the runner so it outlives every test.
+:ok = Opsmaru.TestSupport.GatewayServer.init()

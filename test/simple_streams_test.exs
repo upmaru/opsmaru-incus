@@ -1,6 +1,5 @@
 defmodule Opsmaru.Incus.SimpleStreamsTest do
-  # Serial: owner-loss checks race worker exit against a short receive window.
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus.{Connection, Context, Error, HTTP, Model, RequestContext, SimpleStreams}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @driver Path.expand("../.integration/simplestreams-driver", __DIR__)
@@ -842,7 +841,10 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
           end)
         )
 
-      client = %{client | connection: %{client.connection | stream_timeout: 100}}
+      # Owner loss gets a deadline it cannot reach, so only the owner's exit can kill
+      # the conversion; the deadline case leaves room to monitor the conversion first.
+      stream_timeout = if unquote(cause) == :deadline, do: 500, else: 30_000
+      client = %{client | connection: %{client.connection | stream_timeout: stream_timeout}}
 
       owner =
         spawn(fn ->
@@ -858,17 +860,17 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
         end)
 
       on_exit(fn -> if Process.alive?(owner), do: Process.exit(owner, :kill) end)
-      assert_receive {:converting, worker}, 1_000
+      assert_receive {:converting, worker}, 2_000
       assert_receive {:delta_call, ^worker, request}
       monitor = Process.monitor(worker)
       if unquote(cause) == :owner_loss, do: Process.exit(owner, :kill)
-      assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 500
+      assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 2_000
       expected = if unquote(cause) == :deadline, do: :deadline, else: :owner_lost
-      assert_receive {:delta_cleanup, id, ^expected}, 500
+      assert_receive {:delta_cleanup, id, ^expected}, 2_000
       assert id == request.call_id
 
       if unquote(cause) == :deadline,
-        do: assert_receive({:delta_result, {:error, %Error{kind: :deadline}}}, 500)
+        do: assert_receive({:delta_result, {:error, %Error{kind: :deadline}}}, 2_000)
 
       assert download_paths(fixture) == []
     end
@@ -1112,7 +1114,7 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
       end)
 
     on_exit(fn -> if Process.alive?(caller), do: Process.exit(caller, :kill) end)
-    assert_receive {:nested_sink, worker}, 1_000
+    assert_receive {:nested_sink, worker}, 2_000
     {:monitored_by, watchers} = Process.info(worker, :monitored_by)
 
     guard =
@@ -1132,8 +1134,8 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
     :erlang.suspend_process(guard)
     on_exit(fn -> if Process.alive?(guard), do: Process.exit(guard, :kill) end)
     Process.exit(caller, :kill)
-    assert_receive {:cleanup_observed_live_sink, false}, 500
-    assert_receive {:delta_cleanup, _, :owner_lost}, 500
+    assert_receive {:cleanup_observed_live_sink, false}, 2_000
+    assert_receive {:delta_cleanup, _, :owner_lost}, 2_000
     refute Process.alive?(worker)
     refute File.exists?(artifact)
     assert download_paths(fixture) == ["/images/delta.vcdiff"]

@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.WebSocketFailureTest do
-  # Serial: it sets VM-wide trace patterns on WebSocket.now/0 and setopts.
-  use ExUnit.Case, async: false
+  # Its write-budget tests set VM-wide trace patterns on WebSocket.now/0 and setopts under TraceLock.
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
 
   alias Opsmaru.Incus.{
@@ -15,7 +15,7 @@ defmodule Opsmaru.Incus.WebSocketFailureTest do
     WebSocket
   }
 
-  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
+  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, TraceLock}
 
   setup do
     root = Path.join(System.tmp_dir!(), "op-wsf-#{System.unique_integer([:positive])}")
@@ -29,6 +29,9 @@ defmodule Opsmaru.Incus.WebSocketFailureTest do
     test "#{transport} blocked writes retain deadline budgets despite delayed observation", %{
       root: root
     } do
+      # Before anything starts a clock: none may run while waiting for the lock.
+      TraceLock.acquire!()
+
       {client, fixture, _tag} =
         peer(
           root,

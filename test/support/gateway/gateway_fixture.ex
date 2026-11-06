@@ -47,17 +47,71 @@ defmodule Opsmaru.TestSupport.GatewayServer do
   @moduledoc """
   Host-owned fixture endpoint: a Plug.Router on Plug.Cowboy that mounts the
   gateway at `/` and `/1.0` beside host `/runtime` and `/mcp` routes. The
-  gateway is resolved per request from `:persistent_term`, as a host would
-  resolve runtime configuration.
+  gateway is resolved per request, as a host would resolve runtime
+  configuration.
+
+  Each test owns its gateway and listeners, so gateway tests run concurrently:
+  `put_gateway/1` binds the gateway to the calling test process, the listeners it
+  starts are bound to it by local port, and the router records which listener
+  accepted a request before the gateway plug resolves it. The table lives in
+  the test runner (`init/0` from `test_helper.exs`), not in any test process.
   """
 
   alias Opsmaru.Incus.Gateway
 
-  @key {__MODULE__, :gateway}
+  @table __MODULE__
 
-  def gateway, do: :persistent_term.get(@key, nil)
-  def put_gateway(%Gateway{} = gateway), do: :persistent_term.put(@key, gateway)
-  def clear, do: :persistent_term.erase(@key)
+  @doc "Create the fixture's table; call once from `test_helper.exs`."
+  def init do
+    :ets.new(@table, [:named_table, :public, read_concurrency: true])
+    :ok
+  end
+
+  @doc """
+  The gateway for this request's listener, or in a test process its own.
+  `nil` when none is bound, which the gateway plug serves as unconfigured.
+  """
+  def gateway do
+    with owner when is_pid(owner) <- owner(),
+         [{_, gateway}] <- :ets.lookup(@table, {:gateway, owner}) do
+      gateway
+    else
+      _ -> nil
+    end
+  end
+
+  def put_gateway(%Gateway{} = gateway) do
+    :ets.insert(@table, {{:gateway, self()}, gateway})
+    :ok
+  end
+
+  def clear do
+    :ets.delete(@table, {:gateway, self()})
+    :ok
+  end
+
+  @doc false
+  # Called by the router in the request process before any gateway mount.
+  def accepted_on(port), do: Process.put(__MODULE__, port)
+
+  defp owner do
+    case Process.get(__MODULE__) do
+      nil ->
+        self()
+
+      port ->
+        case :ets.lookup(@table, {:listener, port}) do
+          [{_, owner}] -> owner
+          [] -> nil
+        end
+    end
+  end
+
+  defp bind(ref) do
+    port = :ranch.get_port(ref)
+    :ets.insert(@table, {{:listener, port}, self()})
+    {ref, port}
+  end
 
   @doc "Start an HTTP listener on 127.0.0.1; returns `{ref, port}`."
   def start_http(opts \\ []) do
@@ -71,7 +125,7 @@ defmodule Opsmaru.TestSupport.GatewayServer do
         protocol_options: Keyword.get(opts, :protocol_options, [])
       )
 
-    {ref, :ranch.get_port(ref)}
+    bind(ref)
   end
 
   @doc "Start an HTTPS listener requesting (not requiring) client certificates."
@@ -92,10 +146,13 @@ defmodule Opsmaru.TestSupport.GatewayServer do
         alpn_preferred_protocols: ["http/1.1"]
       )
 
-    {ref, :ranch.get_port(ref)}
+    bind(ref)
   end
 
-  def stop(ref), do: Plug.Cowboy.shutdown(ref)
+  def stop(ref) do
+    :ets.delete(@table, {:listener, :ranch.get_port(ref)})
+    Plug.Cowboy.shutdown(ref)
+  end
 end
 
 defmodule Opsmaru.TestSupport.GatewayRuntimePlug do
@@ -123,10 +180,20 @@ defmodule Opsmaru.TestSupport.GatewayRouter do
   @moduledoc false
   use Plug.Router
 
-  @gateway [gateway: {Opsmaru.TestSupport.GatewayServer, :gateway, []}]
+  alias Opsmaru.TestSupport.GatewayServer
 
+  @gateway [gateway: {GatewayServer, :gateway, []}]
+
+  plug(:accepted_on)
   plug(:match)
   plug(:dispatch)
+
+  # The listener's local port, not the Host header: it names the owning test.
+  defp accepted_on(%Plug.Conn{adapter: {_, req}} = conn, _) do
+    {_, port} = :cowboy_req.sock(req)
+    GatewayServer.accepted_on(port)
+    conn
+  end
 
   get("/", to: Opsmaru.Incus.Gateway.Plug, init_opts: @gateway)
   forward("/1.0", to: Opsmaru.Incus.Gateway.Plug, init_opts: @gateway)
