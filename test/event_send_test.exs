@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.EventSendTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Events, Server}
   alias Opsmaru.TestSupport.{TLSIdentity, WebSocketFixture}

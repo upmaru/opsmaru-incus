@@ -17,7 +17,7 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
   or past an offset already answered that way on the same handle. Both are
   listed and checked; nothing else may differ.
   """
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Server, SFTP}
   alias Opsmaru.Incus.SFTP.Stat

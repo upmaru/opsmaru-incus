@@ -3,6 +3,9 @@ defmodule Opsmaru.TestSupport.GatewayCase do
   Shared setup for gateway fixtures: an owner-private temporary directory, a
   host-started admission, a host-owned Plug.Cowboy listener mounting the
   gateway, and helpers for a scripted Unix backend.
+
+  Modules using it must be `async: false`: the fixture router resolves the
+  gateway from one global `:persistent_term` key (`GatewayServer`).
   """
 
   use ExUnit.CaseTemplate

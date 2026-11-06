@@ -1,4 +1,5 @@
 defmodule Opsmaru.Incus.WebSocketFailureTest do
+  # Serial: it sets VM-wide trace patterns on WebSocket.now/0 and setopts.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
 

@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.ExecOutputRecordTest do
   @moduledoc "B07 recorded exec output download, evidenced by independent native fixtures."
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, RequestContext, Server, Streams, Transfer}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}

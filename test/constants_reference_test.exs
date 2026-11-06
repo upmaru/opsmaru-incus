@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.ConstantsReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus.{Constants, Error, Model}
 
   test "every exported pinned API constant has its unchanged native JSON value" do

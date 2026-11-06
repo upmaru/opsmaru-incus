@@ -1,4 +1,5 @@
 defmodule Opsmaru.Incus.RawChannelTest do
+  # Serial: it sets VM-wide trace patterns on :inet and :ssl setopts/2.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.Connection

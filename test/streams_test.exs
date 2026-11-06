@@ -6,7 +6,7 @@ defmodule Opsmaru.Incus.StreamsTest do
   semantically (decoded query maps, raw body bytes). Fixture-only evidence;
   no real backend, workload or filesystem transfer is exercised.
   """
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   alias Opsmaru.Incus
 

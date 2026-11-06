@@ -1,4 +1,5 @@
 defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
+  # Serial: its 500 ms connection timeout bounds the deadline checks.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, RequestContext, Server, SFTP}

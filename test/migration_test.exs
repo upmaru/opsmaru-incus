@@ -1,4 +1,5 @@
 defmodule Opsmaru.Incus.MigrationTest do
+  # Serial: relay timeouts are short, and a loaded VM can expire them.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Migration, Server}

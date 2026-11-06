@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.OperationTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Operation}
   alias Opsmaru.TestSupport.HTTPFixture

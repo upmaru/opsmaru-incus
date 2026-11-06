@@ -3,6 +3,7 @@ defmodule Opsmaru.Incus.ByteStreamContractTest do
   S07 auxiliary byte stream contracts on Unix and mutual TLS, compared with the
   pinned client's unchanged typed stream methods through the streams driver.
   """
+  # Serial: its 50 ms stream deadline must also cover the HTTPS connection.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, RequestContext, Response, Server, Streams}

@@ -33,6 +33,23 @@ jobs:
           install: false
       - run: mise trust && mise install
       - run: mise exec -- mix local.hex --force && mise exec -- mix local.rebar --force && mise exec -- mix deps.get
+      - name: Locate Go caches
+        id: go-cache
+        run: |
+          echo "build=$(mise exec -- go env GOCACHE)" >> "$GITHUB_OUTPUT"
+          echo "modules=$(mise exec -- go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ steps.go-cache.outputs.build }}
+            ${{ steps.go-cache.outputs.modules }}
+          key: go-${{ runner.os }}-${{ hashFiles('test/reference/go.sum', 'mise.toml') }}
+          restore-keys: go-${{ runner.os }}-
+      # The async suite builds dozens of reference drivers at once; compile their
+      # shared packages first so that burst is only linking.
+      - name: Warm the Go reference build
+        working-directory: test/reference
+        run: mise exec -- go build ./...
       - run: mise run check
       - run: mise run check:reference
       - name: Isolated immutable Git consumer

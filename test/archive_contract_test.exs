@@ -5,7 +5,7 @@ defmodule Opsmaru.Incus.ArchiveContractTest do
   pinned official methods. The control plane (list, get, create, rename, delete and
   bucket creation) is compared in the inspection and sync-mutation contract tests.
   """
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Files, RequestContext, Server, Transfer}
   alias Opsmaru.TestSupport.{HTTPFixture, ModelSamples, TLSIdentity}

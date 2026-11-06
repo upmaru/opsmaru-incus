@@ -4,7 +4,7 @@ defmodule Opsmaru.Incus.FileTransferContractTest do
   file read, create and delete compared with the pinned official methods, and the
   typed HEAD helpers (no pinned method) evidenced by independent fixtures.
   """
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Files, RequestContext, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}

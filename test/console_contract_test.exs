@@ -5,6 +5,7 @@ defmodule Opsmaru.Incus.ConsoleContractTest do
   frame per WebSocket, so requests, channel order, control and data frames, write
   barriers and the detach close frame are compared on Unix and mutual HTTPS.
   """
+  # Serial: console frame deadlines are short enough to expire on a loaded VM.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, DynamicConsole, Error, Server, Session, WebSocket}

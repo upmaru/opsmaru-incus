@@ -1,8 +1,8 @@
 defmodule Opsmaru.Incus.InstancePatchTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Model, Operation, RequestContext, Server}
-  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
+  alias Opsmaru.TestSupport.{HTTPFixture, Timing, TLSIdentity, WireComparison}
   @driver Path.expand("../.integration/instance-patch-driver", __DIR__)
   @body %{
     "description" => "",
@@ -186,7 +186,12 @@ defmodule Opsmaru.Incus.InstancePatchTest do
           end)
 
         original = client(fixture, identity)
-        scope = RequestContext.new!(timeout: if(mode == :deadline, do: 3_000, else: 30_000))
+
+        scope =
+          RequestContext.new!(
+            timeout: if(mode == :deadline, do: Timing.expiring_deadline(), else: 30_000)
+          )
+
         scoped = Incus.with_context(original, scope)
         task = Task.async(fn -> patch(scoped, spec, spec.body) end)
         assert_receive {^tag, :entered}, 10_000

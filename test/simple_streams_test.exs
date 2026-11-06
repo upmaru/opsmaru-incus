@@ -1,4 +1,5 @@
 defmodule Opsmaru.Incus.SimpleStreamsTest do
+  # Serial: owner-loss checks race worker exit against a short receive window.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus.{Connection, Context, Error, HTTP, Model, RequestContext, SimpleStreams}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}

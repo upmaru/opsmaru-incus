@@ -4,6 +4,7 @@ defmodule Opsmaru.Incus.SFTPSessionTest do
   matched by id from many processes, opener-bound lifetime, per-request deadlines,
   frame failures and the in-flight bound.
   """
+  # Serial: its 300 ms session timeout is part of the deadline and late-reply checks.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Server, SFTP}

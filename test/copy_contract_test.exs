@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.CopyContractTest do
   @moduledoc "S10 copy orchestration compared with the pinned Copy* methods."
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Copy, Error, Migration, Operation, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture}

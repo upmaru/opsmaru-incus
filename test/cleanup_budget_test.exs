@@ -1,4 +1,5 @@
 defmodule Opsmaru.Incus.CleanupBudgetTest do
+  # Serial: it sets VM-wide trace patterns on :gen_server calls.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus.WebSocket
   alias Opsmaru.TestSupport.CleanupAssertions, as: Cleanup

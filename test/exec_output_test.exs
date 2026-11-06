@@ -1,4 +1,5 @@
 defmodule Opsmaru.Incus.ExecOutputTest do
+  # Serial: it sets VM-wide trace patterns on Session.exec/4.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Operation, RequestContext, Server, Session}

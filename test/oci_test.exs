@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.OCITest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus.{Connection, Context, Error, Model, OCI, RequestContext}
   @driver Path.expand("../.integration/oci-driver", __DIR__)
 

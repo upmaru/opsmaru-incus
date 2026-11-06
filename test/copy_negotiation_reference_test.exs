@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   import ExUnit.CaptureLog
   alias Opsmaru.Incus
 

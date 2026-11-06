@@ -1,4 +1,5 @@
 defmodule Opsmaru.Incus.ClientTest do
+  # Serial: a 100 ms timeout can return before the fixture records the request it counts.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Response}

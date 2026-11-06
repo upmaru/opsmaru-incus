@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.GatewayConfigTest do
   # Task 1.1: passive configuration, host contract and optional dependencies.
+  # Serial: it sets PHX_SERVER/PORT and compares VM-wide processes and ports.
   use ExUnit.Case, async: false
 
   alias Opsmaru.Incus.{Connection, Gateway}

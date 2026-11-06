@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, DynamicConsole, Error, Server, WebSocket}
 

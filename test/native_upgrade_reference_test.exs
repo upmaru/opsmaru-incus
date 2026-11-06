@@ -3,8 +3,8 @@ defmodule Opsmaru.Incus.NativeUpgradeReferenceTest do
   Negative oracle evidence, not Opsmaru stream implementation or acceptance.
   Demonstrates the pinned upstream rawConn losing bufio-prefetched bytes.
   """
-  use ExUnit.Case, async: false
-  @driver Path.expand("../.integration/incus-reference-driver", __DIR__)
+  use ExUnit.Case, async: true
+  @driver Path.expand("../.integration/incus-reference-driver-upgrade", __DIR__)
 
   setup_all do
     File.mkdir_p!(Path.dirname(@driver))

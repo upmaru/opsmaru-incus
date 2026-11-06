@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.EndpointEvidenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.TestSupport.{EndpointEvidence, EndpointInventory}
   @manifest Jason.decode!(File.read!("priv/incus/endpoint-evidence.json"))
 
@@ -749,7 +749,6 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     native: native
   } do
     audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
-    events = ["completion_records", "b03_events_v1"]
     raw_upgrade = ["completion_records", "s08_raw_upgrades_v1"]
 
     # The reconciled repair row maps the registered POST method; the server-only POST

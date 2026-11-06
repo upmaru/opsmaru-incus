@@ -1,4 +1,5 @@
 defmodule Opsmaru.Incus.WebSocketTest do
+  # Serial: owner-death checks assume the channel exits promptly once its owner is killed.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Events, Server, WebSocket}

@@ -1,4 +1,5 @@
 defmodule Opsmaru.Incus.TransferTest do
+  # Serial: owner-loss checks wait briefly for transfer workers to start.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Transfer}
