@@ -87,14 +87,19 @@ defmodule Opsmaru.Incus.TransferTest do
           else: %{raw: ""}
       end)
 
-    # The deadline covers connecting too: leave room for that on a loaded VM, and
-    # let the stalled sink below outlast it.
-    client = client(fixture, context, max_stream_bytes: 3, stream_timeout: 300)
+    # Only the deadline case gets a short budget: a loaded runner can spend 300 ms
+    # before the byte limit is reached.
+    client = client(fixture, context, max_stream_bytes: 3, stream_timeout: 5_000)
 
     assert {:error, %Error{kind: :stream_limit}} =
              Transfer.download(client, "/1.0/files", fn _ -> :ok end)
 
-    client = %{client | connection: %{client.connection | max_stream_bytes: 100}}
+    # The deadline covers connecting too: leave room for that on a loaded VM, and
+    # let the stalled sink below outlast it.
+    client = %{
+      client
+      | connection: %{client.connection | max_stream_bytes: 100, stream_timeout: 300}
+    }
 
     assert {:error, %Error{kind: :deadline}} =
              Transfer.download(client, "/1.0/files", fn _ ->
