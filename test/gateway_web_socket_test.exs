@@ -206,9 +206,19 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
     )
 
     channel = open(context)
+    revoked_at = System.monotonic_time(:millisecond)
     :atomics.put(flag, 1, 0)
-    assert {:close, code, _} = recv_frame(channel)
-    assert code in [1008, 1011]
+
+    # Revocation has a hard 25ms frontend grace at this interval. Under load
+    # the guard may close Cowboy before it can flush the best-effort frame.
+    # Both outcomes must end access; native backend close frames are tested
+    # separately and must retain their exact code and reason.
+    case recv_frame(channel) do
+      {:close, code, _} -> assert code in [1008, 1011]
+      :closed -> :ok
+    end
+
+    assert System.monotonic_time(:millisecond) - revoked_at < 1_000
     assert_receive {:websocket_peer, outcome}, 1_000
     assert outcome in [:closed, :close_frame]
     eventually(fn -> Admission.count(context.admission) == 0 end)
