@@ -11,6 +11,17 @@ verified that its fresh ZFS root disabled per-volume reservation, and retained
 its resources and private journal after failure. No successful real migration
 matrix is claimed.
 
+An operator-only control also bypassed the gateway and used the unchanged pinned
+native SDK against the same supplied daemon and two isolated projects. Distinct
+native Unix socket paths prevented the SDK's local-copy optimization, so the
+control entered its relay migration path. One copy attempt accepted two native
+operations and reached its 120-second local deadline. Subsequent read-only
+reconciliation found both operation IDs absent (their final outcomes remain
+unknown), no pending operations and no destination instance. The source retains
+two stopped test containers and two custom volumes. This diagnostic is separate
+from gateway acceptance and does not mark migration passed or accept a new
+native limitation. The original reports and private control journal are retained.
+
 Portable gateway fixtures and the immutable host consumer produce separate
 evidence, including 18 successful fixture migrations and six accepted pinned
 CLI snapshot-move limitations. Those results do not establish live Incus,
