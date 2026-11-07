@@ -1,17 +1,26 @@
 # Gateway real-Incus gate (G6 / 7.4)
 
-The live gateway gate remains **unrun**. Portable gateway fixtures and the
-immutable host consumer produce separate evidence; neither establishes live
-Incus, installed host or Macus hardware acceptance. Historical direct-client
-and shared-operations runs in `real-incus-acceptance.md` do not authorize a new
+The live gateway gate is **incomplete**. The latest isolated run at source
+`1374bf884c89eb3a010c7386740c7151a2c7146e` passed ten protocol cases, left NBD
+unrun, and failed its first instance relay copy. During that copy a backend
+metadata connection closed before a parsed response; an independent unchanged
+native Go client also received EOF. The run retained its resources and private
+journal. No successful real migration matrix is claimed.
+
+Portable gateway fixtures and the immutable host consumer produce separate
+evidence, including 18 successful fixture migrations and six accepted pinned
+CLI snapshot-move limitations. Those results do not establish live Incus,
+installed host or Macus hardware acceptance. Historical direct-client and
+shared-operations runs in `real-incus-acceptance.md` do not authorize a new
 gateway run or select a current backend.
 
 `python3 scripts/gateway-acceptance-preflight.py` checks explicit private input
 references and writes a fresh owner-private **unrun** report. Select its JSON
 with `OPSMARU_GATEWAY_ACCEPTANCE_CONFIG=/absolute/private/config.json`. It makes
 no backend connection, invokes no CLI, starts no listener and performs no
-backend mutation. This is preparation for task 7.4; the live protocol runner
-and its execution remain outstanding until the isolated setup is supplied.
+backend mutation. This prepares inputs for task 7.4; it is separate from the
+explicit live runner, `scripts/accept-incus-gateway.exs`, and its retained
+execution reports.
 
 The configuration has this shape (all credential values are file references):
 
@@ -51,12 +60,12 @@ A backend can instead provide the same explicit `https`, `server_certificate`,
 file availability only. Each side can override `project` with its own fresh
 `opsmaru-acceptance-gateway-...` namespace, allowing one backend with two isolated
 projects. Distinct connection descriptions do not prove distinct backends.
-A live runner must independently verify authenticated
+The live runner independently verifies authenticated
 backend identity and version, project absence and a fresh run marker before
 scenario mutations. Configurations and reports stay outside Git. Existing
 reports are never overwritten; unavailable inputs produce no report.
 
-The outstanding live suite must mount the host-owned gateway and use the
+The live suite mounts the host-owned gateway and uses the
 unchanged pinned client/CLI with isolated `INCUS_CONF` and test-only trust. It
 must cover HTTP/binary transfers, enrollment and denials, exec/console/events,
 instance and custom-volume SFTP/NBD, instance/snapshot copy and move in
