@@ -82,3 +82,12 @@ unchanged helper directly on the same owned volume. Only matching
 interruption and migration checks to continue. Unknown or mismatched errors
 stop the run. This does not accept an NBD parity exception, mark NBD passed or
 complete task 7.4; the incomplete ledger retains resources for reconciliation.
+
+Unexpected native CLI exit results also retain a bounded operator-only diagnostic
+sidecar in the run's private `0700` state directory. Each exclusive `0600`
+`cli-failure-<digest>.log` contains combined CLI output, which may include
+sensitive native details. The JSON journal contains only the exit status,
+output SHA-256 and digest-only artifact basename; it never includes that raw
+output. This applies to migration and setup CLI exit failures and does not retry
+the command or alter the resource-retention/completion gate. Keep these
+sidecars private with the run state; do not publish them as report artifacts.

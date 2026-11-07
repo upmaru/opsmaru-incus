@@ -385,6 +385,99 @@ defmodule Opsmaru.GatewayLiveScenariosTest do
     assert result.output =~ "stderr-captured"
   end
 
+  test "CLI failure diagnostics stay private while the journal records only safe references" do
+    context = cli_diagnostic_context()
+
+    output =
+      <<255, 0>> <> "\nsecret=native-value\nAuthorization: credential\ntrust_token=private\n"
+
+    assert :ok =
+             Scenarios.record_cli_failure(context, "copy/instance/relay/source", %{
+               status: 1,
+               output: output
+             })
+
+    journal = Agent.get(context.journal, & &1)
+    assert [%{"evidence" => evidence}] = journal["details"]
+    assert Enum.sort(Map.keys(evidence)) == ["exit_status", "proof", "sha256"]
+    assert evidence["exit_status"] == 1
+    assert evidence["sha256"] == Base.encode16(:crypto.hash(:sha256, output), case: :lower)
+    assert %{"artifact" => basename} = evidence["proof"]
+    assert Regex.match?(~r/\Acli-failure-[0-9a-f]{64}\.log\z/, basename)
+    path = Path.join(context.runtime, basename)
+    assert File.read!(path) == output
+    assert Bitwise.band(File.stat!(path).mode, 0o777) == 0o600
+    assert Bitwise.band(File.stat!(context.runtime).mode, 0o777) == 0o700
+    report = File.read!(context.config["report"])
+    refute report =~ "native-value"
+    refute report =~ "Authorization"
+    refute report =~ "trust_token"
+    refute report =~ context.runtime
+
+    File.write!(path, "operator-preserved")
+
+    assert_raise File.Error, fn ->
+      Scenarios.record_cli_failure(context, "copy/instance/relay/source", %{
+        status: 1,
+        output: output
+      })
+    end
+
+    assert File.read!(path) == "operator-preserved"
+    assert length(Agent.get(context.journal, & &1["details"])) == 1
+  end
+
+  test "CLI diagnostics enforce the output bound before creating an artifact" do
+    context = cli_diagnostic_context()
+    output = :binary.copy(<<0>>, 262_144)
+
+    assert :ok =
+             Scenarios.record_cli_failure(context, "setup-bound", %{status: 2, output: output})
+
+    files = File.ls!(context.runtime)
+
+    assert_raise RuntimeError, "bounded CLI failure result required", fn ->
+      Scenarios.record_cli_failure(context, "setup-over-bound", %{
+        status: 2,
+        output: output <> <<0>>
+      })
+    end
+
+    assert File.ls!(context.runtime) == files
+    assert length(Agent.get(context.journal, & &1["details"])) == 1
+  end
+
+  test "CLI diagnostics reject a public or symlink run-state directory" do
+    context = cli_diagnostic_context()
+    File.chmod!(context.runtime, 0o755)
+
+    assert_raise RuntimeError, "private run-state directory required for CLI diagnostics", fn ->
+      Scenarios.record_cli_failure(context, "setup", %{status: 1, output: "failure"})
+    end
+
+    File.chmod!(context.runtime, 0o700)
+    link = context.runtime <> "-link"
+    File.ln_s!(context.runtime, link)
+    on_exit(fn -> File.rm!(link) end)
+
+    assert_raise RuntimeError, "private run-state directory required for CLI diagnostics", fn ->
+      Scenarios.record_cli_failure(%{context | runtime: link}, "setup", %{
+        status: 1,
+        output: "failure"
+      })
+    end
+
+    assert File.ls!(context.runtime) == []
+    assert Agent.get(context.journal, & &1["details"]) == []
+  end
+
+  defp cli_diagnostic_context do
+    context = nbd_journal()
+    runtime = Path.dirname(context.config["report"])
+    File.chmod!(runtime, 0o700)
+    Map.put(context, :runtime, runtime)
+  end
+
   test "bounded command timeout reaps its own noncooperative child" do
     pidfile =
       Path.join(

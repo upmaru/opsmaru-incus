@@ -782,9 +782,12 @@ defmodule OpsmaruGatewayLiveScenarios do
             "--quiet"
           ])
 
-        if expected_migration?(context, migration, result, before_requests),
-          do: {:ok, result},
-          else: {:error, %Opsmaru.Incus.Error{kind: :native_cli_failed}}
+        if expected_migration?(context, migration, result, before_requests) do
+          {:ok, result}
+        else
+          record_cli_failure(context, migration.label, result)
+          {:error, %Opsmaru.Incus.Error{kind: :native_cli_failed}}
+        end
       end)
 
     output
@@ -1368,10 +1371,52 @@ defmodule OpsmaruGatewayLiveScenarios do
     Acceptance.step(context, label, fn ->
       result = cli(context, args)
 
-      if result.status == 0,
-        do: :ok,
-        else: {:error, %Opsmaru.Incus.Error{kind: :native_cli_failed}}
+      if result.status == 0 do
+        :ok
+      else
+        record_cli_failure(context, label, result)
+        {:error, %Opsmaru.Incus.Error{kind: :native_cli_failed}}
+      end
     end)
+  end
+
+  @doc false
+  def record_cli_failure(context, label, %{status: status, output: output}) do
+    require!(
+      is_integer(status) and status in 0..255 and is_binary(output) and
+        byte_size(output) <= 262_144,
+      "bounded CLI failure result required"
+    )
+
+    directory = File.lstat!(context.runtime)
+
+    require!(
+      Path.type(context.runtime) == :absolute and directory.type == :directory and
+        Bitwise.band(directory.mode, 0o777) == 0o700,
+      "private run-state directory required for CLI diagnostics"
+    )
+
+    # A digest-only basename reveals no command/output data. Identical writes
+    # remain exclusive: an existing operator diagnostic is never overwritten.
+    basename = "cli-failure-" <> digest(:erlang.term_to_binary({label, status, output})) <> ".log"
+    path = Path.join(context.runtime, basename)
+    file = File.open!(path, [:write, :binary, :exclusive])
+
+    try do
+      # The enclosing directory is already 0700; restrict the empty file before
+      # writing any CLI output, which can contain native credentials or secrets.
+      File.chmod!(path, 0o600)
+      :ok = IO.binwrite(file, output)
+      :ok = :file.sync(file)
+    after
+      File.close(file)
+    end
+
+    Acceptance.record_detail(context, label <> "/private-cli-diagnostic", %{
+      "exit_status" => status,
+      "sha256" => digest(output),
+      "proof" => %{"artifact" => basename}
+    })
   end
 
   defp cli(context, args),
