@@ -72,6 +72,15 @@ defmodule Opsmaru.TestSupport.GatewayServer do
   `nil` when none is bound, which the gateway plug serves as unconfigured.
   """
   def gateway do
+    port = Process.get(__MODULE__)
+
+    case :ets.lookup(@table, {:port_gateway, port}) do
+      [{_, gateway}] -> gateway
+      [] -> owner_gateway()
+    end
+  end
+
+  defp owner_gateway do
     with owner when is_pid(owner) <- owner(),
          [{_, gateway}] <- :ets.lookup(@table, {:gateway, owner}) do
       gateway
@@ -82,6 +91,12 @@ defmodule Opsmaru.TestSupport.GatewayServer do
 
   def put_gateway(%Gateway{} = gateway) do
     :ets.insert(@table, {{:gateway, self()}, gateway})
+    :ok
+  end
+
+  @doc "Bind a fixture gateway to one listener, for source/target migration pairs."
+  def put_gateway(%Gateway{} = gateway, port) do
+    :ets.insert(@table, {{:port_gateway, port}, gateway})
     :ok
   end
 
@@ -151,7 +166,9 @@ defmodule Opsmaru.TestSupport.GatewayServer do
   end
 
   def stop(ref) do
-    :ets.delete(@table, {:listener, :ranch.get_port(ref)})
+    port = :ranch.get_port(ref)
+    :ets.delete(@table, {:listener, port})
+    :ets.delete(@table, {:port_gateway, port})
     Plug.Cowboy.shutdown(ref)
   end
 end

@@ -4,14 +4,14 @@ defmodule Opsmaru.Incus.Gateway.Identity do
   backend metadata bound to the fixed connection. No discovery probe occurs.
   The conservative extension allowlist depends on the available optional
   protocol adapters. The host must approve only capabilities of protocols it
-  actually mounts and of its verified backend. Migration and token issuance
-  remain excluded until their independent implementation and evidence exist.
+  actually mounts and of its verified backend. Migration extensions require
+  WebSockets; token issuance remains excluded.
   """
 
   alias Opsmaru.Incus.Gateway.{Failure, Policy}
 
   @extensions ~w(certificate_update instances)
-  @websocket_extensions ~w(console)
+  @websocket_extensions ~w(console container_push container_push_target)
   @raw_extensions ~w(instance_nbd custom_volume_sftp storage_volume_nbd)
 
   def load(gateway, request) do
