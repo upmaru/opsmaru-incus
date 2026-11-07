@@ -4,8 +4,142 @@ Code.require_file("../scripts/gateway_live_scenarios.exs", __DIR__)
 
 defmodule Opsmaru.GatewayLiveScenariosTest do
   use ExUnit.Case, async: false
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
+  alias OpsmaruGatewayAcceptance, as: Acceptance
   alias OpsmaruGatewayLiveScenarios, as: Scenarios
+
+  test "successful cleanup leaves the forbidden default profile for native project deletion" do
+    root =
+      Path.join(
+        System.tmp_dir!(),
+        "gateway-cleanup-default-" <>
+          Base.url_encode64(:crypto.strong_rand_bytes(8), padding: false)
+      )
+
+    File.mkdir!(root)
+    on_exit(fn -> File.rm_rf!(root) end)
+    marker = "cleanup-marker"
+
+    projects = %{
+      "source" => "opsmaru-acceptance-gateway-cleanup-source",
+      "target" => "opsmaru-acceptance-gateway-cleanup-target"
+    }
+
+    state = start_supervised!({Agent, fn -> MapSet.new(Map.values(projects)) end})
+    profile = %{"name" => "default", "config" => %{}, "devices" => %{}}
+
+    fixture =
+      start_supervised!(
+        {HTTPFixture,
+         transport: :gen_tcp,
+         path: Path.join(root, "backend.sock"),
+         handler: fn request ->
+           path = URI.parse(request.target).path
+
+           case {request.method, path} do
+             {"GET", "/1.0"} ->
+               cleanup_sync(%{
+                 api_version: "1.0",
+                 auth: "trusted",
+                 api_extensions: ["projects"],
+                 environment: %{}
+               })
+
+             {"GET", "/1.0/profiles"} ->
+               cleanup_sync([profile])
+
+             {"GET", "/1.0/profiles/default"} ->
+               cleanup_sync(profile)
+
+             {"DELETE", "/1.0/profiles/default"} ->
+               %{
+                 status: 403,
+                 body: %{
+                   type: "error",
+                   error_code: 403,
+                   error: "The default profile cannot be deleted"
+                 }
+               }
+
+             {"GET", "/1.0/projects/" <> name} ->
+               if Agent.get(state, &MapSet.member?(&1, name)) do
+                 cleanup_sync(%{
+                   "name" => name,
+                   "description" => "Opsmaru gateway acceptance " <> marker,
+                   "config" => %{
+                     "features.profiles" => "true",
+                     "features.storage.volumes" => "true"
+                   }
+                 })
+               else
+                 %{
+                   status: 404,
+                   body: %{type: "error", error_code: 404, error: "Project not found"}
+                 }
+               end
+
+             {"DELETE", "/1.0/projects/" <> name} ->
+               Agent.update(state, &MapSet.delete(&1, name))
+               cleanup_sync(%{})
+
+             {"GET", _} ->
+               cleanup_sync([])
+           end
+         end}
+      )
+
+    connection = Connection.unix!(HTTPFixture.endpoint(fixture).socket, owner: :cleanup_fixture)
+
+    {:ok, client} =
+      Incus.connect(
+        connection,
+        Context.new!(owner: :cleanup_fixture, identity: :verified, ready?: fn -> true end)
+      )
+
+    journal =
+      start_supervised!(
+        {Agent,
+         fn ->
+           %{
+             "steps" => [],
+             "details" => [],
+             "cases" => Map.new(Acceptance.required_cases(), &{&1, "passed"})
+           }
+         end},
+        id: :journal
+      )
+
+    config =
+      Map.new(projects, fn {side, project} ->
+        {side, %{"project" => project, "pool" => "pool"}}
+      end)
+      |> Map.put("report", Path.join(root, "report.json"))
+
+    context = %{
+      config: config,
+      marker: marker,
+      resource_prefix: "gw-0123456789ab-",
+      journal: journal,
+      clients: Map.new(projects, fn {side, _} -> {side, client} end),
+      sides:
+        Map.new(projects, fn {side, project} ->
+          {side, %{client: Incus.project(client, project)}}
+        end)
+    }
+
+    assert :ok = Scenarios.cleanup_owned(context)
+    requests = HTTPFixture.requests(fixture)
+    refute Enum.any?(requests, &(&1.method == "DELETE" and &1.target =~ "/profiles/"))
+    assert Enum.count(requests, &(&1.method == "GET" and &1.target =~ "/profiles/default")) == 2
+    assert Enum.count(requests, &(&1.method == "DELETE" and &1.target =~ "/projects/")) == 2
+    assert Agent.get(journal, & &1["cleanup"]) == "verified-projects-absent"
+    assert Agent.get(state, &MapSet.size/1) == 0
+  end
+
+  defp cleanup_sync(metadata),
+    do: %{status: 200, body: %{type: "sync", status_code: 200, metadata: metadata}}
 
   test "migration uses the verified daemon peer for the actual receiving gateway only" do
     peers = %{"source" => true, "target" => false}

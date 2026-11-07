@@ -927,7 +927,13 @@ defmodule OpsmaruGatewayLiveScenarios do
     end
   end
 
-  defp cleanup_owned(context) do
+  @doc false
+  def cleanup_owned(context) do
+    require!(
+      Acceptance.evidence_complete?(Agent.get(context.journal, & &1["cases"])),
+      "partial acceptance cannot be cleaned"
+    )
+
     # Inventory BOTH marked projects before deleting any backend resource.
     inventories =
       for side <- @sides, into: %{} do
@@ -1003,16 +1009,9 @@ defmodule OpsmaruGatewayLiveScenarios do
       end
 
       for profile <- inventory.profiles do
+        # Incus forbids deleting "default" in every project. Revalidate the
+        # owned empty profile, then let native project deletion cascade it.
         cleanup_guard!(context, side, :profile, profile["name"])
-
-        native_mutation(
-          context,
-          side,
-          "cleanup-profile/" <> profile["name"],
-          "DELETE",
-          "/1.0/profiles/#{escape(profile["name"])}",
-          nil
-        )
       end
 
       project = context.config[side]["project"]
