@@ -2,6 +2,7 @@
 defmodule OpsmaruGatewayDaemonProbe.Beacon do
   @moduledoc false
   use GenServer
+  alias Opsmaru.Incus.Connection
 
   def start_link(gateway, path, secret_digest),
     do: GenServer.start_link(__MODULE__, {gateway, path, secret_digest})
@@ -26,7 +27,7 @@ defmodule OpsmaruGatewayDaemonProbe.Beacon do
         alpn_preferred_protocols: ["http/1.1"],
         verify: :verify_peer,
         fail_if_no_peer_cert: false,
-        cacertfile: String.to_charlist(gateway["client_ca"])
+        cacerts: Connection.ca_certificates(gateway["client_ca"])
       ])
 
     {:ok, {_, port}} = :ssl.sockname(listener)

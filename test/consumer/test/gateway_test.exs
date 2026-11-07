@@ -79,7 +79,7 @@ defmodule FoundationConsumer.GatewayTest do
         port: 0,
         certfile: server.certfile,
         keyfile: server.keyfile,
-        cacertfile: client.cafile,
+        cacerts: Connection.ca_certificates(client.cafile),
         verify: :verify_peer,
         fail_if_no_peer_cert: false,
         alpn_preferred_protocols: ["http/1.1"]
@@ -712,7 +712,7 @@ defmodule FoundationConsumer.GatewayTest do
       :binary,
       active: false,
       verify: :verify_peer,
-      cacertfile: String.to_charlist(context.server.cafile),
+      cacerts: Connection.ca_certificates(context.server.cafile),
       server_name_indication: ~c"localhost"
     ]
 

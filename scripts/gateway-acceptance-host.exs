@@ -677,7 +677,7 @@ defmodule OpsmaruGatewayAcceptance do
       port: uri.port,
       certfile: String.to_charlist(gateway_config["server_certificate"]),
       keyfile: String.to_charlist(gateway_config["server_key"]),
-      cacertfile: String.to_charlist(gateway_config["client_ca"]),
+      cacerts: Connection.ca_certificates(gateway_config["client_ca"]),
       verify: :verify_peer,
       fail_if_no_peer_cert: false,
       alpn_preferred_protocols: ["http/1.1"],
