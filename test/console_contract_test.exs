@@ -40,6 +40,32 @@ defmodule Opsmaru.Incus.ConsoleContractTest do
     %{root: root}
   end
 
+  test "the oracle resize deadline cannot expire a later native detach", %{root: root} do
+    for mode <- [:static, :dynamic] do
+      native = backend(root, nil)
+      result = oracle(native, mode, %{}, detach_delay_ms: 3_100)
+      attachments = if mode == :static, do: 1, else: @attachments
+      assert result["operation"]["id"] == "console-id"
+      assert decode_outputs(result) == List.duplicate(@greeting <> @payload, attachments)
+
+      assert [{"control", control} | data] = frames(native)
+
+      assert comparable([{"control", control}]) == [
+               {"control",
+                [
+                  {1,
+                   %{
+                     "command" => "window-resize",
+                     "args" => %{"width" => "80", "height" => "24"}
+                   }},
+                  {8, <<1000::16, "Detaching from console">>}
+                ]}
+             ]
+
+      assert data == List.duplicate({"data", [{2, @payload}, {1, ""}]}, attachments)
+    end
+  end
+
   for transport <- [:unix, :https] do
     test "#{transport} static and dynamic consoles agree with the pinned helpers", %{root: root} do
       identity = identity(root, unquote(transport))
@@ -483,7 +509,7 @@ defmodule Opsmaru.Incus.ConsoleContractTest do
   defp identity(root, :https),
     do: TLSIdentity.generate(root, "s02-#{System.unique_integer([:positive])}", "localhost")
 
-  defp oracle(fixture, mode, body) do
+  defp oracle(fixture, mode, body, opts \\ []) do
     endpoint =
       case fixture.endpoint do
         %{socket: socket} ->
@@ -505,7 +531,8 @@ defmodule Opsmaru.Incus.ConsoleContractTest do
         payload: Base.encode64(@payload),
         attachments: @attachments,
         expect: byte_size(@greeting <> @payload),
-        temp: fixture.root
+        temp: fixture.root,
+        detach_delay_ms: Keyword.get(opts, :detach_delay_ms, 0)
       })
 
     port =
