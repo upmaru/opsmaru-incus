@@ -23,5 +23,8 @@ defmodule ClientOnlyConsumer.Test do
     assert Code.ensure_loaded?(Opsmaru.Incus.Gateway.Policy)
     refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.Plug)
     refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.HTTPRelay)
+    refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.CowboyHandler)
+    refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.RawRelay)
+    refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.RawTunnel)
   end
 end

@@ -27,8 +27,6 @@ defmodule Opsmaru.Incus.Gateway.Policy do
     defstruct [:slot, :admission, :grant, anonymous: false]
   end
 
-  @implemented [:http]
-
   @doc """
   Build a request from adapter-supplied fields. Returns `{:ok, request}` or
   `{:error, failure}` without contacting the host or backend.
@@ -136,11 +134,21 @@ defmodule Opsmaru.Incus.Gateway.Policy do
     end
   end
 
-  defp implemented(%Request{protocol: protocol}) when protocol in @implemented, do: :ok
+  defp implemented(%Request{protocol: protocol}) do
+    supported =
+      case protocol do
+        :http -> true
+        :websocket -> Code.ensure_loaded?(Opsmaru.Incus.Gateway.WebSocket)
+        :raw -> Code.ensure_loaded?(Opsmaru.Incus.Gateway.CowboyHandler)
+        _ -> false
+      end
 
-  defp implemented(_),
-    do:
-      {:error, Failure.new(501, "Protocol upgrade is not implemented by this gateway", :not_sent)}
+    if supported,
+      do: :ok,
+      else:
+        {:error,
+         Failure.new(501, "Protocol upgrade is not implemented by this gateway", :not_sent)}
+  end
 
   @doc false
   # Run one host callback in its own monitored process with a hard deadline.

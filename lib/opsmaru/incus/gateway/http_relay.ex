@@ -70,8 +70,10 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     def interrupter(_), do: fn -> :ok end
 
-    defp unsized_body?(%Plug.Conn{adapter: {Plug.Cowboy.Conn, req}}),
-      do: :cowboy_req.has_body(req) and :cowboy_req.body_length(req) == :undefined
+    defp unsized_body?(%Plug.Conn{adapter: {Plug.Cowboy.Conn, req}}) do
+      Function.capture(:cowboy_req, :has_body, 1).(req) and
+        Function.capture(:cowboy_req, :body_length, 1).(req) == :undefined
+    end
 
     defp unsized_body?(_), do: false
 
@@ -390,7 +392,7 @@ if Code.ensure_loaded?(Plug.Conn) do
               Map.update(map, name, value, &(&1 <> ", " <> value))
             end)
 
-          :cowboy_req.stream_trailers(map, req)
+          Function.capture(:cowboy_req, :stream_trailers, 2).(map, req)
 
         :error ->
           :ok

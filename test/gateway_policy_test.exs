@@ -210,7 +210,12 @@ defmodule Opsmaru.Incus.GatewayPolicyTest do
 
         response = get(context, "/1.0/instances/c1/sftp", [auth() | upgrade])
         assert response.status == 501
-        assert native(response.body)["error"] =~ "not implemented"
+
+        assert native(response.body)["error"] =~
+                 if(protocol == "websocket",
+                   do: "not implemented",
+                   else: "Cowboy gateway handler"
+                 )
       end
 
       assert StreamBackend.accepted(context.backend) == 0
