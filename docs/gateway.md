@@ -316,6 +316,11 @@ survives relay termination so a nonreading caller cannot strand Cowboy output.
 Its grace is the same `min(50, recheck_interval / 4)` milliseconds reserved by
 the lease, retaining the host-tightened revocation bound.
 
+Host grant callbacks run at negotiation and commitment boundaries. Once a
+channel is active, reads and caller messages check the independent lease;
+they do not invoke host policy on every frame or quiet read poll. Periodic
+lease checks still enforce the configured expiry/revocation bound.
+
 Resource limits are explicit:
 
 - `connection.max_response_bytes` bounds each incoming/outgoing message and

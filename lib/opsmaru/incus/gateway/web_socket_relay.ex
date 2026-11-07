@@ -107,7 +107,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
       connection = state.gateway.connection
       deadline = min(state.deadline, now() + min(connection.timeout, state.gateway.idle_timeout))
 
-      with :ok <- live(state),
+      with :ok <- authorized(state),
            {:ok, conn} <- Transport.open(connection, deadline) do
         target =
           state.request.path <>
@@ -116,7 +116,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
         scheme = if connection.transport == :https, do: :wss, else: :ws
         headers = Enum.reject(headers, fn {name, _} -> name == "x-incus-authenticated" end)
 
-        with :ok <- live(state),
+        with :ok <- authorized(state),
              {:ok, conn, ref} <-
                Mint.WebSocket.upgrade(
                  scheme,
@@ -135,7 +135,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
                  )
                ),
              {:ok, forwarded} <- Headers.response(response),
-             :ok <- live(state) do
+             :ok <- authorized(state) do
           state = %{state | conn: conn, ref: ref}
 
           forwarded =
@@ -175,13 +175,13 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
 
     @impl true
     def handle_call(:response_headers, _, state) do
-      if live(state) == :ok,
+      if authorized(state) == :ok,
         do: {:reply, {:ok, state.response_headers}, state},
         else: {:stop, :normal, {:error, failure("Gateway authorization ended")}, state}
     end
 
     def handle_call(:commit, _, state) do
-      if live(state) == :ok do
+      if authorized(state) == :ok do
         ref = make_ref()
         send(state.watchdog, {:committed, self(), ref})
 
@@ -196,7 +196,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
     end
 
     def handle_call({:attach, owner}, _, %{owner: owner} = state) do
-      if live(state) == :ok do
+      if authorized(state) == :ok do
         ref = make_ref()
         send(state.watchdog, {:attached, self(), ref})
 
@@ -543,7 +543,16 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
     defp live(state) do
       with true <- now() < state.deadline,
            :ok <- Lease.check(state.lease),
+           do: :ok,
+           else: (_ -> :error)
+    end
+
+    # Check the host at negotiation/commit boundaries. Active I/O relies on
+    # the independently enforced lease, avoiding a host callback per poll/frame.
+    defp authorized(state) do
+      with :ok <- live(state),
            :ok <- Policy.recheck(state.gateway, state.request, state.admitted.grant),
+           :ok <- live(state),
            do: :ok,
            else: (_ -> :error)
     end

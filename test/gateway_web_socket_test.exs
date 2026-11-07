@@ -33,6 +33,43 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
     refute headers["x-forwarded-for"]
   end
 
+  test "active and quiet channels do not repeat host checks before the next lease interval",
+       context do
+    checks = :atomics.new(1, [])
+    fixture = ws_backend(context, wire: "")
+
+    mount_ws(context, fixture,
+      callback_timeout: 25,
+      recheck_interval: 5_000,
+      max_lifetime: 4_000,
+      host_config: %{
+        valid: fn _, _ ->
+          :atomics.add_get(checks, 1, 1)
+          true
+        end
+      }
+    )
+
+    channel = open(context)
+    send_frame(channel, {:text, "attached"})
+    assert {:text, "attached"} = recv_frame(channel)
+    initial_checks = :atomics.get(checks, 1)
+    assert initial_checks > 0
+
+    for n <- 1..12 do
+      payload = "native-#{n}"
+      send_frame(channel, {:text, payload})
+      assert {:text, ^payload} = recv_frame(channel)
+    end
+
+    # The next scheduled lease check is later than this channel's lifetime.
+    # Let quiet polling run too, without asserting a throughput timing target.
+    Process.sleep(100)
+    assert :atomics.get(checks, 1) == initial_checks
+    close(channel)
+    eventually(fn -> Admission.count(context.admission) == 0 end)
+  end
+
   test "backend close codes and final text are preserved", context do
     wire =
       WebSocketFixture.frame(1, "tail") <>
@@ -87,6 +124,38 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
     end
 
     assert [] == WebSocketFixture.requests(fixture)
+    eventually(fn -> Admission.count(context.admission) == 0 end)
+  end
+
+  test "revocation during backend negotiation is checked before frontend commitment", context do
+    grant = :atomics.new(1, [])
+    :atomics.put(grant, 1, 1)
+
+    {backend, connection} =
+      backend(context, fn conn ->
+        {_, key} = List.keyfind(conn.head.headers, "sec-websocket-key", 0)
+        accept = Base.encode64(:crypto.hash(:sha, key <> "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
+        :atomics.put(grant, 1, 0)
+
+        StreamBackend.write(conn, [
+          "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: ",
+          accept,
+          "\r\n\r\n"
+        ])
+
+        StreamBackend.await_close(conn)
+      end)
+
+    mount(context, connection,
+      callback_timeout: 25,
+      recheck_interval: 5_000,
+      max_lifetime: 4_000,
+      host_config: %{valid: fn _, _ -> :atomics.get(grant, 1) == 1 end}
+    )
+
+    assert {:error, 502, _, _} = rejected(context, "/1.0/events", [auth()])
+    assert StreamBackend.accepted(backend) == 1
+    assert_receive {:backend_closed, _}, 1_000
     eventually(fn -> Admission.count(context.admission) == 0 end)
   end
 
