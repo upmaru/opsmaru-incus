@@ -140,6 +140,10 @@ defmodule Opsmaru.Incus.Transfer do
           {:error, kind} -> failed(acc.method, kind)
         end
 
+      # recv waits only for the remaining stream budget; its timeout is the deadline.
+      {:error, _, %Mint.TransportError{reason: :timeout}, _} ->
+        failed(acc.method, :deadline)
+
       {:error, _, _, _} ->
         failed(acc.method, :transfer)
     end

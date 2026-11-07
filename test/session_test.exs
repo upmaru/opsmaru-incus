@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.SessionTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Server, Session, WebSocket}
   alias Opsmaru.TestSupport.{CleanupAssertions, HTTPFixture, WebSocketFixture}

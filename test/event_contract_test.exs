@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.EventContractTest do
   @moduledoc "B03/S03 event subscription selectors, native rejection and Event fields."
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, EventListener, Events, Model, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WebSocketFixture, WireComparison}

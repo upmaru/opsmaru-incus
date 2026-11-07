@@ -3,6 +3,10 @@ defmodule Opsmaru.TestSupport.GatewayCase do
   Shared setup for gateway fixtures: an owner-private temporary directory, a
   host-started admission, a host-owned Plug.Cowboy listener mounting the
   gateway, and helpers for a scripted Unix backend.
+
+  Each test's gateway is bound to its own listener (`GatewayServer`), so
+  modules using it may run `async: true`. Keep a module serial when its evidence
+  is a latency bound (revocation, the lease's admission-loss grace).
   """
 
   use ExUnit.CaseTemplate
@@ -29,10 +33,12 @@ defmodule Opsmaru.TestSupport.GatewayCase do
     File.chmod!(root, 0o700)
     admission = start_supervised!({Admission, max_exchanges: 8})
     {ref, port} = GatewayServer.start_http()
+    # on_exit runs in another process: clear this test's row, not that one's.
+    test = self()
 
     on_exit(fn ->
       GatewayServer.stop(ref)
-      GatewayServer.clear()
+      GatewayServer.clear(test)
       File.rm_rf!(root)
     end)
 

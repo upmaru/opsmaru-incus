@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.CopyTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Copy, Error, Server}
   alias Opsmaru.TestSupport.HTTPFixture

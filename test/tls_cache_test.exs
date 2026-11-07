@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.TLSCacheTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   test "deleted CA-file invalidation cannot crash an unrelated TLS manager" do
     root = Path.join(System.tmp_dir!(), "op-tls-cache-#{System.unique_integer([:positive])}")

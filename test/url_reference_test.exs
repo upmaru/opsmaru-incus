@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.URLReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus.{Error, URL}
   @driver Path.expand("../.integration/url-driver", __DIR__)
 

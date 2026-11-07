@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.ResponseModelsReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus.{Error, Model, Response}
 
   @driver Path.expand("../.integration/response-models-driver", __DIR__)

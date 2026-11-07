@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.SimpleStreamsReferenceTest do
   @moduledoc "S12 SimpleStreams catalog errors, image files, cache and deltas compared with the pinned client."
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus.{Connection, Context, Error, SimpleStreams}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
 

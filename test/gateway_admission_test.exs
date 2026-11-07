@@ -1,7 +1,7 @@
 defmodule Opsmaru.Incus.GatewayAdmissionTest do
   # Task 1.2: host-started bounded admission, callback deadlines, caller loss,
   # restart cleanup and redacted diagnostics.
-  use Opsmaru.TestSupport.GatewayCase, async: false
+  use Opsmaru.TestSupport.GatewayCase, async: true
 
   test "admission is explicit configuration and validates its bound" do
     assert_raise ArgumentError, fn -> Admission.start_link(max_exchanges: 0) end

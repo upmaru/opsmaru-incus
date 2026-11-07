@@ -515,9 +515,16 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
 
   defp approved?(_), do: false
 
+  # Raw reads skip the VM's single file server, which concurrent validations would queue on.
   defp anchor!([path, anchor]) do
-    assert anchor != "" and File.regular?(path) and String.contains?(File.read!(path), anchor),
+    assert anchor != "" and File.regular?(path, raw: true) and
+             String.contains?(raw_read!(path), anchor),
            "missing source anchor"
+  end
+
+  defp raw_read!(path) do
+    {:ok, source} = :file.read_file(path, [:raw])
+    source
   end
 
   defp normalize(pair),

@@ -1,5 +1,7 @@
 defmodule Opsmaru.Incus.RawChannelTest do
-  use ExUnit.Case, async: false
+  # Its write-pressure tests set VM-wide trace patterns on :inet/:ssl setopts/2 under TraceLock.
+  use ExUnit.Case, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
   alias Opsmaru.Incus
   alias Opsmaru.Incus.Connection
   alias Opsmaru.Incus.Context
@@ -10,6 +12,7 @@ defmodule Opsmaru.Incus.RawChannelTest do
   alias Opsmaru.TestSupport.CleanupAssertions, as: Cleanup
   alias Opsmaru.TestSupport.HTTPFixture
   alias Opsmaru.TestSupport.TLSIdentity
+  alias Opsmaru.TestSupport.TraceLock
 
   @transports [{:gen_tcp, "unix"}, {:ssl, "mutual HTTPS"}]
 
@@ -218,12 +221,13 @@ defmodule Opsmaru.Incus.RawChannelTest do
       Process.exit(fixture, :kill)
 
       {client, fixture} = fixture(root, context, "sftp", "", false, transport)
-      client = %{client | connection: %{client.connection | stream_timeout: 50}}
+      # Long enough to open the channel on a loaded VM before its lifetime ends.
+      client = %{client | connection: %{client.connection | stream_timeout: 500}}
       {:ok, channel} = Incus.sftp(client, "fixture")
-      monitor = Process.monitor(channel.pid)
+      monitor = monitor!(channel.pid)
       ref = channel.ref
-      assert_receive {^ref, :error, %Error{kind: :deadline}}, 1_000
-      assert_receive {:DOWN, ^monitor, :process, _, :normal}, 1_000
+      assert_receive {^ref, :error, %Error{kind: :deadline}}, 2_000
+      assert_receive {:DOWN, ^monitor, :process, _, :normal}, 2_000
       Process.exit(fixture, :kill)
     end
 
@@ -378,6 +382,8 @@ defmodule Opsmaru.Incus.RawChannelTest do
       root: root,
       context: context
     } do
+      # Before anything starts a clock: none may run while waiting for the lock.
+      TraceLock.acquire!()
       transport = unquote(transport)
       identity = identity(transport, root)
 

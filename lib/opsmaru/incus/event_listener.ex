@@ -287,10 +287,21 @@ defmodule Opsmaru.Incus.EventListener do
 
   # The channel has its own request-context watcher. When it ends the channel
   # first, the failed read reports the context's reason, not channel closure.
+  # Otherwise a channel that failed between reads (overflow, frame limit) sent
+  # its reason before exiting, so a read that only found it closed reports that.
   defp ended(state, kind) when kind in [:channel_closed, :channel_io] do
+    ref = state.channel.ref
+
     case RequestContext.status(state.context) do
-      status when status in [:canceled, :deadline] -> status
-      _ -> kind
+      status when status in [:canceled, :deadline] ->
+        status
+
+      _ ->
+        receive do
+          {^ref, :error, %Error{kind: reason}} -> reason
+        after
+          0 -> kind
+        end
     end
   end
 

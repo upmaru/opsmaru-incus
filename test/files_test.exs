@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.FilesTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Files, Server}
   alias Opsmaru.TestSupport.HTTPFixture

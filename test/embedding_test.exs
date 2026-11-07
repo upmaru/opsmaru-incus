@@ -1,4 +1,5 @@
 defmodule Opsmaru.EmbeddingTest do
+  # Serial: it sets PHX_SERVER/PORT and compares VM-wide processes, ports and names.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus.ClientSupervisor
   alias Opsmaru.Incus.Connection

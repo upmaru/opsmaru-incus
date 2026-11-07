@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.ImageCopyContractTest do
   @moduledoc "S05 image copy (with S11 OCI and S12 SimpleStreams sources) compared with the pinned CopyImage."
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
 
   alias Opsmaru.Incus.{

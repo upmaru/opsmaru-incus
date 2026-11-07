@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.OperationsHostTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Context, Operations}
   alias Opsmaru.TestSupport.{OperationsFixture, OperationsHost}

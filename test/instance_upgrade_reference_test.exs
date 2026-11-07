@@ -5,7 +5,7 @@ defmodule Opsmaru.Incus.InstanceUpgradeReferenceTest do
   so the pinned rawConn prefetch defect does not hide bytes; coalesced delivery is
   covered independently in `raw_channel_test.exs` and `tls_stream_test.exs`.
   """
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, RawChannel, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}

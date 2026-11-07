@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.AcceptanceRunnerTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @runner Path.expand("../scripts/accept-incus.exs", __DIR__)
 

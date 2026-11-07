@@ -4,6 +4,7 @@ defmodule Opsmaru.Incus.SFTPSessionTest do
   matched by id from many processes, opener-bound lifetime, per-request deadlines,
   frame failures and the in-flight bound.
   """
+  # Serial: its 300 ms session timeout is part of the deadline and late-reply checks.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Server, SFTP}
@@ -74,7 +75,8 @@ defmodule Opsmaru.Incus.SFTPSessionTest do
 
     # A stalled read from another process fails when the opener goes away.
     stalled = Task.async(fn -> SFTP.read_dir(session, "stalled") end)
-    Process.sleep(100)
+    # Wait until the opendir is on the wire: a loaded VM may not have sent it yet.
+    assert_receive {:sftp_request, <<11, _::binary>>}, 2_000
     send(opener, :exit)
     assert {:error, %Error{kind: :channel_closed}} = Task.await(stalled, 2_000)
     eventually_dead(session.pid)

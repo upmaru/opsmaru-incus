@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, DynamicConsole, Error, Server, WebSocket}
 
@@ -214,7 +215,7 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
 
       wire = error_wire(kind)
 
-      monitor = Process.monitor(failed_channel.pid)
+      monitor = monitor!(failed_channel.pid)
       send(peer, {:emit, wire})
 
       assert_receive {:dynamic_console, ^pid,
@@ -311,8 +312,8 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
       ref = control.ref
       pid = console.pid
       operation = console.operation
-      cm = Process.monitor(pid)
-      am = Process.monitor(channel.pid)
+      cm = monitor!(pid)
+      am = monitor!(channel.pid)
       send(control_peer, {:emit, closure})
 
       assert_control_closure(closure, pid, ref, operation)
@@ -635,8 +636,8 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
         end)
 
       assert_receive {:console, console, channel}, 1000
-      cm = Process.monitor(console.pid)
-      am = Process.monitor(channel.pid)
+      cm = monitor!(console.pid)
+      am = monitor!(channel.pid)
       send(owner, :stop)
       assert_receive {:DOWN, ^cm, :process, _, :normal}, 1000
       assert_receive {:DOWN, ^am, :process, _, :normal}, 1000
@@ -646,13 +647,14 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
     test "#{label} the total console lifetime releases every channel and leaves native identity available",
          %{root: root, context: context} do
       {fixture, client} = served_backend(unquote(transport), root, context)
-      client = %{client | connection: %{client.connection | stream_timeout: 100}}
+      # Long enough to open and attach on a loaded VM; short enough to end the test.
+      client = %{client | connection: %{client.connection | stream_timeout: 1_000}}
       assert {:ok, console} = DynamicConsole.open(client, "fixture", %{})
       assert {:ok, channel} = DynamicConsole.attach(console)
-      cm = Process.monitor(console.pid)
-      am = Process.monitor(channel.pid)
-      assert_receive {:DOWN, ^cm, :process, _, :normal}, 1000
-      assert_receive {:DOWN, ^am, :process, _, :normal}, 1000
+      cm = monitor!(console.pid)
+      am = monitor!(channel.pid)
+      assert_receive {:DOWN, ^cm, :process, _, :normal}, 3_000
+      assert_receive {:DOWN, ^am, :process, _, :normal}, 3_000
       assert console.operation.response.operation == "/1.0/operations/console-id"
       assert Enum.count(WebSocketFixture.requests(fixture), &(&1.method == "POST")) == 1
       refute Enum.any?(WebSocketFixture.requests(fixture), &(&1.method == "DELETE"))

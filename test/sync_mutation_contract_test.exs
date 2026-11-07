@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.SyncMutationContractTest do
   @moduledoc "B09/B10 write contracts compared with the named pinned Go methods."
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Operation, RequestContext, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, ModelSamples, TLSIdentity, WireComparison}

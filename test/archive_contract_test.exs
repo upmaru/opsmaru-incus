@@ -5,7 +5,7 @@ defmodule Opsmaru.Incus.ArchiveContractTest do
   pinned official methods. The control plane (list, get, create, rename, delete and
   bucket creation) is compared in the inspection and sync-mutation contract tests.
   """
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Files, RequestContext, Server, Transfer}
   alias Opsmaru.TestSupport.{HTTPFixture, ModelSamples, TLSIdentity}
@@ -209,9 +209,11 @@ defmodule Opsmaru.Incus.ArchiveContractTest do
         assert {"", {:error, %Error{kind: :stream_limit}}} =
                  with_sink(&export(client(fixture, identity, max_stream_bytes: 3), target, &1))
 
+        # The deadline also covers connecting (TLS on a loaded VM); the sink outlasts
+        # it, so the read after the first chunk is past the deadline.
         assert {:error, %Error{kind: :deadline}} =
-                 export(client(fixture, identity, stream_timeout: 50), target, fn _ ->
-                   Process.sleep(200)
+                 export(client(fixture, identity, stream_timeout: 500), target, fn _ ->
+                   Process.sleep(1_000)
                    :ok
                  end)
 

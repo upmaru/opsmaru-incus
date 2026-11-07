@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.ImageContractTest do
   @moduledoc "S05 image uploads and downloads compared with the pinned CreateImage and GetImageFile."
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Images, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}

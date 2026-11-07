@@ -3,7 +3,7 @@ defmodule Opsmaru.Incus.ByteStreamContractTest do
   S07 auxiliary byte stream contracts on Unix and mutual TLS, compared with the
   pinned client's unchanged typed stream methods through the streams driver.
   """
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, RequestContext, Response, Server, Streams}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
@@ -172,11 +172,13 @@ defmodule Opsmaru.Incus.ByteStreamContractTest do
                  end)
 
         # The rest of the body arrives after the stream deadline, so a payload small
-        # enough for one read (metrics) still needs a read past the deadline.
-        slow = backend(root, identity, fn _ -> split(payload, 100) end)
+        # enough for one read (metrics) still needs a read past the deadline. The
+        # deadline also covers connecting, so it leaves room for a TLS handshake on
+        # a loaded VM before the one request is dispatched.
+        slow = backend(root, identity, fn _ -> split(payload, 1_000) end)
 
         assert {:error, %Error{kind: :deadline}} =
-                 download(client(slow, identity, stream_timeout: 50), scenario, fn _ ->
+                 download(client(slow, identity, stream_timeout: 500), scenario, fn _ ->
                    Process.sleep(200)
                    :ok
                  end)

@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.GatewayIdentityTest do
-  use Opsmaru.TestSupport.GatewayCase, async: false
+  use Opsmaru.TestSupport.GatewayCase, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
 
   alias Opsmaru.Incus.Gateway.{Identity, Policy}
   alias Opsmaru.TestSupport.{CertificateHost, TLSIdentity}
@@ -509,7 +510,7 @@ defmodule Opsmaru.Incus.GatewayIdentityTest do
       end)
 
     assert_receive {:worker, worker}
-    monitor = Process.monitor(worker)
+    monitor = monitor!(worker)
     Process.exit(owner, :kill)
     assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 200
   end

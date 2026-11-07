@@ -3,7 +3,7 @@ defmodule Opsmaru.Incus.GatewayReferenceWireTest do
   # through a mutual-TLS gateway listener, gets the same results the recorded
   # wire fixtures expect, and the backend receives the recorded request.
   # The direct (no gateway) baseline is test/reference_wire_test.exs.
-  use Opsmaru.TestSupport.GatewayCase, async: false
+  use Opsmaru.TestSupport.GatewayCase, async: true
 
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
 

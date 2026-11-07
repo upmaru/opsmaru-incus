@@ -1,9 +1,33 @@
 defmodule Opsmaru.Incus.EndpointEvidenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
+  # Deterministic CPU-bound validation; slow CI runners have taken over 60 s per test.
+  @moduletag timeout: 180_000
   alias Opsmaru.TestSupport.{EndpointEvidence, EndpointInventory}
   @manifest Jason.decode!(File.read!("priv/incus/endpoint-evidence.json"))
 
+  @completion_shards 8
+
   setup_all do
+    %{native: native!()}
+  end
+
+  @doc false
+  # The native inventory, built once per run however many modules ask at the same time.
+  def native! do
+    :global.trans({{__MODULE__, :native}, self()}, fn ->
+      case :persistent_term.get({__MODULE__, :native}, nil) do
+        nil ->
+          native = build_native()
+          :persistent_term.put({__MODULE__, :native}, native)
+          native
+
+        native ->
+          native
+      end
+    end)
+  end
+
+  defp build_native do
     reference_dir = Path.expand("reference", __DIR__)
     env = [{"GOTOOLCHAIN", "local"}]
 
@@ -28,8 +52,11 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
 
     assert status == 0, out
     {out, 0} = System.cmd(driver, [module["Dir"]])
-    %{native: Jason.decode!(out)}
+    Jason.decode!(out)
   end
+
+  @doc false
+  def completion_shards, do: @completion_shards
 
   test "full inventory classifies every REST view and reconciles server registrations", %{
     native: native
@@ -731,25 +758,12 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
            )
   end
 
-  for part <- 1..4 do
-    test "reviewed completion records reject removed or overclaimed evidence, part #{part} of 4",
-         %{native: native} do
-      audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
-
-      for {{changed, message}, index} <- Enum.with_index(completion_negative_cases(audit)),
-          rem(index, 4) == unquote(part) - 1 do
-        assert_raise ExUnit.AssertionError, ~r/#{message}/, fn ->
-          EndpointInventory.validate!(changed, native)
-        end
-      end
-    end
-  end
+  # The reviewed completion-record negative cases run in the async modules below.
 
   test "repair, open linked stream and selected-row completion claims are rejected", %{
     native: native
   } do
     audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
-    events = ["completion_records", "b03_events_v1"]
     raw_upgrade = ["completion_records", "s08_raw_upgrades_v1"]
 
     # The reconciled repair row maps the registered POST method; the server-only POST
@@ -858,7 +872,8 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
 
   # Negative completion-record cases, split across tests so each stays within
   # the ExUnit timeout on slower runners; every case still runs.
-  defp completion_negative_cases(audit) do
+  @doc false
+  def completion_negative_cases(audit) do
     wait = ["completion_records", "b03_native_wait_v1"]
     update = ["completion_records", "b01_update_instance_v1"]
     delete = ["completion_records", "b01_delete_image_v1"]
@@ -1327,6 +1342,34 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
 
     assert_raise ExUnit.AssertionError, ~r/missing test anchor/, fn ->
       EndpointEvidence.validate!(%{@manifest | "evidence" => evidence}, native)
+    end
+  end
+end
+
+# Each validation is CPU-bound and takes about a second, so the negative cases are
+# split across async modules instead of running one after another in this module.
+for shard <- 0..(Opsmaru.Incus.EndpointEvidenceTest.completion_shards() - 1) do
+  defmodule Module.concat(Opsmaru.Incus.EndpointEvidenceTest, "Completion#{shard}") do
+    use ExUnit.Case, async: true
+    @moduletag timeout: 180_000
+    alias Opsmaru.Incus.EndpointEvidenceTest, as: Evidence
+    alias Opsmaru.TestSupport.EndpointInventory
+
+    setup_all do
+      %{native: Evidence.native!()}
+    end
+
+    test "reviewed completion records reject removed or overclaimed evidence, part #{shard + 1} of #{Evidence.completion_shards()}",
+         %{native: native} do
+      audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
+
+      for {{changed, message}, index} <-
+            Enum.with_index(Evidence.completion_negative_cases(audit)),
+          rem(index, Evidence.completion_shards()) == unquote(shard) do
+        assert_raise ExUnit.AssertionError, ~r/#{message}/, fn ->
+          EndpointInventory.validate!(changed, native)
+        end
+      end
     end
   end
 end

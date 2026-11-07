@@ -19,7 +19,8 @@ run = [
   "mix format --check-formatted",
   "mix compile --warnings-as-errors",
   "mix credo --strict",
-  "mix test",
+  # Test-env compile covers test/support; --warnings-as-errors on test covers test files.
+  "MIX_ENV=test mix do compile --warnings-as-errors + test --warnings-as-errors",
   "openspec validate --all --strict --no-interactive",
 ]
 

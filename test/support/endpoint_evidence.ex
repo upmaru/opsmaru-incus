@@ -185,7 +185,7 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
     Enum.reduce(row["evidence"], cache, fn key, cache ->
       assert Map.has_key?(manifest["evidence"], key), "missing evidence link"
       [path, anchor] = manifest["evidence"][key]
-      assert File.regular?(path), "missing evidence file"
+      assert File.regular?(path, raw: true), "missing evidence file"
       tests = Map.get_lazy(cache, path, fn -> test_names!(path) end)
 
       assert anchor != "" and Enum.any?(tests, &String.contains?(&1, anchor)),
@@ -196,8 +196,10 @@ defmodule Opsmaru.TestSupport.EndpointEvidence do
   end
 
   # Scoped to one validate! call: every row checks its own anchor, every call rereads source.
+  # Raw reads skip the VM's single file server, which concurrent validations would queue on.
   defp test_names!(path) do
-    ast = path |> File.read!() |> Code.string_to_quoted!()
+    {:ok, source} = :file.read_file(path, [:raw])
+    ast = Code.string_to_quoted!(source)
 
     {_, tests} =
       Macro.prewalk(ast, [], fn
