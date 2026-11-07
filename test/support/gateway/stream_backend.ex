@@ -8,6 +8,7 @@ defmodule Opsmaru.TestSupport.StreamBackend do
   """
 
   use GenServer
+  alias Opsmaru.Incus.Connection
 
   defstruct [:transport, :socket, :buffer, :observer, :head]
 
@@ -48,7 +49,7 @@ defmodule Opsmaru.TestSupport.StreamBackend do
               reuseaddr: true,
               verify: :verify_peer,
               fail_if_no_peer_cert: true,
-              cacertfile: String.to_charlist(Keyword.fetch!(opts, :client_ca))
+              cacerts: Connection.ca_certificates(Keyword.fetch!(opts, :client_ca))
             ])
 
           {:ssl, listener}
@@ -237,6 +238,7 @@ defmodule Opsmaru.TestSupport.RawHTTP do
   closes and reports whether a chunked or sized body was complete, so a
   truncated response is never mistaken for a finished one.
   """
+  alias Opsmaru.Incus.Connection
 
   def connect(port, tls \\ nil)
 
@@ -248,6 +250,12 @@ defmodule Opsmaru.TestSupport.RawHTTP do
   end
 
   def connect(port, opts) do
+    opts =
+      case Keyword.pop(opts, :cacertfile) do
+        {nil, opts} -> opts
+        {file, opts} -> Keyword.put(opts, :cacerts, Connection.ca_certificates(file))
+      end
+
     {:ok, socket} = :ssl.connect(~c"localhost", port, [:binary, active: false] ++ opts, 5_000)
     {:ssl, socket}
   end

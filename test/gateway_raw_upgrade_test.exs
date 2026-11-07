@@ -1053,7 +1053,7 @@ defmodule Opsmaru.Incus.GatewayRawUpgradeTest do
                   [
                     certfile: String.to_charlist(server.certfile),
                     keyfile: String.to_charlist(server.keyfile),
-                    cacertfile: String.to_charlist(client.cafile),
+                    cacerts: Connection.ca_certificates(client.cafile),
                     verify: :verify_peer,
                     fail_if_no_peer_cert: false,
                     alpn_preferred_protocols: ["http/1.1"]

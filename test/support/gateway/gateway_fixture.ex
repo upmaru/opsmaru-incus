@@ -57,7 +57,7 @@ defmodule Opsmaru.TestSupport.GatewayServer do
   the test runner (`init/0` from `test_helper.exs`), not in any test process.
   """
 
-  alias Opsmaru.Incus.Gateway
+  alias Opsmaru.Incus.{Connection, Gateway}
 
   @table __MODULE__
 
@@ -155,7 +155,7 @@ defmodule Opsmaru.TestSupport.GatewayServer do
         port: 0,
         certfile: server.certfile,
         keyfile: server.keyfile,
-        cacertfile: client_ca,
+        cacerts: Connection.ca_certificates(client_ca),
         verify: :verify_peer,
         fail_if_no_peer_cert: false,
         versions: [:"tlsv1.3"],
