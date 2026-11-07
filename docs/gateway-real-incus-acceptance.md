@@ -73,3 +73,12 @@ Failures retain resources for explicit reconciliation; cleanup after a fully
 successful run applies only to resources created under its verified fresh
 namespace. No default socket, remote discovery, runtime boot, installation or
 production data is part of this gate.
+
+The custom-volume NBD verifier keeps its strict read-only transmission-flag
+requirement and requests `Writable: false`. If that exact local verifier
+condition occurs through the gateway, the runner compares it with the same
+unchanged helper directly on the same owned volume. Only matching
+`native_nbd_readonly_unavailable` results leave NBD `unrun` and allow denial,
+interruption and migration checks to continue. Unknown or mismatched errors
+stop the run. This does not accept an NBD parity exception, mark NBD passed or
+complete task 7.4; the incomplete ledger retains resources for reconciliation.

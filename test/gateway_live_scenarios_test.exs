@@ -268,6 +268,112 @@ defmodule Opsmaru.GatewayLiveScenariosTest do
     refute Scenarios.expected_driver_result?(%{"error" => "native failure"}, [])
   end
 
+  test "expected verifier errors require the precise kind and a negative error result" do
+    known = %{
+      "error_kind" => "native_nbd_readonly_unavailable",
+      "error" => "strict verifier error"
+    }
+
+    opts = [expected_error_kind: "native_nbd_readonly_unavailable"]
+    assert Scenarios.expected_driver_result?(known, opts)
+    refute Scenarios.expected_driver_result?(known, [])
+
+    refute Scenarios.expected_driver_result?(
+             %{known | "error_kind" => "native_verifier_failure"},
+             opts
+           )
+
+    refute Scenarios.expected_driver_result?(Map.delete(known, "error"), opts)
+    refute Scenarios.expected_driver_result?(%{known | "error" => ""}, opts)
+    refute Scenarios.expected_driver_result?(%{"error" => "unknown"}, opts)
+  end
+
+  test "matching strict NBD unavailability remains unrun and permits subsequent cases" do
+    context = nbd_journal()
+
+    known = %{
+      "error_kind" => "native_nbd_readonly_unavailable",
+      "error" => "strict verifier error"
+    }
+
+    assert :ok = Scenarios.record_volume_nbd(context, known, known)
+    assert :ok = Acceptance.record_case(context, "denial", "passed")
+    assert :ok = Acceptance.record_case(context, "interruption", "passed")
+    journal = Agent.get(context.journal, & &1)
+    assert journal["cases"]["nbd"] == "unrun"
+    assert journal["cases"]["denial"] == "passed"
+    assert journal["cases"]["interruption"] == "passed"
+    refute Acceptance.evidence_complete?(journal["cases"])
+    assert [%{"evidence" => evidence}] = journal["details"]
+    assert evidence["outcome"] == "unrun"
+    assert evidence["native_error"] == known["error_kind"]
+    assert evidence["proof"]["requested_writable"] == false
+    assert evidence["proof"]["data_writes"] == 0
+    refute File.read!(context.config["report"]) =~ "strict verifier error"
+  end
+
+  test "NBD mismatches and unknown failures stop without recording an unavailable case" do
+    context = nbd_journal()
+
+    known = %{
+      "error_kind" => "native_nbd_readonly_unavailable",
+      "error" => "strict verifier error"
+    }
+
+    unknown = %{known | "error_kind" => "native_verifier_failure"}
+
+    for {gateway, direct} <- [
+          {known, unknown},
+          {unknown, known},
+          {known, nil},
+          {known, %{"passed" => true, "readonly" => true, "read_bytes" => 512}},
+          {Map.put(known, "http_status", 500), known},
+          {Map.delete(known, "error"), known}
+        ] do
+      assert_raise RuntimeError, "gateway/direct native read-only NBD failure mismatch", fn ->
+        Scenarios.record_volume_nbd(context, gateway, direct)
+      end
+    end
+
+    assert Agent.get(context.journal, & &1["cases"]["nbd"]) == "pending"
+    assert Agent.get(context.journal, & &1["details"]) == []
+
+    assert :ok =
+             Scenarios.record_volume_nbd(
+               context,
+               %{"passed" => true, "readonly" => true, "read_bytes" => 512},
+               nil
+             )
+
+    assert Agent.get(context.journal, & &1["cases"]["nbd"]) == "passed"
+  end
+
+  defp nbd_journal do
+    root =
+      Path.join(
+        System.tmp_dir!(),
+        "gateway-nbd-journal-" <> Base.url_encode64(:crypto.strong_rand_bytes(12), padding: false)
+      )
+
+    File.mkdir!(root)
+    on_exit(fn -> File.rm_rf!(root) end)
+
+    journal =
+      start_supervised!(
+        {Agent,
+         fn ->
+           %{
+             "steps" => [],
+             "details" => [],
+             "cases" =>
+               Map.new(Acceptance.required_cases(), &{&1, "passed"}) |> Map.put("nbd", "pending")
+           }
+         end}
+      )
+
+    %{journal: journal, config: %{"report" => Path.join(root, "report.json")}}
+  end
+
   test "noninteractive command gives a direct child stdin EOF and captures both output streams" do
     child =
       "import os,sys; data=sys.stdin.buffer.read(); print('stdin-eof:'+str(len(data))); print('direct-pid:'+str(os.getpid())); sys.stderr.write('stderr-captured\\n')"

@@ -11,6 +11,7 @@ defmodule OpsmaruGatewayLiveScenarios do
   alias OpsmaruGatewayDaemonProbe, as: DaemonProbe
   @sides ~w(source target)
   @payload :binary.copy(<<0, 255, 128, 13, 10>>, 16_384)
+  @nbd_readonly_unavailable "native_nbd_readonly_unavailable"
   @proof_fields ~w(operation status_code http_status error_kind bytes sha256 exit event_operation received_bytes export_bytes read_bytes readonly local_detach remote_cancel accepted)
 
   def load_config!(path) do
@@ -408,13 +409,26 @@ defmodule OpsmaruGatewayLiveScenarios do
       "native_status" => "VM-only; positive VM case unrun, no VM provisioned"
     })
 
-    volume_nbd =
-      driver(context, "source", "nbd_volume", %{
-        "Name" => name,
-        "Pool" => pool,
-        "Volume" => block_volume
-      })
+    arguments = %{"Name" => name, "Pool" => pool, "Volume" => block_volume}
 
+    volume_nbd =
+      driver(context, "source", "nbd_volume", arguments,
+        expected_error_kind: @nbd_readonly_unavailable
+      )
+
+    direct =
+      if volume_nbd["passed"] != true do
+        driver(context, "source", "nbd_volume", arguments,
+          direct: true,
+          expected_error_kind: @nbd_readonly_unavailable
+        )
+      end
+
+    record_volume_nbd(context, volume_nbd, direct)
+  end
+
+  @doc false
+  def record_volume_nbd(context, %{"passed" => true} = volume_nbd, nil) do
     require!(
       volume_nbd["passed"] and volume_nbd["readonly"] and volume_nbd["read_bytes"] == 512,
       "native read-only block-volume NBD failed"
@@ -422,6 +436,35 @@ defmodule OpsmaruGatewayLiveScenarios do
 
     Acceptance.record_case(context, "nbd", "passed")
   end
+
+  def record_volume_nbd(context, gateway, direct) do
+    require!(
+      nbd_readonly_unavailable?(gateway) and nbd_readonly_unavailable?(direct),
+      "gateway/direct native read-only NBD failure mismatch"
+    )
+
+    Acceptance.record_detail(context, "volume-nbd-native-prerequisite", %{
+      "outcome" => "unrun",
+      "native_error" => @nbd_readonly_unavailable,
+      "native_status" =>
+        "strict read-only export verification unavailable directly and through gateway",
+      "proof" => %{
+        "gateway" => safe_proof(gateway),
+        "direct" => safe_proof(direct),
+        "requested_writable" => false,
+        "data_writes" => 0
+      }
+    })
+
+    Acceptance.record_case(context, "nbd", "unrun")
+  end
+
+  defp nbd_readonly_unavailable?(result) when is_map(result),
+    do:
+      result["passed"] != true and result["http_status"] == nil and
+        expected_driver_result?(result, expected_error_kind: @nbd_readonly_unavailable)
+
+  defp nbd_readonly_unavailable?(_), do: false
 
   defp denial(context, name) do
     before_count = length(Host.requests(context.sides["source"].host))
@@ -1209,6 +1252,9 @@ defmodule OpsmaruGatewayLiveScenarios do
   def expected_driver_result?(decoded, opts) do
     decoded["passed"] == true or
       (opts[:expected_status] != nil and decoded["http_status"] == opts[:expected_status]) or
+      (is_binary(opts[:expected_error_kind]) and
+         decoded["error_kind"] == opts[:expected_error_kind] and is_binary(decoded["error"]) and
+         decoded["error"] != "") or
       (opts[:expect_native_error] == true and is_binary(decoded["error"]))
   end
 

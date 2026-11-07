@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -89,6 +91,9 @@ func TestReadNBD(t *testing.T) {
 				if err == nil || !strings.Contains(err.Error(), tc.want) {
 					t.Fatalf("got %v, want %s", err, tc.want)
 				}
+				if tc.name == "writable" && nativeErrorKind(err) != "native_nbd_readonly_unavailable" {
+					t.Fatalf("missing read-only flag misclassified: %v", err)
+				}
 			} else if err != nil {
 				t.Fatal(err)
 			}
@@ -99,5 +104,20 @@ func TestReadNBD(t *testing.T) {
 				t.Fatalf("bad proof %v", out)
 			}
 		})
+	}
+}
+
+func TestNativeNBDReadOnlyUnavailableKind(t *testing.T) {
+	for _, err := range []error{errNBDReadOnlyUnavailable, fmt.Errorf("verifier: %w", errNBDReadOnlyUnavailable)} {
+		if nativeErrorKind(err) != "native_nbd_readonly_unavailable" {
+			t.Fatalf("own strict verifier error misclassified: %v", err)
+		}
+	}
+	// An unrelated/backend error with even the same text is not our verifier's
+	// missing transmission flag. Unknown errors must not unlock continuation.
+	for _, message := range []string{errNBDReadOnlyUnavailable.Error(), "NBD export failed", "native NBD export did not confirm read-only: unexpected EOF"} {
+		if nativeErrorKind(errors.New(message)) == "native_nbd_readonly_unavailable" {
+			t.Fatalf("foreign error classified as known unavailability: %s", message)
+		}
 	}
 }

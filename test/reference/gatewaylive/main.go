@@ -36,6 +36,7 @@ type input struct {
 }
 
 var secret = regexp.MustCompile(`(?i)(secret=)[^&\s]+`)
+var errNBDReadOnlyUnavailable = errors.New("native NBD export did not confirm read-only")
 
 func main() {
 	if len(os.Args) != 2 {
@@ -89,6 +90,9 @@ func main() {
 }
 
 func nativeErrorKind(err error) string {
+	if errors.Is(err, errNBDReadOnlyUnavailable) {
+		return "native_nbd_readonly_unavailable"
+	}
 	message := strings.ToLower(err.Error())
 	if strings.Contains(message, "only supported on virtual machines") {
 		return "instance_nbd_requires_vm"
@@ -493,7 +497,7 @@ func readNBD(conn net.Conn, out map[string]any) error {
 		return errors.New("native NBD export too small")
 	}
 	if transmissionFlags&2 == 0 {
-		return errors.New("native NBD export did not confirm read-only")
+		return errNBDReadOnlyUnavailable
 	}
 	request := make([]byte, 28)
 	binary.BigEndian.PutUint32(request, 0x25609513)
