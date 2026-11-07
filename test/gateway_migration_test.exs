@@ -106,6 +106,25 @@ defmodule Opsmaru.Incus.GatewayMigrationTest do
     end
   end
 
+  test "pinned native root instance rejection is preserved for encoded snapshot names", context do
+    side = Backend.start(context, "source")
+    mount(context, side.connection)
+    target = "/1.0/instances/source%2Fsnapshot?project=allowed"
+
+    for method <- ["GET", "DELETE"] do
+      response = RawHTTP.request(context.port, method, target, [auth()])
+      assert response.status == 400
+      assert native(response.body)["error"] == "Invalid instance name"
+    end
+
+    assert Enum.map(Backend.requests(side), &{&1.method, &1.target}) == [
+             {"GET", target},
+             {"DELETE", target}
+           ]
+
+    refute Enum.any?(Backend.events(side), &match?({:delete, _, _}, &1))
+  end
+
   defp verify_channels(mode, events, source_endpoint, target_endpoint) do
     frames = for {:frame, name, channel, data} <- events, do: {name, channel, data}
 

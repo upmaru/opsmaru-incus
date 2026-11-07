@@ -506,8 +506,17 @@ not gateway retries. Actual unmodified CLI copy/move and immutable consumer
 results belong to G6; real-Incus and installed Macus/hardware evidence remain
 separate gates.
 
-The G5 matrix verifies default copy/move behavior. Live migration, CRIU/stateful
+The G5 matrix verifies default copy behavior. Live migration, CRIU/stateful
 snapshots and optional flags such as instance-only/refresh are not gateway
 acceptance evidence in this slice. Their additional extension names remain
 outside the conservative gateway allowlist; this is an explicit gateway
 verification gap, not a claim that the backend or host lacks those features.
+
+The pinned v7.0.1 CLI has a separate snapshot-move limitation: after a
+successful cross-server snapshot copy, its move command calls the ordinary
+instance deletion helper with `source/snapshot`. That helper first requests
+`GET /1.0/instances/source%2Fsnapshot`; the pinned server returns `400 Invalid
+instance name` before deletion. The portable oracle preserves this rejection
+rather than making the CLI pass against a permissive fake server. Successful
+snapshot move remains an open acceptance gate; the gateway does not rewrite
+this route or add a compensating mutation.

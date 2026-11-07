@@ -124,7 +124,24 @@ defmodule Opsmaru.TestSupport.NativeMigrationBackend do
     end
   end
 
-  defp respond(side, _request, "/1.0") do
+  defp respond(side, request, path) do
+    # Match pinned incusd instanceGet/instanceDelete: a snapshot name sent to
+    # the root instance route is invalid, even when the slash is percent encoded.
+    # In particular, do not make the upstream CLI snapshot-move delete bug pass.
+    invalid =
+      case String.split(path, "/") do
+        ["", "1.0", "instances", name] -> String.contains?(URI.decode(name), "/")
+        _ -> false
+      end
+
+    if invalid do
+      %{status: 400, body: %{type: "error", error: "Invalid instance name", error_code: 400}}
+    else
+      respond_valid(side, request, path)
+    end
+  end
+
+  defp respond_valid(side, _request, "/1.0") do
     sync(%{
       api_version: "1.0",
       auth: "trusted",
@@ -140,7 +157,7 @@ defmodule Opsmaru.TestSupport.NativeMigrationBackend do
     })
   end
 
-  defp respond(side, %{method: "POST"} = request, _path) do
+  defp respond_valid(side, %{method: "POST"} = request, _path) do
     body = Jason.decode!(request.body)
     record(side, {:post, side.name, request.target, body})
 
@@ -151,12 +168,12 @@ defmodule Opsmaru.TestSupport.NativeMigrationBackend do
     if side.opts[:reply] == :lost, do: %{raw: ""}, else: accepted(side.name)
   end
 
-  defp respond(side, %{method: "DELETE"} = request, _path) do
+  defp respond_valid(side, %{method: "DELETE"} = request, _path) do
     record(side, {:delete, side.name, request.target})
     accepted(side.name <> "-delete")
   end
 
-  defp respond(side, request, path) do
+  defp respond_valid(side, request, path) do
     cond do
       path == "/1.0/events" ->
         %{upgrade: &event_channel(request, &1, &2)}
