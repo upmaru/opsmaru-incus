@@ -305,6 +305,12 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
       {:error, :econnrefused} ->
         :ok
 
+      {:error, :econnreset} ->
+        # macOS may reset an in-flight connect while Ranch is closing. Keep
+        # checking until the listener actually refuses new connections.
+        Process.sleep(10)
+        await_closed(port, remaining - 1)
+
       {:ok, socket} ->
         :gen_tcp.close(socket)
         Process.sleep(10)
