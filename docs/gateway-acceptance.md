@@ -19,6 +19,9 @@ The report path must not already exist. The optional
 `OPSMARU_INCUS_FIXTURE_REPOSITORY` override supports local development clones;
 such runs are development fixture evidence, not published-revision acceptance.
 The default repository is `https://github.com/upmaru/opsmaru-incus.git`.
+The default consumer dependency is pinned to
+`6091297622729018f7e796ab66ed25cbf748a3f6`, including the default-queue
+WebSocket upload backpressure fix. Earlier evidence revisions remain historical.
 The script checks the fetched dependency's exact commit and clean working tree.
 The report separately identifies the verifier's source commit, cleanliness and
 fixture/driver source hashes because the harness may differ from the dependency
