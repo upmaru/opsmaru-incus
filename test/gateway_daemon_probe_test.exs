@@ -79,6 +79,13 @@ defmodule Opsmaru.Incus.GatewayDaemonProbeTest do
       assert_raise MatchError, fn -> Probe.verify_and_activate(%{runtime | config: config}) end
     end
 
+    assert_raise ArgumentError, "invalid bounded daemon probe timeout", fn ->
+      Probe.verify_and_activate(%{
+        runtime
+        | config: Map.put(runtime.config, "daemon_probe_timeout_ms", 0)
+      })
+    end
+
     assert Agent.get(state, & &1.posts) == []
   end
 

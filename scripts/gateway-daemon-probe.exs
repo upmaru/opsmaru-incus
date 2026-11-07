@@ -140,6 +140,7 @@ defmodule OpsmaruGatewayDaemonProbe do
     true = context.config["allow_namespaced_mutations"] == true
     true = is_binary(context.marker) and context.marker != ""
     true = String.starts_with?(context.resource_prefix, "gw-")
+    _ = timeout(context)
 
     for side <- ["source", "target"] do
       true =
