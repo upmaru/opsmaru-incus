@@ -263,12 +263,55 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
     assert outcome in [:closed, :close_frame]
     eventually(fn -> Admission.count(context.admission) == 0 end)
     channel = open(context)
+    relay = relay(context)
+    eventually(fn -> :sys.get_state(relay).attached end)
+    state = :sys.get_state(relay)
+    lost_at = System.monotonic_time(:millisecond)
     Process.exit(context.admission, :kill)
-    assert {:close, code, _} = recv_frame(channel)
-    assert code in [1008, 1011]
+    # Admission loss has a finite frontend grace; a busy Cowboy may be killed
+    # before its best-effort close frame is flushed.
+    case recv_frame(channel) do
+      {:close, code, _} -> assert code in [1008, 1011]
+      :closed -> :ok
+    end
+
+    assert System.monotonic_time(:millisecond) - lost_at < 1_000
+
+    eventually(fn ->
+      not Process.alive?(relay) and not Process.alive?(state.writer) and
+        not Process.alive?(state.owner)
+    end)
+
     assert_receive {:websocket_peer, outcome}, 1_000
     assert outcome in [:closed, :close_frame]
-    assert length(WebSocketFixture.requests(fixture)) == 2
+    assert [%{method: "GET"}, %{method: "GET"}] = WebSocketFixture.requests(fixture)
+    close(channel)
+  end
+
+  test "admission loss force-closes a blocked Cowboy after its finite frontend grace", context do
+    fixture = ws_backend(context, wire: "", notify: self())
+    mount_ws(context, fixture)
+    channel = open(context)
+    relay = relay(context)
+    eventually(fn -> :sys.get_state(relay).attached end)
+    state = :sys.get_state(relay)
+    owner = state.owner
+    owner_ref = Process.monitor(owner)
+    :erlang.suspend_process(owner)
+    on_exit(fn -> Process.exit(owner, :kill) end)
+
+    lost_at = System.monotonic_time(:millisecond)
+    Process.exit(context.admission, :kill)
+    # The independent guard must end access even when Cowboy cannot flush a
+    # best-effort close frame. Backend-native close-frame fidelity is separate.
+    assert :closed == recv_frame(channel)
+    assert System.monotonic_time(:millisecond) - lost_at < 1_000
+    assert_receive {:DOWN, ^owner_ref, :process, ^owner, :killed}, 1_000
+    assert_receive {:websocket_peer, outcome}, 1_000
+    assert outcome in [:closed, :close_frame]
+    eventually(fn -> not Process.alive?(relay) and not Process.alive?(state.writer) end)
+    refute Process.alive?(context.admission)
+    assert [%{method: "GET"}] = WebSocketFixture.requests(fixture)
     close(channel)
   end
 
