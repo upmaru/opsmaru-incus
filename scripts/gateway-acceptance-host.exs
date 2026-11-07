@@ -2,6 +2,7 @@
 defmodule OpsmaruGatewayAcceptance.Host do
   @moduledoc false
   @behaviour Opsmaru.Incus.Gateway.Host
+  alias Opsmaru.Incus.{Error, RequestContext}
   @migration_descriptions ["Creating instance", "Migrating instance", "Transferring snapshot"]
 
   def fingerprint(der), do: Base.encode16(:crypto.hash(:sha256, der), case: :lower)
@@ -188,9 +189,17 @@ defmodule OpsmaruGatewayAcceptance.Host do
           into: %{},
           do: {operation["id"], entry}
 
-    Agent.update(config.state, fn state ->
-      active = Map.reject(state.operations, fn {_, entry} -> entry.expires <= now end)
-      %{state | operations: Map.merge(active, entries), ready: true, last_poll: now}
+    Agent.get_and_update(config.state, fn state ->
+      lifetime = RequestContext.check(Map.get(config, :poll_context))
+      owner_alive = Process.alive?(state.owner)
+
+      if owner_alive and lifetime == :ok do
+        active = Map.reject(state.operations, fn {_, entry} -> entry.expires <= now end)
+        {:ok, %{state | operations: Map.merge(active, entries), ready: true, last_poll: now}}
+      else
+        kind = if owner_alive, do: elem(lifetime, 1), else: :owner_lost
+        {{:error, %Error{kind: kind}}, %{state | ready: false, operations: %{}}}
+      end
     end)
   end
 
@@ -781,15 +790,10 @@ defmodule OpsmaruGatewayAcceptance do
   def poll_once(context, side, host) do
     started = System.monotonic_time(:millisecond)
 
-    owner =
-      poll_result(fn ->
-        if Agent.get(host.state, &Process.alive?(&1.owner)),
-          do: :ok,
-          else: {:error, %Error{kind: :owner_lost}}
-      end)
+    client = Incus.project(context.clients[side], host.project)
+    owner = poll_result(fn -> poll_guard(client, host) end)
 
     if owner == :ok do
-      client = Incus.project(context.clients[side], host.project)
       project = poll_result(fn -> poll_project(client, host.project, context.marker) end)
 
       case project do
@@ -797,13 +801,22 @@ defmodule OpsmaruGatewayAcceptance do
           poll_operations(context, side, host, client, started)
 
         {:error, error} ->
-          poll_failure(context, side, host, "project", error, started)
-          :stop
+          poll_failed(context, side, host, client, "project", error, started)
       end
     else
       {:error, error} = owner
-      poll_failure(context, side, host, "owner", error, started)
-      :stop
+      poll_failed(context, side, host, client, "owner", error, started)
+    end
+  end
+
+  defp poll_guard(client, host) do
+    if Agent.get(host.state, &Process.alive?(&1.owner)) do
+      case Context.authorize(client.context, client.connection) do
+        :ok -> :ok
+        {:error, kind} -> {:error, %Error{kind: kind}}
+      end
+    else
+      {:error, %Error{kind: :owner_lost}}
     end
   end
 
@@ -822,9 +835,14 @@ defmodule OpsmaruGatewayAcceptance do
   defp poll_operations(context, side, host, client, started) do
     result =
       poll_result(fn ->
-        case Incus.call(client, "GetOperations", %{}) do
-          {:ok, response} -> Host.register(host, Enum.map(response.metadata, &Model.encode/1))
-          {:error, error} -> {:error, error}
+        with :ok <- poll_guard(client, host),
+             {:ok, response} <- Incus.call(client, "GetOperations", %{}),
+             operations = Enum.map(response.metadata, &Model.encode/1),
+             :ok <- poll_guard(client, host) do
+          Host.register(
+            Map.put(host, :poll_context, client.connection.request_context),
+            operations
+          )
         end
       end)
 
@@ -833,10 +851,46 @@ defmodule OpsmaruGatewayAcceptance do
         :continue
 
       {:error, error} ->
-        poll_failure(context, side, host, "operations", error, started)
-        if error.kind in [:poll_exception, :poll_exit], do: :stop, else: :continue
+        poll_failed(context, side, host, client, "operations", error, started)
     end
   end
+
+  defp poll_failed(context, side, host, client, stage, error, started) do
+    error =
+      case poll_result(fn -> poll_guard(client, host) end) do
+        :ok -> error
+        {:error, revoked} -> revoked
+      end
+
+    retained = poll_failure(context, side, host, stage, error, started)
+
+    cond do
+      retained ->
+        :continue
+
+      transient_poll_error?(error) ->
+        :stop
+
+      stage == "operations" and
+          error.kind not in [
+            :poll_exception,
+            :poll_exit,
+            :owner_lost,
+            :canceled,
+            :host_not_ready,
+            :owner_mismatch
+          ] ->
+        :continue
+
+      true ->
+        :stop
+    end
+  end
+
+  defp transient_poll_error?(%Error{kind: kind, http_status: nil}),
+    do: kind in [:connection, :response_closed]
+
+  defp transient_poll_error?(_), do: false
 
   defp poll_result(fun) do
     fun.()
@@ -846,39 +900,82 @@ defmodule OpsmaruGatewayAcceptance do
     _, _ -> {:error, %Error{kind: :poll_exit}}
   end
 
-  @poll_error_kinds ~w(native connection deadline request response response_limit invalid_response invalid_envelope invalid_model invalid_metadata invalid_response_model unsupported_extension forbidden unauthorized not_ready canceled owner_lost project_marker_mismatch poll_exception poll_exit)a
+  @poll_error_kinds ~w(native connection response_closed cache_expired deadline request response response_limit invalid_response invalid_envelope invalid_model invalid_metadata invalid_response_model unsupported_extension forbidden unauthorized not_ready host_not_ready owner_mismatch canceled owner_lost project_marker_mismatch poll_exception poll_exit)a
   defp poll_failure(context, side, host, stage, error, started) do
-    record? =
+    transient = transient_poll_error?(error)
+    now = System.monotonic_time(:millisecond)
+
+    {record?, retained, kind, remaining} =
       Agent.get_and_update(
         host.state,
-        fn state ->
-          failures = Map.get(state, :poll_failure_count, 0)
-
-          {failures < 16,
-           state
-           |> Map.merge(%{ready: false, operations: %{}})
-           |> Map.put(:poll_failure_count, min(16, failures + 1))}
-        end,
+        &poll_failure_state(&1, host, error.kind, transient, now),
         1_000
       )
 
     if record? do
-      kind =
-        if error.kind in @poll_error_kinds, do: Atom.to_string(error.kind), else: "poll_error"
+      kind = if kind in @poll_error_kinds, do: Atom.to_string(kind), else: "poll_error"
 
       status = if error.http_status in 100..599, do: error.http_status
 
-      record_detail(context, "poll-failure/" <> side, %{
+      evidence = %{
         "error_kind" => kind,
         "http_status" => status,
         "elapsed_ms" => max(0, System.monotonic_time(:millisecond) - started),
-        "proof" => %{"stage" => stage}
-      })
+        "proof" => %{
+          "stage" => stage,
+          "remaining_cache_ms" => remaining,
+          "retained_authority" => retained
+        }
+      }
+
+      record_poll_diagnostic(context, side, evidence, retained)
     end
+
+    retained
   rescue
-    _ -> :ok
+    _ -> false
   catch
-    _, _ -> :ok
+    _, _ -> false
+  end
+
+  defp poll_failure_state(state, host, kind, transient, now) do
+    freshness = Map.get(host, :freshness_ms, 2_000)
+
+    remaining =
+      if state.ready, do: min(freshness, max(0, freshness - (now - state.last_poll))), else: 0
+
+    retained = transient and state.ready and remaining > 0
+    kind = if transient and state.ready and remaining == 0, do: :cache_expired, else: kind
+    failures = Map.get(state, :poll_transient_failure_count, 0)
+
+    updated =
+      if retained,
+        do: Map.put(state, :poll_transient_failure_count, min(15, failures + 1)),
+        else: %{state | ready: false, operations: %{}}
+
+    {{not retained or failures < 15, retained, kind, remaining}, updated}
+  end
+
+  defp record_poll_diagnostic(context, side, evidence, true),
+    do: record_detail(context, "poll-transient/" <> side, evidence)
+
+  defp record_poll_diagnostic(context, side, evidence, false) do
+    # Reserve one replaceable decisive slot even after fifteen transient entries.
+    # Only fixed safe fields produced above enter this bounded local record.
+    label = "poll-decisive/" <> side
+    entry = %{"step" => label, "evidence" => evidence}
+
+    journal_update(
+      context,
+      &Map.update!(&1, "details", fn details -> replace_poll_diagnostic(details, label, entry) end)
+    )
+  end
+
+  defp replace_poll_diagnostic(details, label, entry) do
+    case Enum.find_index(details, &(&1["step"] == label)) do
+      nil -> details ++ [entry]
+      index -> List.replace_at(details, index, entry)
+    end
   end
 
   def step(context, label, fun) when is_binary(label) and is_function(fun, 0) do

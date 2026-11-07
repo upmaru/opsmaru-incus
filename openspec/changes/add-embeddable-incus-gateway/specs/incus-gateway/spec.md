@@ -136,6 +136,13 @@ Gateway fixtures, typed-client coverage, isolated real-Incus acceptance, install
 - **WHEN** an operator explicitly supplies an isolated Incus backend and permits scoped test mutations
 - **THEN** the library repository can verify gateway behavior independently, without modifying Macus or claiming its installation/hardware acceptance
 
+#### Scenario: Bounded acceptance metadata-read recovery
+
+- **WHEN** the explicitly started acceptance host encounters only a metadata GET connection failure or a transport close before any parsed response observation
+- **THEN** it may retry that read while retaining only already-verified authority within the original cache lifetime, without updating freshness/entry expiry, learning unknown operations or making an initially unready host ready; fresh admission and existing leases still enforce their documented expiry/recheck bounds
+- **AND** any observed HTTP status, malformed HTTP, deadline, native/model/schema failure, cancellation, owner loss, marker change or trust revocation remains fail-closed; ownership/cancellation are checked after blocked reads before renewal, and decisive diagnostics remain visible without raw metadata or secrets
+- **AND** the library never retries a mutation and preserves uncertainty when an accepted mutation loses its response
+
 #### Scenario: Proxy passes while client coverage is missing
 
 - **WHEN** a standard client succeeds through the gateway for a native call with no typed-client evidence

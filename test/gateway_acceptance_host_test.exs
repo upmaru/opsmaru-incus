@@ -3,7 +3,7 @@ Code.require_file(Path.expand("../scripts/gateway-acceptance-host.exs", __DIR__)
 defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
   use Opsmaru.TestSupport.GatewayCase, async: true
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.Context
+  alias Opsmaru.Incus.{Context, Error, RequestContext}
   alias Opsmaru.Incus.Gateway.{Policy, Request}
   alias Opsmaru.TestSupport.HTTPFixture
   alias OpsmaruGatewayAcceptance, as: Runner
@@ -76,7 +76,8 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
     refute Host.ready?(host)
     assert Agent.get(host.state, & &1.operations) == %{}
     [%{"evidence" => failure}] = Agent.get(runtime.journal, & &1["details"])
-    assert failure["proof"] == %{"stage" => "operations"}
+    assert failure["proof"]["stage"] == "operations"
+    assert failure["proof"]["retained_authority"] == false
     assert failure["error_kind"] == "native"
     assert failure["http_status"] == 503
     assert is_integer(failure["elapsed_ms"]) and failure["elapsed_ms"] >= 0
@@ -84,7 +85,7 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
     refute File.read!(runtime.config["report"]) =~ "secret="
 
     for _ <- 1..18, do: assert(:continue == Runner.poll_once(runtime, "source", host))
-    assert length(Agent.get(runtime.journal, & &1["details"])) == 16
+    assert length(Agent.get(runtime.journal, & &1["details"])) == 1
     Agent.update(state, &Map.put(&1, :mode, :ok))
     assert :continue = Runner.poll_once(runtime, "source", host)
     assert Host.ready?(host)
@@ -144,15 +145,203 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
     refute File.read!(runtime.config["report"]) =~ "private-malformed"
   end
 
+  test "repeated early closes preserve only the exact original cache until its original expiry",
+       context do
+    {runtime, host, state, fixture} = poll_fixture(context)
+    host = Map.merge(host, %{freshness_ms: 2_000, operation_ttl_ms: 2_000})
+    Host.register(host, [operation("pending", "Creating instance", "websocket")])
+    original = Agent.get(host.state, &Map.take(&1, [:last_poll, :operations]))
+    assert {:ok, grant} = Host.admit_operation_secret(request(nil, "project", "pending"), host)
+    Agent.update(state, &Map.put(&1, :mode, :project_closed))
+
+    for _ <- 1..18 do
+      assert :continue = Runner.poll_once(runtime, "source", host)
+      assert Agent.get(host.state, &Map.take(&1, [:last_poll, :operations])) == original
+      assert Host.ready?(host)
+      assert Host.valid?(request(nil, "project", "pending"), grant, host)
+    end
+
+    assert {:error, :forbidden} =
+             Host.admit_operation_secret(request(nil, "project", "unknown"), host)
+
+    assert length(Agent.get(runtime.journal, & &1["details"])) == 15
+    caller = Host.fingerprint(<<1, 2, 3>>)
+
+    new_request = %{
+      request(<<1, 2, 3>>, "project", nil)
+      | protocol: :http,
+        path: "/1.0/instances/gw-test-instance",
+        query: "project=project"
+    }
+
+    before_requests = length(HTTPFixture.requests(fixture))
+    assert {:ok, {:caller, ^caller}} = Host.authorize(new_request, host)
+    assert length(HTTPFixture.requests(fixture)) == before_requests
+    Agent.update(host.state, &%{&1 | trust: %{}})
+    refute Host.valid?(request(<<1, 2, 3>>, "project", "pending"), {:caller, caller}, host)
+    assert Agent.get(host.state, &Map.take(&1, [:last_poll, :operations])) == original
+
+    Process.sleep(
+      max(0, original.last_poll + host.freshness_ms - System.monotonic_time(:millisecond)) + 5
+    )
+
+    refute Host.ready?(host)
+    refute Host.valid?(request(nil, "project", "pending"), grant, host)
+    assert :stop = Runner.poll_once(runtime, "source", host)
+    assert Agent.get(host.state, & &1.last_poll) == original.last_poll
+    assert Agent.get(host.state, & &1.operations) == %{}
+    details = Agent.get(runtime.journal, & &1["details"])
+    assert length(details) == 16
+    assert List.last(details)["evidence"]["error_kind"] == "cache_expired"
+    assert List.last(details)["evidence"]["proof"]["remaining_cache_ms"] == 0
+    assert Enum.all?(HTTPFixture.requests(fixture), &(&1.method == "GET"))
+  end
+
+  test "connection failure retains a verified cache but an initial early close stays unready",
+       context do
+    {runtime, host, state, _} = poll_fixture(context)
+    Agent.update(host.state, &%{&1 | ready: false, last_poll: 0})
+    Agent.update(state, &Map.put(&1, :mode, :project_closed))
+    assert :stop = Runner.poll_once(runtime, "source", host)
+    refute Host.ready?(host)
+    assert Agent.get(host.state, & &1.last_poll) == 0
+    assert Agent.get(host.state, & &1.operations) == %{}
+    failure = Agent.get(runtime.journal, &List.last(&1["details"])["evidence"])
+    assert failure["proof"]["remaining_cache_ms"] == 0
+    assert failure["proof"]["retained_authority"] == false
+
+    Host.register(host, [operation("pending", "Creating instance", "websocket")])
+    original = Agent.get(host.state, &Map.take(&1, [:last_poll, :operations]))
+    client = runtime.clients["source"]
+
+    client = %{
+      client
+      | connection: %{client.connection | address: client.connection.address <> ".absent"}
+    }
+
+    runtime = %{runtime | clients: %{"source" => client}}
+    assert :continue = Runner.poll_once(runtime, "source", host)
+    assert Agent.get(host.state, &Map.take(&1, [:last_poll, :operations])) == original
+    assert Host.ready?(host)
+  end
+
+  test "hard native, marker and schema failures revoke a previously retained cache", context do
+    for {mode, kind, action} <- [
+          {:project_error, "native", :stop},
+          {:project_truncated403, "response", :stop},
+          {:project_truncated404, "response", :stop},
+          {:marker_changed, "project_marker_mismatch", :stop},
+          {:operations_invalid, "invalid_model", :continue}
+        ] do
+      {runtime, host, state, _} = poll_fixture(context)
+      Host.register(host, [operation("pending", "Creating instance", "websocket")])
+      original = Agent.get(host.state, & &1.last_poll)
+      Agent.update(state, &Map.put(&1, :mode, :operations_closed))
+      assert :continue = Runner.poll_once(runtime, "source", host)
+      assert Host.ready?(host)
+      Agent.update(state, &Map.put(&1, :mode, mode))
+      assert ^action = Runner.poll_once(runtime, "source", host)
+      refute Host.ready?(host)
+      assert Agent.get(host.state, & &1.last_poll) == original
+      assert Agent.get(host.state, & &1.operations) == %{}
+      decisive = Agent.get(runtime.journal, &List.last(&1["details"])["evidence"])
+      assert decisive["error_kind"] == kind
+      assert decisive["proof"]["retained_authority"] == false
+    end
+  end
+
+  test "owner loss or cancellation during either metadata GET cannot renew authority", context do
+    for stage <- ["project", "operations"], failure <- [:owner, :cancel, :trust] do
+      {runtime, host, state, fixture} = poll_fixture(context)
+      Host.register(host, [operation("pending", "Creating instance", "websocket")])
+      original = Agent.get(host.state, & &1.last_poll)
+
+      owner =
+        spawn(fn ->
+          receive do
+            :finish -> :ok
+          after
+            10_000 -> :ok
+          end
+        end)
+
+      monitor = Process.monitor(owner)
+      Agent.update(host.state, &%{&1 | owner: owner})
+      scope = RequestContext.new!(timeout: 10_000)
+      client = Incus.with_context(runtime.clients["source"], scope)
+
+      client = %{
+        client
+        | context:
+            Context.new!(
+              owner: :poll_fixture,
+              identity: :verified,
+              ready?: fn -> Agent.get(state, &Map.get(&1, :approved, true)) end
+            )
+      }
+
+      runtime = %{runtime | clients: %{"source" => client}}
+
+      Agent.update(
+        state,
+        &Map.put(
+          &1,
+          :mode,
+          if(stage == "project", do: :project_blocked, else: :operations_blocked)
+        )
+      )
+
+      task = Task.async(fn -> Runner.poll_once(runtime, "source", host) end)
+      assert_receive {:poll_blocked, ^stage, handler}, 2_000
+
+      case failure do
+        :owner ->
+          Process.exit(owner, :kill)
+          assert_receive {:DOWN, ^monitor, :process, ^owner, :killed}
+
+        :cancel ->
+          RequestContext.cancel(scope)
+
+        :trust ->
+          Agent.update(state, &Map.put(&1, :approved, false))
+      end
+
+      send(handler, :release_poll)
+      assert :stop = Task.await(task, 2_000)
+      refute Host.ready?(host)
+      assert Agent.get(host.state, & &1.last_poll) == original
+      assert Agent.get(host.state, & &1.operations) == %{}
+      decisive = Agent.get(runtime.journal, &List.last(&1["details"])["evidence"])
+      kind = %{owner: :owner_lost, cancel: :canceled, trust: :host_not_ready}[failure]
+      assert decisive["error_kind"] == Atom.to_string(kind)
+      assert Enum.all?(HTTPFixture.requests(fixture), &(&1.method == "GET"))
+
+      if failure in [:owner, :cancel] do
+        assert {:error, %Error{kind: ^kind}} =
+                 Host.register(Map.put(host, :poll_context, scope), [
+                   operation("must-not-renew", "Creating instance", "websocket")
+                 ])
+
+        assert Agent.get(host.state, & &1.last_poll) == original
+      end
+
+      if failure != :owner do
+        send(owner, :finish)
+        assert_receive {:DOWN, ^monitor, :process, ^owner, :normal}
+      end
+    end
+  end
+
   defp poll_fixture(context) do
     {host, _} = host(context)
+    observer = self()
     state = start_supervised!({Agent, fn -> %{mode: :ok} end}, id: make_ref())
 
     fixture =
       start_supervised!(
         {HTTPFixture,
          transport: :gen_tcp,
-         path: Path.join(context.root, "poll-fixture.sock"),
+         path: Path.join(context.root, "poll-#{System.unique_integer([:positive])}.sock"),
          handler: fn request ->
            mode = Agent.get(state, & &1.mode)
 
@@ -167,19 +356,32 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
              "/1.0/projects/project" when mode == :project_error ->
                poll_native_error()
 
+             "/1.0/projects/project" when mode == :project_closed ->
+               %{raw: ""}
+
+             "/1.0/projects/project"
+             when mode in [:project_truncated403, :project_truncated404] ->
+               poll_truncated_status(mode)
+
+             "/1.0/projects/project" when mode == :project_blocked ->
+               await_poll_release(observer, "project")
+               poll_project_response(:ok)
+
              "/1.0/projects/project" ->
-               sync(%{
-                 name: "project",
-                 config: %{},
-                 description:
-                   if(mode == :marker_changed,
-                     do: "private-foreign-marker",
-                     else: "Opsmaru gateway acceptance marker"
-                   )
-               })
+               poll_project_response(mode)
 
              "/1.0/operations" when mode == :operations_error ->
                poll_native_error()
+
+             "/1.0/operations" when mode == :operations_closed ->
+               %{raw: ""}
+
+             "/1.0/operations" when mode == :operations_blocked ->
+               await_poll_release(observer, "operations")
+
+               sync(%{
+                 "running" => [operation("new-after-block", "Creating instance", "websocket")]
+               })
 
              "/1.0/operations" when mode == :operations_invalid ->
                sync(%{"running" => "private-malformed"})
@@ -209,10 +411,40 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
       clients: %{"source" => client},
       marker: "marker",
       journal: journal,
-      config: %{"report" => Path.join(context.root, "poll-report.json")}
+      config: %{
+        "report" =>
+          Path.join(context.root, "poll-report-#{System.unique_integer([:positive])}.json")
+      }
     }
 
     {runtime, host, state, fixture}
+  end
+
+  defp poll_project_response(mode),
+    do:
+      sync(%{
+        name: "project",
+        config: %{},
+        description:
+          if(mode == :marker_changed,
+            do: "private-foreign-marker",
+            else: "Opsmaru gateway acceptance marker"
+          )
+      })
+
+  defp poll_truncated_status(mode) do
+    status = if mode == :project_truncated403, do: 403, else: 404
+    %{raw: "HTTP/1.1 #{status} Fixture\r\nContent-Length: 20\r\n\r\nshort"}
+  end
+
+  defp await_poll_release(observer, stage) do
+    send(observer, {:poll_blocked, stage, self()})
+
+    receive do
+      :release_poll -> :ok
+    after
+      5_000 -> raise "fixture release timeout"
+    end
   end
 
   defp poll_native_error,

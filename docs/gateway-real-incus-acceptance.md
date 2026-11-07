@@ -111,12 +111,28 @@ operation-binding TTL and initial-readiness bound of twice that timeout plus
 2 seconds of scheduling slack (12 seconds at the default), with a 100ms polling
 cadence. Hand-built host fixtures keep their 2-second freshness and 5-second
 binding defaults. These are acceptance-host settings, not production gateway
-or lease policy changes. Ownership, project-marker and RPC failures still
-clear readiness and operation authority. Project/marker failures and unexpected
-poll exceptions stop that poller; ordinary operation-list RPC errors retain
-the existing read-only polling behavior. At most 16 safe poll-failure details
-per side record the stage, error kind, HTTP status and elapsed time, without
-native messages, metadata, credentials or operation secrets.
+or lease policy changes. Only metadata GET `connection` or `response_closed`
+errors with no HTTP status may retain an already-ready host's original cache.
+They never update `last_poll` or operation expiry, learn an unknown operation,
+or turn initial unready state into ready state; an initial failure stops that
+poller. New trusted requests may also use the original cached authority during
+its remaining lifetime. Certificate grants still consult current trust.
+At cache expiry fresh admission fails immediately; existing channels observe
+that expiry at their unchanged bounded lease recheck (5 seconds for this host).
+Hard native/model/schema, ownership, cancellation and marker failures clear
+authority immediately. Both blocked reads are followed by local owner/lifetime
+checks before renewal. Hard project failures stop; hard operation-list failures
+retain the existing read-only polling behavior.
+
+`response_closed` identifies only an exact Mint closed transport error with no
+prior parsed response and an empty current response-event batch. Any parsed
+status, including truncated 403/404, malformed HTTP and deadlines stay hard.
+Partial unparsed status-line bytes cannot be distinguished from an early EOF;
+this does not claim that no raw bytes arrived. The library never retries, and
+mutation errors remain uncertain. At most 15 transient details plus one
+replaceable decisive detail per side record safe stage/kind/status, elapsed
+time and remaining cache bounds, without messages, metadata or secrets. A
+decisive expiry or hard failure remains visible after transient suppression.
 
 Console proof uses the unchanged native console helper plus one fixed native
 exec command in the owned test container. The command writes a fresh ASCII

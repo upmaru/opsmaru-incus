@@ -175,7 +175,7 @@ defmodule Opsmaru.Incus.ClientTest do
 
     assert length(HTTPFixture.requests(fixture)) == 1
 
-    assert {:error, %Error{kind: :response}} =
+    assert {:error, %Error{kind: :response_closed}} =
              Incus.raw_query(connection, context, "GET", "/1.0", [])
 
     assert length(HTTPFixture.requests(fixture)) == 2

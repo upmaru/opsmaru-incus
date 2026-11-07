@@ -184,7 +184,9 @@ defmodule Opsmaru.Incus.NativeWaitReferenceTest do
 
       :reset ->
         assert expected["error"]
-        assert {:error, %Error{kind: :response} = error} = actual
+        # This fixture closes before writing any response headers; it is not
+        # the separate truncated-body EOF case above.
+        assert {:error, %Error{kind: :response_closed} = error} = actual
         refute inspect(error) =~ @secret
 
       native when native in [:forbidden, :not_found] ->

@@ -221,7 +221,14 @@ defmodule Opsmaru.Incus do
         {:error, error}
 
       {:error, kind}
-      when kind in [:response, :deadline, :response_limit, :invalid_response, :invalid_envelope] ->
+      when kind in [
+             :response,
+             :response_closed,
+             :deadline,
+             :response_limit,
+             :invalid_response,
+             :invalid_envelope
+           ] ->
         {:error, %Error{kind: if(method in ["GET", "HEAD"], do: kind, else: :uncertain)}}
 
       {:error, kind} ->
