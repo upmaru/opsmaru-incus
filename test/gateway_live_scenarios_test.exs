@@ -1,10 +1,22 @@
 Code.require_file("../scripts/gateway-acceptance-host.exs", __DIR__)
+Code.require_file("../scripts/gateway-daemon-probe.exs", __DIR__)
 Code.require_file("../scripts/gateway_live_scenarios.exs", __DIR__)
 
 defmodule Opsmaru.GatewayLiveScenariosTest do
   use ExUnit.Case, async: false
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   alias OpsmaruGatewayLiveScenarios, as: Scenarios
+
+  test "migration uses the verified daemon peer for the actual receiving gateway only" do
+    peers = %{"source" => true, "target" => false}
+    assert Scenarios.migration_peer_available?(peers, "pull", "source", "target")
+    refute Scenarios.migration_peer_available?(peers, "push", "source", "target")
+    refute Scenarios.migration_peer_available?(peers, "pull", "target", "source")
+    assert Scenarios.migration_peer_available?(peers, "push", "target", "source")
+    assert Scenarios.migration_peer_available?(%{}, "relay", "source", "target")
+    refute Scenarios.migration_peer_available?(%{}, "pull", "source", "target")
+    refute Scenarios.migration_peer_available?(%{}, "push", "source", "target")
+  end
 
   test "HTTPS direct comparison uses only the backend TLS identity and rejects mismatches before I/O" do
     root =

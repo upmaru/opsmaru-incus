@@ -8,6 +8,7 @@ defmodule OpsmaruGatewayLiveScenarios do
   alias Opsmaru.Incus
   alias OpsmaruGatewayAcceptance, as: Acceptance
   alias OpsmaruGatewayAcceptance.Host
+  alias OpsmaruGatewayDaemonProbe, as: DaemonProbe
   @sides ~w(source target)
   @payload :binary.copy(<<0, 255, 128, 13, 10>>, 16_384)
   @proof_fields ~w(operation status_code http_status error_kind bytes sha256 exit event_operation received_bytes export_bytes read_bytes readonly local_detach remote_cancel accepted)
@@ -117,7 +118,8 @@ defmodule OpsmaruGatewayLiveScenarios do
     create_base(context, base)
     checked_cli(context, "start-owned-base", ["start", "source:" <> base, "--quiet"])
     ready_instance(context, base, 30)
-    reachable = probe_guest(context, base)
+    probe_guest(context, base)
+    daemon_peers = DaemonProbe.verify_and_activate(context)
     http_and_protocols(context, base)
     denial(context, base)
     interruption(context, base)
@@ -143,7 +145,7 @@ defmodule OpsmaruGatewayLiveScenarios do
       "--quiet"
     ])
 
-    migration(context, base, reachable)
+    migration(context, base, daemon_peers)
     cases = Agent.get(context.journal, & &1["cases"])
     if Acceptance.evidence_complete?(cases), do: cleanup_owned(context)
     :ok
@@ -564,18 +566,14 @@ defmodule OpsmaruGatewayLiveScenarios do
         end
 
       if first["exit"] == 0 and received != nil do
-        Acceptance.record_detail(context, "verified-guest-host-peer", %{
+        Acceptance.record_detail(context, "guest-container-host-diagnostic", %{
           "proof" => %{
             "hostname_reachable" => true,
-            "peer" => :inet.ntoa(received) |> List.to_string()
+            "container_peer" => :inet.ntoa(received) |> List.to_string(),
+            "nonce_sha256" => digest(nonce),
+            "grants_migration_authority" => false
           }
         })
-
-        Acceptance.set_verified_operation_peers(
-          context,
-          [:inet.ntoa(received) |> List.to_string()],
-          digest(nonce)
-        )
 
         true
       else
@@ -601,9 +599,9 @@ defmodule OpsmaruGatewayLiveScenarios do
           })
         end
 
-        Acceptance.record_detail(context, "native-guest-origin-unavailable", %{
+        Acceptance.record_detail(context, "container-origin-diagnostic-unavailable", %{
           "native_status" =>
-            "configured gateway FQDN unavailable from owned guest; no migration fallback"
+            "configured gateway FQDN unavailable from owned container; diagnostic only"
         })
 
         false
@@ -652,15 +650,18 @@ defmodule OpsmaruGatewayLiveScenarios do
     end
   end
 
-  defp migration(context, base, reachable) do
-    for item <- matrix(), do: migration_case(context, base, reachable, item)
+  defp migration(context, base, daemon_peers) do
+    for item <- matrix(), do: migration_case(context, base, daemon_peers, item)
   end
 
-  defp migration_case(context, base, reachable, {action, kind, mode, orientation, index}) do
+  defp migration_case(context, base, daemon_peers, {action, kind, mode, orientation, index}) do
     label = Enum.join([action, kind, mode, orientation], "/")
     limitation = action == "move" and kind == "snapshot"
 
-    if mode != "relay" and not reachable and not limitation do
+    to = if orientation == "source", do: "target", else: "source"
+    available = migration_peer_available?(daemon_peers, mode, orientation, to)
+
+    if not available and not limitation do
       Acceptance.record_case(context, label, "unrun")
     else
       setup = setup_migration(context, base, kind, orientation, index)
@@ -690,6 +691,12 @@ defmodule OpsmaruGatewayLiveScenarios do
       verify_migration(context, migration, result, before_requests)
     end
   end
+
+  @doc false
+  def migration_peer_available?(_, "relay", _, _), do: true
+  def migration_peer_available?(peers, "pull", source, _), do: Map.get(peers, source) == true
+  def migration_peer_available?(peers, "push", _, target), do: Map.get(peers, target) == true
+  def migration_peer_available?(_, _, _, _), do: false
 
   defp setup_migration(context, base, kind, from, index) do
     to = if from == "source", do: "target", else: "source"
