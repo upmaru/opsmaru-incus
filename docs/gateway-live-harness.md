@@ -27,7 +27,8 @@ The existing preflight configuration is extended with these fields:
   `expected_identity.certificate_sha256`, checked against authenticated backend
   discovery before any mutation.
 - Each side's `gateway.https` origin, literal `bind_ip`, and explicit nonempty
-  `allowed_operation_peers` list of literal addresses. The runtime does no
+  `allowed_operation_peers` list of literal bootstrap candidate addresses.
+  Candidates grant no authority: verified peer state starts empty. The runtime does no
   reachability inference, DNS override or guest-address fallback.
 - Absolute `gateway.server_certificate`, `server_key`, `client_certificate`,
   `client_key` and `client_ca` file references. Only the temporary host uses
@@ -114,7 +115,9 @@ perform no backend I/O. Special server-peer authority starts empty. After a sour
 proves guest reachability with its controlled nonce probe, it calls
 `set_verified_operation_peers(context, literal_addresses, nonce_sha256)`. That
 function journals the exact observed peers/proof and activates only those
-addresses in local host state. It is not exposed over HTTP, does not use
+addresses in local host state. This is an explicit, trusted host-policy update;
+a newly verified observed address may replace the bootstrap candidates only
+with the recorded controlled-probe proof. It is not exposed over HTTP, does not use
 forwarded headers, and never rewrites the configured migration origin. Updated
 peer state also revokes old grants on the ordinary validity check.
 
