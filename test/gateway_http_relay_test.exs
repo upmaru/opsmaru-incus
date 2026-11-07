@@ -463,8 +463,9 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
       response = RawHTTP.read(client, "POST")
       assert response.status == 413
       assert native(response.body)["metadata"]["gateway"]["outcome"] == "uncertain"
-      assert StreamBackend.accepted(backend) == 1
+      # Accept accounting is asynchronous; wait for backend processing first.
       assert_receive {:backend_closed_with, :closed}, 2_000
+      assert StreamBackend.accepted(backend) == 1
     end
 
     test "ambiguous request framing is rejected before the backend", context do
