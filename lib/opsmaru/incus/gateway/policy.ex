@@ -62,8 +62,7 @@ defmodule Opsmaru.Incus.Gateway.Policy do
       {:ok, slot} ->
         case check_host(gateway, request) do
           {:ok, grant, anonymous} ->
-            {:ok,
-             %Admitted{slot: slot, admission: elem(slot, 0), grant: grant, anonymous: anonymous}}
+            finish_admission(slot, grant, anonymous)
 
           {:error, failure} ->
             Admission.release(slot)
@@ -75,6 +74,18 @@ defmodule Opsmaru.Incus.Gateway.Policy do
 
       {:error, :unavailable} ->
         {:error, Failure.new(503, "Gateway is not available", :not_sent)}
+    end
+  end
+
+  # A host callback can outlive the admission it was called under. Refuse the
+  # lost slot before starting any protocol owner or lease: a guard on an already
+  # dead admission could otherwise interrupt even the local failure response.
+  defp finish_admission(slot, grant, anonymous) do
+    if Process.alive?(elem(slot, 0)) do
+      {:ok, %Admitted{slot: slot, admission: elem(slot, 0), grant: grant, anonymous: anonymous}}
+    else
+      Admission.release(slot)
+      {:error, Failure.new(503, "Gateway admission stopped", :not_sent)}
     end
   end
 
