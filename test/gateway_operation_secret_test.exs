@@ -249,7 +249,7 @@ defmodule Opsmaru.Incus.GatewayOperationSecretTest do
     # ordinary lease; neither sends an Incus DELETE for the pending operation.
     await_released(context.admission)
     Mint.HTTP.close(conn)
-    assert_received {:operation_backend_closed, {:error, :closed}}
+    assert_receive {:operation_backend_closed, {:error, :closed}}, 1_000
     assert [request] = HTTPFixture.requests(context.fixture)
     assert request.method == "GET"
   end
