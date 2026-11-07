@@ -518,5 +518,7 @@ copy/move code recognizes snapshot sources only for the `copy` command. For
 `GET /1.0/instances/source%2Fsnapshot`; the pinned server returns `400 Invalid
 instance name` before any migration request or source deletion. The portable oracle preserves this rejection
 rather than making the CLI pass against a permissive fake server. Successful
-snapshot move remains an open acceptance gate; the gateway does not rewrite
-this route or add a compensating mutation.
+snapshot move is recorded as a pinned native limitation under the explicit
+2026-11-07 user decision accepting that outcome as parity. The gateway does
+not rewrite this route or add a compensating mutation, and successful snapshot
+move is not claimed.
