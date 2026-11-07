@@ -447,6 +447,76 @@ defmodule Opsmaru.GatewayLiveScenariosTest do
     assert length(Agent.get(context.journal, & &1["details"])) == 1
   end
 
+  test "CLI failure health projects only local readiness, age, liveness and operation count" do
+    context = cli_diagnostic_context()
+    owner = self()
+    last_poll = System.monotonic_time(:millisecond) - 3_000
+
+    state =
+      start_supervised!(
+        {Agent,
+         fn ->
+           %{
+             owner: owner,
+             ready: true,
+             last_poll: last_poll,
+             operations: %{"private-operation-id" => %{secret: "private-operation-secret"}},
+             trust: %{"private-caller" => "private-trust-token"}
+           }
+         end},
+        id: :cli_health
+      )
+
+    context = Map.put(context, :sides, %{"source" => %{host: %{state: state}}})
+    assert :ok = Scenarios.record_cli_failure(context, "health", %{status: 1, output: "failure"})
+    [%{"evidence" => evidence}] = Agent.get(context.journal, & &1["details"])
+    health = evidence["proof"]["host_health"]
+    assert Map.keys(health) |> Enum.sort() == ["source", "target"]
+    assert health["target"] == %{"available" => false}
+
+    assert Enum.sort(Map.keys(health["source"])) ==
+             ~w(known_operation_count last_poll_age_ms owner_alive ready)
+
+    assert health["source"]["ready"] == true
+    assert health["source"]["owner_alive"] == true
+    assert health["source"]["known_operation_count"] == 1
+    assert health["source"]["last_poll_age_ms"] >= 3_000
+    report = File.read!(context.config["report"])
+    refute report =~ "private-operation"
+    refute report =~ "private-caller"
+    refute report =~ "private-trust-token"
+  end
+
+  test "unresponsive health Agent cannot delay or replace the CLI failure diagnostic" do
+    context = cli_diagnostic_context()
+    state = start_supervised!({Agent, fn -> %{} end}, id: :unresponsive_cli_health)
+    :ok = :sys.suspend(state)
+    context = Map.put(context, :sides, %{"source" => %{host: %{state: state}}})
+    started = System.monotonic_time(:millisecond)
+
+    try do
+      assert :ok =
+               Scenarios.record_cli_failure(context, "unresponsive", %{
+                 status: 9,
+                 output: "original CLI error"
+               })
+
+      assert System.monotonic_time(:millisecond) - started < 1_000
+      [%{"evidence" => evidence}] = Agent.get(context.journal, & &1["details"])
+      assert evidence["exit_status"] == 9
+
+      assert evidence["proof"]["host_health"] == %{
+               "source" => %{"available" => false},
+               "target" => %{"available" => false}
+             }
+
+      assert File.read!(Path.join(context.runtime, evidence["proof"]["artifact"])) ==
+               "original CLI error"
+    after
+      :sys.resume(state)
+    end
+  end
+
   test "CLI diagnostics reject a public or symlink run-state directory" do
     context = cli_diagnostic_context()
     File.chmod!(context.runtime, 0o755)

@@ -87,7 +87,11 @@ Unexpected native CLI exit results also retain a bounded operator-only diagnosti
 sidecar in the run's private `0700` state directory. Each exclusive `0600`
 `cli-failure-<digest>.log` contains combined CLI output, which may include
 sensitive native details. The JSON journal contains only the exit status,
-output SHA-256 and digest-only artifact basename; it never includes that raw
-output. This applies to migration and setup CLI exit failures and does not retry
+output SHA-256, digest-only artifact basename and a small local host-health
+snapshot; it never includes that raw output. Health records only each side's
+readiness flag, last-poll age, owner liveness and known-operation count. A
+missing or unresponsive Agent produces an unavailable snapshot after a bounded
+local read, without network queries or a state dump. This applies to migration
+and setup CLI exit failures and does not retry
 the command or alter the resource-retention/completion gate. Keep these
 sidecars private with the run state; do not publish them as report artifacts.

@@ -785,6 +785,7 @@ defmodule OpsmaruGatewayLiveScenarios do
         if expected_migration?(context, migration, result, before_requests) do
           {:ok, result}
         else
+          Acceptance.record_case(context, migration.label, "failed")
           record_cli_failure(context, migration.label, result)
           {:error, %Opsmaru.Incus.Error{kind: :native_cli_failed}}
         end
@@ -1415,9 +1416,41 @@ defmodule OpsmaruGatewayLiveScenarios do
     Acceptance.record_detail(context, label <> "/private-cli-diagnostic", %{
       "exit_status" => status,
       "sha256" => digest(output),
-      "proof" => %{"artifact" => basename}
+      "proof" => %{
+        "artifact" => basename,
+        "host_health" => Map.new(@sides, &{&1, cli_host_health(get_in(context, [:sides, &1]))})
+      }
     })
   end
+
+  defp cli_host_health(%{host: %{state: state}}) when is_pid(state) do
+    Agent.get(state, &cli_health_fields/1, 100)
+  rescue
+    _ -> %{"available" => false}
+  catch
+    :exit, _ -> %{"available" => false}
+  end
+
+  defp cli_host_health(_), do: %{"available" => false}
+
+  defp cli_health_fields(%{
+         owner: owner,
+         ready: ready,
+         last_poll: last_poll,
+         operations: operations
+       })
+       when is_pid(owner) and is_boolean(ready) and is_integer(last_poll) and is_map(operations) do
+    age = if last_poll != 0, do: max(0, System.monotonic_time(:millisecond) - last_poll)
+
+    %{
+      "ready" => ready,
+      "last_poll_age_ms" => age,
+      "owner_alive" => Process.alive?(owner),
+      "known_operation_count" => map_size(operations)
+    }
+  end
+
+  defp cli_health_fields(_), do: %{"available" => false}
 
   defp cli(context, args),
     do: command(context.native_cli, args, [{"INCUS_CONF", context.incus_conf}], 180_000)
