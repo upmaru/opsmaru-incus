@@ -51,7 +51,7 @@ defmodule OpsmaruGatewayLiveScenarios do
     for side <- @sides do
       require!(
         is_binary(config[side]["network"]) and config[side]["network"] != "",
-        "explicit verified network required"
+        "explicit network required"
       )
 
       validate_direct_backend!(config[side]["backend"])
@@ -262,6 +262,7 @@ defmodule OpsmaruGatewayLiveScenarios do
   def create_base(context, name) do
     spec = context.config["source"]
     pool = get_in(context, [:verified_pools, "source"])
+    network = get_in(context, [:verified_networks, "source"])
 
     require!(
       is_map(pool) and pool[:name] == spec["pool"] and is_binary(pool[:driver]) and
@@ -280,8 +281,9 @@ defmodule OpsmaruGatewayLiveScenarios do
       if pool.driver == "zfs", do: Map.put(root, "initial.zfs.reserve_space", "false"), else: root
 
     require!(
-      is_binary(spec["network"]) and spec["network"] != "",
-      "explicit verified network required"
+      match?(%{name: _, managed: true, status: "Created"}, network) and
+        network.name == spec["network"],
+      "verified source network binding unavailable"
     )
 
     body = %{
@@ -296,7 +298,7 @@ defmodule OpsmaruGatewayLiveScenarios do
       },
       "devices" => %{
         "root" => root,
-        "eth0" => %{"type" => "nic", "network" => spec["network"], "name" => "eth0"}
+        "eth0" => %{"type" => "nic", "network" => network.name, "name" => "eth0"}
       }
     }
 

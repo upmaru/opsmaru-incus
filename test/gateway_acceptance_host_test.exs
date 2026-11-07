@@ -10,7 +10,151 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
   alias Opsmaru.TestSupport.HTTPFixture
   alias OpsmaruGatewayAcceptance, as: Runner
   alias OpsmaruGatewayAcceptance.Host
+  alias OpsmaruGatewayAcceptance.Journal
   alias OpsmaruGatewayLiveScenarios, as: Scenarios
+
+  defmodule JournalIO do
+    @moduledoc false
+    alias OpsmaruGatewayAcceptance.Journal.FileIO
+
+    def open(path, modes) do
+      kind = if :directory in modes, do: :directory, else: :file
+      event({:open, kind})
+
+      case FileIO.open(path, modes) do
+        {:ok, file} -> {:ok, {kind, file}}
+        error -> error
+      end
+    end
+
+    def chmod(path, mode), do: FileIO.chmod(path, mode)
+    def remove(path), do: FileIO.remove(path)
+
+    def write({:file, file}, bytes) do
+      event(:write)
+
+      if Process.get(:journal_fault) == :write,
+        do: {:error, :enospc},
+        else: FileIO.write(file, bytes)
+    end
+
+    def sync({kind, file}) do
+      event({:sync, kind})
+      if Process.get(:journal_fault) == kind, do: {:error, :eio}, else: FileIO.sync(file)
+    end
+
+    def close({kind, file}) do
+      event({:close, kind})
+      FileIO.close(file)
+    end
+
+    def rename(source, target) do
+      event(:rename)
+
+      if Process.get(:journal_fault) == :rename,
+        do: {:error, :eio},
+        else: FileIO.rename(source, target)
+    end
+
+    defp event(operation) do
+      if observer = Process.get(:journal_observer), do: send(observer, {:journal_io, operation})
+    end
+  end
+
+  test "initial journal and replacement complete both sync barriers before returning", context do
+    Process.put(:journal_observer, self())
+    path = Path.join(context.root, "durable-report.json")
+    Journal.create!(path, %{"phase" => "initial"}, JournalIO)
+    file_barrier = [{:open, :file}, :write, {:sync, :file}, {:close, :file}]
+    directory_barrier = [{:open, :directory}, {:sync, :directory}, {:close, :directory}]
+    assert journal_events() == file_barrier ++ directory_barrier
+    Journal.replace!(path, %{"phase" => "replacement"}, JournalIO)
+    assert journal_events() == file_barrier ++ [:rename] ++ directory_barrier
+    assert Jason.decode!(File.read!(path)) == %{"phase" => "replacement"}
+    assert Bitwise.band(File.stat!(path).mode, 0o777) == 0o600
+    assert Path.wildcard(Path.join(context.root, ".gateway-journal-*")) == []
+    assert_raise File.Error, fn -> Journal.create!(path, %{"phase" => "overwrite"}) end
+    assert Jason.decode!(File.read!(path)) == %{"phase" => "replacement"}
+  end
+
+  for stage <- [:file, :directory] do
+    test "initial journal #{stage} sync failure is propagated", context do
+      Process.put(:journal_fault, unquote(stage))
+
+      assert_raise File.Error, fn ->
+        Journal.create!(Path.join(context.root, "failed-initial.json"), %{}, JournalIO)
+      end
+    end
+  end
+
+  test "initial journal failure prevents even backend inspection", context do
+    {config, state} = config(context)
+    blocked = Path.join(context.root, "not-a-directory")
+    File.write!(blocked, "block")
+    config = Map.put(config, "report", Path.join(blocked, "report.json"))
+    assert_raise File.Error, fn -> Runner.run(config, fn _ -> flunk("scenario ran") end) end
+    assert Agent.get(state, & &1.requests) == []
+    assert Agent.get(state, & &1.projects) == %{}
+  end
+
+  for stage <- [:write, :file, :rename, :directory] do
+    test "journal #{stage} failure prevents the following backend mutation", context do
+      {config, state} = config(context)
+      observer = self()
+      stage = unquote(stage)
+
+      assert_raise File.Error, fn ->
+        Runner.run(config, fn runtime ->
+          Agent.update(runtime.journal, fn current ->
+            Process.put(:journal_observer, observer)
+            Process.put(:journal_fault, stage)
+            current
+          end)
+
+          runtime = Map.put(runtime, :journal_io, JournalIO)
+
+          Runner.step(runtime, "must-not-send", fn ->
+            send(observer, :backend_mutation_entered)
+
+            Incus.raw_query(runtime.sides["source"].client, "POST", "/1.0/instances",
+              body: %{"name" => runtime.resource_prefix <> "forbidden"}
+            )
+          end)
+        end)
+      end
+
+      refute_received :backend_mutation_entered
+      assert Agent.get(state, & &1.instance_posts) == []
+      assert length(Agent.get(state, & &1.posts)) == 2
+      report = config["report"] |> File.read!() |> Jason.decode!()
+      assert report["phase"] == "failed-resources-retained"
+      assert Agent.get(state, &map_size(&1.projects)) == 2
+    end
+  end
+
+  for side <- ~w(source target),
+      {label, network} <- [
+        {"missing", nil},
+        {"wrong name", %{"name" => "another-network", "managed" => true, "status" => "Created"}},
+        {"unmanaged", %{"managed" => false, "status" => "Created"}},
+        {"pending", %{"managed" => true, "status" => "Pending"}},
+        {"malformed", %{"managed" => "true", "status" => "Created"}}
+      ] do
+    test "#{side} #{label} network blocks both project creations", context do
+      {config, state} = config(context)
+      side = unquote(side)
+      name = side <> "-fixture-network"
+      network = unquote(Macro.escape(network))
+      network = if network, do: Map.put_new(network, "name", name)
+      config = put_in(config, [side, "network"], name)
+      Agent.update(state, &put_in(&1, [:networks, name], network))
+      assert_raise ArgumentError, fn -> Runner.run(config, fn _ -> flunk("scenario ran") end) end
+      assert Agent.get(state, & &1.projects) == %{}
+      requests = Agent.get(state, & &1.requests)
+      assert Enum.any?(requests, &String.starts_with?(&1.target, "/1.0/networks/"))
+      assert Enum.all?(requests, &(&1.method == "GET"))
+    end
+  end
 
   test "loading modules and missing opt-in never start acceptance or contact backend", context do
     assert_raise ArgumentError, "explicit mutation opt-in required", fn ->
@@ -35,6 +179,13 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
       report =
         Runner.run(config, fn runtime ->
           assert runtime.verified_pools["source"] == %{name: "default", driver: driver}
+
+          assert runtime.verified_networks["source"] == %{
+                   name: "fixture-network",
+                   managed: true,
+                   status: "Created"
+                 }
+
           wrong = put_in(runtime, [:verified_pools, "source", :name], "another-pool")
 
           assert_raise RuntimeError, "verified source pool binding unavailable", fn ->
@@ -46,6 +197,14 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
           end
 
           assert Agent.get(backend_state, & &1.instance_posts) == []
+
+          wrong_network =
+            put_in(runtime, [:verified_networks, "source", :name], "another-network")
+
+          assert_raise RuntimeError, "verified source network binding unavailable", fn ->
+            Scenarios.create_base(wrong_network, runtime.resource_prefix <> "base")
+          end
+
           Scenarios.create_base(runtime, runtime.resource_prefix <> "base")
         end)
 
@@ -93,6 +252,20 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
              }
 
       requests = Agent.get(backend_state, & &1.requests)
+      chronological = Enum.reverse(requests)
+      first_post = Enum.find_index(chronological, &(&1.method == "POST"))
+
+      network_reads =
+        chronological
+        |> Enum.with_index()
+        |> Enum.filter(fn {r, _} -> String.starts_with?(r.target, "/1.0/networks/") end)
+
+      assert length(network_reads) == 2
+
+      assert Enum.all?(network_reads, fn {r, index} ->
+               r.method == "GET" and index < first_post
+             end)
+
       root_reads = Enum.filter(requests, &String.contains?(&1.target, "/volumes/container/"))
 
       if driver == "zfs" do
@@ -1107,6 +1280,14 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
              requests: [],
              report: Path.join(context.root, "report.json"),
              pool: %{"name" => "default", "status" => "Created", "driver" => "dir"},
+             networks: %{
+               "fixture-network" => %{
+                 "name" => "fixture-network",
+                 "managed" => true,
+                 "status" => "Created",
+                 "type" => "bridge"
+               }
+             },
              root_reservation: "false"
            }
          end},
@@ -1139,6 +1320,7 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
            "project" => "opsmaru-acceptance-gateway-test-" <> side,
            "image" => String.duplicate("a", 64),
            "pool" => "default",
+           "network" => "fixture-network",
            "backend" => %{"socket" => HTTPFixture.endpoint(fixture).socket},
            "expected_identity" => %{
              "server_name" => "fixture",
@@ -1200,12 +1382,19 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
     })
   end
 
+  defp respond_route(%{method: "GET"}, "/1.0/networks/" <> name, state, _) do
+    case Agent.get(state, &Map.get(&1.networks, name)) do
+      nil -> %{status: 404, body: %{type: "error", error: "not found", error_code: 404}}
+      network -> sync(network)
+    end
+  end
+
   defp respond_route(request, path, state, certificate) do
     cond do
       path == "/1.0" ->
         sync(%{
           api_version: "1.0",
-          api_extensions: ["instances", "projects", "storage"],
+          api_extensions: ["instances", "projects", "storage", "network"],
           environment: %{
             server_name: "fixture",
             server_version: "7.0.1",
@@ -1244,4 +1433,12 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
 
   defp sync(data),
     do: %{status: 200, body: %{type: "sync", status: "Success", status_code: 200, metadata: data}}
+
+  defp journal_events(events \\ []) do
+    receive do
+      {:journal_io, event} -> journal_events([event | events])
+    after
+      0 -> Enum.reverse(events)
+    end
+  end
 end

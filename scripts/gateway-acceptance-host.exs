@@ -1,4 +1,86 @@
 # Explicit acceptance host only. Requiring this file defines modules and does no I/O.
+defmodule OpsmaruGatewayAcceptance.Journal do
+  @moduledoc false
+
+  defmodule FileIO do
+    @moduledoc false
+    def open(path, modes), do: :file.open(String.to_charlist(path), modes)
+    def chmod(path, mode), do: File.chmod(path, mode)
+    def write(file, bytes), do: :file.write(file, bytes)
+    def sync(file), do: :file.sync(file)
+    def close(file), do: :file.close(file)
+    def rename(source, target), do: File.rename(source, target)
+    def remove(path), do: File.rm(path)
+  end
+
+  def create!(path, data, io \\ FileIO) do
+    write_file!(path, data, io)
+    sync_directory!(Path.dirname(path), io)
+  end
+
+  def replace!(path, data, io \\ FileIO) do
+    directory = Path.dirname(path)
+
+    temporary =
+      Path.join(
+        directory,
+        ".gateway-journal-" <>
+          Base.url_encode64(:crypto.strong_rand_bytes(12), padding: false)
+      )
+
+    try do
+      write_file!(temporary, data, io)
+      check!(io.rename(temporary, path), path, "replace acceptance journal")
+      sync_directory!(directory, io)
+    after
+      io.remove(temporary)
+    end
+  end
+
+  defp write_file!(path, data, io) do
+    file = open!(path, [:raw, :binary, :write, :exclusive], io)
+
+    try do
+      check!(io.chmod(path, 0o600), path, "secure acceptance journal")
+
+      check!(
+        io.write(file, Jason.encode!(data, pretty: true) <> "\n"),
+        path,
+        "write acceptance journal"
+      )
+
+      check!(io.sync(file), path, "sync acceptance journal")
+    after
+      check!(io.close(file), path, "close acceptance journal")
+    end
+  end
+
+  defp sync_directory!(path, io) do
+    directory = open!(path, [:raw, :read, :directory], io)
+
+    try do
+      check!(io.sync(directory), path, "sync acceptance journal directory")
+    after
+      check!(io.close(directory), path, "close acceptance journal directory")
+    end
+  end
+
+  defp open!(path, modes, io) do
+    case io.open(path, modes) do
+      {:ok, file} ->
+        file
+
+      {:error, reason} ->
+        raise File.Error, reason: reason, action: "open acceptance journal", path: path
+    end
+  end
+
+  defp check!(:ok, _, _), do: :ok
+
+  defp check!({:error, reason}, path, action),
+    do: raise(File.Error, reason: reason, action: action, path: path)
+end
+
 defmodule OpsmaruGatewayAcceptance.Host do
   @moduledoc false
   @behaviour Opsmaru.Incus.Gateway.Host
@@ -338,6 +420,7 @@ defmodule OpsmaruGatewayAcceptance do
     )
 
     require!(is_binary(side["pool"]) and side["pool"] != "", "explicit pool required")
+    require!(is_binary(side["network"]) and side["network"] != "", "explicit network required")
     validate_identity!(side["expected_identity"] || %{})
     validate_backend!(side["backend"] || %{})
     validate_gateway!(side["gateway"] || %{})
@@ -391,12 +474,22 @@ defmodule OpsmaruGatewayAcceptance do
     File.mkdir!(config["state_directory"])
     File.chmod!(config["state_directory"], 0o700)
     {:ok, journal} = Agent.start_link(fn -> initial_report(config) end)
-    create_report!(config["report"], Agent.get(journal, & &1))
     context = %{config: config, journal: journal, runtime: config["state_directory"], sides: %{}}
 
     try do
+      create_report!(config["report"], Agent.get(journal, & &1))
+      run_reported(context, scenario)
+    after
+      stop_local(journal)
+    end
+  end
+
+  defp run_reported(context, scenario) do
+    config = context.config
+
+    try do
       start_runtime!()
-      {clients, verified_pools} = inspect_backends!(context)
+      {clients, verified_pools, verified_networks} = inspect_backends!(context)
       nonce = Base.encode16(:crypto.strong_rand_bytes(16), case: :lower)
       prefix = "gw-" <> binary_part(nonce, 0, 12) <> "-"
 
@@ -404,6 +497,7 @@ defmodule OpsmaruGatewayAcceptance do
         Map.merge(context, %{
           clients: clients,
           verified_pools: verified_pools,
+          verified_networks: verified_networks,
           marker: nonce,
           resource_prefix: prefix
         })
@@ -428,8 +522,6 @@ defmodule OpsmaruGatewayAcceptance do
       kind, reason ->
         record_failure(context, Atom.to_string(kind))
         :erlang.raise(kind, reason, __STACKTRACE__)
-    after
-      stop_local(journal)
     end
   end
 
@@ -505,13 +597,29 @@ defmodule OpsmaruGatewayAcceptance do
           "acceptance pool driver unavailable"
         )
 
-        {side, {client, %{name: data["name"], driver: driver}}}
+        network = inspect_network!(client, config["network"])
+        {side, {client, %{name: data["name"], driver: driver}, network}}
       end
 
     journal_update(context, &Map.put(&1, "phase", "fresh-projects-and-backends-verified"))
-    clients = Map.new(inspected, fn {side, {client, _}} -> {side, client} end)
-    verified_pools = Map.new(inspected, fn {side, {_, pool}} -> {side, pool} end)
-    {clients, verified_pools}
+    clients = Map.new(inspected, fn {side, {client, _, _}} -> {side, client} end)
+    verified_pools = Map.new(inspected, fn {side, {_, pool, _}} -> {side, pool} end)
+    verified_networks = Map.new(inspected, fn {side, {_, _, network}} -> {side, network} end)
+    {clients, verified_pools, verified_networks}
+  end
+
+  defp inspect_network!(client, name) do
+    case Incus.call(client, "GetNetwork", %{"name" => name}) do
+      {:ok, response} ->
+        network = response.metadata.data
+        require!(network["name"] == name, "acceptance network identity mismatch")
+        require!(network["status"] == "Created", "acceptance network must be ready")
+        require!(network["managed"] === true, "acceptance network must be managed")
+        %{name: name, managed: true, status: "Created"}
+
+      {:error, _} ->
+        raise ArgumentError, "acceptance network unavailable"
+    end
   end
 
   defp backend_connection(%{"socket" => socket}) do
@@ -1130,36 +1238,27 @@ defmodule OpsmaruGatewayAcceptance do
   defp summary(_), do: %{"outcome" => "failed"}
 
   defp journal_update(context, fun) do
-    Agent.update(context.journal, fn current ->
-      updated = fun.(current)
-      path = context.config["report"]
+    result =
+      Agent.get_and_update(context.journal, fn current ->
+        try do
+          updated = fun.(current)
+          # A trusted in-process fixture seam; input JSON never selects journal I/O.
+          io = Map.get(context, :journal_io, OpsmaruGatewayAcceptance.Journal.FileIO)
+          OpsmaruGatewayAcceptance.Journal.replace!(context.config["report"], updated, io)
+          {:ok, updated}
+        rescue
+          error -> {{:error, error, __STACKTRACE__}, current}
+        end
+      end)
 
-      temporary =
-        Path.join(
-          Path.dirname(path),
-          ".gateway-journal-" <> Base.url_encode64(:crypto.strong_rand_bytes(12), padding: false)
-        )
-
-      try do
-        create_report!(temporary, updated)
-        File.rename!(temporary, path)
-      after
-        File.rm(temporary)
-      end
-
-      updated
-    end)
+    case result do
+      :ok -> :ok
+      {:error, error, stacktrace} -> reraise error, stacktrace
+    end
   end
 
   defp create_report!(path, data) do
-    {:ok, file} = File.open(path, [:write, :exclusive])
-
-    try do
-      File.chmod!(path, 0o600)
-      IO.binwrite(file, Jason.encode!(data, pretty: true) <> "\n")
-    after
-      File.close(file)
-    end
+    OpsmaruGatewayAcceptance.Journal.create!(path, data)
   end
 
   def certificate_pin(pem), do: Host.fingerprint(certificate_der(pem))
