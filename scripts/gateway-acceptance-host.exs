@@ -10,7 +10,8 @@ defmodule OpsmaruGatewayAcceptance.Host do
   def ready?(config) do
     Agent.get(config.state, fn state ->
       Process.alive?(state.owner) and state.ready and
-        System.monotonic_time(:millisecond) - state.last_poll < 2_000
+        System.monotonic_time(:millisecond) - state.last_poll <
+          Map.get(config, :freshness_ms, 2_000)
     end)
   end
 
@@ -206,7 +207,11 @@ defmodule OpsmaruGatewayAcceptance.Host do
           operation["description"] in @migration_descriptions and
           Enum.all?(~w(control fs), &(is_binary(metadata[&1]) and metadata[&1] != ""))
 
-      %{project: config.project, migration: migration, expires: now + 5_000}
+      %{
+        project: config.project,
+        migration: migration,
+        expires: now + Map.get(config, :operation_ttl_ms, 5_000)
+      }
     end
   end
 
@@ -483,7 +488,7 @@ defmodule OpsmaruGatewayAcceptance do
   end
 
   defp backend_connection(%{"socket" => socket}) do
-    Connection.unix!(socket, owner: :gateway_acceptance, timeout: 2_000, stream_timeout: 120_000)
+    Connection.unix!(socket, owner: :gateway_acceptance, stream_timeout: 120_000)
   end
 
   defp backend_connection(config) do
@@ -491,7 +496,6 @@ defmodule OpsmaruGatewayAcceptance do
 
     Connection.https!(config["https"],
       owner: :gateway_acceptance,
-      timeout: 2_000,
       stream_timeout: 120_000,
       tls: [
         fingerprint: pin,
@@ -557,7 +561,11 @@ defmodule OpsmaruGatewayAcceptance do
       context = context |> Map.put(:sides, sides) |> Map.put(:incus_conf, cli_directory)
 
       for {_, side} <- sides,
-          do: await_host_ready!(side.host, System.monotonic_time(:millisecond) + 5_000)
+          do:
+            await_host_ready!(
+              side.host,
+              System.monotonic_time(:millisecond) + side.host.freshness_ms
+            )
 
       journal_update(context, &Map.put(&1, "phase", "host-mounted-protocols-unrun"))
       scenario.(context)
@@ -628,21 +636,22 @@ defmodule OpsmaruGatewayAcceptance do
     connection = context.clients[side].connection
     uri = URI.parse(gateway_config["https"])
 
-    host = %{
-      state: state_pid,
-      project: spec["project"],
-      resource_prefix: context.resource_prefix,
-      pool: spec["pool"],
-      image: spec["image"],
-      allowed_peers: Enum.map(gateway_config["allowed_operation_peers"], &parse_ip/1),
-      identity: %{
-        origin: gateway_config["https"],
-        addresses: [uri.authority],
-        certificate: File.read!(gateway_config["server_certificate"]),
-        connection: connection,
-        api_extensions: context.clients[side].server.api_extensions
-      }
-    }
+    host =
+      Map.merge(poll_budgets(connection), %{
+        state: state_pid,
+        project: spec["project"],
+        resource_prefix: context.resource_prefix,
+        pool: spec["pool"],
+        image: spec["image"],
+        allowed_peers: Enum.map(gateway_config["allowed_operation_peers"], &parse_ip/1),
+        identity: %{
+          origin: gateway_config["https"],
+          addresses: [uri.authority],
+          certificate: File.read!(gateway_config["server_certificate"]),
+          connection: connection,
+          api_extensions: context.clients[side].server.api_extensions
+        }
+      })
 
     gateway =
       Gateway.new!(
@@ -751,18 +760,125 @@ defmodule OpsmaruGatewayAcceptance do
   end
 
   defp poll(context, side, host) do
-    client = Incus.project(context.clients[side], host.project)
-    verify_project!(client, host.project, context.marker)
-
-    case Incus.call(client, "GetOperations", %{}) do
-      {:ok, response} -> Host.register(host, Enum.map(response.metadata, &Model.encode/1))
-      _ -> Agent.update(host.state, &%{&1 | ready: false, operations: %{}})
+    if poll_once(context, side, host) == :continue do
+      Process.sleep(host.poll_interval_ms)
+      poll(context, side, host)
     end
+  end
 
-    Process.sleep(25)
-    poll(context, side, host)
+  @doc false
+  def poll_budgets(%Connection{timeout: timeout}) do
+    # One cycle has two sequential, individually bounded metadata requests.
+    # Allow a 100ms cadence plus bounded scheduling slack beyond both deadlines.
+    %{
+      freshness_ms: 2 * timeout + 2_000,
+      operation_ttl_ms: 2 * timeout + 2_000,
+      poll_interval_ms: 100
+    }
+  end
+
+  @doc false
+  def poll_once(context, side, host) do
+    started = System.monotonic_time(:millisecond)
+
+    owner =
+      poll_result(fn ->
+        if Agent.get(host.state, &Process.alive?(&1.owner)),
+          do: :ok,
+          else: {:error, %Error{kind: :owner_lost}}
+      end)
+
+    if owner == :ok do
+      client = Incus.project(context.clients[side], host.project)
+      project = poll_result(fn -> poll_project(client, host.project, context.marker) end)
+
+      case project do
+        :ok ->
+          poll_operations(context, side, host, client, started)
+
+        {:error, error} ->
+          poll_failure(context, side, host, "project", error, started)
+          :stop
+      end
+    else
+      {:error, error} = owner
+      poll_failure(context, side, host, "owner", error, started)
+      :stop
+    end
+  end
+
+  defp poll_project(client, project, marker) do
+    case Incus.call(client, "GetProject", %{"name" => project}) do
+      {:ok, response} ->
+        if response.metadata.data["description"] == "Opsmaru gateway acceptance " <> marker,
+          do: :ok,
+          else: {:error, %Error{kind: :project_marker_mismatch}}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  defp poll_operations(context, side, host, client, started) do
+    result =
+      poll_result(fn ->
+        case Incus.call(client, "GetOperations", %{}) do
+          {:ok, response} -> Host.register(host, Enum.map(response.metadata, &Model.encode/1))
+          {:error, error} -> {:error, error}
+        end
+      end)
+
+    case result do
+      :ok ->
+        :continue
+
+      {:error, error} ->
+        poll_failure(context, side, host, "operations", error, started)
+        if error.kind in [:poll_exception, :poll_exit], do: :stop, else: :continue
+    end
+  end
+
+  defp poll_result(fun) do
+    fun.()
   rescue
-    _ -> Agent.update(host.state, &%{&1 | ready: false, operations: %{}})
+    _ -> {:error, %Error{kind: :poll_exception}}
+  catch
+    _, _ -> {:error, %Error{kind: :poll_exit}}
+  end
+
+  @poll_error_kinds ~w(native connection deadline request response response_limit invalid_response invalid_envelope invalid_model invalid_metadata invalid_response_model unsupported_extension forbidden unauthorized not_ready canceled owner_lost project_marker_mismatch poll_exception poll_exit)a
+  defp poll_failure(context, side, host, stage, error, started) do
+    record? =
+      Agent.get_and_update(
+        host.state,
+        fn state ->
+          failures = Map.get(state, :poll_failure_count, 0)
+
+          {failures < 16,
+           state
+           |> Map.merge(%{ready: false, operations: %{}})
+           |> Map.put(:poll_failure_count, min(16, failures + 1))}
+        end,
+        1_000
+      )
+
+    if record? do
+      kind =
+        if error.kind in @poll_error_kinds, do: Atom.to_string(error.kind), else: "poll_error"
+
+      status = if error.http_status in 100..599, do: error.http_status
+
+      record_detail(context, "poll-failure/" <> side, %{
+        "error_kind" => kind,
+        "http_status" => status,
+        "elapsed_ms" => max(0, System.monotonic_time(:millisecond) - started),
+        "proof" => %{"stage" => stage}
+      })
+    end
+  rescue
+    _ -> :ok
+  catch
+    _, _ -> :ok
   end
 
   def step(context, label, fun) when is_binary(label) and is_function(fun, 0) do

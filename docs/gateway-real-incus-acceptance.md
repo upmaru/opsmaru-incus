@@ -95,3 +95,16 @@ local read, without network queries or a state dump. This applies to migration
 and setup CLI exit failures and does not retry
 the command or alter the resource-retention/completion gate. Keep these
 sidecars private with the run state; do not publish them as report artifacts.
+
+The explicitly started live host uses the client's canonical 5-second metadata
+request timeout. Its two sequential project/operation reads have a freshness,
+operation-binding TTL and initial-readiness bound of twice that timeout plus
+2 seconds of scheduling slack (12 seconds at the default), with a 100ms polling
+cadence. Hand-built host fixtures keep their 2-second freshness and 5-second
+binding defaults. These are acceptance-host settings, not production gateway
+or lease policy changes. Ownership, project-marker and RPC failures still
+clear readiness and operation authority. Project/marker failures and unexpected
+poll exceptions stop that poller; ordinary operation-list RPC errors retain
+the existing read-only polling behavior. At most 16 safe poll-failure details
+per side record the stage, error kind, HTTP status and elapsed time, without
+native messages, metadata, credentials or operation secrets.
