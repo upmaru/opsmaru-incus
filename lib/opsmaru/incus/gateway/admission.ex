@@ -54,6 +54,13 @@ defmodule Opsmaru.Incus.Gateway.Admission do
     GenServer.cast(admission, {:release, ref})
   end
 
+  @doc "Move an existing slot to its protocol owner without reacquiring capacity."
+  def transfer({admission, ref}, holder) when is_pid(holder) do
+    GenServer.call(admission, {:transfer, ref, holder})
+  catch
+    :exit, _ -> {:error, :unavailable}
+  end
+
   @doc "Current number of held slots."
   def count(admission), do: GenServer.call(admission, :count)
 
@@ -71,6 +78,17 @@ defmodule Opsmaru.Incus.Gateway.Admission do
   end
 
   def handle_call(:count, _from, state), do: {:reply, map_size(state.slots), state}
+
+  def handle_call({:transfer, ref, holder}, _from, state) do
+    if Map.has_key?(state.slots, ref) and Process.alive?(holder) do
+      Process.demonitor(ref, [:flush])
+      monitor = Process.monitor(holder)
+      slots = state.slots |> Map.delete(ref) |> Map.put(monitor, holder)
+      {:reply, {:ok, {self(), monitor}}, %{state | slots: slots}}
+    else
+      {:reply, {:error, :unavailable}, state}
+    end
+  end
 
   @impl true
   def handle_cast({:release, ref}, state) do

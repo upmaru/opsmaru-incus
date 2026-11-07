@@ -1,9 +1,9 @@
-# Native Incus gateway (G1–G2 and G4: HTTP, identity, revocation and raw upgrades)
+# Native Incus gateway (G1–G4: HTTP, identity, WebSockets and raw upgrades)
 
 `Opsmaru.Incus.Gateway` lets a host relay native Incus HTTP through its own
-endpoint under its own policy. This page documents slices G1–G2 and G4 of
-`add-embeddable-incus-gateway`, including native SFTP/NBD on the host listener.
-WebSockets and migration remain listed under
+endpoint under its own policy. This page documents slices G1–G4 of
+`add-embeddable-incus-gateway`, including native WebSockets and SFTP/NBD on
+the host listener. Cross-server migration remains listed under
 [Not yet in this revision](#not-yet-in-this-revision).
 
 ## Dependencies
@@ -78,9 +78,10 @@ Every request takes the same path before any backend socket opens:
    HTTP `GET /`, `GET /1.0`, or token enrollment via `POST /1.0/certificates`.
    Other denials remain denials. A late answer is discarded. For an authorized
    grant, `valid?/3` must return exactly `true` before backend access.
-5. Protocol: WebSockets get `501` in this revision after authorization.
-   SFTP/NBD require the Cowboy companion below; a direct Plug raw upgrade
-   gets an explicit `501` after the same policy check.
+5. Protocol: native WebSockets negotiate after authorization when their
+   optional adapter is available. SFTP/NBD require the same-listener Cowboy
+   companion below; a direct Plug raw upgrade gets an explicit `501` after
+   the same policy check. Unsupported adapters fail explicitly after authorization.
 
 The host receives an `Opsmaru.Incus.Gateway.Request` with the peer address and
 TLS certificate from the server adapter, the `authorization` header and the
@@ -142,13 +143,13 @@ Authenticated `GET /1.0` uses the backend, buffering at most the smaller of
 `metadata.environment.addresses` and `certificate` are replaced with the public
 gateway values. Every other native environment/envelope field is retained.
 API extensions are intersected with verified host metadata and the gateway's
-implemented-extension allowlist: `certificate_update`, `instances`, `instance_nbd`,
-`custom_volume_sftp` and `storage_volume_nbd`, when both backend and host
-approve them. Protocol extensions are filtered out when the optional adapter
-module is absent. A host offering raw extensions must approve them only when
-its same-listener Cowboy companion is actually mounted.
-WebSocket, migration, restricted-certificate and token-issuance support remain
-explicit gaps below.
+implemented-extension allowlist: `certificate_update`, `instances`, `console`,
+`instance_nbd`, `custom_volume_sftp` and `storage_volume_nbd`. Protocol
+extensions are filtered out when the corresponding optional adapter is absent.
+The host must approve only protocols it actually mounts and a verified backend
+supports; raw extensions require the same-listener Cowboy companion. Merely
+installing an adapter does not authorize a protocol. Migration,
+restricted-certificate and token issuance gaps remain explicit below.
 
 This identity rewrite is required by the pinned v7.0.1 client's
 `GetConnectionInfo()`: it starts with the connection URL, then appends HTTPS
@@ -218,8 +219,9 @@ Cleanup uses no new grant or connection and closes only gateway-owned local
 resources. It never sends operation DELETE/cancel requests and never replays a
 possibly accepted mutation. `Gateway.Lease` and `Policy.recheck/3` are reusable
 by later adapters. **Only HTTP is verified in G2**, with HTTP/1.1 socket fixtures
-and a blocked-chunk adapter. G4 verifies the same lease through raw takeover,
-including silent streams and blocked writes; WebSocket revocation stays in G3.
+and a blocked-chunk adapter. G3 adds the independent WebSocket evidence below.
+G4 verifies the same lease through raw takeover, including silent streams and
+blocked writes.
 
 ## Failures
 
@@ -270,11 +272,90 @@ Long waits such as `/1.0/operations/{id}/wait?timeout=-1` are bounded by
 - Production trust persistence/issuer and host-specific authorization policy.
 - Restricted-certificate semantics and asynchronous certificate-token issuance;
   unsupported claims are refused rather than advertised.
-- WebSocket (G3) and cross-server migration (G5).
+- Cross-server migration (G5).
 - Immutable consumer, CLI conformance and real-Incus gateway acceptance (G6).
 
 Gateway evidence never changes `priv/incus/coverage.json`.
 
+
+## Native WebSockets (G3)
+
+The same gateway Plug mounts native `GET /1.0/events` and
+`GET /1.0/operations/{id}/websocket` on the host's existing Plug.Cowboy
+HTTP/1.1 listener. It negotiates a separate backend WebSocket over the fixed
+Unix or verified mutual-HTTPS connection. The original encoded path and raw
+query, including operation identity and secrets, survive unchanged; query
+secrets are never logged or exposed in gateway status. Caller credentials and
+proxy identity headers stay separate from backend TLS credentials.
+
+Admission, readiness, authority and initial grant validity are checked before
+opening that backend. Invalid methods, routes, bodies, keys, versions or
+subprotocols fail before connection. Native version 13 is supported; HTTP/2
+extended CONNECT and subprotocol negotiation fail explicitly. Compression is
+not negotiated, so message bytes are preserved independently of wire framing.
+The backend must complete a valid handshake before the frontend receives 101.
+A bounded native rejection retains its status, error body, ETag and operation
+identity, with safe trailers dropped. Nothing retries the initiating exec or
+console POST, a channel GET or a redirect.
+
+Exec stdin/stdout/stderr, console data, event JSON and native resize/signal/exit
+text retain their message type and payload. Ping/pong are RFC controls local to
+each independently negotiated hop: Cowboy answers caller pings with the same
+payload; the backend relay answers backend pings. They are distinct from Incus
+JSON control messages. Backend close codes/reasons and queued final messages
+are preserved. Caller close is propagated locally where possible. EOF or a
+gateway failure closes the channel visibly; neither implies that an Incus
+operation was canceled or completed. Reconcile with the original native
+operation URL and authoritative operation metadata after interruption.
+
+Each channel holds one admission slot until its local relay terminates. The
+slot moves atomically from the Plug worker to the relay without reacquiring
+capacity or a grant. The long-lived owner is the HTTP/1.1 Cowboy connection.
+Handshake worker loss terminates the relay; after a normal worker exit the
+frontend must attach within one second. Admission restart, grant revocation,
+owner/worker loss and deadlines close local sockets and release capacity.
+The same `recheck_interval` maximum applies while data is busy or silent and
+while either direction is blocked. A separate bounded frontend close guard
+survives relay termination so a nonreading caller cannot strand Cowboy output.
+Its grace is the same `min(50, recheck_interval / 4)` milliseconds reserved by
+the lease, retaining the host-tightened revocation bound.
+
+Host grant callbacks run at negotiation and commitment boundaries. Once a
+channel is active, reads and caller messages check the independent lease;
+they do not invoke host policy on every frame or quiet read poll. Periodic
+lease checks still enforce the configured expiry/revocation bound.
+
+Resource limits are explicit:
+
+- `connection.max_response_bytes` bounds each incoming/outgoing message and
+  partial-frame assembly. `max_request_bytes` bounds relayed caller payload
+  bytes; `max_response_bytes` bounds backend bytes including received framing.
+- `connection.queue_limit` bounds decoded frames in one backend batch and the
+  waiting backend writer queue. The waiting writer payload bytes additionally
+  cannot exceed `connection.max_response_bytes`; at most one extra frame is
+  being written.
+- Backend reads pause until Cowboy has processed the preceding batch. The
+  frontend mailbox receives at most one outstanding backend batch; slow peers
+  apply socket backpressure. Reader and writer run independently so blocked
+  stdin cannot prevent stdout from draining.
+- `idle_timeout` bounds inactivity and blocked writes; `max_lifetime` is an
+  absolute channel budget that traffic cannot refresh. Pre-upgrade rejected
+  bodies are bounded by the smallest of the gateway response budget, the
+  connection message budget and 1 MiB. Backend headers/trailers have a 64 KiB
+  aggregate budget, enforced incrementally by Mint and the gateway collector.
+- Overflow/framing errors, revocation and deadlines terminate visibly rather
+  than silently discarding events or leaving workers alive. Forced termination
+  may close the socket without a close frame when a peer is blocked.
+
+`test/gateway_web_socket_test.exs` records protocol, denial, partial-handshake,
+large simultaneous duplex, active overflow, both blocked directions, busy and
+silent deadlines, TLS separation, ownership and redaction evidence.
+`test/gateway_web_socket_reference_test.exs` runs the unchanged pinned Incus
+v7.0.1 Go exec, console, events and operation-WebSocket drivers through a
+mutual-TLS gateway. Exec output/exit metadata and static/dynamic console results
+are compared directly with their backend-fixture baselines. This is fixture
+conformance; immutable consumer, real-Incus and installed Macus/hardware
+acceptance remain separate. The typed-client coverage ledger is unchanged.
 
 ## Native SFTP/NBD on the host listener (G4)
 
