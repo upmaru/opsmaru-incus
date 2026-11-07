@@ -952,8 +952,9 @@ defmodule Opsmaru.Incus.InspectionContractTest do
     assert RequestContext.status(context) == :deadline
     assert original.connection.request_context == nil
 
-    # An early peer EOF is still a response failure, not a synthetic deadline.
-    eof_kind = if method in ["GET", "HEAD"], do: :response, else: :uncertain
+    # No response was parsed before this peer EOF; it remains distinct from
+    # the actual socket timeout and delayed-observer deadline above.
+    eof_kind = if method in ["GET", "HEAD"], do: :response_closed, else: :uncertain
     assert {:error, %Error{kind: ^eof_kind}} = Incus.raw_query(original, method, "/1.0/eof")
     assert [%{method: ^method}, %{method: ^method}] = HTTPFixture.requests(fixture)
   end
