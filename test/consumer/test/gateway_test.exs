@@ -504,7 +504,6 @@ defmodule FoundationConsumer.GatewayTest do
 
       if native_limitation do
         assert status != 0
-        assert output =~ "Failed to delete original instance after copying it"
         assert output =~ "Invalid instance name"
 
         assert Enum.any?(
@@ -518,7 +517,8 @@ defmodule FoundationConsumer.GatewayTest do
       end
 
       for side <- [source, target] do
-        assert Enum.count(MigrationBackend.requests(side), &(&1.method == "POST")) == 1
+        assert Enum.count(MigrationBackend.requests(side), &(&1.method == "POST")) ==
+                 if(native_limitation, do: 0, else: 1)
       end
 
       deleted = Enum.filter(MigrationBackend.requests(source), &(&1.method == "DELETE"))
@@ -528,7 +528,9 @@ defmodule FoundationConsumer.GatewayTest do
         do: assert(hd(deleted).target == "/1.0/instances/source?project=migration-project")
 
       refute Enum.any?(MigrationBackend.requests(target), &(&1.method == "DELETE"))
-      assert Enum.any?(MigrationBackend.events(source), &match?({:frame, _, _, _}, &1))
+
+      assert Enum.any?(MigrationBackend.events(source), &match?({:frame, _, _, _}, &1)) ==
+               not native_limitation
 
       if path = System.get_env("OPSMARU_INCUS_GATEWAY_CASES") do
         File.write!(
@@ -539,7 +541,7 @@ defmodule FoundationConsumer.GatewayTest do
             mode: mode,
             gateway: orientation,
             outcome: if(native_limitation, do: "upstream_cli_limitation", else: "passed"),
-            copy_completed: true,
+            copy_completed: not native_limitation,
             source_deleted: action == "move" and kind == :instance
           }) <> "\n",
           [:append]
