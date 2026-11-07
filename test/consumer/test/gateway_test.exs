@@ -530,8 +530,13 @@ defmodule FoundationConsumer.GatewayTest do
 
       refute Enum.any?(MigrationBackend.requests(target), &(&1.method == "DELETE"))
 
-      assert Enum.any?(MigrationBackend.events(source), &match?({:frame, _, _, _}, &1)) ==
-               not native_limitation
+      verify_migration_channels(
+        MigrationBackend.events(source),
+        mode,
+        source_url,
+        target_url,
+        native_limitation
+      )
 
       if path = System.get_env("OPSMARU_INCUS_GATEWAY_CASES") do
         File.write!(
@@ -553,6 +558,48 @@ defmodule FoundationConsumer.GatewayTest do
       # supervisor; none can survive this test's teardown.
     end
   end
+
+  defp verify_migration_channels(events, _, _, _, true) do
+    refute Enum.any?(events, &match?({:frame, _, _, _}, &1))
+    refute Enum.any?(events, &match?({:outbound, _, _, _}, &1))
+  end
+
+  defp verify_migration_channels(events, "relay", _, _, false) do
+    frames = for {:frame, sender, channel, payload} <- events, do: {sender, channel, payload}
+
+    assert Enum.sort(frames) ==
+             Enum.sort(
+               for side <- ~w(source target),
+                   channel <- ~w(control fs),
+                   do: {side, channel, other_side(side) <> ":" <> channel}
+             )
+
+    refute Enum.any?(events, &match?({:outbound, _, _, _}, &1))
+  end
+
+  defp verify_migration_channels(events, mode, source_url, target_url, false) do
+    inbound = if mode == "pull", do: "source", else: "target"
+    outbound = other_side(inbound)
+    frames = for {:frame, sender, channel, payload} <- events, do: {sender, channel, payload}
+
+    assert Enum.sort(frames) ==
+             Enum.sort(
+               for channel <- ~w(control fs),
+                   do: {inbound, channel, outbound <> ":" <> channel}
+             )
+
+    assert [{:outbound, ^outbound, operation, result}] =
+             Enum.filter(events, &match?({:outbound, _, _, _}, &1))
+
+    assert operation ==
+             if(mode == "pull", do: source_url, else: target_url) <>
+               "/1.0/operations/" <> inbound
+
+    assert result["frames"] == Map.new(~w(control fs), &{&1, inbound <> ":" <> &1})
+  end
+
+  defp other_side("source"), do: "target"
+  defp other_side("target"), do: "source"
 
   defp sftp_packets(conn, parent) do
     case packet(conn) do
