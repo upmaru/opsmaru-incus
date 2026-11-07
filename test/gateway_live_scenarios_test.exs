@@ -368,7 +368,8 @@ defmodule Opsmaru.GatewayLiveScenariosTest do
              "cases" =>
                Map.new(Acceptance.required_cases(), &{&1, "passed"}) |> Map.put("nbd", "pending")
            }
-         end}
+         end},
+        id: make_ref()
       )
 
     %{journal: journal, config: %{"report" => Path.join(root, "report.json")}}
@@ -383,6 +384,96 @@ defmodule Opsmaru.GatewayLiveScenariosTest do
     assert result.output =~ "stdin-eof:0"
     assert result.output =~ "direct-pid:"
     assert result.output =~ "stderr-captured"
+  end
+
+  test "console progress journals identity before acknowledgement and preserves split/coalesced final JSON" do
+    for mode <- [:split, :coalesced] do
+      context = console_context(mode)
+      result = Scenarios.console_command(context, context.script)
+      assert result.status == 0
+      assert Jason.decode!(result.output)["received_bytes"] == 87
+      [%{"evidence" => evidence}] = Agent.get(context.journal, & &1["details"])
+
+      assert evidence == %{
+               "accepted" => true,
+               "operation" => "22222222-2222-4222-8222-222222222222",
+               "sha256" => String.duplicate("a", 64)
+             }
+
+      report = File.read!(context.config["report"])
+      refute report =~ "nonce-plaintext"
+      refute report =~ "secret="
+    end
+  end
+
+  test "malformed and oversized console progress never enter the journal" do
+    for {mode, message} <- [
+          malformed: "native console progress invalid",
+          oversized: "native console progress bound exceeded"
+        ] do
+      context = console_context(mode)
+
+      assert_raise RuntimeError, message, fn ->
+        Scenarios.console_command(context, context.script)
+      end
+
+      assert Agent.get(context.journal, & &1["details"]) == []
+      refute File.exists?(context.config["report"])
+    end
+  end
+
+  test "console result must retain the accepted writer hash and operation identity" do
+    context = console_context(:mismatch)
+
+    assert_raise RuntimeError, "native console writer proof mismatch", fn ->
+      Scenarios.console_command(context, context.script)
+    end
+
+    assert [%{"evidence" => %{"accepted" => true}}] = Agent.get(context.journal, & &1["details"])
+  end
+
+  defp console_context(mode) do
+    context = nbd_journal()
+    script = Path.join(Path.dirname(context.config["report"]), "console.py")
+
+    progress =
+      Jason.encode!(%{
+        "accepted" => true,
+        "writer_operation" => "22222222-2222-4222-8222-222222222222",
+        "nonce_sha256" => String.duplicate("a", 64)
+      }) <> "\n"
+
+    final =
+      Jason.encode!(%{
+        "action" => "console",
+        "passed" => true,
+        "writer_operation" => "22222222-2222-4222-8222-222222222222",
+        "nonce_sha256" => String.duplicate(if(mode == :mismatch, do: "b", else: "a"), 64),
+        "received_bytes" => 87
+      }) <> "\n"
+
+    body = """
+    import json,os,sys,time
+    progress=#{inspect(progress)}.encode()
+    final=#{inspect(final)}.encode()
+    mode=#{inspect(Atom.to_string(mode))}
+    if mode=='malformed':
+        os.write(1,b'{"accepted":true,"writer_operation":"secret=private","nonce_sha256":"bad"}\\n')
+    elif mode=='oversized':
+        os.write(1,b'x'*2049)
+    elif mode=='coalesced':
+        os.write(1,progress+final)
+    else:
+        os.write(1,progress[:13]); time.sleep(0.01); os.write(1,progress[13:])
+    ack=sys.stdin.buffer.readline()
+    assert ack==b'console-writer-recorded\\n'
+    report=json.load(open(#{inspect(context.config["report"])}))
+    assert report['details'][-1]['evidence']['operation']=='22222222-2222-4222-8222-222222222222'
+    if mode!='coalesced': os.write(1,final)
+    """
+
+    File.write!(script, body)
+    Map.merge(context, %{script: script, native_driver: System.find_executable("python3")})
   end
 
   test "CLI failure diagnostics stay private while the journal records only safe references" do

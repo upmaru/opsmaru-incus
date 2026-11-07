@@ -3,8 +3,10 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
@@ -75,7 +77,7 @@ func main() {
 			panic("an explicit isolated project is required")
 		}
 		client = client.UseProject(in.Project)
-		err = exercise(client, in, result)
+		err = exercise(ctx, client, in, result)
 	}
 	if err != nil {
 		result["error"] = secret.ReplaceAllString(err.Error(), "${1}[REDACTED]")
@@ -116,7 +118,7 @@ func nativeErrorKind(err error) string {
 	return "native_verifier_failure"
 }
 
-func exercise(c incus.InstanceServer, in input, out map[string]any) error {
+func exercise(ctx context.Context, c incus.InstanceServer, in input, out map[string]any) error {
 	switch in.Action {
 	case "discovery":
 		server, _, err := c.GetServer()
@@ -318,39 +320,7 @@ func exercise(c incus.InstanceServer, in input, out map[string]any) error {
 		}
 		return nil
 	case "console":
-		reader, writer := io.Pipe()
-		defer reader.Close()
-		defer writer.Close()
-		terminal := &consoleBuffer{Reader: reader}
-		go func() { _, _ = writer.Write([]byte("\r")) }()
-		disconnect := make(chan bool)
-		controlled := make(chan error, 1)
-		op, err := c.ConsoleInstance(in.Name, api.InstanceConsolePost{Width: 80, Height: 24}, &incus.InstanceConsoleArgs{
-			Terminal: terminal, ConsoleDisconnect: disconnect, Control: func(ws *websocket.Conn) {
-				_ = ws.SetWriteDeadline(time.Now().Add(3 * time.Second))
-				controlled <- ws.WriteJSON(map[string]any{"command": "window-resize", "args": map[string]string{"width": "80", "height": "24"}})
-			}})
-		if err != nil {
-			return err
-		}
-		defer close(disconnect)
-		select {
-		case err = <-controlled:
-		case <-time.After(5 * time.Second):
-			return errors.New("native console control timeout")
-		}
-		if err != nil {
-			return err
-		}
-		for deadline := time.Now().Add(5 * time.Second); terminal.length() == 0; {
-			if time.Now().After(deadline) {
-				return errors.New("native console produced no data within deadline")
-			}
-			time.Sleep(20 * time.Millisecond)
-		}
-		out["operation"], out["received_bytes"] = op.Get().ID, terminal.length()
-		out["local_detach"], out["remote_cancel"] = true, false
-		return nil
+		return consoleProof(ctx, c, in.Name, out, acknowledgeConsoleWriter)
 	case "sftp_instance", "sftp_volume":
 		// The actual pkg/sftp client is returned by the unchanged Incus helper.
 		var client *sftp.Client
@@ -408,6 +378,100 @@ func exercise(c incus.InstanceServer, in input, out map[string]any) error {
 	}
 }
 
+func acknowledgeConsoleWriter(ctx context.Context, operation, nonceSHA string) error {
+	if err := json.NewEncoder(os.Stdout).Encode(map[string]any{
+		"accepted": true, "writer_operation": operation, "nonce_sha256": nonceSHA,
+	}); err != nil {
+		return err
+	}
+	// Wait for the source-owned parent to persist the identity before the native
+	// operation wait. No replay or remote cancellation is issued on parent loss.
+	ack := make(chan string, 1)
+	go func() { line, _ := bufio.NewReader(io.LimitReader(os.Stdin, 64)).ReadString('\n'); ack <- line }()
+	select {
+	case line := <-ack:
+		if line != "console-writer-recorded\n" {
+			return errors.New("native console writer journal acknowledgement missing")
+		}
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func consoleProof(ctx context.Context, c incus.InstanceServer, name string, out map[string]any, accepted func(context.Context, string, string) error) error {
+	reader, writer := io.Pipe()
+	defer reader.Close()
+	defer writer.Close()
+	terminal := &consoleBuffer{Reader: reader}
+	disconnect := make(chan bool)
+	controlled := make(chan error, 1)
+	op, err := c.ConsoleInstance(name, api.InstanceConsolePost{Width: 80, Height: 24}, &incus.InstanceConsoleArgs{
+		Terminal: terminal, ConsoleDisconnect: disconnect, Control: func(ws *websocket.Conn) {
+			_ = ws.SetWriteDeadline(time.Now().Add(3 * time.Second))
+			err := ws.WriteJSON(map[string]any{"command": "window-resize", "args": map[string]string{"width": "80", "height": "24"}})
+			if resetErr := ws.SetWriteDeadline(time.Time{}); err == nil {
+				err = resetErr
+			}
+			controlled <- err
+		}})
+	if err != nil {
+		return err
+	}
+	defer close(disconnect)
+	out["operation"] = op.Get().ID
+	select {
+	case err = <-controlled:
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(5 * time.Second):
+		return errors.New("native console control timeout")
+	}
+	if err != nil {
+		return err
+	}
+	random := make([]byte, 32)
+	if _, err = rand.Read(random); err != nil {
+		return err
+	}
+	nonce := "opsmaru-gateway-console-" + hex.EncodeToString(random)
+	hash := sha256.Sum256([]byte(nonce))
+	out["nonce_sha256"] = hex.EncodeToString(hash[:])
+	producer, err := c.ExecInstance(name, api.InstanceExecPost{
+		Command:   []string{"/bin/sh", "-c", `printf '%s\n' "$1" > /dev/console`, "opsmaru-console-proof", nonce},
+		WaitForWS: false,
+	}, nil)
+	if err != nil {
+		return err
+	}
+	out["writer_operation"] = producer.Get().ID
+	if err = accepted(ctx, producer.Get().ID, out["nonce_sha256"].(string)); err != nil {
+		return err
+	}
+	if err = producer.WaitContext(ctx); err != nil {
+		return err
+	}
+	if producer.Get().StatusCode != api.Success || producer.Get().Metadata["return"] != float64(0) {
+		return errors.New("native console writer did not exit successfully")
+	}
+	deadline := time.NewTimer(5 * time.Second)
+	defer deadline.Stop()
+	ticker := time.NewTicker(20 * time.Millisecond)
+	defer ticker.Stop()
+	for !terminal.contains([]byte(nonce)) {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-deadline.C:
+			return errors.New("native console produced no data containing proof nonce within deadline")
+		case <-ticker.C:
+		}
+	}
+	out["received_bytes"] = terminal.length()
+	out["local_detach"], out["remote_cancel"] = true, false
+	return nil
+}
+
 type consoleBuffer struct {
 	io.Reader
 	mu   sync.Mutex
@@ -424,6 +488,11 @@ func (b *consoleBuffer) Write(p []byte) (int, error) {
 }
 func (b *consoleBuffer) Close() error { return nil }
 func (b *consoleBuffer) length() int  { b.mu.Lock(); defer b.mu.Unlock(); return b.data.Len() }
+func (b *consoleBuffer) contains(p []byte) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return bytes.Contains(b.data.Bytes(), p)
+}
 
 // Read-only fixed-newstyle NBD verifier. Protocol reference:
 // https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md

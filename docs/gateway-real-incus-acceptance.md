@@ -108,3 +108,14 @@ poll exceptions stop that poller; ordinary operation-list RPC errors retain
 the existing read-only polling behavior. At most 16 safe poll-failure details
 per side record the stage, error kind, HTTP status and elapsed time, without
 native messages, metadata, credentials or operation secrets.
+
+Console proof uses the unchanged native console helper plus one fixed native
+exec command in the owned test container. The command writes a fresh ASCII
+nonce, passed as an argv value, to `/dev/console`; a login prompt alone cannot
+satisfy the case. The helper clears its temporary control write deadline and
+requires the captured console bytes to contain the nonce. Before waiting for
+the writer operation, it sends an allowlisted progress record and waits for
+the source-owned runner to journal its UUID and nonce SHA-256. Reports retain
+only hashes, operation identities, byte counts and local-detach/no-cancellation
+proof, never the nonce or console output. Producer failures and missing proof
+still fail without a retry.

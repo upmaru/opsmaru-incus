@@ -12,7 +12,7 @@ defmodule OpsmaruGatewayLiveScenarios do
   @sides ~w(source target)
   @payload :binary.copy(<<0, 255, 128, 13, 10>>, 16_384)
   @nbd_readonly_unavailable "native_nbd_readonly_unavailable"
-  @proof_fields ~w(operation status_code http_status error_kind bytes sha256 exit event_operation received_bytes export_bytes read_bytes readonly local_detach remote_cancel accepted)
+  @proof_fields ~w(operation writer_operation nonce_sha256 status_code http_status error_kind bytes sha256 exit event_operation received_bytes export_bytes read_bytes readonly local_detach remote_cancel accepted)
 
   def load_config!(path) do
     require!(
@@ -1228,7 +1228,11 @@ defmodule OpsmaruGatewayLiveScenarios do
     try do
       {:ok, decoded} =
         Acceptance.step(context, "native/#{side}/#{action}", fn ->
-          result = command(context.native_driver, [path], [], 55_000)
+          result =
+            if action == "console",
+              do: console_command(context, path),
+              else: command(context.native_driver, [path], [], 55_000)
+
           require!(result.status == 0, "native verifier process failed")
           decoded = Jason.decode!(result.output)
           Acceptance.record_detail(context, "native/#{side}/#{action}", safe_proof(decoded))
@@ -1454,6 +1458,110 @@ defmodule OpsmaruGatewayLiveScenarios do
 
   defp cli(context, args),
     do: command(context.native_cli, args, [{"INCUS_CONF", context.incus_conf}], 180_000)
+
+  @doc false
+  def console_command(context, input_path) do
+    port =
+      Port.open({:spawn_executable, context.native_driver}, [
+        :binary,
+        :exit_status,
+        :use_stdio,
+        :stderr_to_stdout,
+        args: [input_path]
+      ])
+
+    try do
+      collect_console(
+        port,
+        context,
+        %{output: "", progress: nil, parsed: false, total: 0},
+        System.monotonic_time(:millisecond) + 55_000
+      )
+    after
+      if Port.info(port) != nil, do: terminate_owned(port)
+    end
+  end
+
+  defp collect_console(port, context, state, deadline) do
+    remaining = max(0, deadline - System.monotonic_time(:millisecond))
+
+    receive do
+      {^port, {:data, bytes}} ->
+        require!(
+          state.total + byte_size(bytes) <= 262_144,
+          "native console output bound exceeded"
+        )
+
+        state = %{state | output: state.output <> bytes, total: state.total + byte_size(bytes)}
+        state = console_progress(port, context, state)
+        collect_console(port, context, state, deadline)
+
+      {^port, {:exit_status, status}} ->
+        decoded = Jason.decode!(state.output)
+
+        if decoded["passed"] == true do
+          require!(
+            state.progress != nil and
+              decoded["writer_operation"] == state.progress["writer_operation"] and
+              decoded["nonce_sha256"] == state.progress["nonce_sha256"],
+            "native console writer proof mismatch"
+          )
+        end
+
+        %{output: state.output, status: status}
+    after
+      remaining -> raise "native console verifier timed out; backend resources retained"
+    end
+  end
+
+  defp console_progress(_, _, %{parsed: true} = state), do: state
+
+  defp console_progress(port, context, state) do
+    case :binary.split(state.output, "\n") do
+      [partial] ->
+        require!(byte_size(partial) <= 2_048, "native console progress bound exceeded")
+        state
+
+      [line, rest] ->
+        require!(byte_size(line) <= 2_048, "native console progress bound exceeded")
+
+        decoded =
+          case Jason.decode(line) do
+            {:ok, value} when is_map(value) -> value
+            _ -> raise "native console progress invalid"
+          end
+
+        if valid_console_progress?(decoded) do
+          Acceptance.record_detail(context, "native/source/console-writer-accepted", %{
+            "accepted" => true,
+            "operation" => decoded["writer_operation"],
+            "sha256" => decoded["nonce_sha256"]
+          })
+
+          true = Port.command(port, "console-writer-recorded\n")
+          %{state | output: rest, progress: decoded, parsed: true}
+        else
+          require!(
+            decoded["action"] == "console" and is_binary(decoded["error"]) and
+              decoded["passed"] != true,
+            "native console progress invalid"
+          )
+
+          %{state | parsed: true}
+        end
+    end
+  end
+
+  defp valid_console_progress?(value),
+    do:
+      Enum.sort(Map.keys(value)) == ~w(accepted nonce_sha256 writer_operation) and
+        value["accepted"] == true and is_binary(value["writer_operation"]) and
+        Regex.match?(
+          ~r/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/,
+          value["writer_operation"]
+        ) and
+        is_binary(value["nonce_sha256"]) and
+        Regex.match?(~r/\A[0-9a-f]{64}\z/, value["nonce_sha256"])
 
   @doc false
   def command(executable, args, env, timeout) do
