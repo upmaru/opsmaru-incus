@@ -381,6 +381,7 @@ defmodule OpsmaruGatewayAcceptance do
     context = %{config: config, journal: journal, runtime: config["state_directory"], sides: %{}}
 
     try do
+      start_runtime!()
       clients = inspect_backends!(context)
       nonce = Base.encode16(:crypto.strong_rand_bytes(16), case: :lower)
       prefix = "gw-" <> binary_part(nonce, 0, 12) <> "-"
@@ -400,18 +401,32 @@ defmodule OpsmaruGatewayAcceptance do
       with_hosts(context, scenario)
     rescue
       error ->
-        journal_update(
-          context,
-          &Map.merge(&1, %{
-            "phase" => "failed-resources-retained",
-            "failure" => Atom.to_string(error.__struct__)
-          })
-        )
-
+        record_failure(context, Atom.to_string(error.__struct__))
         reraise error, __STACKTRACE__
+    catch
+      kind, reason ->
+        record_failure(context, Atom.to_string(kind))
+        :erlang.raise(kind, reason, __STACKTRACE__)
     after
-      Agent.stop(journal)
+      stop_local(journal)
     end
+  end
+
+  defp start_runtime! do
+    # Explicit acceptance-host startup only. Requiring this file, loading the
+    # library and rejecting unapproved configuration never starts these apps.
+    for application <- [:ssl, :plug_cowboy] do
+      {:ok, _} = Application.ensure_all_started(application)
+    end
+  end
+
+  defp record_failure(context, kind) do
+    quietly(fn ->
+      journal_update(
+        context,
+        &Map.merge(&1, %{"phase" => "failed-resources-retained", "failure" => kind})
+      )
+    end)
   end
 
   defp initial_report(config),
@@ -573,7 +588,7 @@ defmodule OpsmaruGatewayAcceptance do
     after
       # All listeners/tasks are local acceptance resources. Backend projects and
       # operations are retained on failure; nothing here remotely cancels them.
-      Supervisor.stop(supervisor)
+      stop_local(supervisor)
 
       for resource <- Process.delete({__MODULE__, :hosts}) || [] do
         send(resource.watcher, :stop)
@@ -582,7 +597,7 @@ defmodule OpsmaruGatewayAcceptance do
           {:host_stopped, ref} when ref == resource.ref -> :ok
         after
           5_000 ->
-            :cowboy.stop_listener(resource.ref)
+            stop_listener(resource.ref)
             stop_local(resource.state)
             stop_local(resource.admission)
         end
@@ -680,7 +695,7 @@ defmodule OpsmaruGatewayAcceptance do
           :stop -> :ok
         end
 
-        :cowboy.stop_listener(ref)
+        stop_listener(ref)
         stop_local(state_pid)
         stop_local(admission)
         send(owner, {:host_stopped, ref})
@@ -724,10 +739,15 @@ defmodule OpsmaruGatewayAcceptance do
     end
   end
 
-  defp stop_local(pid) do
-    GenServer.stop(pid, :normal, 1_000)
+  defp stop_listener(ref), do: quietly(fn -> :cowboy.stop_listener(ref) end)
+  defp stop_local(pid), do: quietly(fn -> GenServer.stop(pid, :normal, 1_000) end)
+
+  defp quietly(fun) do
+    fun.()
+  rescue
+    _ -> :ok
   catch
-    :exit, _ -> :ok
+    _, _ -> :ok
   end
 
   defp poll(context, side, host) do

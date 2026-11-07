@@ -291,6 +291,148 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
     assert report["run_marker"] != nil
   end
 
+  test "a fresh --no-start subprocess bootstraps its own TLS hosts and cleans local listeners",
+       context do
+    {config, backend_state} = config(context)
+    config_path = Path.join(context.root, "subprocess-config.json")
+    File.write!(config_path, Jason.encode!(config))
+    File.chmod!(config_path, 0o600)
+    script = Path.join(context.root, "bootstrap.exs")
+    source = Path.expand("../scripts/gateway-acceptance-host.exs", __DIR__)
+    File.write!(script, bootstrap_script(source, config_path))
+
+    {output, status} =
+      System.cmd(
+        "mise",
+        ["exec", "--", "mix", "run", "--no-start", "--no-compile", "--no-deps-check", script],
+        cd: Path.expand("..", __DIR__),
+        stderr_to_stdout: true,
+        env: [{"MIX_ENV", "test"}, {"ERL_FLAGS", "+S 2:2"}]
+      )
+
+    assert status == 0, output
+    assert output =~ "explicit-bootstrap-and-cleanup-passed"
+    assert length(Agent.get(backend_state, & &1.posts)) == 2
+    assert Jason.decode!(File.read!(config["report"]))["phase"] == "partial-resources-retained"
+  end
+
+  test "missing Ranch during cleanup cannot mask the original exit or skip local state cleanup",
+       context do
+    {config, backend_state} = config(context)
+    config_path = Path.join(context.root, "cleanup-config.json")
+    File.write!(config_path, Jason.encode!(config))
+    File.chmod!(config_path, 0o600)
+    script = Path.join(context.root, "cleanup-exit.exs")
+    source = Path.expand("../scripts/gateway-acceptance-host.exs", __DIR__)
+    File.write!(script, cleanup_failure_script(source, config_path))
+
+    {output, status} =
+      System.cmd(
+        "mise",
+        ["exec", "--", "mix", "run", "--no-start", "--no-compile", "--no-deps-check", script],
+        cd: Path.expand("..", __DIR__),
+        stderr_to_stdout: true,
+        env: [{"MIX_ENV", "test"}, {"ERL_FLAGS", "+S 2:2"}]
+      )
+
+    assert status == 0, output
+    assert output =~ "cleanup-preserved-original-exit"
+    assert map_size(Agent.get(backend_state, & &1.projects)) == 2
+    assert Jason.decode!(File.read!(config["report"]))["phase"] == "failed-resources-retained"
+  end
+
+  test "scenario exits retain resources, record sanitized failure kind and preserve original reason",
+       context do
+    {config, backend_state} = config(context)
+    reason = {:original_exit, "private-sentinel"}
+    assert catch_exit(Runner.run(config, fn _ -> exit(reason) end)) == reason
+    report = Jason.decode!(File.read!(config["report"]))
+    assert report["phase"] == "failed-resources-retained"
+    assert report["failure"] == "exit"
+    refute File.read!(config["report"]) =~ "private-sentinel"
+    assert map_size(Agent.get(backend_state, & &1.projects)) == 2
+
+    for side <- ~w(source target),
+        do: await_closed(URI.parse(config[side]["gateway"]["https"]).port)
+  end
+
+  test "scenario throws retain resources and preserve original thrown value", context do
+    {config, backend_state} = config(context)
+    reason = {:original_throw, "private-sentinel"}
+    assert catch_throw(Runner.run(config, fn _ -> throw(reason) end)) == reason
+    report = Jason.decode!(File.read!(config["report"]))
+    assert report["phase"] == "failed-resources-retained"
+    assert report["failure"] == "throw"
+    refute File.read!(config["report"]) =~ "private-sentinel"
+    assert map_size(Agent.get(backend_state, & &1.projects)) == 2
+  end
+
+  defp cleanup_failure_script(source, config_path) do
+    """
+    nil = Process.whereis(:ranch_sup)
+    Code.require_file(#{inspect(source)})
+    config = #{inspect(config_path)} |> File.read!() |> Jason.decode!()
+    original = {:original_exit, "private-sentinel"}
+    observed = try do
+      OpsmaruGatewayAcceptance.run(config, fn runtime ->
+        owned = for {_, side} <- runtime.sides, pid <- [side.host.state, side.gateway.admission], do: pid
+        Process.put(:owned_local_state, owned)
+        :ok = Application.stop(:ranch)
+        exit(original)
+      end)
+    catch
+      :exit, reason -> reason
+    end
+    true = observed == original
+    true = Enum.all?(Process.get(:owned_local_state), &(not Process.alive?(&1)))
+    report = config["report"] |> File.read!() |> Jason.decode!()
+    "failed-resources-retained" = report["phase"]
+    "exit" = report["failure"]
+    false = String.contains?(File.read!(config["report"]), "private-sentinel")
+    IO.puts("cleanup-preserved-original-exit")
+    """
+  end
+
+  defp bootstrap_script(source, config_path) do
+    """
+    nil = Process.whereis(:ranch_sup)
+    Code.require_file(#{inspect(source)})
+    nil = Process.whereis(:ranch_sup)
+    try do
+      OpsmaruGatewayAcceptance.run(%{"allow_namespaced_mutations" => false}, fn _ -> raise "unapproved scenario ran" end)
+    rescue
+      ArgumentError -> :ok
+    end
+    nil = Process.whereis(:ranch_sup)
+    config = #{inspect(config_path)} |> File.read!() |> Jason.decode!()
+    report = OpsmaruGatewayAcceptance.run(config, fn runtime ->
+      true = is_pid(Process.whereis(:ranch_sup))
+      started = Enum.map(Application.started_applications(), &elem(&1, 0))
+      true = Enum.all?([:ssl, :plug_cowboy, :cowboy, :ranch], &(&1 in started))
+      for side <- ["source", "target"] do
+        gateway = config[side]["gateway"]
+        port = URI.parse(runtime.sides[side].origin).port
+        tls = [verify: :verify_peer, cacertfile: String.to_charlist(gateway["server_ca"]),
+          certfile: String.to_charlist(gateway["client_certificate"]), keyfile: String.to_charlist(gateway["client_key"]),
+          server_name_indication: ~c"localhost"]
+        response = Opsmaru.TestSupport.RawHTTP.request(port, "GET", "/1.0?project=" <> config[side]["project"], [], "", tls)
+        200 = response.status
+      end
+    end)
+    "partial-resources-retained" = report["phase"]
+    closed = fn recur, port, remaining ->
+      case :gen_tcp.connect({127, 0, 0, 1}, port, [:binary, active: false], 100) do
+        {:error, :econnrefused} -> :ok
+        {:ok, socket} when remaining > 0 -> :gen_tcp.close(socket); Process.sleep(10); recur.(recur, port, remaining - 1)
+        {:error, :econnreset} when remaining > 0 -> Process.sleep(10); recur.(recur, port, remaining - 1)
+        _ -> raise "acceptance listener did not close"
+      end
+    end
+    for side <- ["source", "target"], do: closed.(closed, URI.parse(config[side]["gateway"]["https"]).port, 100)
+    IO.puts("explicit-bootstrap-and-cleanup-passed")
+    """
+  end
+
   defp await_closed(port, remaining \\ 100)
 
   defp await_closed(port, 0),
