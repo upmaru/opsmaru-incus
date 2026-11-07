@@ -20,8 +20,12 @@ The report path must not already exist. The optional
 such runs are development fixture evidence, not published-revision acceptance.
 The default repository is `https://github.com/upmaru/opsmaru-incus.git`.
 The default consumer dependency is pinned to
-`6091297622729018f7e796ab66ed25cbf748a3f6`, including the default-queue
-WebSocket upload backpressure fix. Earlier evidence revisions remain historical.
+`2ebc4a6ee3246134105cc4265dc14ecb26ba0a07`, including the default-queue
+WebSocket upload backpressure fix and precise early-response-close classification.
+This published revision passed nine independent host tests and two warning-free,
+passive client-only tests with clean exact Git dependencies. The verifier recorded
+18 successful fixture migration cases and six accepted native CLI snapshot-move
+limitations. Earlier evidence revisions remain historical.
 The script checks the fetched dependency's exact commit and clean working tree.
 The report separately identifies the verifier's source commit, cleanliness and
 fixture/driver source hashes because the harness may differ from the dependency

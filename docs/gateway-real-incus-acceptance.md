@@ -1,11 +1,15 @@
 # Gateway real-Incus gate (G6 / 7.4)
 
 The live gateway gate is **incomplete**. The latest isolated run at source
-`1374bf884c89eb3a010c7386740c7151a2c7146e` passed ten protocol cases, left NBD
+`2ebc4a6ee3246134105cc4265dc14ecb26ba0a07` passed ten protocol cases, left NBD
 unrun, and failed its first instance relay copy. During that copy a backend
-metadata connection closed before a parsed response; an independent unchanged
-native Go client also received EOF. The run retained its resources and private
-journal. No successful real migration matrix is claimed.
+metadata connections repeatedly closed before a parsed response throughout the
+original 12-second cache window. The host preserved its original timestamps,
+then correctly expired authority. An earlier independent unchanged native Go
+client also received EOF during the same type of gateway copy. The latest run
+verified that its fresh ZFS root disabled per-volume reservation, and retained
+its resources and private journal after failure. No successful real migration
+matrix is claimed.
 
 Portable gateway fixtures and the immutable host consumer produce separate
 evidence, including 18 successful fixture migrations and six accepted pinned
