@@ -80,6 +80,12 @@ backend identity and version, project absence and a fresh run marker before
 scenario mutations. Configurations and reports stay outside Git. Existing
 reports are never overwritten; unavailable inputs produce no report.
 
+Live execution additionally requires an explicit `network` name on each side.
+After verifying backend identity, the runner reads both selected networks and
+requires matching names, managed status and native `Created` readiness before
+creating either project. The new instance NIC uses that verified binding.
+The config-only Python preflight does not establish network readiness.
+
 The live suite mounts the host-owned gateway and uses the
 unchanged pinned client/CLI with isolated `INCUS_CONF` and test-only trust. It
 must cover HTTP/binary transfers, enrollment and denials, exec/console/events,
@@ -97,6 +103,13 @@ Failures retain resources for explicit reconciliation; cleanup after a fully
 successful run applies only to resources created under its verified fresh
 namespace. No default socket, remote discovery, runtime boot, installation or
 production data is part of this gate.
+
+Initial journal creation and each replacement check the write, sync and close
+results. Replacements sync the new file before rename and then sync the parent
+directory; initial creation also syncs its parent. The following backend mutation
+is permitted only after these barriers succeed. Unsupported directory sync or
+any persistence error fails closed. Files remain private (`0600`), and failed
+replacement does not advance the in-memory journal or replay a mutation.
 
 The custom-volume NBD verifier keeps its strict read-only transmission-flag
 requirement and requests `Writable: false`. If that exact local verifier
