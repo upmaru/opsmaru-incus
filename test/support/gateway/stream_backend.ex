@@ -271,7 +271,7 @@ defmodule Opsmaru.TestSupport.RawHTTP do
         else: [{"content-length", Integer.to_string(IO.iodata_length(body))}]
 
     send!(client, head(method, target, headers ++ framing ++ [{"connection", "close"}]))
-    send!(client, body)
+    if IO.iodata_length(body) > 0, do: send!(client, body)
     read(client, method)
   end
 
