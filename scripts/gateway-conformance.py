@@ -20,6 +20,9 @@ def build_cli(source, destination):
     go = subprocess.check_output(["mise", "which", "go"], cwd=source, text=True).strip()
     env.pop("GOROOT", None)
     env["GOROOT"] = subprocess.check_output([go, "env", "GOROOT"], cwd=source, env=env, text=True).strip()
+    go_version = subprocess.check_output([go, "version"], cwd=source, env=env, text=True).strip()
+    if "go" + reference["go"] not in go_version.split():
+        raise SystemExit("CLI verifier requires the exact reference Go toolchain")
     module = json.loads(subprocess.check_output(
         ["mise", "exec", "--", "go", "mod", "download", "-json",
          reference["module"] + "@" + reference["tag"]],
@@ -45,8 +48,7 @@ def build_cli(source, destination):
         "tag": reference["tag"], "module_sum": module["Sum"],
         "module_zip_sha256": sha256(module["Zip"]),
         "binary_sha256": sha256(destination),
-        "go": subprocess.check_output(["mise", "exec", "--", "go", "version"],
-                                      cwd=source, text=True).strip(),
+        "go": go_version,
         # --version is Cobra's local flag; the `version` subcommand contacts a
         # configured remote and must never be used for build provenance.
         "version": subprocess.check_output([str(destination), "--version"],
