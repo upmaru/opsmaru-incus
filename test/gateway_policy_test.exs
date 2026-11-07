@@ -210,12 +210,19 @@ defmodule Opsmaru.Incus.GatewayPolicyTest do
 
         response = get(context, "/1.0/instances/c1/sftp", [auth() | upgrade])
 
-        if protocol == "websocket" do
+        if protocol == "websocket" and Code.ensure_loaded?(Opsmaru.Incus.Gateway.WebSocket) do
           assert response.status == 400
           assert native(response.body)["error"] == "Invalid WebSocket upgrade"
         else
           assert response.status == 501
-          assert native(response.body)["error"] =~ "not implemented"
+
+          message =
+            if protocol in ["sftp", "nbd"] and
+                 Code.ensure_loaded?(Opsmaru.Incus.Gateway.CowboyHandler),
+               do: "Cowboy gateway handler",
+               else: "not implemented"
+
+          assert native(response.body)["error"] =~ message
         end
       end
 

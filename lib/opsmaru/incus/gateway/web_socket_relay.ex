@@ -52,7 +52,16 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
           clock = :atomics.new(1, signed: true)
           :atomics.put(clock, 1, now())
           deadline = now() + gateway.max_lifetime
-          watchdog = watch(owner, handshake_owner, clock, gateway.idle_timeout, deadline)
+
+          watchdog =
+            watch(
+              owner,
+              handshake_owner,
+              clock,
+              gateway.idle_timeout,
+              deadline,
+              min(50, div(gateway.recheck_interval, 4))
+            )
 
           state = %{
             gateway: gateway,
@@ -433,11 +442,11 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
       end
     end
 
-    defp watch(owner, handshake_owner, clock, idle, deadline) do
+    defp watch(owner, handshake_owner, clock, idle, deadline, grace) do
       relay = self()
 
       spawn(fn ->
-        handoff = {Process.monitor(handshake_owner), false, deadline}
+        handoff = {Process.monitor(handshake_owner), false, deadline, grace}
 
         watchdog(
           relay,
@@ -457,7 +466,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
            owner,
            relay_ref,
            owner_ref,
-           {handshake_ref, committed, handoff_deadline} = handoff,
+           {handshake_ref, committed, handoff_deadline, grace} = handoff,
            clock,
            idle,
            deadline
@@ -471,13 +480,13 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
         receive do
           {:DOWN, ^owner_ref, :process, ^owner, _} -> :ok
         after
-          50 -> Process.exit(owner, :kill)
+          grace -> Process.exit(owner, :kill)
         end
       else
         receive do
           {:committed, sender, ref} ->
             send(sender, {ref, :committed})
-            handoff = {handshake_ref, true, min(deadline, now() + 1_000)}
+            handoff = {handshake_ref, true, min(deadline, now() + 1_000), grace}
             watchdog(relay, owner, relay_ref, owner_ref, handoff, clock, idle, deadline)
 
           {:attached, sender, ref} ->
@@ -489,7 +498,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
               owner,
               relay_ref,
               owner_ref,
-              {nil, true, deadline},
+              {nil, true, deadline, grace},
               clock,
               idle,
               deadline
@@ -501,7 +510,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
               owner,
               relay_ref,
               owner_ref,
-              {nil, true, handoff_deadline},
+              {nil, true, handoff_deadline, grace},
               clock,
               idle,
               deadline
@@ -512,7 +521,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
             Process.exit(owner, :kill)
 
           {:DOWN, ^relay_ref, :process, ^relay, _} ->
-            finish_front(owner, owner_ref)
+            finish_front(owner, owner_ref, grace)
 
           {:DOWN, ^owner_ref, :process, ^owner, _} ->
             Process.exit(relay, :kill)
@@ -523,11 +532,11 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
       end
     end
 
-    defp finish_front(owner, owner_ref) do
+    defp finish_front(owner, owner_ref, grace) do
       receive do
         {:DOWN, ^owner_ref, :process, ^owner, _} -> :ok
       after
-        50 -> Process.exit(owner, :kill)
+        grace -> Process.exit(owner, :kill)
       end
     end
 
@@ -564,7 +573,14 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
 
     defp cleanup(state) do
       if state.attached,
-        do: spawn(fn -> finish_front(state.owner, Process.monitor(state.owner)) end)
+        do:
+          spawn(fn ->
+            finish_front(
+              state.owner,
+              Process.monitor(state.owner),
+              min(50, div(state.gateway.recheck_interval, 4))
+            )
+          end)
 
       if state.writer, do: Process.exit(state.writer, :kill)
       if state.conn, do: Mint.HTTP.close(state.conn)

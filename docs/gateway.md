@@ -313,12 +313,14 @@ owner/worker loss and deadlines close local sockets and release capacity.
 The same `recheck_interval` maximum applies while data is busy or silent and
 while either direction is blocked. A separate bounded frontend close guard
 survives relay termination so a nonreading caller cannot strand Cowboy output.
+Its grace is the same `min(50, recheck_interval / 4)` milliseconds reserved by
+the lease, retaining the host-tightened revocation bound.
 
 Resource limits are explicit:
 
 - `connection.max_response_bytes` bounds each incoming/outgoing message and
-  partial-frame assembly. `max_request_bytes` and `max_response_bytes` bound
-  total traffic in each direction, including received protocol framing.
+  partial-frame assembly. `max_request_bytes` bounds relayed caller payload
+  bytes; `max_response_bytes` bounds backend bytes including received framing.
 - `connection.queue_limit` bounds decoded frames in one backend batch and the
   waiting backend writer queue. The waiting writer payload bytes additionally
   cannot exceed `connection.max_response_bytes`; at most one extra frame is

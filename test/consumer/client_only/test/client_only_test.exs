@@ -26,6 +26,9 @@ defmodule ClientOnlyConsumer.Test do
     refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.HTTPRelay)
     refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.WebSocket)
     refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.WebSocketRelay)
+    refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.CowboyHandler)
+    refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.RawRelay)
+    refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.RawTunnel)
     refute "console" in Identity.supported_extensions()
   end
 end
