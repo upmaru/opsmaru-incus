@@ -9,6 +9,7 @@ defmodule FoundationConsumer.GatewayTest do
     CertificateHost,
     HTTPFixture,
     NativeWebSocketBackend,
+    RawHTTP,
     StreamBackend,
     TLSIdentity
   }
@@ -682,7 +683,7 @@ defmodule FoundationConsumer.GatewayTest do
 
     :ok =
       :ssl.send(socket, [
-        Opsmaru.TestSupport.RawHTTP.head(method, target, [
+        RawHTTP.head(method, target, [
           {"content-length", Integer.to_string(byte_size(body))},
           {"connection", "close"}
         ]),

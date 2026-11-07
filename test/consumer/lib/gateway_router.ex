@@ -1,6 +1,7 @@
 defmodule FoundationConsumer.GatewayRouter do
   @moduledoc false
   use Plug.Router
+  alias Opsmaru.Incus.Gateway.Plug, as: GatewayPlug
 
   def gateway, do: Agent.get(FoundationConsumer.GatewayConfig, & &1)
   def configure(gateway), do: Agent.update(FoundationConsumer.GatewayConfig, fn _ -> gateway end)
@@ -18,11 +19,11 @@ defmodule FoundationConsumer.GatewayRouter do
   end
 
   get "/" do
-    Opsmaru.Incus.Gateway.Plug.call(conn, {:dynamic, {__MODULE__, :gateway, []}})
+    GatewayPlug.call(conn, {:dynamic, {__MODULE__, :gateway, []}})
   end
 
   match "/1.0/*path" do
-    Opsmaru.Incus.Gateway.Plug.call(conn, {:dynamic, {__MODULE__, :gateway, []}})
+    GatewayPlug.call(conn, {:dynamic, {__MODULE__, :gateway, []}})
   end
 
   match _ do
