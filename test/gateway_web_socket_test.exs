@@ -416,21 +416,40 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
     end
   end
 
-  test "already buffered tiny-frame bursts still respect the hard writer queue cap", context do
+  test "already parsed tiny-frame bursts still respect the hard writer queue cap", context do
+    alias Opsmaru.Incus.Gateway.WebSocket
     fixture = ws_backend(context, wire: "")
     connection = Connection.unix!(WebSocketFixture.path(fixture), owner: :fixture)
     mount(context, connection)
     channel = open(context)
     relay = relay(context)
+    eventually(fn -> :sys.get_state(relay).attached end)
     state = :sys.get_state(relay)
+    {_, frontend, _} = :sys.get_state(state.owner)
+    assert %{relay: ^relay, input_paused: nil, monitor: monitor} = frontend
+    assert is_reference(monitor)
     :erlang.trace(relay, true, [:send, {:tracer, self()}])
-    # Model a blocked socket writer independently of kernel buffer sizes.
-    # active:false cannot stop parsing the rest of this one coalesced packet.
+    # Keep the real relay writer blocked independently of kernel buffer sizes.
     :erlang.suspend_process(state.writer)
-    {conn, socket, frames} = Process.get(channel.cursor)
-    {:ok, socket, bytes} = Mint.WebSocket.encode(socket, {:binary, ""})
-    {:ok, conn} = Mint.WebSocket.stream_request_body(conn, channel.ref, :binary.copy(bytes, 256))
-    Process.put(channel.cursor, {conn, socket, frames})
+
+    # Cowboy continues callbacks for frames already in its parser buffer after
+    # active:false. Drive that parsed tail directly: a TCP write does not promise
+    # one delivery, so socket coalescing cannot be the oracle for this hard cap.
+    frontend =
+      Enum.reduce(1..(connection.queue_limit + 1), frontend, fn _, frontend ->
+        {commands, frontend} = WebSocket.websocket_handle({:binary, ""}, frontend)
+        assert commands in [[], [{:active, false}]]
+        frontend
+      end)
+
+    full = :sys.get_state(relay)
+    assert :queue.len(full.write_queue) == connection.queue_limit
+    assert full.writing == 0
+    assert full.queued_bytes == 0
+    assert frontend.input_paused != nil
+
+    assert {[{:close, 1011, "Gateway channel ended"}], _} =
+             WebSocket.websocket_handle({:binary, ""}, frontend)
 
     case recv_frame(channel) do
       {:close, 1011, _} -> :ok
