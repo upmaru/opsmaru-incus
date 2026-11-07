@@ -396,10 +396,17 @@ defmodule OpsmaruGatewayAcceptance do
 
     try do
       start_runtime!()
-      clients = inspect_backends!(context)
+      {clients, verified_pools} = inspect_backends!(context)
       nonce = Base.encode16(:crypto.strong_rand_bytes(16), case: :lower)
       prefix = "gw-" <> binary_part(nonce, 0, 12) <> "-"
-      context = Map.merge(context, %{clients: clients, marker: nonce, resource_prefix: prefix})
+
+      context =
+        Map.merge(context, %{
+          clients: clients,
+          verified_pools: verified_pools,
+          marker: nonce,
+          resource_prefix: prefix
+        })
 
       journal_update(
         context,
@@ -462,7 +469,7 @@ defmodule OpsmaruGatewayAcceptance do
     }
 
   defp inspect_backends!(context) do
-    clients =
+    inspected =
       for side <- @sides, into: %{} do
         config = context.config[side]
         connection = backend_connection(config["backend"])
@@ -488,12 +495,23 @@ defmodule OpsmaruGatewayAcceptance do
         )
 
         {:ok, pool} = Incus.call(client, "GetStoragePool", %{"name" => config["pool"]})
-        require!(pool.metadata.data["status"] == "Created", "acceptance pool must be ready")
-        {side, client}
+        data = pool.metadata.data
+        require!(data["name"] == config["pool"], "acceptance pool identity mismatch")
+        require!(data["status"] == "Created", "acceptance pool must be ready")
+        driver = data["driver"]
+
+        require!(
+          is_binary(driver) and Regex.match?(~r/\A[a-z][a-z0-9_-]{0,63}\z/, driver),
+          "acceptance pool driver unavailable"
+        )
+
+        {side, {client, %{name: data["name"], driver: driver}}}
       end
 
     journal_update(context, &Map.put(&1, "phase", "fresh-projects-and-backends-verified"))
-    clients
+    clients = Map.new(inspected, fn {side, {client, _}} -> {side, client} end)
+    verified_pools = Map.new(inspected, fn {side, {_, pool}} -> {side, pool} end)
+    {clients, verified_pools}
   end
 
   defp backend_connection(%{"socket" => socket}) do

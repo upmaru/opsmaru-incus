@@ -258,8 +258,26 @@ defmodule OpsmaruGatewayLiveScenarios do
     Acceptance.record_case(context, "enrollment", "passed")
   end
 
-  defp create_base(context, name) do
+  @doc false
+  def create_base(context, name) do
     spec = context.config["source"]
+    pool = get_in(context, [:verified_pools, "source"])
+
+    require!(
+      is_map(pool) and pool[:name] == spec["pool"] and is_binary(pool[:driver]) and
+        pool[:driver] != "",
+      "verified source pool binding unavailable"
+    )
+
+    require!(
+      is_binary(name) and String.starts_with?(name, context.resource_prefix),
+      "owned base instance prefix required"
+    )
+
+    root = %{"type" => "disk", "path" => "/", "pool" => pool.name, "size" => "2GiB"}
+
+    root =
+      if pool.driver == "zfs", do: Map.put(root, "initial.zfs.reserve_space", "false"), else: root
 
     require!(
       is_binary(spec["network"]) and spec["network"] != "",
@@ -277,12 +295,46 @@ defmodule OpsmaruGatewayLiveScenarios do
         "user.opsmaru.acceptance.marker" => context.marker
       },
       "devices" => %{
-        "root" => %{"type" => "disk", "path" => "/", "pool" => spec["pool"], "size" => "2GiB"},
+        "root" => root,
         "eth0" => %{"type" => "nic", "network" => spec["network"], "name" => "eth0"}
       }
     }
 
-    native_mutation(context, "source", "create-owned-base", "POST", "/1.0/instances", body)
+    Acceptance.record_detail(context, "owned-root-resource-policy", %{
+      "proof" => %{
+        "cpu" => "1",
+        "memory" => "256MiB",
+        "root_size" => "2GiB",
+        "profiles" => [],
+        "root_reservation" =>
+          if(pool.driver == "zfs", do: "disabled-per-volume", else: "native-default")
+      }
+    })
+
+    response =
+      native_mutation(context, "source", "create-owned-base", "POST", "/1.0/instances", body)
+
+    if pool.driver == "zfs", do: verify_root_reservation(context, name, pool.name)
+    response
+  end
+
+  defp verify_root_reservation(context, name, pool) do
+    path = "/1.0/storage-pools/#{escape(pool)}/volumes/container/#{escape(name)}"
+
+    {:ok, response} =
+      Acceptance.step(context, "read-owned-root-volume", fn ->
+        Incus.raw_query(context.sides["source"].client, "GET", path)
+      end)
+
+    require!(
+      response.metadata["name"] == name and response.metadata["type"] == "container" and
+        get_in(response.metadata, ["config", "zfs.reserve_space"]) == "false",
+      "owned ZFS root reservation policy not verified; resources retained"
+    )
+
+    Acceptance.record_detail(context, "owned-root-reservation-verified", %{
+      "proof" => %{"root_reservation" => "disabled-per-volume"}
+    })
   end
 
   defp ready_instance(context, name, attempts) when attempts > 0 do

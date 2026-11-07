@@ -1,4 +1,6 @@
 Code.require_file(Path.expand("../scripts/gateway-acceptance-host.exs", __DIR__))
+Code.require_file(Path.expand("../scripts/gateway-daemon-probe.exs", __DIR__))
+Code.require_file(Path.expand("../scripts/gateway_live_scenarios.exs", __DIR__))
 
 defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
   use Opsmaru.TestSupport.GatewayCase, async: true
@@ -8,6 +10,7 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
   alias Opsmaru.TestSupport.HTTPFixture
   alias OpsmaruGatewayAcceptance, as: Runner
   alias OpsmaruGatewayAcceptance.Host
+  alias OpsmaruGatewayLiveScenarios, as: Scenarios
 
   test "loading modules and missing opt-in never start acceptance or contact backend", context do
     assert_raise ArgumentError, "explicit mutation opt-in required", fn ->
@@ -16,6 +19,144 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
 
     assert Admission.count(context.admission) == 0
     assert length(Runner.required_cases()) == 35
+  end
+
+  for driver <- ~w(zfs dir) do
+    test "fresh owned root policy is selected from verified #{driver} pool metadata", context do
+      driver = unquote(driver)
+      {config, backend_state} = config(context)
+      Agent.update(backend_state, &put_in(&1, [:pool, "driver"], driver))
+
+      config =
+        config
+        |> put_in(["source", "network"], "fixture-network")
+        |> put_in(["source", "pool_driver"], "zfs")
+
+      report =
+        Runner.run(config, fn runtime ->
+          assert runtime.verified_pools["source"] == %{name: "default", driver: driver}
+          wrong = put_in(runtime, [:verified_pools, "source", :name], "another-pool")
+
+          assert_raise RuntimeError, "verified source pool binding unavailable", fn ->
+            Scenarios.create_base(wrong, runtime.resource_prefix <> "base")
+          end
+
+          assert_raise RuntimeError, "owned base instance prefix required", fn ->
+            Scenarios.create_base(runtime, "foreign-base")
+          end
+
+          assert Agent.get(backend_state, & &1.instance_posts) == []
+          Scenarios.create_base(runtime, runtime.resource_prefix <> "base")
+        end)
+
+      [instance] = Agent.get(backend_state, & &1.instance_posts)
+      body = instance.body
+      assert body["name"] == report["resource_prefix"] <> "base"
+      assert body["type"] == "container"
+      assert body["profiles"] == []
+
+      assert body["config"] == %{
+               "limits.cpu" => "1",
+               "limits.memory" => "256MiB",
+               "user.opsmaru.acceptance.marker" => report["run_marker"]
+             }
+
+      expected_root = %{"type" => "disk", "path" => "/", "pool" => "default", "size" => "2GiB"}
+
+      expected_root =
+        if driver == "zfs",
+          do: Map.put(expected_root, "initial.zfs.reserve_space", "false"),
+          else: expected_root
+
+      assert body["devices"]["root"] == expected_root
+
+      assert body["devices"]["eth0"] == %{
+               "type" => "nic",
+               "network" => "fixture-network",
+               "name" => "eth0"
+             }
+
+      assert instance.project == config["source"]["project"]
+
+      assert instance.policy == %{
+               "step" => "owned-root-resource-policy",
+               "evidence" => %{
+                 "proof" => %{
+                   "cpu" => "1",
+                   "memory" => "256MiB",
+                   "root_size" => "2GiB",
+                   "profiles" => [],
+                   "root_reservation" =>
+                     if(driver == "zfs", do: "disabled-per-volume", else: "native-default")
+                 }
+               }
+             }
+
+      requests = Agent.get(backend_state, & &1.requests)
+      root_reads = Enum.filter(requests, &String.contains?(&1.target, "/volumes/container/"))
+
+      if driver == "zfs" do
+        assert [%{method: "GET", target: target}] = root_reads
+        assert URI.decode_query(URI.parse(target).query)["project"] == config["source"]["project"]
+        assert Enum.any?(report["details"], &(&1["step"] == "owned-root-reservation-verified"))
+      else
+        assert root_reads == []
+      end
+
+      refute Enum.any?(requests, &(&1.method in ["PUT", "PATCH", "DELETE"]))
+      assert Enum.count(requests, &(&1.method == "POST")) == 3
+
+      assert Enum.all?(Enum.filter(requests, &(&1.method == "POST")), fn request ->
+               URI.parse(request.target).path in ["/1.0/projects", "/1.0/instances"]
+             end)
+
+      assert report["phase"] == "partial-resources-retained"
+    end
+  end
+
+  test "unverified stored ZFS reservation stops before any clone and retains the owned base",
+       context do
+    {config, state} = config(context)
+
+    Agent.update(state, fn value ->
+      value |> put_in([:pool, "driver"], "zfs") |> Map.put(:root_reservation, "true")
+    end)
+
+    config = put_in(config, ["source", "network"], "fixture-network")
+
+    assert_raise RuntimeError,
+                 "owned ZFS root reservation policy not verified; resources retained",
+                 fn ->
+                   Runner.run(config, fn runtime ->
+                     Scenarios.create_base(runtime, runtime.resource_prefix <> "base")
+                   end)
+                 end
+
+    assert length(Agent.get(state, & &1.instance_posts)) == 1
+    requests = Agent.get(state, & &1.requests)
+    assert Enum.count(requests, &(&1.method == "POST")) == 3
+    refute Enum.any?(requests, &(&1.method in ["PUT", "PATCH", "DELETE"]))
+    report = config["report"] |> File.read!() |> Jason.decode!()
+    assert report["phase"] == "failed-resources-retained"
+    refute Enum.any?(report["details"], &(&1["step"] == "owned-root-reservation-verified"))
+  end
+
+  for {label, pool} <- [
+        {"missing driver", %{"name" => "default", "status" => "Created"}},
+        {"malformed driver",
+         %{"name" => "default", "status" => "Created", "driver" => "bad driver"}},
+        {"wrong identity", %{"name" => "another-pool", "status" => "Created", "driver" => "zfs"}}
+      ] do
+    test "#{label} pool metadata denies every namespace mutation", context do
+      {config, backend_state} = config(context)
+      Agent.update(backend_state, &Map.put(&1, :pool, unquote(Macro.escape(pool))))
+      assert_raise ArgumentError, fn -> Runner.run(config, fn _ -> flunk("scenario ran") end) end
+      requests = Agent.get(backend_state, & &1.requests)
+      assert requests != []
+      assert Enum.all?(requests, &(&1.method == "GET"))
+      assert Agent.get(backend_state, & &1.projects) == %{}
+      assert Agent.get(backend_state, & &1.instance_posts) == []
+    end
   end
 
   test "only six explicitly accepted native snapshot-move limitations satisfy completeness" do
@@ -955,7 +1096,23 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
   end
 
   defp config(context) do
-    state = start_supervised!({Agent, fn -> %{projects: %{}, posts: []} end}, id: make_ref())
+    state =
+      start_supervised!(
+        {Agent,
+         fn ->
+           %{
+             projects: %{},
+             posts: [],
+             instance_posts: [],
+             requests: [],
+             report: Path.join(context.root, "report.json"),
+             pool: %{"name" => "default", "status" => "Created", "driver" => "dir"},
+             root_reservation: "false"
+           }
+         end},
+        id: make_ref()
+      )
+
     identity = TLSIdentity.generate(context.root, "backend", "backend.example.com")
     certificate = File.read!(identity.certfile)
 
@@ -1010,8 +1167,40 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
   end
 
   defp respond(request, state, certificate) do
-    path = URI.parse(request.target).path
+    Agent.update(state, &%{&1 | requests: [request | &1.requests]})
+    respond_route(request, URI.parse(request.target).path, state, certificate)
+  end
 
+  defp respond_route(%{method: "POST"} = request, "/1.0/instances", state, _) do
+    report = Agent.get(state, & &1.report) |> File.read!() |> Jason.decode!()
+    policy = Enum.find(report["details"], &(&1["step"] == "owned-root-resource-policy"))
+
+    instance = %{
+      body: Jason.decode!(request.body),
+      project: URI.decode_query(URI.parse(request.target).query || "")["project"],
+      policy: policy
+    }
+
+    Agent.update(state, &%{&1 | instance_posts: [instance | &1.instance_posts]})
+    sync(%{})
+  end
+
+  defp respond_route(
+         %{method: "GET"},
+         "/1.0/storage-pools/default/volumes/container/" <> name,
+         state,
+         _
+       ) do
+    sync(%{
+      "name" => name,
+      "type" => "container",
+      "config" => %{
+        "zfs.reserve_space" => Agent.get(state, & &1.root_reservation)
+      }
+    })
+  end
+
+  defp respond_route(request, path, state, certificate) do
     cond do
       path == "/1.0" ->
         sync(%{
@@ -1046,7 +1235,7 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
         sync(%{fingerprint: String.duplicate("a", 64), type: "container"})
 
       String.starts_with?(path, "/1.0/storage-pools/") ->
-        sync(%{name: "default", status: "Created"})
+        sync(Agent.get(state, & &1.pool))
 
       path == "/1.0/operations" ->
         sync(%{"running" => []})
