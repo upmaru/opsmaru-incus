@@ -495,8 +495,8 @@ must also keep secrets out of their logs and grants. Native backend response
 bytes remain native and are not rewritten as gateway diagnostics.
 
 Portable fixtures exercise unchanged pinned `CopyInstance` and
-`CopyInstanceSnapshot` in all three modes through both gateway endpoints, public
-connection-info addresses/certificate, binary control/fs channels, certificate-less
+`CopyInstanceSnapshot` with stopped instances and stateless snapshots in all
+three modes through both gateway endpoints, public connection-info addresses/certificate, binary control/fs channels, certificate-less
 server peers and omitted nondefault-project selection. Separate interruption
 fixtures isolate one frontend exchange from client-owned orchestration and
 prove at most one backend POST with no gateway DELETE after frontend loss or
@@ -505,3 +505,9 @@ attempts and explicit cancellations; those are distinct incoming requests,
 not gateway retries. Actual unmodified CLI copy/move and immutable consumer
 results belong to G6; real-Incus and installed Macus/hardware evidence remain
 separate gates.
+
+The G5 matrix verifies default copy/move behavior. Live migration, CRIU/stateful
+snapshots and optional flags such as instance-only/refresh are not gateway
+acceptance evidence in this slice. Their additional extension names remain
+outside the conservative gateway allowlist; this is an explicit gateway
+verification gap, not a claim that the backend or host lacks those features.
