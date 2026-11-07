@@ -423,7 +423,7 @@ defmodule FoundationConsumer.GatewayTest do
   end
 
   @tag timeout: 180_000, migration: true
-  test "unmodified CLI copies and moves instances and snapshots in every mode and gateway orientation",
+  test "unmodified CLI copy/move matrix preserves native success and snapshot-move failure",
        context do
     MigrationBackend.build!()
     peer_identity = TLSIdentity.generate(context.root, "peer", "localhost")
@@ -500,28 +500,52 @@ defmodule FoundationConsumer.GatewayTest do
       {output, status} =
         cli([action, "source:#{resource}", "target:destination", "--mode", mode, "--quiet"])
 
-      assert status == 0,
-             inspect({kind, action, mode, orientation, output, MigrationBackend.events(source)})
+      native_limitation = kind == :snapshot and action == "move"
+
+      if native_limitation do
+        assert status != 0
+        assert output =~ "Failed to delete original instance after copying it"
+        assert output =~ "Invalid instance name"
+
+        assert Enum.any?(
+                 MigrationBackend.requests(source),
+                 &(&1.method == "GET" and
+                     String.starts_with?(&1.target, "/1.0/instances/source%2Fsnapshot"))
+               )
+      else
+        assert status == 0,
+               inspect({kind, action, mode, orientation, output, MigrationBackend.events(source)})
+      end
 
       for side <- [source, target] do
         assert Enum.count(MigrationBackend.requests(side), &(&1.method == "POST")) == 1
       end
 
       deleted = Enum.filter(MigrationBackend.requests(source), &(&1.method == "DELETE"))
-      assert length(deleted) == if(action == "move", do: 1, else: 0)
+      assert length(deleted) == if(action == "move" and kind == :instance, do: 1, else: 0)
 
-      if action == "move",
-        do:
-          assert(
-            hd(deleted).target ==
-              if(kind == :instance,
-                do: "/1.0/instances/source?project=migration-project",
-                else: "/1.0/instances/source/snapshots/snapshot?project=migration-project"
-              )
-          )
+      if action == "move" and kind == :instance,
+        do: assert(hd(deleted).target == "/1.0/instances/source?project=migration-project")
 
       refute Enum.any?(MigrationBackend.requests(target), &(&1.method == "DELETE"))
       assert Enum.any?(MigrationBackend.events(source), &match?({:frame, _, _, _}, &1))
+
+      if path = System.get_env("OPSMARU_INCUS_GATEWAY_CASES") do
+        File.write!(
+          path,
+          Jason.encode!(%{
+            kind: kind,
+            action: action,
+            mode: mode,
+            gateway: orientation,
+            outcome: if(native_limitation, do: "upstream_cli_limitation", else: "passed"),
+            copy_completed: true,
+            source_deleted: action == "move" and kind == :instance
+          }) <> "\n",
+          [:append]
+        )
+      end
+
       # The finite matrix owns these fixture listeners under the test
       # supervisor; none can survive this test's teardown.
     end

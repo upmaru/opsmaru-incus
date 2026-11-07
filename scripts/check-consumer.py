@@ -13,6 +13,9 @@ import json
 import importlib.util
 import hashlib
 import re
+import sys
+
+sys.dont_write_bytecode = True
 
 source = Path(__file__).resolve().parents[1]
 revision = os.environ.get("OPSMARU_INCUS_FIXTURE_REVISION") or (source / "test/consumer/revision.txt").read_text().strip()
@@ -50,6 +53,7 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
     env["OPSMARU_INCUS_FIXTURE_CLI"] = str(cli)
     env["INCUS_CONF"] = str(root / "isolated-incus-conf")
     Path(env["INCUS_CONF"]).mkdir(mode=0o700)
+    env["OPSMARU_INCUS_GATEWAY_CASES"] = str(root / "migration-cases.jsonl")
     for args in [["mise", "trust"], ["mise", "exec", "--", "mix", "deps.get"],
                  ["mise", "exec", "--", "mix", "compile", "--warnings-as-errors"],
                  ["mise", "exec", "--", "mix", "test"]]:
@@ -60,6 +64,13 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
     fetched = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=dependency, text=True).strip()
     if fetched != revision or subprocess.check_output(["git", "status", "--porcelain"], cwd=dependency, text=True).strip():
         raise SystemExit("consumer dependency must remain the exact clean immutable revision")
+    migration_cases = [json.loads(line) for line in Path(env["OPSMARU_INCUS_GATEWAY_CASES"]).read_text().splitlines()]
+    case_keys = {(case["kind"], case["action"], case["mode"], case["gateway"]) for case in migration_cases}
+    expected_cases = {(kind, action, mode, gateway) for kind in ["instance", "snapshot"]
+                      for action in ["copy", "move"] for mode in ["relay", "pull", "push"]
+                      for gateway in ["source", "target"]}
+    if case_keys != expected_cases or len(migration_cases) != 24:
+        raise SystemExit("native CLI migration evidence must include every matrix case exactly once")
 
     # A client-only consumer without tama_mcp, Plug, Cowboy or Phoenix: the
     # library and its operation descriptors must compile without warnings.
@@ -99,6 +110,8 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
         },
         "published_repository": not bool(env.get("OPSMARU_INCUS_FIXTURE_REPOSITORY")) or env["OPSMARU_INCUS_FIXTURE_REPOSITORY"].startswith("https://github.com/"),
         "host_consumer": "passed", "client_only_consumer": "passed",
+        "migration_cases": migration_cases,
+        "migration_cli_completion": "partial: pinned CLI snapshot move copies then fails before source deletion",
         "typed_client_coverage": "unchanged; gateway evidence is separate",
         "real_backend": "unrun", "installed_host": "unrun", "macus_hardware": "unrun",
     }

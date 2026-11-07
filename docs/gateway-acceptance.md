@@ -39,8 +39,14 @@ native HTTP errors and binary file upload/download, exec/console/events and
 operation WebSockets, instance/volume raw SFTP/NBD helpers, actual pkg/sftp binary
 read/write/close, and the CLI copy/move matrix: instances and snapshots, relay,
 pull and push, with the gateway as source and target. The latter is 24 cases.
-CLI move verification observes the CLI's explicit successful source deletion;
-gateway disconnect cleanup never synthesizes that deletion. Native migration
+Instance CLI move verification observes the CLI's explicit successful source deletion;
+gateway disconnect cleanup never synthesizes that deletion. The pinned CLI's
+snapshot move has an upstream limitation: after a successful copy it calls the
+instance GET/delete path with `source%2Fsnapshot`; the pinned server rejects
+snapshot names on that route with native `400 Invalid instance name`. All six
+snapshot move combinations record this failure and retain the source. The
+matrix therefore has 18 successful transfers and six upstream CLI limitations;
+it does not establish complete snapshot-move acceptance. Native migration
 server connections present no client certificate and omit the project query;
 the test host binds them to the already verified pending operation/project and
 actual peer. The backend still checks the operation secret.
