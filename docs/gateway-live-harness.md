@@ -126,3 +126,9 @@ success, scenario failure or owner loss. Backend resources are retained by this
 scaffold. A source-owned scenario may perform separately authorized successful
 cleanup only after its declared acceptance conditions hold and after rechecking
 the exact run marker; failures must preserve the resources and operation IDs.
+
+After separately authorized successful cleanup, the source-owned scenario calls
+`mark_cleaned(context)`. It checks the full case ledger and verifies that both
+configured project names now return native 404 before changing the report's
+cleanup state. The helper deletes nothing. The final phase says cleaned only
+after that verification; partial or failed acceptance cannot be marked clean.

@@ -545,12 +545,20 @@ defmodule OpsmaruGatewayAcceptance do
 
       journal_update(context, &Map.put(&1, "phase", "host-mounted-protocols-unrun"))
       scenario.(context)
-      cases = Agent.get(context.journal, & &1["cases"])
+      report = Agent.get(context.journal, & &1)
+      cases = report["cases"]
 
       phase =
         cond do
           not evidence_complete?(cases) ->
             "partial-resources-retained"
+
+          report["cleanup"] == "verified-projects-absent" and
+              Enum.any?(cases, fn {_, result} -> result == "native_limitation" end) ->
+            "passed-with-native-limitations-and-cleaned"
+
+          report["cleanup"] == "verified-projects-absent" ->
+            "passed-and-cleaned"
 
           Enum.any?(cases, fn {_, result} -> result == "native_limitation" end) ->
             "passed-with-native-limitations-resources-retained"
@@ -761,6 +769,23 @@ defmodule OpsmaruGatewayAcceptance do
   def record_case(context, name, outcome)
       when name in @cases and outcome in ["passed", "native_limitation", "failed", "unrun"] do
     journal_update(context, &put_in(&1, ["cases", name], outcome))
+  end
+
+  def mark_cleaned(context) do
+    require!(
+      evidence_complete?(Agent.get(context.journal, & &1["cases"])),
+      "partial acceptance cannot be marked cleaned"
+    )
+
+    for side <- @sides do
+      {:error, %Error{http_status: 404}} =
+        Incus.call(context.clients[side], "GetProject", %{
+          "name" => context.config[side]["project"]
+        })
+    end
+
+    journal_update(context, &Map.put(&1, "cleanup", "verified-projects-absent"))
+    :ok
   end
 
   def set_verified_operation_peers(context, addresses, nonce_sha256) do

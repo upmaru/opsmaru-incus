@@ -181,6 +181,10 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
 
         Runner.record_case(runtime, "discovery", "passed")
 
+        assert_raise ArgumentError, "partial acceptance cannot be marked cleaned", fn ->
+          Runner.mark_cleaned(runtime)
+        end
+
         Runner.record_detail(runtime, "interruption-accepted", %{
           "operation_id" => "known-native-id",
           "bytes" => 1
@@ -241,6 +245,21 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
       assert {:error, :econnrefused} =
                :gen_tcp.connect({127, 0, 0, 1}, port, [:binary, active: false], 200)
     end
+  end
+
+  test "successful cleanup phase requires complete ledger and both project absences", context do
+    {config, backend_state} = config(context)
+
+    report =
+      Runner.run(config, fn runtime ->
+        for name <- Runner.required_cases(), do: Runner.record_case(runtime, name, "passed")
+        assert_raise MatchError, fn -> Runner.mark_cleaned(runtime) end
+        Agent.update(backend_state, &%{&1 | projects: %{}})
+        assert :ok = Runner.mark_cleaned(runtime)
+      end)
+
+    assert report["phase"] == "passed-and-cleaned"
+    assert report["cleanup"] == "verified-projects-absent"
   end
 
   test "owner loss closes local hosts and retains backend project evidence", context do
