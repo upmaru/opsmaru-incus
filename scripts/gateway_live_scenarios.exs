@@ -1336,6 +1336,9 @@ defmodule OpsmaruGatewayLiveScenarios do
     port =
       Port.open({:spawn_executable, executable}, [
         :binary,
+        # Input to BEAM only: ordinary native commands receive immediate stdin
+        # EOF (snapshot create otherwise waits for YAML on the open pipe).
+        :in,
         :exit_status,
         :use_stdio,
         :stderr_to_stdout,

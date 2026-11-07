@@ -268,6 +268,17 @@ defmodule Opsmaru.GatewayLiveScenariosTest do
     refute Scenarios.expected_driver_result?(%{"error" => "native failure"}, [])
   end
 
+  test "noninteractive command gives a direct child stdin EOF and captures both output streams" do
+    child =
+      "import os,sys; data=sys.stdin.buffer.read(); print('stdin-eof:'+str(len(data))); print('direct-pid:'+str(os.getpid())); sys.stderr.write('stderr-captured\\n')"
+
+    result = Scenarios.command(System.find_executable("python3"), ["-c", child], [], 1_000)
+    assert result.status == 0
+    assert result.output =~ "stdin-eof:0"
+    assert result.output =~ "direct-pid:"
+    assert result.output =~ "stderr-captured"
+  end
+
   test "bounded command timeout reaps its own noncooperative child" do
     pidfile =
       Path.join(
