@@ -196,6 +196,7 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
             bytes
           ])
 
+        if on_upgrade = opts[:on_upgrade], do: on_upgrade.(t, socket)
         close_later(t, socket, opts[:close_after])
 
         echo(socket, opts)

@@ -35,6 +35,30 @@ defmodule Opsmaru.Incus.Gateway.Host do
   backend treats as its native default; the gateway never injects one.
   """
   @callback authorize(Request.t(), host_config :: term()) :: {:ok, term()} | {:error, term()}
+
+  @doc """
+  Admit an otherwise unauthenticated server peer to one operation WebSocket.
+
+  Called only after `authorize/2` returns `{:error, :unauthenticated}`, for an
+  exact GET `/1.0/operations/{id}/websocket` upgrade with one nonempty `secret`
+  query value and no all-projects selection. Missing callbacks deny. An explicit
+  authorization denial never falls through to this callback.
+
+  The host must bind `request.operation`, project, target and the
+  adapter-supplied peer to its own verified pending migration. Native operation
+  WebSockets may omit the project even for a nondefault-project operation:
+  resolve `request.project == nil` from that stored operation binding, rather
+  than inferring default-project authority; an explicit conflicting selection
+  must deny. A TLS peer certificate is identity input, not
+  proof of caller trust; the pinned migration server normally presents no
+  client certificate. The raw secret is available in `request.query`; the
+  gateway forwards it unchanged and the backend still validates it. Returning
+  `{:ok, grant}` permits only this request and uses the ordinary `valid?/3`
+  revocation/expiry checks. Never store or log the secret in the grant.
+  """
+  @callback admit_operation_secret(Request.t(), host_config :: term()) ::
+              {:ok, term()} | {:error, term()}
+
   @doc """
   Recheck the original grant, including expiry and current revocation state.
   Only `true` keeps access. Runs before backend access and periodically during
@@ -69,5 +93,5 @@ defmodule Opsmaru.Incus.Gateway.Host do
   @callback certificates(atom(), Request.t(), term(), map(), term()) ::
               {:ok, term(), [{binary(), binary()}]} | {:error, 400..599}
 
-  @optional_callbacks identity: 2, certificates: 5, valid?: 3
+  @optional_callbacks identity: 2, certificates: 5, valid?: 3, admit_operation_secret: 2
 end

@@ -5,6 +5,7 @@ defmodule Opsmaru.Incus.GatewayFixtureTransferTest do
   use ExUnit.Case, async: true
   import ExUnit.CaptureLog
 
+  alias Opsmaru.Incus.Connection
   alias Opsmaru.TestSupport.Gateway.{CowboyUpgradeHandler, NativeBackend}
   alias Opsmaru.TestSupport.TLSIdentity
 
@@ -209,7 +210,7 @@ defmodule Opsmaru.Incus.GatewayFixtureTransferTest do
             port: 0,
             certfile: String.to_charlist(context.server.certfile),
             keyfile: String.to_charlist(context.server.keyfile),
-            cacertfile: String.to_charlist(context.client.cafile),
+            cacerts: Connection.ca_certificates(context.client.cafile),
             verify: :verify_peer,
             fail_if_no_peer_cert: false,
             versions: [:"tlsv1.3"],
@@ -229,7 +230,7 @@ defmodule Opsmaru.Incus.GatewayFixtureTransferTest do
       active: false,
       exit_on_close: false,
       verify: :verify_peer,
-      cacertfile: String.to_charlist(context.server.cafile),
+      cacerts: Connection.ca_certificates(context.server.cafile),
       server_name_indication: ~c"localhost",
       versions: [:"tlsv1.3"]
     ]

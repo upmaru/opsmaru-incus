@@ -62,8 +62,7 @@ defmodule Opsmaru.Incus.Gateway.Policy do
       {:ok, slot} ->
         case check_host(gateway, request) do
           {:ok, grant, anonymous} ->
-            {:ok,
-             %Admitted{slot: slot, admission: elem(slot, 0), grant: grant, anonymous: anonymous}}
+            finish_admission(slot, grant, anonymous)
 
           {:error, failure} ->
             Admission.release(slot)
@@ -75,6 +74,18 @@ defmodule Opsmaru.Incus.Gateway.Policy do
 
       {:error, :unavailable} ->
         {:error, Failure.new(503, "Gateway is not available", :not_sent)}
+    end
+  end
+
+  # A host callback can outlive the admission it was called under. Refuse the
+  # lost slot before starting any protocol owner or lease: a guard on an already
+  # dead admission could otherwise interrupt even the local failure response.
+  defp finish_admission(slot, grant, anonymous) do
+    if Process.alive?(elem(slot, 0)) do
+      {:ok, %Admitted{slot: slot, admission: elem(slot, 0), grant: grant, anonymous: anonymous}}
+    else
+      Admission.release(slot)
+      {:error, Failure.new(503, "Gateway admission stopped", :not_sent)}
     end
   end
 
@@ -101,18 +112,67 @@ defmodule Opsmaru.Incus.Gateway.Policy do
 
     case result do
       {:ok, {:ok, grant}} ->
-        with :ok <- implemented(request),
-             :ok <- recheck(gateway, request, grant) do
-          {:ok, grant, false}
-        end
+        authorized(gateway, request, grant)
 
       {:ok, {:error, :unauthenticated}} ->
         if anonymous_route?(request),
           do: {:ok, nil, true},
-          else: {:error, Failure.new(403, "not authorized", :not_sent)}
+          else: admit_operation_secret(gateway, request)
 
       _ ->
         {:error, Failure.new(403, "not authorized", :not_sent)}
+    end
+  end
+
+  defp authorized(gateway, request, grant) do
+    with :ok <- implemented(request),
+         :ok <- recheck(gateway, request, grant) do
+      {:ok, grant, false}
+    end
+  end
+
+  defp admit_operation_secret(gateway, request) do
+    result =
+      if operation_secret_route?(request) do
+        callback(
+          fn -> gateway.host.admit_operation_secret(request, gateway.host_config) end,
+          gateway.callback_timeout
+        )
+      end
+
+    case result do
+      {:ok, {:ok, grant}} -> authorized(gateway, request, grant)
+      _ -> {:error, Failure.new(403, "not authorized", :not_sent)}
+    end
+  end
+
+  defp operation_secret_route?(%Request{
+         protocol: :websocket,
+         method: "GET",
+         path: path,
+         operation: operation,
+         query: query,
+         all_projects: false
+       }) do
+    case String.split(path, "/") do
+      ["", "1.0", "operations", _id, "websocket"] when is_binary(operation) ->
+        # An encoded slash must not turn one authorized ID into another route.
+        operation != "" and not String.contains?(operation, "/") and single_secret?(query)
+
+      _ ->
+        false
+    end
+  end
+
+  defp operation_secret_route?(_), do: false
+
+  defp single_secret?(query) do
+    query
+    |> URI.query_decoder()
+    |> Enum.filter(fn {key, _} -> key == "secret" end)
+    |> case do
+      [{"secret", secret}] -> secret != ""
+      _ -> false
     end
   end
 

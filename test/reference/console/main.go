@@ -64,9 +64,13 @@ func main() {
 		Attachments int                     `json:"attachments"`
 		Expect      int                     `json:"expect"`
 		Temp        string                  `json:"temp"`
+		DetachDelay int                     `json:"detach_delay_ms"`
 	}
 	if err := json.NewDecoder(stdin).Decode(&in); err != nil {
 		panic(err)
+	}
+	if in.DetachDelay < 0 || in.DetachDelay > 4000 {
+		panic("invalid fixture detach delay")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -89,7 +93,13 @@ func main() {
 	console := &incus.InstanceConsoleArgs{ConsoleDisconnect: disconnected, Control: func(conn *websocket.Conn) {
 		msg, _ := json.Marshal(map[string]any{"command": "window-resize", "args": map[string]string{"width": "80", "height": "24"}})
 		_ = conn.SetWriteDeadline(time.Now().Add(3 * time.Second))
-		controlled <- conn.WriteMessage(websocket.TextMessage, msg)
+		err := conn.WriteMessage(websocket.TextMessage, msg)
+		// The pinned helper later writes its detach close on this same socket.
+		// Bound only our resize; do not leave an expired deadline on its write.
+		if resetErr := conn.SetWriteDeadline(time.Time{}); err == nil {
+			err = resetErr
+		}
+		controlled <- err
 	}}
 	result := map[string]any{}
 	outputs := [][]byte{}
@@ -126,6 +136,7 @@ func main() {
 	} else {
 		result["operation"] = op.Get()
 		result["outputs"] = outputs
+		time.Sleep(time.Duration(in.DetachDelay) * time.Millisecond)
 		close(disconnected)
 	}
 	if err := json.NewEncoder(os.Stdout).Encode(result); err != nil {

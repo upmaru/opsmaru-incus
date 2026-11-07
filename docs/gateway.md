@@ -1,10 +1,10 @@
-# Native Incus gateway (G1–G4: HTTP, identity, WebSockets and raw upgrades)
+# Native Incus gateway (G1–G5: native protocols and migration)
 
 `Opsmaru.Incus.Gateway` lets a host relay native Incus HTTP through its own
-endpoint under its own policy. This page documents slices G1–G4 of
+endpoint under its own policy. This page documents slices G1–G5 of
 `add-embeddable-incus-gateway`, including native WebSockets and SFTP/NBD on
-the host listener. Cross-server migration remains listed under
-[Not yet in this revision](#not-yet-in-this-revision).
+the host listener, plus operation-scoped migration peer admission. Independent
+consumer/CLI and real-backend acceptance remain separate G6 evidence.
 
 ## Dependencies
 
@@ -29,8 +29,9 @@ adapter Macus uses.
 2. Implement `Opsmaru.Incus.Gateway.Host`: `ready?/1`, `authorize/2` and
    `valid?/3`; provide `identity/2` for discovery/server identity and
    `certificates/5` for host-owned trust actions. Missing callbacks deny the
-   corresponding path. The last three are optional behaviour callbacks for
-   source compatibility with G1 hosts; they have no permissive fallback.
+   corresponding path. Add `admit_operation_secret/2` for narrowly admitted
+   migration server peers. These additional callbacks are optional behaviour
+   callbacks for source compatibility; missing callbacks have no permissive fallback.
 
 3. Build the gateway at request time (so runtime configuration and pids are
    never compiled into the router):
@@ -75,7 +76,8 @@ Every request takes the same path before any backend socket opens:
 4. `ready?/1`, then `authorize/2`, each in a monitored process killed at
    `callback_timeout`. Anything but `true` / `{:ok, grant}` denies (`503` /
    `403`). An explicit `{:error, :unauthenticated}` permits only synthetic
-   HTTP `GET /`, `GET /1.0`, or token enrollment via `POST /1.0/certificates`.
+   HTTP `GET /`, `GET /1.0`, token enrollment via `POST /1.0/certificates`,
+   or the explicit operation-secret decision documented below.
    Other denials remain denials. A late answer is discarded. For an authorized
    grant, `valid?/3` must return exactly `true` before backend access.
 5. Protocol: native WebSockets negotiate after authorization when their
@@ -144,12 +146,13 @@ Authenticated `GET /1.0` uses the backend, buffering at most the smaller of
 gateway values. Every other native environment/envelope field is retained.
 API extensions are intersected with verified host metadata and the gateway's
 implemented-extension allowlist: `certificate_update`, `instances`, `console`,
-`instance_nbd`, `custom_volume_sftp` and `storage_volume_nbd`. Protocol
+`instance_nbd`, `custom_volume_sftp`, `storage_volume_nbd`, `container_push`
+and `container_push_target`. The two migration extensions require WebSockets. Protocol
 extensions are filtered out when the corresponding optional adapter is absent.
 The host must approve only protocols it actually mounts and a verified backend
 supports; raw extensions require the same-listener Cowboy companion. Merely
-installing an adapter does not authorize a protocol. Migration,
-restricted-certificate and token issuance gaps remain explicit below.
+installing an adapter does not authorize a protocol. Restricted-certificate
+and token issuance gaps remain explicit below.
 
 This identity rewrite is required by the pinned v7.0.1 client's
 `GetConnectionInfo()`: it starts with the connection URL, then appends HTTPS
@@ -272,7 +275,6 @@ Long waits such as `/1.0/operations/{id}/wait?timeout=-1` are bounded by
 - Production trust persistence/issuer and host-specific authorization policy.
 - Restricted-certificate semantics and asynchronous certificate-token issuance;
   unsupported claims are refused rather than advertised.
-- Cross-server migration (G5).
 - Immutable consumer, CLI conformance and real-Incus gateway acceptance (G6).
 
 Gateway evidence never changes `priv/incus/coverage.json`.
@@ -331,8 +333,13 @@ Resource limits are explicit:
   partial-frame assembly. `max_request_bytes` bounds relayed caller payload
   bytes; `max_response_bytes` bounds backend bytes including received framing.
 - `connection.queue_limit` bounds decoded frames in one backend batch and the
-  waiting backend writer queue. The waiting writer payload bytes additionally
-  cannot exceed `connection.max_response_bytes`; at most one extra frame is
+  waiting backend writer queue. At half the writer queue count or byte budget,
+  the adapter pauses inbound Cowboy socket reads; it resumes after both fall
+  to a quarter. Reverse output and revocation/deadline handling remain active.
+  Half the capacity is reserved for frames Cowboy has already received and
+  continues parsing after a pause. Excessive coalesced bursts still terminate
+  at the hard cap, including with deliberately tiny queue limits. The waiting
+  writer payload bytes additionally cannot exceed `connection.max_response_bytes`; at most one extra frame is
   being written.
 - Backend reads pause until Cowboy has processed the preceding batch. The
   frontend mailbox receives at most one outstanding backend batch; slow peers
@@ -436,3 +443,87 @@ Independent opaque-byte tests coalesce both handshake directions and require
 exactly-once preservation. These checks are gateway evidence; they do not
 change typed-client coverage or claim real-Incus, installed Macus or hardware
 acceptance.
+
+
+## Cross-server migration and operation-secret peers (G5)
+
+The gateway relays the native migration requests and operation channels; the
+pinned client and backend own the copy/move workflow. Relay opens both sides'
+operation WebSockets through their respective gateways. Pull from a gateway
+source and push to a gateway target cause the other Incus server to connect to
+that gateway. Pull to a gateway target and push from a gateway source require
+the guest backend to reach the other endpoint itself. A native guest network
+failure passes through unchanged; the gateway never follows a private address,
+replays the migration request or substitutes another transport.
+
+Hosts can implement this optional callback:
+
+```elixir
+@impl true
+def admit_operation_secret(request, config) do
+  # Resolve the ID from host-owned, verified pending migration state. Bind the
+  # stored backend/project/target and allowed peer to this exact exchange.
+  config.pending_migrations.authorize_operation_peer(request)
+  # Return {:ok, opaque_grant} or {:error, :forbidden}.
+end
+```
+
+The callback runs only when ordinary `authorize/2` explicitly returns
+`{:error, :unauthenticated}`. Explicit forbidden decisions and failed ordinary
+callbacks never fall through. The gateway additionally requires a WebSocket
+GET on exactly `/1.0/operations/{id}/websocket`, one nonempty decoded `secret`
+query parameter, no extra path segments or encoded slash in the ID, and no
+all-projects selection. Missing/denied/malformed/late callbacks return `403`
+before any backend access. Duplicate or malformed project selections return
+`400`; duplicate secrets, including encoded duplicate keys, cannot use this
+admission path. The backend validates the original secret after the host's
+allow decision, and the original path/query are relayed without reconstruction.
+
+The pinned v7.0.1 server's migration dialer pins the remote certificate but
+normally presents **no client certificate**. Its peer certificate may therefore
+be `nil`. The host listener must permit certificate-less TLS handshakes while
+ordinary host authorization continues to deny untrusted callers. Configure
+certificate verification for presented client certificates according to the
+host's trust policy; this callback does not weaken the TLS listener itself.
+
+The native operation WebSocket helper also omits a project query even for a
+nondefault-project operation. The host must resolve an omitted project from
+its verified pending operation binding, rather than infer default-project
+permission. An explicit conflicting project/target or another operation must
+deny. Do not authorize an operation merely because it has a secret parameter,
+a peer address or a certificate. The host's returned grant uses the same
+`valid?/3`, revocation lease, admission and resource budgets as ordinary calls;
+cleanup never acquires fresh authority or remotely cancels the migration.
+
+`Request`/gateway inspection and generated errors redact credentials; hosts
+must also keep secrets out of their logs and grants. Native backend response
+bytes remain native and are not rewritten as gateway diagnostics.
+
+Portable fixtures exercise unchanged pinned `CopyInstance` and
+`CopyInstanceSnapshot` with stopped instances and stateless snapshots in all
+three modes through both gateway endpoints, public connection-info addresses/certificate, binary control/fs channels, certificate-less
+server peers and omitted nondefault-project selection. Separate interruption
+fixtures isolate one frontend exchange from client-owned orchestration and
+prove at most one backend POST with no gateway DELETE after frontend loss or
+an uncertain reply. The pinned client itself owns its multi-public-address
+attempts and explicit cancellations; those are distinct incoming requests,
+not gateway retries. Actual unmodified CLI copy/move and immutable consumer
+results belong to G6; real-Incus and installed Macus/hardware evidence remain
+separate gates.
+
+The G5 matrix verifies default copy behavior. Live migration, CRIU/stateful
+snapshots and optional flags such as instance-only/refresh are not gateway
+acceptance evidence in this slice. Their additional extension names remain
+outside the conservative gateway allowlist; this is an explicit gateway
+verification gap, not a claim that the backend or host lacks those features.
+
+The pinned v7.0.1 CLI has a separate snapshot-move limitation: its shared
+copy/move code recognizes snapshot sources only for the `copy` command. For
+`move source/snapshot`, it instead requests
+`GET /1.0/instances/source%2Fsnapshot`; the pinned server returns `400 Invalid
+instance name` before any migration request or source deletion. The portable oracle preserves this rejection
+rather than making the CLI pass against a permissive fake server. Successful
+snapshot move is recorded as a pinned native limitation under the explicit
+2026-11-07 user decision accepting that outcome as parity. The gateway does
+not rewrite this route or add a compensating mutation, and successful snapshot
+move is not claimed.

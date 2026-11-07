@@ -92,7 +92,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
 
     def websocket_init(state) do
       case WebSocketRelay.attach(state.relay) do
-        :ok -> {[], Map.put(state, :monitor, Process.monitor(state.relay))}
+        :ok -> {[], Map.merge(state, %{monitor: Process.monitor(state.relay), input_paused: nil})}
         _ -> {[{:close, 1011, "Gateway channel ended"}], state}
       end
     end
@@ -100,6 +100,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
     def websocket_handle({kind, payload}, state) when kind in [:text, :binary] do
       case WebSocketRelay.send_frame(state.relay, {kind, payload}) do
         :ok -> {[], state}
+        {:pause, ref} -> {[{:active, false}], %{state | input_paused: ref}}
         _ -> {[{:close, 1011, "Gateway channel ended"}], state}
       end
     end
@@ -117,6 +118,12 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
       WebSocketRelay.ack(relay)
       {[], state}
     end
+
+    def websocket_info(
+          {:gateway_ws_resume, relay, ref},
+          %{relay: relay, input_paused: ref} = state
+        ),
+        do: {[{:active, true}], %{state | input_paused: nil}}
 
     def websocket_info({:gateway_ws_close, relay, code, reason}, %{relay: relay} = state),
       do: {[{:close, code, reason}], state}
