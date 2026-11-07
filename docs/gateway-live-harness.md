@@ -4,8 +4,12 @@
 host runtime. Requiring the file starts nothing. A reviewed, source-owned native
 scenario driver calls `OpsmaruGatewayAcceptance.run(config, scenario_fun)` after
 an operator supplies an explicit private configuration. The thin
-`accept-incus-gateway.exs` entrypoint remains inactive until that native driver
-is installed; it cannot turn a configuration-only preflight into acceptance.
+`accept-incus-gateway.exs` entrypoint loads only the fixed repository-owned
+`gateway_live_scenarios.exs` module. It strictly parses the explicitly supplied
+configuration and verifies CLI provenance, required network selection, clean
+source and the pinned Go driver build before creating any backend resource.
+Set `OPSMARU_GATEWAY_ACCEPTANCE_CONFIG` to the absolute private configuration
+path, then explicitly run `MIX_ENV=test mise exec -- mix run scripts/accept-incus-gateway.exs`.
 
 The runtime never installs or launches Incus, finds a default socket or remote,
 modifies backend trust, changes global networks/profiles, retries mutations or
@@ -22,7 +26,11 @@ The existing preflight configuration is extended with these fields:
 - Separate `source.project` and `target.project` names beginning with
   `opsmaru-acceptance-gateway-`; each must be absent before either is created.
 - Each side's explicit `backend` Unix socket or verified HTTPS connection,
-  64-character local container image fingerprint, and storage pool.
+  64-character local container image fingerprint, storage pool and verified
+  existing managed `network` name. These existing resources remain read-only.
+- Absolute `incus_cli` and `incus_cli_provenance` references matching the pinned
+  verifier build. Optional `probe_address` is a controlled read-only diagnostic
+  candidate, never a replacement migration origin.
 - Each side's previously verified `expected_identity.server_name` and
   `expected_identity.certificate_sha256`, checked against authenticated backend
   discovery before any mutation.
