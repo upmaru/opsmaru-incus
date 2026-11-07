@@ -119,15 +119,31 @@ grant additionally requires a pending WebSocket operation, the pinned native
 migration description and control/fs channel metadata. The registry discards
 secrets, expires entries, and fails closed if polling or marker validation
 fails. Policy callbacks consult that local registry under bounded waits and
-perform no backend I/O. Special server-peer authority starts empty. After a source-owned scenario
-proves guest reachability with its controlled nonce probe, it calls
-`set_verified_operation_peers(context, literal_addresses, nonce_sha256)`. That
-function journals the exact observed peers/proof and activates only those
-addresses in local host state. This is an explicit, trusted host-policy update;
-a newly verified observed address may replace the bootstrap candidates only
-with the recorded controlled-probe proof. It is not exposed over HTTP, does not use
-forwarded headers, and never rewrites the configured migration origin. Updated
-peer state also revokes old grants on the ordinary validity check.
+perform no backend I/O. Special server-peer authority starts empty. The source-owned
+`OpsmaruGatewayDaemonProbe.verify_and_activate(context)` helper proves each
+actual backend daemon's connection independently: the target daemon connects
+to a temporary TLS beacon using the source gateway's configured hostname,
+certificate and bind interface, and the source daemon connects to the target
+beacon. A fresh namespaced custom filesystem-volume pull-migration request
+carries a private operation/secret nonce. The beacon checks both exactly,
+records the actual TCP peer and deliberately responds 403. The helper requires
+an accepted native operation ID and authoritative terminal failure before
+activating that receiver's observed peer with
+`set_verified_operation_peers(context, receiver_side, literal_addresses, nonce_sha256)`.
+It revalidates the project marker and separate-volume feature before the POST,
+records intent and native operation identity, and preserves any owned partial
+volume for ordinary successful-run cleanup. It never cancels an operation,
+replays the POST, rewrites an origin or performs a global mutation.
+
+An unreachable daemon, wrong nonce, uncertain reply or operation deadline keeps
+that receiver unverified and its migration authority empty. Container-origin
+connectivity probes remain diagnostic: their DNS, routing or NAT source can
+differ from the daemon and cannot authorize either receiving gateway. The
+three-argument peer setter remains a compatibility helper for fixtures that
+explicitly verify an identical peer on both sides; the real runner uses only
+separate per-daemon, per-receiver proofs. These are trusted local policy updates,
+not HTTP APIs or forwarded-header inference. Replacing or clearing verified
+peer state revokes old grants on the ordinary validity check.
 
 Local watchers close both host listeners and their admission/trust processes on
 success, scenario failure or owner loss. Backend resources are retained by this

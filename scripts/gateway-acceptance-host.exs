@@ -509,6 +509,7 @@ defmodule OpsmaruGatewayAcceptance do
             "description" => "Opsmaru gateway acceptance " <> context.marker,
             "config" => %{
               "features.images" => "false",
+              "features.networks" => "false",
               "features.profiles" => "true",
               "features.storage.volumes" => "true"
             }
@@ -788,7 +789,26 @@ defmodule OpsmaruGatewayAcceptance do
     :ok
   end
 
+  def clear_verified_operation_peers(context, receiver) when receiver in @sides do
+    Agent.update(context.sides[receiver].host.state, &Map.put(&1, :verified_peers, []))
+
+    record_detail(context, "operation-peer-unverified/" <> receiver, %{
+      "status" => "unverified",
+      "proof" => %{"receiver" => receiver}
+    })
+
+    :ok
+  end
+
+  # Compatibility helper for fixtures that deliberately verify the same peer
+  # for both receivers. Real daemon acceptance uses the per-receiver overload.
   def set_verified_operation_peers(context, addresses, nonce_sha256) do
+    for side <- @sides, do: set_verified_operation_peers(context, side, addresses, nonce_sha256)
+    :ok
+  end
+
+  def set_verified_operation_peers(context, receiver, addresses, nonce_sha256)
+      when receiver in @sides do
     require!(
       is_list(addresses) and addresses != [] and Enum.all?(addresses, &ip?/1),
       "verified literal peer addresses required"
@@ -799,16 +819,12 @@ defmodule OpsmaruGatewayAcceptance do
       "verified probe nonce digest required"
     )
 
-    peers = Enum.map(addresses, &parse_ip/1)
-
-    record_detail(context, "verified-operation-peers", %{
-      "proof" => %{"peers" => addresses, "nonce_sha256" => nonce_sha256}
+    record_detail(context, "verified-operation-peers/" <> receiver, %{
+      "proof" => %{"receiver" => receiver, "peers" => addresses, "nonce_sha256" => nonce_sha256}
     })
 
-    for {_, side} <- context.sides do
-      Agent.update(side.host.state, &Map.put(&1, :verified_peers, peers))
-    end
-
+    peers = Enum.map(addresses, &parse_ip/1)
+    Agent.update(context.sides[receiver].host.state, &Map.put(&1, :verified_peers, peers))
     :ok
   end
 
