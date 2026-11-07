@@ -339,8 +339,13 @@ Resource limits are explicit:
   partial-frame assembly. `max_request_bytes` bounds relayed caller payload
   bytes; `max_response_bytes` bounds backend bytes including received framing.
 - `connection.queue_limit` bounds decoded frames in one backend batch and the
-  waiting backend writer queue. The waiting writer payload bytes additionally
-  cannot exceed `connection.max_response_bytes`; at most one extra frame is
+  waiting backend writer queue. At half the writer queue count or byte budget,
+  the adapter pauses inbound Cowboy socket reads; it resumes after both fall
+  to a quarter. Reverse output and revocation/deadline handling remain active.
+  Half the capacity is reserved for frames Cowboy has already received and
+  continues parsing after a pause. Excessive coalesced bursts still terminate
+  at the hard cap, including with deliberately tiny queue limits. The waiting
+  writer payload bytes additionally cannot exceed `connection.max_response_bytes`; at most one extra frame is
   being written.
 - Backend reads pause until Cowboy has processed the preceding batch. The
   frontend mailbox receives at most one outstanding backend batch; slow peers

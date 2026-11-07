@@ -347,6 +347,118 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
     eventually(fn -> Admission.count(context.admission) == 0 end)
   end
 
+  test "default queue pauses input while reverse output and a complete upload drain", context do
+    {fixture, connection} = gated_backend(context)
+    assert connection.queue_limit == 64
+
+    mount(context, connection,
+      max_request_bytes: 1_073_741_824,
+      max_response_bytes: 1_073_741_824,
+      idle_timeout: 10_000
+    )
+
+    {channel, relay, gate, transport, backend_socket, writer, payload} = paused_upload(context)
+    state = :sys.get_state(relay)
+    assert :queue.len(state.write_queue) in 32..64
+    assert state.queued_bytes <= connection.max_response_bytes
+    # The frontend remains able to write while its socket input is passive.
+    reverse = <<255, 0, 128, "reverse while paused">>
+    :ok = transport.send(backend_socket, WebSocketFixture.frame(2, reverse))
+    assert {:binary, ^reverse} = recv_frame(channel)
+    assert :sys.get_state(relay).input_paused != nil
+    send(gate, :release)
+    # One initial frame and 256 further frames retain exact bytes and order.
+    for _ <- 1..257, do: assert({:binary, ^payload} = recv_frame(channel))
+    assert 256 == Task.await(writer, 10_000)
+
+    eventually(fn ->
+      state = :sys.get_state(relay)
+      state.input_paused == nil and :queue.is_empty(state.write_queue) and state.writing == nil
+    end)
+
+    close(channel)
+    eventually(fn -> Admission.count(context.admission) == 0 end)
+    assert length(WebSocketFixture.requests(fixture)) == 1
+  end
+
+  test "paused default-queue input still ends on revocation, deadline and owner loss", context do
+    for stop <- [:revocation, :deadline, :owner_loss] do
+      flag = :atomics.new(1, [])
+      :atomics.put(flag, 1, 1)
+      {fixture, connection} = gated_backend(context)
+
+      mount(context, connection,
+        max_request_bytes: 1_073_741_824,
+        max_response_bytes: 1_073_741_824,
+        idle_timeout: 10_000,
+        max_lifetime: 2_000,
+        recheck_interval: 200,
+        host_config: %{valid: fn _, _ -> :atomics.get(flag, 1) == 1 end}
+      )
+
+      {channel, relay, gate, _, _, writer, _} = paused_upload(context)
+      state = :sys.get_state(relay)
+      if stop == :revocation, do: :atomics.put(flag, 1, 0)
+      if stop == :owner_loss, do: Process.exit(state.owner, :kill)
+
+      case recv_frame(channel) do
+        {:close, code, _} -> assert code in [1008, 1011]
+        :closed -> :ok
+      end
+
+      eventually(fn -> Admission.count(context.admission) == 0 end)
+      assert Task.await(writer, 3_000) in 0..256
+      eventually(fn -> not Process.alive?(relay) and not Process.alive?(state.writer) end)
+      send(gate, :release)
+      eventually(fn -> Port.info(Mint.HTTP.get_socket(state.conn)) == nil end)
+      assert length(WebSocketFixture.requests(fixture)) == 1
+      close(channel)
+    end
+  end
+
+  test "already buffered tiny-frame bursts still respect the hard writer queue cap", context do
+    fixture = ws_backend(context, wire: "")
+    connection = Connection.unix!(WebSocketFixture.path(fixture), owner: :fixture)
+    mount(context, connection)
+    channel = open(context)
+    relay = relay(context)
+    state = :sys.get_state(relay)
+    :erlang.trace(relay, true, [:send, {:tracer, self()}])
+    # Model a blocked socket writer independently of kernel buffer sizes.
+    # active:false cannot stop parsing the rest of this one coalesced packet.
+    :erlang.suspend_process(state.writer)
+    {conn, socket, frames} = Process.get(channel.cursor)
+    {:ok, socket, bytes} = Mint.WebSocket.encode(socket, {:binary, ""})
+    {:ok, conn} = Mint.WebSocket.stream_request_body(conn, channel.ref, :binary.copy(bytes, 256))
+    Process.put(channel.cursor, {conn, socket, frames})
+
+    case recv_frame(channel) do
+      {:close, 1011, _} -> :ok
+      :closed -> :ok
+    end
+
+    assert_receive {:trace, ^relay, :send,
+                    {:gateway_ws_close, ^relay, 1011, "Gateway WebSocket queue exceeded"}, _},
+                   1_000
+
+    eventually(fn -> Admission.count(context.admission) == 0 end)
+    eventually(fn -> not Process.alive?(state.writer) end)
+    assert length(WebSocketFixture.requests(fixture)) == 1
+    close(channel)
+  end
+
+  test "a stale resume cannot reopen a newer frontend pause" do
+    alias Opsmaru.Incus.Gateway.WebSocket
+    relay = self()
+    old = make_ref()
+    current = make_ref()
+    state = %{relay: relay, input_paused: current}
+    assert {[], ^state} = WebSocket.websocket_info({:gateway_ws_resume, relay, old}, state)
+
+    assert {[{:active, true}], %{input_paused: nil}} =
+             WebSocket.websocket_info({:gateway_ws_resume, relay, current}, state)
+  end
+
   test "handshake worker loss and uncompleted handoff release backend and slot", context do
     alias Opsmaru.Incus.Gateway.{Policy, WebSocketRelay}
 
@@ -657,6 +769,67 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
     assert_receive {:websocket_peer, :closed}, 1_000
     eventually(fn -> Admission.count(context.admission) == 0 end)
     close(channel)
+  end
+
+  defp gated_backend(context) do
+    observer = self()
+
+    fixture =
+      ws_backend(context,
+        wire: "",
+        on_upgrade: fn transport, socket ->
+          send(observer, {:backend_socket, transport, socket})
+        end,
+        response_frames: fn opcode, data ->
+          unless Process.get(:released) do
+            send(observer, {:backend_gated, self()})
+
+            receive do
+              :release -> Process.put(:released, true)
+            after
+              10_000 -> :ok
+            end
+          end
+
+          WebSocketFixture.frame(opcode, data)
+        end
+      )
+
+    {fixture, Connection.unix!(WebSocketFixture.path(fixture), owner: :fixture)}
+  end
+
+  defp paused_upload(context) do
+    channel = open(context)
+    relay = relay(context)
+    state = :sys.get_state(relay)
+    :ok = :inet.setopts(Mint.HTTP.get_socket(state.conn), sndbuf: 1024)
+    payload = :binary.copy(<<7>>, 32_768)
+    channel = send_frame(channel, {:binary, payload})
+    assert_receive {:backend_socket, transport, backend_socket}, 2_000
+    assert_receive {:backend_gated, gate}, 2_000
+    {_conn, socket, _frames} = Process.get(channel.cursor)
+    {:ok, _, frame} = Mint.WebSocket.encode(socket, {:binary, payload})
+
+    writer =
+      Task.async(fn ->
+        Enum.reduce_while(1..256, 0, fn _, count ->
+          case Mint.WebSocket.stream_request_body(channel.conn, channel.ref, frame) do
+            {:ok, _} -> {:cont, count + 1}
+            _ -> {:halt, count}
+          end
+        end)
+      end)
+
+    eventually(fn ->
+      try do
+        Map.get(:sys.get_state(relay), :input_paused) != nil
+      catch
+        :exit, _ -> flunk("gateway closed a valid upload before applying backpressure")
+      end
+    end)
+
+    eventually(fn -> blocked_writer?(state.writer) end)
+    {channel, relay, gate, transport, backend_socket, writer, payload}
   end
 
   defp relay(context), do: :sys.get_state(context.admission).slots |> Map.values() |> List.first()

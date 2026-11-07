@@ -86,6 +86,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
             write_queue: :queue.new(),
             queued_bytes: 0,
             writing: nil,
+            input_paused: nil,
             closing: nil
           }
 
@@ -220,7 +221,9 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
         case enqueue(state, frame) do
           {:ok, state} ->
             touch(state)
-            {:reply, :ok, %{state | written: state.written + size}}
+            state = %{state | written: state.written + size}
+            {reply, state} = input_pressure(state)
+            {:reply, reply, state}
 
           _ ->
             stop_reply(state, "Gateway WebSocket queue exceeded")
@@ -246,6 +249,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
     @impl true
     def handle_info({:gateway_ws_written, writer, result}, %{writer: writer} = state) do
       if result == :ok do
+        touch(state)
         state = %{state | writing: nil}
 
         case :queue.out(state.write_queue) do
@@ -256,14 +260,14 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
                 queued_bytes: state.queued_bytes - frame_size(frame)
             }
 
-            {:noreply, dispatch_write(state, frame)}
+            {:noreply, state |> dispatch_write(frame) |> resume_input()}
 
           {:empty, _} when not is_nil(state.closing) ->
             GenServer.reply(state.closing, :ok)
             {:stop, :normal, state}
 
           {:empty, _} ->
-            {:noreply, state}
+            {:noreply, resume_input(state)}
         end
       else
         stop(state, 1011, "Backend WebSocket write failed")
@@ -381,6 +385,38 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
          }}
       else
         :error
+      end
+    end
+
+    # Stop new Cowboy socket reads before the hard queue caps are reached.
+    # Cowboy still parses bytes already received, so retain half the queue and
+    # byte budget as headroom. Excessive coalesced bursts still fail at the cap.
+    # A generation prevents a delayed resume from reopening a later pause.
+    defp input_pressure(state) do
+      connection = state.gateway.connection
+
+      if state.input_paused == nil and
+           (:queue.len(state.write_queue) >= max(1, div(connection.queue_limit, 2)) or
+              state.queued_bytes >= max(1, div(connection.max_response_bytes, 2))) do
+        ref = make_ref()
+        {{:pause, ref}, %{state | input_paused: ref}}
+      else
+        reply = if state.input_paused, do: {:pause, state.input_paused}, else: :ok
+        {reply, state}
+      end
+    end
+
+    defp resume_input(%{input_paused: nil} = state), do: state
+
+    defp resume_input(state) do
+      connection = state.gateway.connection
+
+      if :queue.len(state.write_queue) <= div(connection.queue_limit, 4) and
+           state.queued_bytes <= div(connection.max_response_bytes, 4) do
+        send(state.owner, {:gateway_ws_resume, self(), state.input_paused})
+        %{state | input_paused: nil}
+      else
+        state
       end
     end
 
