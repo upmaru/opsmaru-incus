@@ -1,9 +1,9 @@
-# Native Incus gateway (G1–G3: HTTP, identity and WebSockets)
+# Native Incus gateway (G1–G4: HTTP, identity, WebSockets and raw upgrades)
 
 `Opsmaru.Incus.Gateway` lets a host relay native Incus HTTP through its own
-endpoint under its own policy. This page documents slices G1–G3 of
-`add-embeddable-incus-gateway`; SFTP/NBD and migration arrive in later slices
-and are listed under
+endpoint under its own policy. This page documents slices G1–G4 of
+`add-embeddable-incus-gateway`, including native WebSockets and SFTP/NBD on
+the host listener. Cross-server migration remains listed under
 [Not yet in this revision](#not-yet-in-this-revision).
 
 ## Dependencies
@@ -79,8 +79,9 @@ Every request takes the same path before any backend socket opens:
    Other denials remain denials. A late answer is discarded. For an authorized
    grant, `valid?/3` must return exactly `true` before backend access.
 5. Protocol: native WebSockets negotiate after authorization when their
-   optional adapter is available. SFTP/NBD upgrades get `501` in this revision.
-   Unsupported adapters fail explicitly after authorization.
+   optional adapter is available. SFTP/NBD require the same-listener Cowboy
+   companion below; a direct Plug raw upgrade gets an explicit `501` after
+   the same policy check. Unsupported adapters fail explicitly after authorization.
 
 The host receives an `Opsmaru.Incus.Gateway.Request` with the peer address and
 TLS certificate from the server adapter, the `authorization` header and the
@@ -142,10 +143,12 @@ Authenticated `GET /1.0` uses the backend, buffering at most the smaller of
 `metadata.environment.addresses` and `certificate` are replaced with the public
 gateway values. Every other native environment/envelope field is retained.
 API extensions are intersected with verified host metadata and the gateway's
-implemented-extension allowlist: `certificate_update`, `instances`, and
-`console` when the optional WebSocket adapter is available. The host must
-approve only protocols it actually mounts and a verified backend supports;
-merely installing an adapter does not authorize a protocol. Raw, migration,
+implemented-extension allowlist: `certificate_update`, `instances`, `console`,
+`instance_nbd`, `custom_volume_sftp` and `storage_volume_nbd`. Protocol
+extensions are filtered out when the corresponding optional adapter is absent.
+The host must approve only protocols it actually mounts and a verified backend
+supports; raw extensions require the same-listener Cowboy companion. Merely
+installing an adapter does not authorize a protocol. Migration,
 restricted-certificate and token issuance gaps remain explicit below.
 
 This identity rewrite is required by the pinned v7.0.1 client's
@@ -216,8 +219,9 @@ Cleanup uses no new grant or connection and closes only gateway-owned local
 resources. It never sends operation DELETE/cancel requests and never replays a
 possibly accepted mutation. `Gateway.Lease` and `Policy.recheck/3` are reusable
 by later adapters. **Only HTTP is verified in G2**, with HTTP/1.1 socket fixtures
-and a blocked-chunk adapter. G3 adds the independent WebSocket evidence below;
-raw revocation remains in G4.
+and a blocked-chunk adapter. G3 adds the independent WebSocket evidence below.
+G4 verifies the same lease through raw takeover, including silent streams and
+blocked writes.
 
 ## Failures
 
@@ -268,7 +272,7 @@ Long waits such as `/1.0/operations/{id}/wait?timeout=-1` are bounded by
 - Production trust persistence/issuer and host-specific authorization policy.
 - Restricted-certificate semantics and asynchronous certificate-token issuance;
   unsupported claims are refused rather than advertised.
-- SFTP/NBD (G4) and cross-server migration (G5).
+- Cross-server migration (G5).
 - Immutable consumer, CLI conformance and real-Incus gateway acceptance (G6).
 
 Gateway evidence never changes `priv/incus/coverage.json`.
@@ -352,3 +356,83 @@ mutual-TLS gateway. Exec output/exit metadata and static/dynamic console results
 are compared directly with their backend-fixture baselines. This is fixture
 conformance; immutable consumer, real-Incus and installed Macus/hardware
 acceptance remain separate. The typed-client coverage ledger is unchanged.
+
+## Native SFTP/NBD on the host listener (G4)
+
+Configure a catch-all Cowboy dispatch entry in the existing host endpoint's
+listener options. The companion delegates ordinary HTTP and WebSocket requests
+to the host handler, including the original protocol-upgrade callback identity:
+
+```elixir
+opts = %{
+  gateway: {MyHost.GatewayConfig, :current, []},
+  fallback: {Plug.Cowboy.Handler, {MyHostWeb.Endpoint, MyHostWeb.Endpoint.init([])}}
+}
+
+dispatch = :cowboy_router.compile([
+  {:_, [{:_, Opsmaru.Incus.Gateway.CowboyHandler, opts}]}
+])
+# Supply dispatch under the existing listener's protocol_options.env.
+# The library starts no listener and changes no global host/ALPN setting.
+```
+
+A static `%Gateway{}` is also accepted. Missing/invalid/dying configuration
+resolvers fail closed with native `503`. The host remains responsible for
+listener TLS, verified client certificates and policy. Raw takeover requires
+HTTP/1.1; an HTTPS host must permit `http/1.1` in ALPN. Requests negotiated as
+HTTP/2 cannot use this raw upgrade path. Ordinary host HTTP/2 traffic can still
+use the fallback handler. Client-only consumers compile without any of the
+Cowboy handler, raw relay or tunnel modules.
+
+The companion accepts only body-free GETs with a matching `Upgrade: sftp` or
+`Upgrade: nbd`, valid `Connection` tokens including `upgrade`, and these routes:
+
+- `/1.0/instances/{name}/sftp` and `/1.0/instances/{name}/nbd`
+- `/1.0/storage-pools/{pool}/volumes/{type}/{name}/sftp` and the corresponding
+  `/nbd` route
+
+Encoded segments and the complete original query (including project/member,
+`reuse` and `writable`) are preserved. The shared policy authorizes the actual
+peer, readiness and selected authority before any backend connection. Caller
+credentials/proxy fields and `x-incus-authenticated` are stripped; only the fixed
+backend connection can supply its authenticated assertion and TLS credentials.
+Malformed methods, versions, bodies, route/protocol combinations or response
+headers cannot switch the connection. Native non-101 rejection status, body,
+operation identity and safe end-to-end headers reach the caller without retry.
+
+One relay actor holds admission, lease and backend ownership throughout
+negotiation and takeover. The actor monitors the HTTP request worker until an
+acknowledged bounded handoff, then monitors the original Cowboy connection.
+Cowboy transfers frontend ownership to that same actor. Its prefetched client
+buffer and the backend's prefetched 101 bytes are delivered exactly once as
+opaque bytes, without WebSocket framing. A failed takeover closes the backend
+and releases admission; neither an HTTP worker exit nor an admission restart
+can leave an untracked raw connection.
+
+Each direction has one writer and at most one outstanding read delivery. A read
+is rearmed only after its bytes are written, so slow peers exert backpressure
+without an unbounded mailbox or a duplex write deadlock. Chunks use
+`max_chunk_bytes`; each direction uses the corresponding request/response byte
+budget. Writes, silence, takeover and Unix half-close drain have finite bounds
+from `idle_timeout`, the backend connection timeout and the absolute
+`max_lifetime`. Lifetime starts before policy callbacks and includes connect,
+negotiation and takeover; busy traffic cannot refresh it. Expiry/revocation and
+admission loss terminate even blocked reads/writes within the configured lease
+bound. Cleanup closes only local sockets/workers and never replays a request,
+opens another backend, sends operation DELETE or implies workload cancellation.
+
+TCP/Unix read EOF leaves its opposite write direction usable during finite
+drain. OTP TLS `close_notify` ends that TLS connection, so further writes on
+that peer are unavailable; this is the same explicit transport limitation as
+the native client foundation.
+
+`test/gateway_raw_upgrade_test.exs` records isolated fixture evidence: verified
+HTTPS gateway/backend trust, the unchanged pinned Incus v7.0.1 instance/volume
+SFTP/NBD helpers and pkg/sftp binary operations, denied requests, native errors,
+coalesced bytes, duplex backpressure and lifecycle limits. The pinned Go
+`rawConn` loses bytes prefetched by net/http: official-helper greetings are
+therefore delivered separately under the existing approved oracle exception.
+Independent opaque-byte tests coalesce both handshake directions and require
+exactly-once preservation. These checks are gateway evidence; they do not
+change typed-client coverage or claim real-Incus, installed Macus or hardware
+acceptance.
