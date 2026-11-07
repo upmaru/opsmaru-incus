@@ -111,7 +111,7 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
         "published_repository": not bool(env.get("OPSMARU_INCUS_FIXTURE_REPOSITORY")) or env["OPSMARU_INCUS_FIXTURE_REPOSITORY"].startswith("https://github.com/"),
         "host_consumer": "passed", "client_only_consumer": "passed",
         "migration_cases": migration_cases,
-        "migration_cli_completion": "partial: pinned CLI rejects snapshot move before any migration mutation",
+        "migration_cli_completion": "pinned native parity: 18 successful cases and 6 unsupported snapshot moves rejected before mutation",
         "typed_client_coverage": "unchanged; gateway evidence is separate",
         "real_backend": "unrun", "installed_host": "unrun", "macus_hardware": "unrun",
     }

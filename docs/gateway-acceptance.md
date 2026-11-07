@@ -47,7 +47,9 @@ snapshot names on that route with native `400 Invalid instance name`. All six
 snapshot move combinations record this failure before any migration mutation
 and retain the source. The
 matrix therefore has 18 successful transfers and six upstream CLI limitations;
-it does not establish complete snapshot-move acceptance. Native migration
+it does not establish working snapshot moves. The user accepted this documented
+pinned CLI limitation as native parity on 2026-11-07; the report preserves all
+six unsupported outcomes. Native migration
 server connections present no client certificate and omit the project query;
 the test host binds them to the already verified pending operation/project and
 actual peer. The backend still checks the operation secret.
