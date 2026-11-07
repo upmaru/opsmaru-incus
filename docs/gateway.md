@@ -145,7 +145,7 @@ Authenticated `GET /1.0` uses the backend, buffering at most the smaller of
 `metadata.environment.addresses` and `certificate` are replaced with the public
 gateway values. Every other native environment/envelope field is retained.
 API extensions are intersected with verified host metadata and the gateway's
-implemented-extension allowlist: `certificate_update`, `instances`, `console`,
+implemented-extension allowlist: `certificate_update`, `instances`, `file_delete`, `console`,
 `instance_nbd`, `custom_volume_sftp`, `storage_volume_nbd`, `container_push`
 and `container_push_target`. The two migration extensions require WebSockets. Protocol
 extensions are filtered out when the corresponding optional adapter is absent.
@@ -153,6 +153,12 @@ The host must approve only protocols it actually mounts and a verified backend
 supports; raw extensions require the same-listener Cowboy companion. Merely
 installing an adapter does not authorize a protocol. Restricted-certificate
 and token issuance gaps remain explicit below.
+
+`file_delete` covers the native HTTP file DELETE route. Its advertisement still
+requires both verified backend support and host approval. The pinned native
+client's complete binary create/get/delete lifecycle is checked through the
+verified TLS gateway, including encoded file queries and the original DELETE;
+raw file relay alone does not bypass this client-side capability check.
 
 This identity rewrite is required by the pinned v7.0.1 client's
 `GetConnectionInfo()`: it starts with the connection URL, then appends HTTPS

@@ -153,7 +153,7 @@ defmodule Opsmaru.Incus.GatewayRevocationTest do
 
     gateway =
       mount(context, connection,
-        recheck_interval: 200,
+        recheck_interval: 500,
         idle_timeout: 10_000,
         host_config: policy(state)
       )
@@ -169,9 +169,10 @@ defmodule Opsmaru.Incus.GatewayRevocationTest do
     started = clock()
     revoke(state)
     {transport, socket} = client
-    assert {:error, :closed} = transport.recv(socket, 0, 1000)
-    # One recheck interval plus the close; a loaded 3-core macOS runner has needed a
-    # second interval (398 ms against 300), still far short of the unrevoked wait.
+    assert {:error, :closed} = transport.recv(socket, 0, 1500)
+    # Keep the same interval-based bound with a host interval large enough that
+    # shared-runner scheduling doesn't dominate the policy-update/TCP-close
+    # measurement. Other fixtures retain the tighter expiry/callback checks.
     assert clock() - started <= 2 * gateway.recheck_interval + 100
     transport.close(socket)
     assert_receive {:backend_closed, _}, 500

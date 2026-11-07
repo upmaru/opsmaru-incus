@@ -226,15 +226,30 @@ defmodule Opsmaru.Incus.Transport do
             {:error, reason} -> {:error, reason}
           end
 
-        # recv uses the absolute remaining budget; its timeout is a local deadline.
-        {:error, _, %Mint.TransportError{reason: :timeout}, _} ->
-          {:error, :deadline}
-
-        {:error, _, _, _} ->
-          {:error, :response}
+        {:error, _, error, responses} ->
+          {:error, response_error_kind(error, responses, acc)}
       end
     end
   end
+
+  @doc false
+  def response_error_kind(%Mint.TransportError{reason: :timeout}, _, _), do: :deadline
+
+  # This is a parsed-observation boundary, not a claim that no raw bytes arrived.
+  # Any nonempty event batch is conservatively decisive, including unknown,
+  # unrelated, error and done events. Partial unparsed status lines can close
+  # without a Mint event and remain indistinguishable from an early EOF.
+  def response_error_kind(%Mint.TransportError{reason: :closed}, [], %{
+        status: nil,
+        headers: headers,
+        raw_headers: nil,
+        body: [],
+        bytes: 0,
+        header_bytes: 0
+      })
+      when map_size(headers) == 0, do: :response_closed
+
+  def response_error_kind(_, _, _), do: :response
 
   defp collect([], _, _, acc), do: {:more, acc}
 
