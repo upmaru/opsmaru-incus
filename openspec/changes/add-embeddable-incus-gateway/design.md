@@ -56,6 +56,8 @@ The pinned Incus server's migration dialer pins the remote certificate but norma
 
 Unsupported cases must identify an actual backend or verified host-policy limitation. An unimplemented relay/negotiation path is recorded as missing gateway implementation and cannot count as a passed acceptance case or be hidden by capability filtering.
 
+User decision (2026-11-07): the pinned CLI recognizes snapshot source syntax only for `copy`; snapshot `move` requests the root instance route and receives native `400 Invalid instance name` before migration. Preserve and explicitly classify this limitation as pinned native parity, with no compensating gateway mutation. The default CLI matrix records 18 successful cases and six native limitations rather than claiming 24 successful transfers.
+
 ### 5. Three protocol paths on one listener
 
 | Protocol | Server integration | Backend handling |
