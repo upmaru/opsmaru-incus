@@ -400,6 +400,11 @@ defmodule OpsmaruGatewayAcceptance do
     for side <- @sides, do: validate_side!(Map.fetch!(config, side))
 
     require!(
+      config["source"]["network"] == config["target"]["network"],
+      "native CLI copies require matching network names"
+    )
+
+    require!(
       config["source"]["project"] != config["target"]["project"],
       "distinct isolated projects required"
     )

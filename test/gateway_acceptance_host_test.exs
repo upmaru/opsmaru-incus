@@ -146,14 +146,35 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
       name = side <> "-fixture-network"
       network = unquote(Macro.escape(network))
       network = if network, do: Map.put_new(network, "name", name)
-      config = put_in(config, [side, "network"], name)
-      Agent.update(state, &put_in(&1, [:networks, name], network))
+
+      config =
+        config |> put_in(["source", "network"], name) |> put_in(["target", "network"], name)
+
+      valid = %{"name" => name, "managed" => true, "status" => "Created", "type" => "bridge"}
+      responses = if side == "source", do: [network], else: [valid, network]
+      Agent.update(state, &put_in(&1, [:networks, name], responses))
       assert_raise ArgumentError, fn -> Runner.run(config, fn _ -> flunk("scenario ran") end) end
       assert Agent.get(state, & &1.projects) == %{}
       requests = Agent.get(state, & &1.requests)
       assert Enum.any?(requests, &String.starts_with?(&1.target, "/1.0/networks/"))
       assert Enum.all?(requests, &(&1.method == "GET"))
+
+      assert Enum.count(requests, &String.starts_with?(&1.target, "/1.0/networks/")) ==
+               if(side == "source", do: 1, else: 2)
     end
+  end
+
+  test "different selected network names cannot silently attach copies to another network",
+       context do
+    {config, state} = config(context)
+    config = put_in(config, ["target", "network"], "another-managed-network")
+
+    assert_raise ArgumentError, "native CLI copies require matching network names", fn ->
+      Runner.run(config, fn _ -> flunk("scenario ran") end)
+    end
+
+    assert Agent.get(state, & &1.requests) == []
+    assert Agent.get(state, & &1.projects) == %{}
   end
 
   test "loading modules and missing opt-in never start acceptance or contact backend", context do
@@ -1383,7 +1404,15 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
   end
 
   defp respond_route(%{method: "GET"}, "/1.0/networks/" <> name, state, _) do
-    case Agent.get(state, &Map.get(&1.networks, name)) do
+    network =
+      Agent.get_and_update(state, fn current ->
+        case Map.get(current.networks, name) do
+          [response | rest] -> {response, put_in(current, [:networks, name], rest)}
+          response -> {response, current}
+        end
+      end)
+
+    case network do
       nil -> %{status: 404, body: %{type: "error", error: "not found", error_code: 404}}
       network -> sync(network)
     end

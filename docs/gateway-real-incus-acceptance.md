@@ -85,6 +85,8 @@ After verifying backend identity, the runner reads both selected networks and
 requires matching names, managed status and native `Created` readiness before
 creating either project. The new instance NIC uses that verified binding.
 The config-only Python preflight does not establish network readiness.
+Both sides must select the same network name because the unchanged default CLI
+copies preserve NIC definitions; different names are rejected before backend access.
 
 The live suite mounts the host-owned gateway and uses the
 unchanged pinned client/CLI with isolated `INCUS_CONF` and test-only trust. It
