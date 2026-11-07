@@ -38,8 +38,8 @@ defmodule FoundationConsumer.GatewayTest do
     end
   end
 
-  @extensions ~w(certificate_update instances console instance_nbd custom_volume_sftp storage_volume_nbd)
-  @drivers ~w(execio console eventhandlers directwebsocket sftphelpers gatewayidentity files gatewaymigration)
+  @extensions ~w(certificate_update instances file_delete console instance_nbd custom_volume_sftp storage_volume_nbd)
+  @drivers ~w(execio console eventhandlers directwebsocket sftphelpers gatewayidentity gatewaylive gatewaymigration)
 
   setup_all do
     root = Path.join(System.tmp_dir!(), "consumer-gateway-#{System.unique_integer([:positive])}")
@@ -144,7 +144,7 @@ defmodule FoundationConsumer.GatewayTest do
     %{admission: admission, trust: state}
   end
 
-  test "consumer endpoint owns native HTTP, CLI discovery, errors, binary upload/download and host routes",
+  test "consumer endpoint owns native HTTP, CLI discovery, errors, binary create/get/delete and host routes",
        context do
     payload = :binary.copy(<<0, 255, 128, 13, 10>>, 100_000)
     parent = self()
@@ -159,16 +159,22 @@ defmodule FoundationConsumer.GatewayTest do
             sync(%{name: "fixture", type: "container", status: "Stopped", status_code: 102})
 
           "/1.0/instances/fixture/files" ->
-            if request.method == "POST" do
-              send(parent, {:uploaded, request.body})
-              sync(%{})
-            else
-              %{
-                raw: [
-                  "HTTP/1.1 200 OK\r\nContent-Length: #{byte_size(payload)}\r\nConnection: close\r\nX-Incus-type: file\r\nX-Incus-mode: 0644\r\nX-Incus-uid: 0\r\nX-Incus-gid: 0\r\n\r\n",
-                  payload
-                ]
-              }
+            case request.method do
+              "POST" ->
+                send(parent, {:uploaded, request.body})
+                sync(%{})
+
+              "GET" ->
+                %{
+                  raw: [
+                    "HTTP/1.1 200 OK\r\nContent-Length: #{byte_size(payload)}\r\nConnection: close\r\nX-Incus-type: file\r\nX-Incus-mode: 0644\r\nX-Incus-uid: 0\r\nX-Incus-gid: 0\r\n\r\n",
+                    payload
+                  ]
+                }
+
+              "DELETE" ->
+                send(parent, {:deleted_file, request.target})
+                sync(%{})
             end
 
           _ ->
@@ -189,28 +195,30 @@ defmodule FoundationConsumer.GatewayTest do
     assert error =~ "native missing"
 
     input =
-      Map.merge(lower_credentials(context), %{
-        instance: "fixture",
-        path: "/binary",
-        type: "file",
-        mode: 420
+      Map.merge(credentials(context), %{
+        Action: "binary",
+        Name: "fixture",
+        Path: "/binary",
+        Project: "default",
+        ClientCert: File.read!(context.client.certfile),
+        ClientKey: File.read!(context.client.keyfile),
+        Data: Base.encode64(payload)
       })
 
-    pushed =
-      driver(
-        context,
-        "files",
-        Map.merge(input, %{action: "CreateInstanceFile", payload: Base.encode64(payload)}),
-        :file
-      )
-
-    refute pushed["error"]
+    result = driver(context, "gatewaylive", input, :file)
+    assert result["passed"], inspect(Map.take(result, ["error", "error_kind"]))
     assert_receive {:uploaded, ^payload}, 2_000
-    pulled = driver(context, "files", Map.put(input, :action, "GetInstanceFile"), :file)
-    refute pulled["error"]
 
-    assert :crypto.hash(:sha256, Base.decode64!(pulled["bytes"])) ==
-             :crypto.hash(:sha256, payload)
+    assert_receive {:deleted_file, "/1.0/instances/fixture/files?path=%2Fbinary&project=default"},
+                   2_000
+
+    assert result["bytes"] == byte_size(payload)
+    assert result["sha256"] == Base.encode16(:crypto.hash(:sha256, payload), case: :lower)
+
+    file_requests =
+      Enum.filter(HTTPFixture.requests(fixture), &String.contains?(&1.target, "/files?"))
+
+    assert Enum.map(file_requests, & &1.method) == ["POST", "GET", "DELETE"]
 
     assert tls_request(context, "GET", "/runtime").body == "consumer-runtime"
     assert tls_request(context, "POST", "/mcp", "{}").body == "consumer-mcp:{}"

@@ -35,7 +35,8 @@ Build provenance uses the local `--version` flag, never the `version` subcommand
 which contacts a configured server.
 
 The independent native suite covers discovery and certificate enrollment,
-native HTTP errors and binary file upload/download, exec/console/events and
+native HTTP errors and a complete binary file create/get/delete lifecycle,
+including normal native discovery and its `file_delete` capability guard, exec/console/events and
 operation WebSockets, instance/volume raw SFTP/NBD helpers, actual pkg/sftp binary
 read/write/close, and the CLI copy/move matrix: instances and snapshots, relay,
 pull and push, with the gateway as source and target. The latter is 24 cases.
