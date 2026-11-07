@@ -16,7 +16,7 @@ def sha256(path):
 def build_cli(source, destination):
     reference = json.loads((source / "priv/incus/reference.json").read_text())
     env = os.environ.copy()
-    env.update(GOTOOLCHAIN="local", CGO_ENABLED="0")
+    env.update(GOTOOLCHAIN="local", CGO_ENABLED="0", GOFLAGS="", GOWORK="off", GOENV="off")
     go = subprocess.check_output(["mise", "which", "go"], cwd=source, text=True).strip()
     env.pop("GOROOT", None)
     env["GOROOT"] = subprocess.check_output([go, "env", "GOROOT"], cwd=source, env=env, text=True).strip()
