@@ -2,14 +2,17 @@ defmodule Opsmaru.Incus.Gateway.Identity do
   @moduledoc """
   Bounded public identity mediation. The host supplies explicitly verified
   backend metadata bound to the fixed connection. No discovery probe occurs.
-  Only certificate update is an advertised extension in G2: WebSocket, raw,
-  migration and token-issuing protocols have not been implemented here yet.
-  The conservative extension allowlist can grow with protocol evidence.
+  The conservative extension allowlist depends on the available optional
+  protocol adapters. The host must approve only capabilities of protocols it
+  actually mounts and of its verified backend. Migration and token issuance
+  remain excluded until their independent implementation and evidence exist.
   """
 
   alias Opsmaru.Incus.Gateway.{Failure, Policy}
 
-  @extensions ~w(certificate_update)
+  @extensions ~w(certificate_update instances)
+  @websocket_extensions ~w(console)
+  @raw_extensions ~w(instance_nbd custom_volume_sftp storage_volume_nbd)
 
   def load(gateway, request) do
     result =
@@ -21,7 +24,7 @@ defmodule Opsmaru.Incus.Gateway.Identity do
              Map.update!(
                identity,
                :api_extensions,
-               &Enum.filter(&1, fn x -> x in @extensions end)
+               &Enum.filter(&1, fn x -> x in supported_extensions() end)
              )}
           end
         end,
@@ -32,6 +35,17 @@ defmodule Opsmaru.Incus.Gateway.Identity do
       {:ok, {:ok, identity}} -> {:ok, identity}
       _ -> {:error, Failure.new(503, "Gateway identity is unavailable", :not_sent)}
     end
+  end
+
+  @doc false
+  def supported_extensions do
+    websocket =
+      if Code.ensure_loaded?(Opsmaru.Incus.Gateway.WebSocket), do: @websocket_extensions, else: []
+
+    raw =
+      if Code.ensure_loaded?(Opsmaru.Incus.Gateway.CowboyHandler), do: @raw_extensions, else: []
+
+    @extensions ++ websocket ++ raw
   end
 
   defp valid?(

@@ -1,7 +1,7 @@
 if Code.ensure_loaded?(Plug.Conn) do
   defmodule Opsmaru.Incus.Gateway.Plug do
     @moduledoc """
-    Mountable Plug relaying native Incus HTTP through host policy.
+    Mountable Plug relaying native Incus HTTP and optional WebSockets through host policy.
 
     Mount it for the canonical native routes, before any body parser:
 
@@ -22,8 +22,10 @@ if Code.ensure_loaded?(Plug.Conn) do
     Every request goes through `Opsmaru.Incus.Gateway.Policy` (admission,
     readiness, authorization, expiry/revocation) before a backend socket opens.
     Discovery and certificate trust use bounded host callbacks; authenticated
-    GET `/1.0` buffers/replaces public identity. See `docs/gateway.md`. WebSocket and
-    SFTP/NBD upgrades are refused with `501` in this revision.
+    GET `/1.0` buffers/replaces public identity. WebSockets use the optional
+    native WebSocket adapter when available; raw SFTP/NBD requires the host's
+    same-listener Cowboy gateway handler. Missing adapters fail with `501`.
+    See `docs/gateway.md` for the verified protocol and mounting contract.
 
     Response streaming is tested with Plug.Cowboy. When a response that has
     already started cannot be completed (backend loss, deadline, budget,
@@ -35,7 +37,7 @@ if Code.ensure_loaded?(Plug.Conn) do
     @behaviour Plug
 
     alias Opsmaru.Incus.Gateway
-    alias Opsmaru.Incus.Gateway.{Failure, HTTPRelay, Local, Policy}
+    alias Opsmaru.Incus.Gateway.{Failure, HTTPRelay, Local, Policy, WebSocket}
 
     @impl true
     def init(opts) do
@@ -80,10 +82,21 @@ if Code.ensure_loaded?(Plug.Conn) do
            {:ok, request} <- Policy.request(fields(conn, authorization)),
            {:ok, admitted} <- Policy.admit(gateway, request) do
         try do
-          if Local.local?(request) or admitted.anonymous do
-            Local.serve(conn, gateway, request, admitted)
-          else
-            HTTPRelay.relay(conn, gateway, request, admitted)
+          cond do
+            request.protocol == :websocket ->
+              websocket(conn, gateway, request, admitted)
+
+            request.protocol == :raw ->
+              HTTPRelay.fail(
+                conn,
+                Failure.new(501, "Raw upgrades require the Cowboy gateway handler", :not_sent)
+              )
+
+            Local.local?(request) or admitted.anonymous ->
+              Local.serve(conn, gateway, request, admitted)
+
+            true ->
+              HTTPRelay.relay(conn, gateway, request, admitted)
           end
         after
           Policy.release(admitted)
@@ -92,6 +105,9 @@ if Code.ensure_loaded?(Plug.Conn) do
         {:error, %Failure{} = failure} -> HTTPRelay.fail(conn, failure)
       end
     end
+
+    defp websocket(conn, gateway, request, admitted),
+      do: Function.capture(WebSocket, :upgrade, 4).(conn, gateway, request, admitted)
 
     defp fields(conn, authorization) do
       peer = Plug.Conn.get_peer_data(conn)
