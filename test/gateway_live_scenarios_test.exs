@@ -3,7 +3,118 @@ Code.require_file("../scripts/gateway_live_scenarios.exs", __DIR__)
 
 defmodule Opsmaru.GatewayLiveScenariosTest do
   use ExUnit.Case, async: false
+  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   alias OpsmaruGatewayLiveScenarios, as: Scenarios
+
+  test "HTTPS direct comparison uses only the backend TLS identity and rejects mismatches before I/O" do
+    root =
+      Path.join(
+        System.tmp_dir!(),
+        "gateway-direct-https-" <> Base.url_encode64(:crypto.strong_rand_bytes(8), padding: false)
+      )
+
+    File.mkdir!(root)
+    File.chmod!(root, 0o700)
+    on_exit(fn -> File.rm_rf!(root) end)
+    server = TLSIdentity.generate(root, "backend-server", "localhost")
+    client = TLSIdentity.generate(root, "backend-client", "backend-client")
+
+    fixture =
+      start_supervised!(
+        {HTTPFixture,
+         transport: :ssl,
+         certfile: server.certfile,
+         keyfile: server.keyfile,
+         peer_options: [
+           verify: :verify_peer,
+           fail_if_no_peer_cert: true,
+           cacertfile: client.cafile
+         ],
+         handler: fn request ->
+           if URI.parse(request.target).path == "/1.0" do
+             %{
+               status: 200,
+               body: %{
+                 type: "sync",
+                 status_code: 200,
+                 metadata: %{
+                   api_version: "1.0",
+                   auth: "trusted",
+                   api_extensions: ["instance_nbd"],
+                   environment: %{}
+                 }
+               }
+             }
+           else
+             %{
+               status: 400,
+               body: %{
+                 type: "error",
+                 error_code: 400,
+                 error: "NBD export of all disks is only supported on virtual machines"
+               }
+             }
+           end
+         end}
+      )
+
+    backend = %{
+      "https" => HTTPFixture.endpoint(fixture).url,
+      "server_certificate" => server.certfile,
+      "client_certificate" => client.certfile,
+      "client_key" => client.keyfile
+    }
+
+    context = %{
+      config: %{
+        "source" => %{
+          "project" => "opsmaru-acceptance-gateway-fixture",
+          "backend" => backend,
+          "gateway" => %{
+            "server_certificate" => "/never-read-gateway-cert",
+            "client_certificate" => "/never-read-gateway-client",
+            "client_key" => "/never-read-gateway-key"
+          }
+        }
+      }
+    }
+
+    bad = put_in(context, [:config, "source", "backend", "socket"], "/never-opened-backend.sock")
+
+    assert_raise RuntimeError, "one explicit backend transport required", fn ->
+      Scenarios.driver_input(bad, "source", "nbd_instance", %{}, direct: true)
+    end
+
+    assert HTTPFixture.requests(fixture) == []
+
+    input =
+      Scenarios.driver_input(context, "source", "nbd_instance", %{"Name" => "gw-fixture-name"},
+        direct: true
+      )
+
+    refute Map.has_key?(input, "Socket")
+    assert input["ServerCert"] == File.read!(server.certfile)
+    assert input["ClientCert"] == File.read!(client.certfile)
+    assert input["ClientKey"] == File.read!(client.keyfile)
+    executable = Path.join(root, "native-driver")
+
+    {output, status} =
+      System.cmd(
+        "mise",
+        ["exec", "--", "go", "build", "-mod=readonly", "-o", executable, "./gatewaylive"],
+        cd: Path.expand("reference", __DIR__),
+        env: [{"GOTOOLCHAIN", "local"}],
+        stderr_to_stdout: true
+      )
+
+    assert status == 0, output
+    input_path = Path.join(root, "input.json")
+    File.write!(input_path, Jason.encode!(input))
+    result = Scenarios.command(executable, [input_path], [], 10_000)
+    assert result.status == 0
+    assert Jason.decode!(result.output)["http_status"] == 400
+    assert length(HTTPFixture.requests(fixture)) == 2
+  end
 
   test "expected native denials do not require a success flag and unexpected errors fail" do
     assert Scenarios.expected_driver_result?(%{"http_status" => 403}, expected_status: 403)

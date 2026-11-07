@@ -46,12 +46,14 @@ defmodule OpsmaruGatewayLiveScenarios do
   def prepare!(config) do
     Acceptance.validate!(config)
 
-    for side <- @sides,
-        do:
-          require!(
-            is_binary(config[side]["network"]) and config[side]["network"] != "",
-            "explicit verified network required"
-          )
+    for side <- @sides do
+      require!(
+        is_binary(config[side]["network"]) and config[side]["network"] != "",
+        "explicit verified network required"
+      )
+
+      validate_direct_backend!(config[side]["backend"])
+    end
 
     verify_cli_provenance!(config["incus_cli"], config["incus_cli_provenance"])
     {status, 0} = System.cmd("git", ["status", "--porcelain"], cd: Path.expand("..", __DIR__))
@@ -1204,18 +1206,14 @@ defmodule OpsmaruGatewayLiveScenarios do
       (opts[:expect_native_error] == true and is_binary(decoded["error"]))
   end
 
-  defp driver_input(context, side, action, arguments, opts) do
+  @doc false
+  def driver_input(context, side, action, arguments, opts) do
     spec = context.config[side]
     input = %{"Action" => action, "Project" => spec["project"]}
 
     input =
       if opts[:direct] do
-        require!(
-          is_binary(spec["backend"]["socket"]),
-          "direct comparison requires explicit Unix backend"
-        )
-
-        Map.put(input, "Socket", spec["backend"]["socket"])
+        Map.merge(input, direct_backend_input(spec["backend"]))
       else
         gateway = spec["gateway"]
 
@@ -1235,6 +1233,60 @@ defmodule OpsmaruGatewayLiveScenarios do
       end
 
     Map.merge(input, arguments)
+  end
+
+  @doc false
+  def validate_direct_backend!(backend) when is_map(backend) do
+    case {Map.has_key?(backend, "socket"), Map.has_key?(backend, "https")} do
+      {true, false} ->
+        require!(
+          is_binary(backend["socket"]) and Path.type(backend["socket"]) == :absolute,
+          "explicit absolute Unix backend required"
+        )
+
+      {false, true} ->
+        validate_backend_https!(backend)
+
+      _ ->
+        raise "one explicit backend transport required"
+    end
+
+    :ok
+  end
+
+  def validate_direct_backend!(_), do: raise("one explicit backend transport required")
+
+  defp validate_backend_https!(backend) do
+    uri = URI.parse(backend["https"] || "")
+
+    require!(
+      uri.scheme == "https" and is_binary(uri.host) and uri.host != "" and uri.userinfo == nil and
+        uri.path in [nil, "", "/"] and uri.query == nil and uri.fragment == nil,
+      "explicit HTTPS backend origin required"
+    )
+
+    for field <- ~w(server_certificate client_certificate client_key),
+        do:
+          require!(
+            is_binary(backend[field]) and Path.type(backend[field]) == :absolute and
+              File.regular?(backend[field]),
+            "explicit backend TLS credential references required"
+          )
+  end
+
+  defp direct_backend_input(backend) do
+    validate_direct_backend!(backend)
+
+    if Map.has_key?(backend, "socket") do
+      %{"Socket" => backend["socket"]}
+    else
+      %{
+        "URL" => backend["https"],
+        "ServerCert" => File.read!(backend["server_certificate"]),
+        "ClientCert" => File.read!(backend["client_certificate"]),
+        "ClientKey" => File.read!(backend["client_key"])
+      }
+    end
   end
 
   defp safe_proof(result) do
