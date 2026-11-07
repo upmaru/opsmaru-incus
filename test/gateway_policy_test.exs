@@ -197,7 +197,7 @@ defmodule Opsmaru.Incus.GatewayPolicyTest do
       assert StreamBackend.accepted(context.backend) == 0
     end
 
-    test "upgrades are authorized first, then refused as not implemented", context do
+    test "upgrades are authorized before protocol negotiation or unsupported refusal", context do
       mount(context, context.connection)
 
       for {protocol, headers} <- [
@@ -209,8 +209,14 @@ defmodule Opsmaru.Incus.GatewayPolicyTest do
         assert get(context, "/1.0/instances/c1/sftp", upgrade).status == 403
 
         response = get(context, "/1.0/instances/c1/sftp", [auth() | upgrade])
-        assert response.status == 501
-        assert native(response.body)["error"] =~ "not implemented"
+
+        if protocol == "websocket" do
+          assert response.status == 400
+          assert native(response.body)["error"] == "Invalid WebSocket upgrade"
+        else
+          assert response.status == 501
+          assert native(response.body)["error"] =~ "not implemented"
+        end
       end
 
       assert StreamBackend.accepted(context.backend) == 0

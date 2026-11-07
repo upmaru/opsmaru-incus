@@ -1,5 +1,6 @@
 defmodule ClientOnlyConsumer.Test do
   use ExUnit.Case
+  alias Opsmaru.Incus.Gateway.Identity
   alias Opsmaru.Incus.Operations
 
   test "the client and operation descriptors work without Plug or an MCP stack" do
@@ -23,5 +24,8 @@ defmodule ClientOnlyConsumer.Test do
     assert Code.ensure_loaded?(Opsmaru.Incus.Gateway.Policy)
     refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.Plug)
     refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.HTTPRelay)
+    refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.WebSocket)
+    refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.WebSocketRelay)
+    refute "console" in Identity.supported_extensions()
   end
 end
