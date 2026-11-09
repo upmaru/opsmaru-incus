@@ -1,6 +1,83 @@
 # Gateway real-Incus gate (G6 / 7.4)
 
-The live gateway gate is **incomplete**. The latest isolated run at source
+The live gateway gate is **closed under an accepted NBD limitation**. The
+isolated run on 2026-11-09 at source
+`9224c71700c801105128293b81e75468e2f1a5d0` completed every case except NBD.
+NBD remains `unrun`; it has not passed. The user accepted that result on
+2026-11-09 as a pinned-native limitation and asked to revisit it later (see
+"Accepted NBD limitation" below).
+
+## 2026-11-09 run on a flow-relay test appliance
+
+The backend was a throwaway Macus appliance in an isolated state directory. It
+ran an unmerged Macus feature build (`1085025`) that serves only the
+flow-controlled vsock relay. The appliance reported Incus 7.0.1, server name
+`tama-incus` and certificate SHA-256 `e7571648…d502b`. It also ran an
+unqualified 6.18.62 kernel/ZFS pair. One daemon served both sides through two
+fresh projects (`…-src-20261109-fr3-r15` and `…-dst-20261109-fr3-r15`). The
+unchanged pinned v7.0.1 CLI (SHA-256 `0ae2c213…`) and native driver
+(`c2f4fc09…`) used isolated `INCUS_CONF` and test-only trust.
+
+| Area | Result |
+|---|---|
+| Discovery, enrollment, HTTP, binary, exec, console, events, SFTP | passed |
+| Denial and interruption | passed. The interrupted operation was reconciled with one gateway POST and zero gateway DELETEs. |
+| Instance and snapshot copy, relay/pull/push × each gateway orientation (12) | passed. Each destination canary SHA-256 matched. |
+| Instance move, relay/pull/push × each gateway orientation (6) | passed |
+| Snapshot move (6) | `native_limitation`. The pinned CLI got 400 before any migration request reached the gateway (zero gateway POSTs or DELETEs). This is the user-accepted pinned-native snapshot-move limitation from task 6.2. |
+| NBD | `unrun`. The instance case is VM-only, and none was provisioned. The custom-volume strict read-only verifier failed identically directly and through the gateway with `native_nbd_readonly_unavailable`. |
+
+All 119 recorded steps passed, and the phase ended
+`partial-resources-retained`. The gateway issued no replay or cancellation.
+Both daemon peer probes were verified. The report keeps `installed_host` and
+`macus_hardware` at `unrun`, and typed-client coverage is unchanged.
+
+This run supersedes the earlier relay copy failure. That failure matched a
+Macus vsock head-of-line stall, not a gateway defect. With the flow-controlled
+relay, all twelve copies and six instance moves completed. This is not Macus
+hardware or ZFS qualification evidence, because the appliance runs an
+unqualified kernel/ZFS pair on an unmerged Macus build.
+
+### Accepted NBD limitation
+
+On 2026-11-09 the user accepted the NBD result as a pinned-native limitation
+and closed task 7.4. They asked to revisit it later.
+
+- **Custom volume.** The unchanged v7.0.1 client requests `Writable: false`.
+  Incus completes the fixed-newstyle handshake, but the `NBD_INFO_EXPORT`
+  transmission flags omit `NBD_FLAG_READ_ONLY`. The strict verifier stops
+  before any block request, so no data is read or written. The same failure
+  occurs directly and through the gateway, so the gateway preserves native
+  behavior. Whether Incus enforces read-only access server-side without
+  advertising the flag is not verified.
+- **Instance.** Instance NBD is VM-only. The gate provisions only containers,
+  so Incus returned its native 400. No positive VM case ran.
+
+This acceptance does not mark NBD passed and does not loosen the verifier.
+Possible revisits include a relaxed single-block read with zero writes, a VM
+instance case on an appliance with nested virtualization, or confirming
+upstream whether the read-only flag should be advertised.
+
+Operator notes from this session:
+
+- Run the live entrypoint with `MIX_ENV=test`. The gateway host needs the
+  test-only `plug_cowboy` dependency. Without it, the host fails before any
+  backend contact.
+- Start the runner with stdin at `/dev/null`. Native commands are spawned
+  with `:in`, so they inherit the runner's stdin. If stdin is an open pipe,
+  `incus snapshot create` waits for YAML until the step times out.
+- Fixture credentials must be within their validity window. Expired test
+  certificates fail anonymous discovery as `native_verifier_failure`.
+
+Three earlier attempts in the same session left only test resources on the
+throwaway appliance. r12 stopped before backend contact. r13 created two
+empty projects before the credential failure. r14 timed out on the first
+snapshot setup after passing sixteen cases, including all six instance
+copies. Their resources and private journals are retained there.
+
+## Earlier history
+
+The isolated run at source
 `2ebc4a6ee3246134105cc4265dc14ecb26ba0a07` passed ten protocol cases, left NBD
 unrun, and failed its first instance relay copy. During that copy a backend
 metadata connections repeatedly closed before a parsed response throughout the
@@ -119,8 +196,10 @@ condition occurs through the gateway, the runner compares it with the same
 unchanged helper directly on the same owned volume. Only matching
 `native_nbd_readonly_unavailable` results leave NBD `unrun` and allow denial,
 interruption and migration checks to continue. Unknown or mismatched errors
-stop the run. This does not accept an NBD parity exception, mark NBD passed or
-complete task 7.4; the incomplete ledger retains resources for reconciliation.
+stop the run. The runner itself never accepts an NBD parity exception, marks
+NBD passed or completes task 7.4; its incomplete ledger retains resources for
+reconciliation. The 2026-11-09 closure of task 7.4 rests on the user's
+explicit acceptance recorded above, not on runner output.
 
 Unexpected native CLI exit results also retain a bounded operator-only diagnostic
 sidecar in the run's private `0700` state directory. Each exclusive `0600`
