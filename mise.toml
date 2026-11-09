@@ -19,15 +19,17 @@ run = [
   "mix format --check-formatted",
   "mix compile --warnings-as-errors",
   "mix credo --strict",
-  "mix test",
+  # Test-env compile covers test/support; --warnings-as-errors on test covers test files.
+  "MIX_ENV=test mix do compile --warnings-as-errors + test --warnings-as-errors",
   "openspec validate --all --strict --no-interactive",
 ]
 
 [tasks."check:reference"]
-description = "Go inventory/schema verifier tests and generated constants check"
+description = "Go inventory/schema verifier tests, generated constants and coverage ledger checks"
 run = [
   "GO111MODULE=off go test ./scripts ./scripts/incus-model-schema",
   "python3 scripts/check-incus-constants.py",
+  "python3 scripts/update-incus-coverage.py --check",
 ]
 
 [tasks."check:consumer"]

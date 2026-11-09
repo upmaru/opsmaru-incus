@@ -1,0 +1,31 @@
+# Proposal
+
+## Why
+
+Agents operate Incus through MCP both at a standalone Macus (`/mcp` on its gateway) and, later, through central Opsmaru. The tool contract (names, input/output schemas, scopes, confirmation rules and how each tool calls the client) must be identical in both places. Defining the Incus operations once in `:opsmaru_incus`, beside the client they wrap, gives Macus a ready catalogue for its first standalone milestone and lets central Opsmaru reuse the same definitions later without depending on Macus or Macus depending on central.
+
+## What Changes
+
+- Add protocol-neutral Incus operation descriptors under `Opsmaru.Incus.Operations`: canonical name, description, input/output JSON schemas, required scope, destructive-confirmation rule, bounds and a run function that executes through the existing `Opsmaru.Incus` client.
+- Add a host contract: the host supplies the trusted connection and context for an authenticated caller and authorizes the operation. Operations never accept URLs, sockets, credentials or owner identity from tool input.
+- Keep protocol bindings host-owned. The library exposes the catalogue (`all/0`, `fetch/1`, `describe/1`) and `run/3`; each host decides how agents reach them, for example one MCP tool per operation or a search/execute index. An optional TamaMCP binding (`Opsmaru.Incus.MCP.Tools.*`) was implemented and then removed by user decision on 2026-11-04, before any consumer pinned it. The library adds no MCP or Plug dependency.
+- Initial catalogue: inspection (server, instances, images, projects, profiles, networks, storage, operations); instance create/update/state; snapshot create/restore; image and instance/snapshot deletion with explicit confirmation; bounded guest exec; operation status/wait/cancel. Canonical names follow `incus_<resource>_<verb>`.
+- Tools execute synchronously. Mutations return the native Incus operation identity and whether completion was observed within the tool's bounded wait; callers poll the operation tools for later state. No durable MCP task store, runner or journal is introduced, and no task handles are advertised.
+- No target selection or registry concepts. Schemas carry no `target_id`; a later central host can add target resolution around the same descriptors.
+
+## Capabilities
+
+### New Capabilities
+
+- `incus-operations`: shared Incus operation descriptors, host binding, scope and confirmation enforcement, and bounded synchronous execution, with protocol exposure left to hosts.
+
+### Modified Capabilities
+
+None.
+
+## Impact
+
+- Macus `add-elixir-server` exposes these operations through its own MCP layer at one `/mcp`, supplying its bearer-verified caller, local connection/context and authorization. Central Opsmaru adopts the same descriptors in its later changes; its tool catalogue planning moves here.
+- Operations use only client calls with recorded verification evidence. Foundation task 3.9 is closed and S10 copy is certified, but copy and migration (copy, rename, move) are deferred from the initial catalogue by scope (user decision 2026-11-04); the catalogue documents them as unavailable. Tool success never closes client coverage.
+- Durable tasks, target registration and connectors are later work. This change creates no persistence and starts no processes.
+- Fixture, consumer, real-Incus and Macus hardware evidence remain separate gates.

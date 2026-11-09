@@ -3,7 +3,8 @@ defmodule Opsmaru.Incus.DynamicConsole do
   Native dynamic console: one accepted operation/control channel and repeated
   explicit data attachments. Attachments, handshake time and total lifetime are
   bounded. The creating process owns the console; its exit or explicit close
-  releases local channels without cancelling the backend operation. A failed
+  releases local channels, sending the pinned `1000 "Detaching from console"`
+  close frame on the control channel, without cancelling the backend operation. A failed
   attachment retains the operation and never repeats the console POST.
 
   `attach/1` returns a native WebSocket byte channel. Hosts explicitly send/read
@@ -15,19 +16,13 @@ defmodule Opsmaru.Incus.DynamicConsole do
   """
   use GenServer
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Context, Error, Model, Operation, Transport, WebSocket}
+  alias Opsmaru.Incus.{Context, Error, Operation, Redaction, Session, Transport, WebSocket}
   defstruct [:pid, :operation]
 
   def open(client, instance, body, opts \\ []) do
     with :ok <- arguments(opts),
          :ok <- Context.authorize(client.context, client.connection),
-         {:ok, model} <- Model.decode("InstanceConsolePost", Model.encode(body)),
-         true <- is_map(model.data),
-         body =
-           if(model.data["type"] in [nil, ""],
-             do: Map.put(model.data, "type", "console"),
-             else: model.data
-           ),
+         {:ok, body} <- Session.console_body(body),
          {:ok, response} <-
            Incus.call(client, "ConsoleInstance", %{"instanceName" => instance}, body: body),
          {:ok, operation} <- Operation.from_response(client, response) do
@@ -218,12 +213,12 @@ defmodule Opsmaru.Incus.DynamicConsole do
   @impl true
   def terminate(_, state) do
     Process.cancel_timer(state.timer)
-    channels = [state.control | Enum.map(state.attachments, fn {_, {channel, _}} -> channel end)]
-    WebSocket.close_owned(channels)
+    attachments = Enum.map(state.attachments, fn {_, {channel, _}} -> channel end)
+    WebSocket.close_owned(Session.detach_frames(state.control) ++ attachments)
   end
 
   @impl true
-  def format_status(_), do: %{state: "native dynamic console redacted"}
+  def format_status(status), do: Redaction.status(status, "native dynamic console redacted")
 
   defp channel_ref?(state, ref),
     do:

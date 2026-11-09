@@ -6,7 +6,18 @@ defmodule Opsmaru.Incus.WebSocket do
   """
   use GenServer
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Context, Error, HTTP, RequestContext, Response, Transport, Upgrade}
+
+  alias Opsmaru.Incus.{
+    Context,
+    Error,
+    HTTP,
+    Redaction,
+    RequestContext,
+    Response,
+    Transport,
+    Upgrade
+  }
+
   alias Opsmaru.Incus.HTTP.Response, as: HTTPResponse
   defstruct [:pid, :ref]
 
@@ -66,7 +77,16 @@ defmodule Opsmaru.Incus.WebSocket do
   @doc false
   def close_owned(channels) do
     deadline = now() + 100
-    requests = Enum.map(channels, &{&1.pid, :gen_server.send_request(&1.pid, :close)})
+
+    # A `{channel, {code, reason}}` entry sends that native close status.
+    requests =
+      Enum.map(channels, fn
+        {channel, {code, reason}} ->
+          {channel.pid, :gen_server.send_request(channel.pid, {:close, code, reason})}
+
+        channel ->
+          {channel.pid, :gen_server.send_request(channel.pid, :close)}
+      end)
 
     # Send all graceful closes first. A blocked write must not give each channel
     # a fresh timeout or keep an owner's local resources alive indefinitely.
@@ -215,6 +235,11 @@ defmodule Opsmaru.Incus.WebSocket do
 
   def handle_call(:close, _, state) do
     encode(state, :close)
+    {:stop, :normal, :ok, state}
+  end
+
+  def handle_call({:close, code, reason}, _, state) do
+    encode(state, {:close, code, reason})
     {:stop, :normal, :ok, state}
   end
 
@@ -410,6 +435,6 @@ defmodule Opsmaru.Incus.WebSocket do
   end
 
   @impl true
-  def format_status(status), do: %{status | state: :private_native_websocket}
+  def format_status(status), do: Redaction.status(status, :private_native_websocket)
   defp now, do: System.monotonic_time(:millisecond)
 end

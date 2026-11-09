@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.RawOperationReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Operation, Server}
   alias Opsmaru.TestSupport.HTTPFixture

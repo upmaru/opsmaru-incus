@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.ReferenceWireTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   alias Opsmaru.Incus.Connection
   alias Opsmaru.Incus.Context

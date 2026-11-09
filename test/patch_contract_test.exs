@@ -1,9 +1,9 @@
 defmodule Opsmaru.Incus.PatchContractTest do
   @moduledoc "B05 conditional PATCH contracts compared with unchanged pinned Go RawQuery."
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Model, Operation, RequestContext, Server}
-  alias Opsmaru.TestSupport.{HTTPFixture, ModelSamples, TLSIdentity, WireComparison}
+  alias Opsmaru.TestSupport.{HTTPFixture, ModelSamples, Timing, TLSIdentity, WireComparison}
   @driver Path.expand("../.integration/patch-contract-driver", __DIR__)
 
   # B05: the four earlier descriptors, administrative, image alias and instance
@@ -106,7 +106,11 @@ defmodule Opsmaru.Incus.PatchContractTest do
           end)
 
         original = client(fixture, identity)
-        scope = RequestContext.new!(timeout: if(mode == :deadline, do: 3_000, else: 30_000))
+
+        scope =
+          RequestContext.new!(
+            timeout: if(mode == :deadline, do: Timing.expiring_deadline(), else: 30_000)
+          )
 
         task =
           Task.async(fn -> patch(Incus.with_context(original, scope), method, body(method)) end)

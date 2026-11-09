@@ -40,7 +40,11 @@ defmodule OpsmaruIncus.MixProject do
       # Native multipart/content-type parsing and the strict YAML subset decoder.
       {:cowlib, "~> 2.20"},
       {:yamerl, "~> 0.10"},
-      {:plug, "~> 1.20", only: :test},
+      # Optional native gateway adapters (Opsmaru.Incus.Gateway.*). Client-only
+      # consumers compile without them; gateway modules are skipped.
+      {:plug, "~> 1.16", optional: true},
+      {:cowboy, "~> 2.12", optional: true},
+      {:plug_cowboy, "~> 2.7", only: :test},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end

@@ -2,7 +2,13 @@ defmodule FoundationConsumer.MixProject do
   use Mix.Project
 
   def project do
-    [app: :foundation_consumer, version: "0.1.0", elixir: "~> 1.19.5", deps: deps()]
+    [
+      app: :foundation_consumer,
+      version: "0.1.0",
+      elixir: "~> 1.19.5",
+      elixirc_paths: ["lib", "test/support"],
+      deps: deps()
+    ]
   end
 
   def application, do: [mod: {FoundationConsumer.Application, []}, extra_applications: [:logger]]

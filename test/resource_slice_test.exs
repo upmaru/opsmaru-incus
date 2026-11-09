@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.ResourceSliceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Model, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, WireComparison}
@@ -371,8 +371,9 @@ defmodule Opsmaru.Incus.ResourceSliceTest do
   end
 
   defp backend(root, response) do
+    # Every catalogue method's extensions, REST-only descriptors included.
     extensions =
-      @definitions
+      @catalogue
       |> Enum.flat_map(fn method ->
         List.wrap(method["extension"]) ++
           Enum.flat_map(method["guards"], &List.wrap(&1["extension"]))

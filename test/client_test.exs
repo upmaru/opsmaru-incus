@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.ClientTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Response}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
@@ -165,15 +165,17 @@ defmodule Opsmaru.Incus.ClientTest do
        %{root: root, context: context} do
     fixture = backend(root, fn _ -> %{raw: ""} end)
 
+    # The fixture records each request, then closes without a reply; the timeout only
+    # bounds the test, so it must not expire before the fixture has read the request.
     connection =
-      Connection.unix!(HTTPFixture.endpoint(fixture).socket, owner: :host, timeout: 100)
+      Connection.unix!(HTTPFixture.endpoint(fixture).socket, owner: :host, timeout: 2_000)
 
     assert {:error, %Error{kind: :uncertain}} =
              Incus.raw_query(connection, context, "POST", "/1.0/instances", body: %{})
 
     assert length(HTTPFixture.requests(fixture)) == 1
 
-    assert {:error, %Error{kind: :response}} =
+    assert {:error, %Error{kind: :response_closed}} =
              Incus.raw_query(connection, context, "GET", "/1.0", [])
 
     assert length(HTTPFixture.requests(fixture)) == 2
@@ -201,14 +203,16 @@ defmodule Opsmaru.Incus.ClientTest do
 
     slow =
       backend(root, fn _ ->
-        %{wire_chunks: [{200, "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"}]}
+        %{wire_chunks: [{1_000, "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"}]}
       end)
 
+    # The reply comes after 1 s; returning well before it shows the 30 ms deadline
+    # ended the wait, with headroom for a loaded VM.
     connection = Connection.unix!(HTTPFixture.endpoint(slow).socket, owner: :host, timeout: 30)
     before = System.monotonic_time(:millisecond)
     assert {:error, %Error{kind: kind}} = Incus.raw_query(connection, context, "GET", "/1.0", [])
     assert kind in [:response, :deadline]
-    assert System.monotonic_time(:millisecond) - before < 150
+    assert System.monotonic_time(:millisecond) - before < 500
   end
 
   test "HTTPS verifies trust, hostname and client key possession without credential output", %{

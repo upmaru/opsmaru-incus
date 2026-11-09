@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.OCITest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
   alias Opsmaru.Incus.{Connection, Context, Error, Model, OCI, RequestContext}
   @driver Path.expand("../.integration/oci-driver", __DIR__)
 
@@ -81,6 +82,63 @@ defmodule Opsmaru.Incus.OCITest do
       assert {:ok, models, _} = OCI.resolve(client(info: data), "alpine")
       assert Model.encode(models.image) == expected["value"]["image"]
     end
+  end
+
+  test "the converted metadata.yaml bytes match the pinned GetImageFile metadata" do
+    for {arch, created} <- [
+          {"amd64", nil},
+          {"x86_64", "2026-10-11T00:00:00Z"},
+          {"arm64", "2026-10-11T01:00:00.123456789+01:00"},
+          {"riscv64", "1969-12-31T23:59:59.5Z"},
+          {"loong64", "0001-01-01T00:00:00Z"}
+        ] do
+      data = Map.put(info(arch), "Created", created)
+      expected = oracle("metadata", "alpine", "", data)
+      assert expected["ok"], inspect(expected)
+      client = resolved(client(info: data))
+      sinks = %{metadata: fn _ -> :ok end, rootfs: fn _ -> :ok end}
+      assert {:ok, _} = OCI.image_file(client, fingerprint(client), sinks)
+      assert_receive {:export, _, request}
+      assert_receive {:cleanup, _, :completed}
+      assert request.metadata_yaml == expected["value"], inspect({arch, created})
+    end
+  end
+
+  test "an unknown fingerprint is reported before missing sinks, as natively" do
+    client = client()
+    expected = oracle("GetImageFile", "alpine", "miss", info())
+
+    assert {:error, %Error{kind: :native, message: message}} =
+             OCI.image_file(client, "alpine", %{})
+
+    assert message == expected["error"]
+
+    expected = oracle("GetImageFile", "alpine", "", info())
+    client = resolved(client)
+
+    for sinks <- [%{}, nil, %{metadata: fn _ -> :ok end}] do
+      assert {:error, %Error{kind: :invalid_arguments, message: message}} =
+               OCI.image_file(client, fingerprint(client), sinks)
+
+      assert message == expected["error"]
+    end
+
+    refute_receive {:export, _, _}
+    refute_receive {:cleanup, _, _}
+  end
+
+  test "a failed lookup is not cached: a later image/2 reports Image not found (approved difference)" do
+    # The pinned client keeps the lookup error per name and returns it from GetImage;
+    # the immutable cache a failed lookup does not return cannot remember it.
+    expected = oracle("failed-lookup", "alpine", "", "not an object")
+    assert expected["error"] =~ "cannot unmarshal"
+    client = client(info: "not an object")
+    assert {:error, %Error{kind: :invalid_oci_inspection}} = OCI.resolve(client, "alpine")
+
+    assert {:error, %Error{kind: :native, message: "Image not found"}} =
+             OCI.image(client, "alpine")
+
+    assert_receive {:cleanup, _, :failed}
   end
 
   test "native alias architecture keys use the explicit local architecture, not image architecture" do
@@ -258,7 +316,9 @@ defmodule Opsmaru.Incus.OCITest do
 
     started = System.monotonic_time(:millisecond)
     assert {:error, %Error{kind: :adapter_cleanup}} = OCI.resolve(client, "alpine")
-    assert System.monotonic_time(:millisecond) - started < 500
+    # The 60ms cleanup budget ends this in about 70ms, and the caller's own fallback at
+    # about 160ms; the bound leaves scheduler headroom yet stays below the 1s cleanup cap.
+    assert System.monotonic_time(:millisecond) - started < 1_000
     assert_receive {:cleaner, worker}
     monitor = Process.monitor(worker)
     assert_receive {:DOWN, ^monitor, :process, ^worker, _}
@@ -503,7 +563,7 @@ defmodule Opsmaru.Incus.OCITest do
     scoped = %{original | connection: Connection.with_context(original.connection, scope)}
     task = Task.async(fn -> OCI.resolve(scoped, "alpine") end)
     assert_receive {:blocked_adapter, pid}, 500
-    monitor = Process.monitor(pid)
+    monitor = monitor!(pid)
     RequestContext.cancel(scope)
     assert {:error, %Error{kind: :adapter_canceled}} = Task.await(task, 500)
     assert_receive {:DOWN, ^monitor, :process, ^pid, :killed}, 500

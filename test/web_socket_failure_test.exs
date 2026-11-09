@@ -1,5 +1,7 @@
 defmodule Opsmaru.Incus.WebSocketFailureTest do
-  use ExUnit.Case, async: false
+  # Its write-budget tests set VM-wide trace patterns on WebSocket.now/0 and setopts under TraceLock.
+  use ExUnit.Case, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
   alias Opsmaru.Incus
 
   alias Opsmaru.Incus.{
@@ -14,7 +16,7 @@ defmodule Opsmaru.Incus.WebSocketFailureTest do
     WebSocket
   }
 
-  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
+  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, TraceLock}
 
   setup do
     root = Path.join(System.tmp_dir!(), "op-wsf-#{System.unique_integer([:positive])}")
@@ -28,6 +30,9 @@ defmodule Opsmaru.Incus.WebSocketFailureTest do
     test "#{transport} blocked writes retain deadline budgets despite delayed observation", %{
       root: root
     } do
+      # Before anything starts a clock: none may run while waiting for the lock.
+      TraceLock.acquire!()
+
       {client, fixture, _tag} =
         peer(
           root,
@@ -90,7 +95,7 @@ defmodule Opsmaru.Incus.WebSocketFailureTest do
       assert_receive {:peer, ^tag, process}, 1_000
       reader = Task.async(fn -> WebSocket.recv(channel, 1_000) end)
       await_reader(channel, System.monotonic_time(:millisecond) + 1_000)
-      monitor = Process.monitor(channel.pid)
+      monitor = monitor!(channel.pid)
       send(process, :drop)
       assert {:error, %Error{kind: :channel_io}} = Task.await(reader)
       ref = channel.ref

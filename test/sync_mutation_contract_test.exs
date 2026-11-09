@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.SyncMutationContractTest do
   @moduledoc "B09/B10 write contracts compared with the named pinned Go methods."
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Operation, RequestContext, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, ModelSamples, TLSIdentity, WireComparison}
@@ -10,9 +10,29 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   @b09 ~w(CreateNetwork RenameNetwork UpdateNetwork DeleteNetwork CreateNetworkACL RenameNetworkACL UpdateNetworkACL DeleteNetworkACL CreateNetworkAddressSet RenameNetworkAddressSet UpdateNetworkAddressSet DeleteNetworkAddressSet CreateNetworkIntegration RenameNetworkIntegration UpdateNetworkIntegration DeleteNetworkIntegration CreateNetworkZone UpdateNetworkZone DeleteNetworkZone CreateNetworkZoneRecord UpdateNetworkZoneRecord DeleteNetworkZoneRecord CreateNetworkForward UpdateNetworkForward DeleteNetworkForward CreateNetworkLoadBalancer UpdateNetworkLoadBalancer DeleteNetworkLoadBalancer CreateNetworkPeer UpdateNetworkPeer DeleteNetworkPeer)
   # B10 PR 2: every administrative write, synchronous or accepted as an operation.
   @b10 ~w(UpdateServer CreateCertificate CreateCertificateToken UpdateCertificate DeleteCertificate UpdateCluster UpdateClusterCertificate CreateClusterGroup RenameClusterGroup UpdateClusterGroup DeleteClusterGroup CreateClusterMember RenameClusterMember UpdateClusterMember DeleteClusterMember DeletePendingClusterMember UpdateClusterMemberState CreateProfile RenameProfile UpdateProfile DeleteProfile CreateProject RenameProject UpdateProject DeleteProject DeleteProjectForce UpdateWarning DeleteWarning)
+  # B08 PR 2: every stream-free storage write (pools, buckets and keys, volumes,
+  # bitmaps, volume snapshots and rebuild).
+  @b08 ~w(CreateStoragePool UpdateStoragePool DeleteStoragePool UpdateStoragePoolBucket DeleteStoragePoolBucket CreateStoragePoolBucketKey UpdateStoragePoolBucketKey DeleteStoragePoolBucketKey UpdateStoragePoolVolume DeleteStoragePoolVolume CreateStorageVolumeBitmap DeleteStorageVolumeBitmap CreateStoragePoolVolumeSnapshot RenameStoragePoolVolumeSnapshot UpdateStoragePoolVolumeSnapshot DeleteStoragePoolVolumeSnapshot RebuildStoragePoolVolume)
+  # B11: every stream-free instance and image write.
+  @b11 ~w(CreateImageAlias RenameImageAlias UpdateImageAlias DeleteImageAlias UpdateImage RefreshImage CreateImageSecret UpdateInstanceMetadata DeleteInstanceConsoleLog DeleteInstanceLogfile CreateInstanceBitmap RebuildInstance UpdateInstanceSnapshot UpdateInstances)
+  # B07/B12 writes the pinned client lacks, compared through unchanged Go RawQuery.
+  @rest ~w(DeleteInstanceExecOutput RepairInstance RenameStoragePoolBucketBackup CreateStoragePoolVolumeInCollection CreateStoragePoolVolumeInCollectionFromMigration)
+  # S06 PR 1: the instance, custom volume and bucket backup control plane.
+  @s06 ~w(CreateInstanceBackup RenameInstanceBackup DeleteInstanceBackup CreateStorageVolumeBackup RenameStorageVolumeBackup DeleteStorageVolumeBackup CreateStoragePoolBucketBackup DeleteStoragePoolBucketBackup CreateStoragePoolBucket)
+  # S07: the metadata template delete.
+  @s07 ~w(DeleteInstanceTemplateFile)
+  # S10 PR 1: the instance, snapshot and custom volume rename and migration control
+  # plane, and volume creation as a copy or migration target.
+  @s10 ~w(RenameInstance MigrateInstance RenameInstanceSnapshot MigrateInstanceSnapshot CreateStoragePoolVolume CreateStoragePoolVolumeFromMigration RenameStoragePoolVolume MigrateStoragePoolVolume)
+  # S05 PR 1: image creation for every source kind, and push export.
+  @s05 ~w(CreateImage ExportImage)
   @all_methods Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
-  @methods Enum.filter(@all_methods, &(&1["name"] in (@b09 ++ @b10)))
-  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings)
+  @methods Enum.filter(
+             @all_methods,
+             &(&1["name"] in (@b09 ++
+                                @b10 ++ @b08 ++ @b11 ++ @rest ++ @s07 ++ @s06 ++ @s10 ++ @s05))
+           )
+  @extensions ~w(network network_acl network_address_set network_integrations network_dns network_dns_records network_forward network_load_balancer network_peer certificate_token certificate_update clustering clustering_edit_roles clustering_evacuation clustering_failure_domains clustering_groups clustering_join clustering_join_token clustering_update_cert projects projects_force_delete warnings storage storage_buckets storage_volume_nbd storage_api_volume_snapshots storage_volumes_rebuild console container_log_delete image_force_refresh instances_rebuild container_edit_metadata snapshot_expiry container_exec_recording instances_debug_repair container_backup custom_volume_backup storage_bucket_backup storage_buckets_create_credentials container_only_migration instance_pool_move instance_project_move cluster_migration_inconsistent_copy storage_api_volume_rename storage_api_remote_volume_handling storage_api_remote_volume_snapshot_copy image_compression_algorithm images_push_relay)
   @uuid "01234567-89ab-cdef-0123-456789abcdef"
   @url "/1.0/operations/" <> @uuid
   @etag "\"before\""
@@ -26,8 +46,8 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       )
 
     assert status == 0, out
-    assert length(@methods) == 59
-    assert Enum.all?(@methods, &(&1["result"] in ["sync", "operation"]))
+    assert length(@methods) == 115
+    assert Enum.all?(@methods, &(&1["result"] in ["sync", "model", "operation"]))
     :ok
   end
 
@@ -39,7 +59,10 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     %{root: root}
   end
 
-  for method <- @methods, method["result"] == "sync", transport <- [:unix, :https] do
+  # The volume type is a pass-through path argument, compared for every daemon type.
+  @volume_types ~w(custom container virtual-machine image)
+
+  for method <- @methods, method["result"] in ["sync", "model"], transport <- [:unix, :https] do
     test "#{method["name"]} #{transport} synchronous write matches native request, result and rejection",
          %{root: root} do
       method = unquote(Macro.escape(method))
@@ -50,6 +73,12 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
 
       # An unset force flag sends no force query, as in the pinned client.
       if "force" in method["params"], do: compare(root, identity, method, :sync, false)
+      # A returned model that the pinned DTO rejects leaves the write uncertain.
+      if method["result"] == "model", do: compare(root, identity, method, :corrupt)
+
+      for type <- volume_types(method),
+          do: compare(root, identity, Map.put(method, "volume_type", type), :sync)
+
       preflight(root, identity, method)
     end
   end
@@ -66,6 +95,9 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
       for outcome <- waits ++ [:bad_operation, 400, 403, 404, 409, 412, :eof, :malformed],
           do: compare(root, identity, method, outcome)
 
+      for type <- volume_types(method),
+          do: compare(root, identity, Map.put(method, "volume_type", type), {:wait, 200})
+
       preflight(root, identity, method)
     end
   end
@@ -78,6 +110,157 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
         others = for other <- method["guards"], other != guard, do: other["field"]
         guarded(root, identity, method, guard, Map.drop(body(method), others))
       end
+    end
+
+    test "#{transport} guarded storage fields reject before dispatch", %{root: root} do
+      identity = identity(root, unquote(transport))
+      methods = for method <- @methods, method["name"] in @b08, method["guards"] != [], do: method
+      assert Enum.map(methods, & &1["name"]) == ["UpdateStoragePoolVolume"]
+
+      for method <- methods,
+          guard <- method["guards"],
+          do: guarded(root, identity, method, guard, body(method))
+    end
+
+    test "#{transport} guarded migration fields reject before dispatch", %{root: root} do
+      identity = identity(root, unquote(transport))
+      methods = for method <- @methods, method["name"] in @s10, method["guards"] != [], do: method
+
+      # The pinned client's own checks, so a dropped catalogue guard cannot pass unseen.
+      assert Map.new(methods, &{&1["name"], Enum.map(&1["guards"], fn g -> g["field"] end)}) ==
+               %{
+                 "RenameInstance" => ["migration"],
+                 "RenameInstanceSnapshot" => ["migration"],
+                 "MigrateInstance" => ~w(migration instance_only pool project allow_inconsistent),
+                 "MigrateInstanceSnapshot" => ["migration"],
+                 "MigrateStoragePoolVolume" => ["migration"]
+               }
+
+      # Each extension guard is checked alone; the migration flag stays as required.
+      for method <- methods, guard <- method["guards"] do
+        others =
+          for other <- method["guards"], other != guard, other["extension"], do: other["field"]
+
+        guarded(root, identity, method, guard, Map.drop(body(method), others))
+      end
+
+      # An instance-only copy or migration target needs container_only_migration.
+      create = Enum.find(@all_methods, &(&1["name"] == "CreateInstance"))
+      [{_, pull} | _] = instance_sources()
+      guarded(root, identity, create, hd(create["guards"]), pull)
+
+      # A volume snapshot migrates only with storage_api_remote_volume_snapshot_copy.
+      migrate = Enum.find(@methods, &(&1["name"] == "MigrateStoragePoolVolume"))
+      snapshot = %{body(migrate) | "name" => "fixture-volume/fixture-snapshot"}
+
+      guarded(
+        root,
+        identity,
+        migrate,
+        %{"extension" => "storage_api_remote_volume_snapshot_copy"},
+        snapshot
+      )
+    end
+
+    test "#{transport} copy and migration sources agree with the pinned client", %{root: root} do
+      identity = identity(root, unquote(transport))
+      create = Enum.find(@all_methods, &(&1["name"] == "CreateInstance"))
+      migrate = Enum.find(@methods, &(&1["name"] == "MigrateStoragePoolVolume"))
+      # The typed route and the collection route (RawQuery) share the daemon handler.
+      named = &Enum.find(@methods, fn method -> method["name"] == &1 end)
+
+      volumes =
+        Enum.map(
+          ~w(CreateStoragePoolVolumeFromMigration CreateStoragePoolVolumeInCollectionFromMigration),
+          named
+        )
+
+      locals = Enum.map(~w(CreateStoragePoolVolume CreateStoragePoolVolumeInCollection), named)
+
+      for {_, body} <- instance_sources(),
+          outcome <- [{:wait, 200}, 400],
+          do: compare(root, identity, Map.put(create, "sample", body), outcome)
+
+      for volume <- volumes,
+          {_, body} <- volume_sources(),
+          outcome <- [{:wait, 200}, 400],
+          do: compare(root, identity, Map.put(volume, "sample", body), outcome)
+
+      # A local volume copy is synchronous, for every daemon volume type.
+      for local <- locals, type <- @volume_types, outcome <- [:sync, 400] do
+        body = %{
+          "name" => "fixture-copy",
+          "type" => type,
+          "source" => %{
+            "type" => "copy",
+            "name" => "fixture-origin",
+            "pool" => "fixture-pool",
+            "project" => "fixture-project",
+            "location" => "member/b",
+            "volume_only" => true,
+            "refresh" => true
+          }
+        }
+
+        compare(root, identity, Map.put(local, "sample", body), outcome)
+      end
+
+      # Instance moves: to another pool, to another project, or to the target member
+      # (routed by the host `target`), each with only its own guarded field.
+      move = Enum.find(@methods, &(&1["name"] == "MigrateInstance"))
+
+      for body <- [
+            %{"migration" => true, "pool" => "fixture-pool"},
+            %{"migration" => true, "project" => "fixture-project"},
+            %{"migration" => true, "name" => "fixture-moved", "live" => true}
+          ],
+          do: compare(root, identity, Map.put(move, "sample", body), {:wait, 200})
+
+      # A volume snapshot migrates through its snapshot path.
+      snapshot = %{body(migrate) | "name" => "fixture-volume/fixture-snapshot"}
+      compare(root, identity, Map.put(migrate, "sample", snapshot), {:wait, 200})
+    end
+
+    test "#{transport} image creation sources agree with the pinned client", %{root: root} do
+      identity = identity(root, unquote(transport))
+      create = Enum.find(@methods, &(&1["name"] == "CreateImage"))
+      export = Enum.find(@methods, &(&1["name"] == "ExportImage"))
+
+      # The pinned client's own checks, so a dropped catalogue guard cannot pass unseen.
+      assert {create["guards"], export["guards"], export["extension"]} ==
+               {[
+                  %{
+                    "field" => "compression_algorithm",
+                    "extension" => "image_compression_algorithm"
+                  }
+                ], [], "images_push_relay"}
+
+      for {_, body} <- image_sources(),
+          outcome <- [{:wait, 200}, 400],
+          do: compare(root, identity, Map.put(create, "sample", body), outcome)
+
+      # A publish with a compression algorithm needs image_compression_algorithm; one
+      # without it sends none and needs nothing.
+      publish = image_sources()[:instance]
+      guarded(root, identity, create, hd(create["guards"]), publish)
+      plain = Map.delete(publish, "compression_algorithm")
+      extensions = @extensions -- ["image_compression_algorithm"]
+      fixture = backend(root, identity, &respond({:wait, 200}, create, &1), extensions)
+      assert {:ok, %{type: "async"}} = call(client(fixture, identity, extensions), create, plain)
+      sent = Jason.decode!(List.last(HTTPFixture.requests(fixture)).body)
+      assert sent["compression_algorithm"] in [nil, ""]
+
+      # A push export to an approved target with aliases and profiles.
+      body = %{
+        "target" => "https://target.example:8443",
+        "certificate" => "fixture-certificate",
+        "secret" => "fixture-secret",
+        "project" => "fixture-project",
+        "aliases" => [%{"name" => "fixture-alias", "description" => "fixture"}],
+        "profiles" => ["default", "fixture"]
+      }
+
+      compare(root, identity, Map.put(export, "sample", body), {:wait, 200})
     end
 
     test "#{transport} untrusted clients bootstrap trust with a trust token", %{root: root} do
@@ -149,7 +332,7 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   end
 
   defp compare(root, identity, method, outcome, force \\ true) do
-    fixture = backend(root, identity, &respond(outcome, &1))
+    fixture = backend(root, identity, &respond(outcome, method, &1))
 
     body = body(method)
     args = args(method, force)
@@ -177,26 +360,41 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
         accepted(root, fixture, identity, client, actual, expected, code)
 
       _ ->
-        check(outcome, actual, expected, client)
+        check(outcome, actual, expected, client, method)
     end
   end
 
   # An accepted write answers its own /wait with the requested snapshot.
-  defp respond({:wait, code}, request) do
+  defp respond({:wait, code}, _method, request) do
     if String.ends_with?(URI.parse(request.target).path, "/wait"),
       do: envelope(200, "sync", snapshot(code)),
       else: envelope(202, "async", snapshot(103))
   end
 
-  defp respond(outcome, _request), do: reply(outcome)
+  # A model-returning write answers with a schema-generated (or corrupted) model.
+  defp respond(outcome, %{"result" => "model", "model" => model}, _request)
+       when outcome in [:sync, :corrupt],
+       do: envelope(200, "sync", if(outcome == :sync, do: model(model), else: corrupt(model)))
 
-  defp check(outcome, actual, expected, client) do
+  defp respond(outcome, _method, _request), do: reply(outcome)
+
+  defp check(outcome, actual, expected, client, method) do
     case outcome do
       :sync ->
         refute expected["error"]
         assert {:ok, reply} = actual
         assert {reply.type, reply.http_status} == {"sync", 200}
         assert reply.connection == client.connection and reply.identity == :verified
+
+        # A returned model is decoded and agrees with the pinned DTO field by field.
+        if method["result"] == "model" do
+          assert reply.metadata.data == model(method["model"])
+          assert sent?(hd(expected["outputs"]), model(method["model"]))
+        end
+
+      :corrupt ->
+        assert expected["error"]
+        assert {:error, %Error{kind: :uncertain}} = actual
 
       code when is_integer(code) ->
         assert {:error,
@@ -211,8 +409,9 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
         assert {:error, %Error{kind: :uncertain, operation: nil}} = actual
 
       # Acceptance with an unusable operation keeps its identity and is never replayed.
+      # RawQuery decodes no operation, so only a named pinned method rejects it too.
       :bad_operation ->
-        assert expected["error"]
+        if method["reference_kind"] != "rest", do: assert(expected["error"])
         assert {:error, %Error{kind: :uncertain, operation: @url}} = actual
     end
   end
@@ -226,7 +425,9 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     assert operation.client == client and operation.url == @url
     refute Operation.completed?(operation)
     assert reply.metadata.data == snapshot(103)
-    assert Map.take(hd(expected["outputs"]), Map.keys(snapshot(103))) == snapshot(103)
+    # Operation metadata (an image secret, for one) never appears in Inspect output.
+    refute inspect(reply) =~ "retained" or inspect(operation) =~ "retained"
+    assert Map.take(accepted_operation(expected), Map.keys(snapshot(103))) == snapshot(103)
 
     timeout = if code == 103, do: 0, else: 1
     wait = Enum.find(@all_methods, &(&1["name"] == "GetOperationWait"))
@@ -269,6 +470,14 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     assert length(HTTPFixture.requests(fixture)) == 6
   end
 
+  # A named method returns the operation itself; RawQuery returns the native envelope.
+  defp accepted_operation(expected) do
+    case hd(expected["outputs"]) do
+      %{"type" => "async", "metadata" => operation} -> operation
+      operation -> operation
+    end
+  end
+
   # Without the guard's extension, or with a required value unmet, both clients
   # reject before sending the write.
   defp guarded(root, identity, method, %{"extension" => extension}, body) do
@@ -305,8 +514,12 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     client = client(fixture, identity, @extensions)
 
     if method["body"] do
-      [{field, _} | _] = Enum.sort(body(method))
-      invalid = Map.put(body(method), field, %{"invalid" => self()})
+      # An empty model (rebuild) has no field to break, so its body is not a map.
+      invalid =
+        case Enum.sort(body(method)) do
+          [] -> "invalid"
+          [{field, _} | _] -> Map.put(body(method), field, %{"invalid" => self()})
+        end
 
       assert {:error, %Error{kind: :invalid_body}} =
                Incus.call(client, method["name"], args(method), opts(method, invalid))
@@ -318,6 +531,14 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
     }
 
     assert {:error, %Error{kind: :host_not_ready}} = call(unready, method, body(method))
+
+    # A recorded output name must be one safe path segment.
+    if method["name"] == "DeleteInstanceExecOutput" do
+      for name <- ["", ".", "..", "dir/exec.stdout"] do
+        assert {:error, %Error{kind: :invalid_arguments}} =
+                 Incus.call(client, method["name"], %{args(method) | "filename" => name})
+      end
+    end
 
     for extension <- List.wrap(method["extension"]) do
       missing = %{client | server: %Server{api_extensions: List.delete(@extensions, extension)}}
@@ -341,6 +562,8 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   # generated field must survive Go's decoding at every depth, so a field the DTO
   # drops cannot silently shrink the every-field coverage.
   defp normalized(_expected, %{"body" => nil}, _body), do: nil
+  # RawQuery sends the body as given; there is no typed DTO to normalize it.
+  defp normalized(_expected, %{"reference_kind" => "rest"}, body), do: body
 
   defp normalized(expected, method, body) do
     decoded = Enum.at(expected["normalized_args"], length(method["params"]))
@@ -362,6 +585,14 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
 
   defp body(%{"body" => nil}), do: nil
 
+  # An explicit request body, such as a copy or migration source variant.
+  defp body(%{"sample" => body}), do: body
+
+  # A rename never asks for a migration; that guard has its own test.
+  defp body(%{"name" => name, "body" => model})
+       when name in ~w(RenameInstance RenameInstanceSnapshot),
+       do: %{ModelSamples.generate(model) | "migration" => false}
+
   # A local peer avoids the integration guard; that guard has its own test.
   defp body(%{"name" => "CreateNetworkPeer", "body" => model}),
     do: %{ModelSamples.generate(model) | "type" => "local"}
@@ -373,20 +604,213 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
   defp body(%{"body" => model}), do: ModelSamples.generate(model)
 
   # The pinned client leaves legal parameters unescaped, so they carry no reserved characters.
-  defp args(method, force \\ true),
-    do:
-      Map.new(method["params"], fn
-        "force" -> {"force", force}
-        param -> {param, legal(method, param) <> param}
-      end)
+  defp args(method, force \\ true) do
+    exec_output? = method["name"] == "DeleteInstanceExecOutput"
+
+    Map.new(method["params"], fn
+      "force" ->
+        {"force", force}
+
+      param when param in ~w(volType volumeType) ->
+        {param, volume_type(method, param)}
+
+      # A recorded output name is one path segment (no slash).
+      "filename" when exec_output? ->
+        {"filename", "exec output.stdout"}
+
+      param ->
+        {param, legal(method, param) <> param}
+    end)
+  end
+
+  # Image sources: a private pull with a secret, a public SimpleStreams alias pull, a
+  # push token request, a URL, and instance and snapshot publish with every option.
+  defp image_sources,
+    do: [
+      pull: %{
+        "aliases" => [%{"name" => "fixture-alias", "description" => "fixture"}],
+        "auto_update" => true,
+        "profiles" => ["default"],
+        "source" => %{
+          "type" => "image",
+          "mode" => "pull",
+          "protocol" => "incus",
+          "server" => "https://origin.example:8443",
+          "certificate" => "fixture-certificate",
+          "fingerprint" => "fixture-fingerprint",
+          "secret" => "fixture-secret",
+          "project" => "fixture-project",
+          "image_type" => "virtual-machine"
+        }
+      },
+      alias: %{
+        "public" => true,
+        "source" => %{
+          "type" => "image",
+          "mode" => "pull",
+          "protocol" => "simplestreams",
+          "server" => "https://images.example",
+          "alias" => "fixture/1",
+          "image_type" => "container"
+        }
+      },
+      push: %{
+        "public" => true,
+        "expires_at" => "2030-01-02T03:04:05Z",
+        "properties" => %{"os" => "fixture"},
+        "aliases" => [%{"name" => "fixture-alias"}],
+        "source" => %{"mode" => "push", "fingerprint" => "fixture-fingerprint"}
+      },
+      url: %{
+        "auto_update" => true,
+        "source" => %{
+          "type" => "url",
+          "mode" => "pull",
+          "url" => "https://images.example/fixture"
+        }
+      },
+      instance: %{
+        "filename" => "fixture.tar.xz",
+        "public" => true,
+        "compression_algorithm" => "zstd",
+        "format" => "split",
+        "expires_at" => "2030-01-02T03:04:05Z",
+        "properties" => %{"description" => "fixture"},
+        "aliases" => [%{"name" => "fixture-alias"}],
+        "source" => %{
+          "type" => "instance",
+          "name" => "fixture-guest",
+          "project" => "fixture-project"
+        }
+      },
+      snapshot: %{
+        "properties" => %{"description" => "fixture"},
+        "source" => %{"type" => "snapshot", "name" => "fixture-guest/fixture-snapshot"}
+      }
+    ]
+
+  # Instance targets: a pull migration with live and CRIU channels, a push migration
+  # target refreshing an existing instance, and a local copy from another project.
+  defp instance_sources,
+    do: [
+      {:pull,
+       %{
+         "name" => "fixture-guest",
+         "type" => "container",
+         "source" => %{
+           "type" => "migration",
+           "mode" => "pull",
+           "operation" => "https://origin.example:8443/1.0/operations/" <> @uuid,
+           "certificate" => "fixture-certificate",
+           "secrets" => %{"control" => "c0", "fs" => "f0", "criu" => "k0"},
+           "live" => true,
+           "instance_only" => true,
+           "allow_inconsistent" => true
+         }
+       }},
+      {:push,
+       %{
+         "name" => "fixture-guest",
+         "type" => "virtual-machine",
+         "source" => %{
+           "type" => "migration",
+           "mode" => "push",
+           "refresh" => true,
+           "refresh_exclude_older" => true
+         }
+       }},
+      {:copy,
+       %{
+         "name" => "fixture-guest",
+         "type" => "container",
+         "profiles" => ["default"],
+         "source" => %{
+           "type" => "copy",
+           "source" => "fixture-origin/fixture-snapshot",
+           "project" => "fixture-project",
+           "base-image" => "fixture-image",
+           "refresh" => true
+         }
+       }}
+    ]
+
+  # Custom volume migration targets, pulled with explicit channels or pushed.
+  defp volume_sources,
+    do: [
+      {:pull,
+       %{
+         "name" => "fixture-volume",
+         "type" => "custom",
+         "source" => %{
+           "type" => "migration",
+           "mode" => "pull",
+           "operation" => "https://origin.example:8443/1.0/operations/" <> @uuid,
+           "certificate" => "fixture-certificate",
+           "secrets" => %{"control" => "c0", "fs" => "f0"},
+           "volume_only" => true
+         }
+       }},
+      {:push,
+       %{
+         "name" => "fixture-volume",
+         "type" => "custom",
+         "source" => %{"type" => "migration", "mode" => "push", "refresh" => true}
+       }}
+    ]
+
+  defp volume_type(method, param), do: Map.get(method, "volume_type", "fixture /" <> param)
+
+  defp volume_types(method) do
+    if Enum.any?(method["params"], &(&1 in ~w(volType volumeType))), do: @volume_types, else: []
+  end
+
+  defp model(model), do: ModelSamples.generate(model)
+
+  # The first string field becomes a number, which the pinned DTO rejects.
+  defp corrupt(model) do
+    sample = model(model)
+    [{field, _} | _] = Enum.filter(Enum.sort(sample), fn {_, value} -> is_binary(value) end)
+    %{sample | field => 7}
+  end
 
   defp legal(method, param),
     do: if(param in Map.get(method, "legal_params", []), do: "fixture-", else: "fixture /")
 
+  # REST-only writes: the native path is fixed per descriptor, not derived from it.
+  defp oracle(root, fixture, identity, %{"reference_kind" => "rest"} = method, _args, body) do
+    path =
+      case method["name"] do
+        "DeleteInstanceExecOutput" ->
+          "/1.0/instances/fixture%20%2Fname/logs/exec-output/exec%20output.stdout"
+
+        "RepairInstance" ->
+          "/1.0/instances/fixture%20%2Fname/debug/repair"
+
+        "RenameStoragePoolBucketBackup" ->
+          "/1.0/storage-pools/fixture%20%2FpoolName/buckets/fixture%20%2FbucketName/backups/fixture%20%2Fname"
+
+        # The collection route the pinned client never uses; the type is in the body.
+        name
+        when name in ~w(CreateStoragePoolVolumeInCollection CreateStoragePoolVolumeInCollectionFromMigration) ->
+          "/1.0/storage-pools/fixture%20%2FpoolName/volumes"
+      end
+
+    input =
+      Map.merge(native_connection(fixture, identity), %{
+        action: "RawQuery",
+        args: [method["verb"], path <> "?project=fixture+scope&target=member%2Fa", body, ""]
+      })
+
+    run_oracle(root, input)
+  end
+
   defp oracle(root, fixture, identity, method, args, body) do
+    # Trailing pinned arguments the catalogue records follow the body, such as unused
+    # console log options or CreateImage's absent upload arguments.
     values =
       Enum.map(method["params"], &args[&1]) ++
         if(body, do: [body], else: []) ++
+        Map.get(method, "oracle_trailing", []) ++
         if(method["verb"] == "PUT", do: [@etag], else: [])
 
     input =
@@ -397,6 +821,10 @@ defmodule Opsmaru.Incus.SyncMutationContractTest do
         target: "member/a"
       })
 
+    run_oracle(root, input)
+  end
+
+  defp run_oracle(root, input) do
     file = Path.join(root, "oracle.json")
     File.write!(file, Jason.encode!(input))
     {out, status} = System.cmd(@driver, [file], stderr_to_stdout: true)

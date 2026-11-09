@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.VolumeUpgradeReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, RawChannel, Server}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
@@ -125,7 +125,7 @@ defmodule Opsmaru.Incus.VolumeUpgradeReferenceTest do
     end
 
     assert {:error, %Error{kind: :invalid_arguments}} =
-             Incus.volume_sftp(client, "", "custom", "v")
+             Incus.volume_sftp(client, nil, "custom", "v")
 
     client = %{client | context: %{context | ready?: fn -> false end}}
 
@@ -133,39 +133,72 @@ defmodule Opsmaru.Incus.VolumeUpgradeReferenceTest do
              Incus.volume_sftp(client, "pool", "custom", "v")
   end
 
-  test "rejected volume upgrade retains native error and never retries", %{
-    root: root,
-    context: context
-  } do
-    for protocol <- ["sftp", "nbd"] do
-      fixture =
-        start_supervised!(
-          {HTTPFixture,
-           transport: :gen_tcp,
-           path: Path.join(root, protocol),
-           handler: fn _ ->
-             %{
-               status: 403,
-               headers: %{"ETag" => "volume-tag"},
-               body: %{type: "error", error_code: 777, error: "private-rejection"}
-             }
-           end},
-          id: make_ref()
-        )
+  for {transport, label} <- [{:gen_tcp, "unix"}, {:ssl, "mutual HTTPS"}] do
+    test "#{label} rejected volume upgrade retains native error and never retries", %{
+      root: root,
+      context: context
+    } do
+      transport = unquote(transport)
+      identity = identity(transport, root, "rejected")
 
-      client = %Incus{
-        connection: Connection.unix!(HTTPFixture.endpoint(fixture).socket, owner: :fixture),
-        context: context,
-        server: %Server{api_extensions: @extensions}
-      }
+      for protocol <- ["sftp", "nbd"] do
+        fixture =
+          start_supervised!(
+            {HTTPFixture,
+             rejected_listener(root, protocol, identity) ++
+               [
+                 handler: fn _ ->
+                   %{
+                     status: 403,
+                     headers: %{"ETag" => "volume-tag"},
+                     body: %{type: "error", error_code: 777, error: "private-rejection"}
+                   }
+                 end
+               ]},
+            id: make_ref()
+          )
 
-      assert {:error, %Error{kind: :native, error_code: 777, response: response}} =
-               open(client, protocol, false)
+        connection = rejected_connection(HTTPFixture.endpoint(fixture), identity)
 
-      assert response.etag == "volume-tag"
-      assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+        client = %Incus{
+          connection: connection,
+          context: context,
+          server: %Server{api_extensions: @extensions}
+        }
+
+        assert {:error, %Error{kind: :native, error_code: 777, response: response}} =
+                 open(client, protocol, false)
+
+        assert response.etag == "volume-tag"
+        assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+      end
     end
   end
+
+  # The TLS listener requires and verifies the client certificate (mutual HTTPS).
+  defp rejected_listener(root, protocol, nil),
+    do: [transport: :gen_tcp, path: Path.join(root, protocol)]
+
+  defp rejected_listener(_root, _protocol, identity),
+    do: [
+      transport: :ssl,
+      certfile: identity.certfile,
+      keyfile: identity.keyfile,
+      peer_options: [
+        cacertfile: identity.cafile,
+        verify: :verify_peer,
+        fail_if_no_peer_cert: true
+      ]
+    ]
+
+  defp rejected_connection(endpoint, nil), do: Connection.unix!(endpoint.socket, owner: :fixture)
+
+  defp rejected_connection(endpoint, identity),
+    do:
+      Connection.https!(endpoint.url,
+        owner: :fixture,
+        tls: [cacertfile: identity.cafile, certfile: identity.certfile, keyfile: identity.keyfile]
+      )
 
   defp backend(root, transport, identity, protocol, coalesced) do
     opts =

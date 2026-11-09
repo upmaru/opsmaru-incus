@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.NestedModelsReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   @moduletag timeout: 120_000
 
   alias Opsmaru.Incus.Model

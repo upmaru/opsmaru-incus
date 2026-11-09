@@ -36,17 +36,19 @@ successful MCP tool would establish complete declaration coverage.
 | `Files.read/4`, `create/5`, `backup_import/3`, `backup_download/4` | Binary files, separate directory metadata, native UID/GID/mode parsing and backup headers |
 | `Files.volume_read/6`, `volume_create/7`, `volume_delete/5`, volume/bucket backup helpers, `backup_stream/4` | Twelve native file/archive helpers have differential byte/header/query evidence; full option/platform/backend coverage remains separate |
 | `Streams.metrics/2`, `network_acl_log/3`, `instance_logfile/4`, `instance_console_log/3`, `instance_template_file/4`, `create_instance_template_file/4`, `instance_debug_memory/4` | Native binary/text handoff to an acknowledged host sink or bounded source; no collector or implicit file writes |
-| `Incus.sftp/2`, `nbd/3`, `volume_sftp/4`, `volume_nbd/5` | Native raw 101 byte channels; consumers supply their SFTP/NBD implementation |
-| `Incus.file_sftp/2`, `volume_file_sftp/4` | Approved bounded SFTP v3 subset: initialize a creator-owned session over the existing raw upgrade; volume extension, host identity/readiness and verified transport still apply |
-| `SFTP.extensions/1`, `open/3`, `read_at/4`, `write_at/4`, `close_file/2`, `close/1` | One request at a time; explicit file modes, native opaque handles and byte/status fidelity; other operations reject and possibly dispatched mutations are never replayed |
+| `Incus.sftp/2`, `nbd/3`, `volume_sftp/4`, `volume_nbd/5` | Native raw 101 byte channels matching the pinned `Get*SFTPConn`/`Get*NBDConn`; names are sent unchecked and consumers supply their SFTP/NBD implementation |
+| `Incus.file_sftp/2`, `volume_file_sftp/4` | Shared SFTP session matching the pinned `GetInstanceFileSFTP`/`GetStoragePoolVolumeFileSFTP` (`pkg/sftp` v1.13.10) over the raw upgrade; volume extension, host identity/readiness and verified transport still apply |
+| `SFTP.stat/2`, `lstat/2`, `read_dir/2`, `read_link/2`, `real_path/2`, `getwd/1`, `link/3`, `symlink/3`, `chmod/3`, `chown/4`, `chtimes/4`, `truncate/3`, `set_extended_data/3`, `stat_vfs/2`, `remove/2`, `remove_directory/2`, `rename/3`, `posix_rename/3`, `mkdir/2`, `mkdir_all/2`, `remove_all/2`, `glob/2`, `walk/3`, `has_extension/2`, `join/1`, `split/1`, `match/2` | The pinned `pkg/sftp` path and metadata calls and Go path helpers; pipelined requests from any process; possibly dispatched mutations are never replayed |
+| `SFTP.extensions/1`, `open/2`, `create/2`, `open_file/3`, `close/1` | Go `Open`, `Create` and `OpenFile` (flags mapped like Go's `toPflags`), returning an `SFTP.File` bound to the session |
+| `SFTP.File.read/2`, `read_at/3`, `write/2`, `write_at/3`, `seek/3`, `write_to/2`, `read_from/2`, `read_from_with_concurrency/3`, `stat/1`, `chmod/2`, `chown/3`, `truncate/2`, `set_extended_data/2`, `sync/1`, `name/1`, `close/1` | The pinned `*sftp.File`: cursor and positional I/O, pipelined reads, one-at-a-time writes, host sink/source transfers and Go's per-file lock; possibly accepted writes are never resent |
 | `RawChannel.recv/2`, `send_data/2`, `shutdown_write/1`, `close/1` | Bounded binary duplex and native half-close |
 | `Operation.raw/4`, `from_response/2`, `poll/1`, `wait/2`, `cancel/1`, `websocket/2` | Bound native handles and raw operation ETags; authoritative completion and supported cancellation |
 | `Events.subscribe/2`, `next/2`, `send/2`, `close/1` | Native events through an owner-monitored bounded WebSocket queue; sending acknowledges the local write, not backend processing |
 | `EventListener.open/2`, `add_handler/3`, `remove_handler/2`, `active?/1`, `send_event/2`, `wait/2`, `disconnect/1` | Explicit owner-bound callback listener; bounded capacity, sequential isolated callback workers, failure/lifetime cleanup and repeatable terminal result; local wait timeout does not disconnect or cancel work |
 | `Response.metadata_as_map/1`, `metadata_as_string_slice/1`, `metadata_as_operation/1`, `metadata_as_model/2` | Explicit native typed metadata extraction, including initialized-empty map/slice behavior for null, defaults and float64 metadata semantics; original response remains lossless |
 | `Tokens.certificate/1`, `cluster/1`, `encode/1` | Pure conversion of existing operation metadata and exact ordered JSON/base64 token formatting; tokens/addresses are privileged data, never provisioning or automatic connection targets |
-| `SimpleStreams.new!/3`, `refresh/1`, `images/1`, `image/2`, `aliases/1`, `alias/3`, `alias_architectures/3`, `files/2`, `image_file/4`, `unsupported/2` | Explicit verified HTTPS, host-supplied architecture and immutable catalog; pinned projections and checksummed binary sinks; optional bounded host delta adapter; installed conversion and full protocol parity remain open |
-| `OCI.new!/4`, `resolve/3`, `image/2`, `image_file/4`, `unsupported/2` | Explicit host-owned OCI adapter; passive construction, bounded immutable cache, pinned alias/image/unsupported projections and acknowledged binary output; no bundled host runner or installed conversion acceptance |
+| `SimpleStreams.new!/3`, `refresh/1`, `images/1`, `image/2`, `aliases/1`, `alias/3`, `alias_architectures/3`, `files/2`, `image_file/4`, `unsupported/2` | S12 certified: explicit verified HTTPS with an explicit server certificate, host-supplied architecture and immutable catalog; pinned projections, error text, per-file and combined fingerprint checks; optional host cache and delta adapters; no installed conversion or cache acceptance |
+| `OCI.new!/5`, `resolve/3`, `image/2`, `image_file/3`, `unsupported/2` | S11 certified: explicit host-owned OCI adapter; passive construction with an explicit registry certificate, bounded immutable cache, pinned alias/image/unsupported projections, Go's `metadata.yaml` bytes and acknowledged binary output; no bundled host runner or installed conversion acceptance |
 | `OCI.connection_info/1`, `http_client/1`, `http_request/4` | Native passive CA-configured metadata and bounded raw HTTP on an explicit verified HTTPS origin; no adapter/config origin inference, redirects or mutation replay |
 | `Session.exec/3`, `console/3`, `input/2`, `output/3`, `control/2`, `resize/3`, `signal/2`, `exit_status/1`, `close/1` | Native operation channels and control messages; local closure does not cancel Incus |
 | `Session.collect/4` | Creator-owned live noninteractive stdout/stderr sinks, aggregate output bounds, absolute collection deadline and authoritative operation/exit result; closes local channels without cancellation |
@@ -105,7 +107,10 @@ OCI construction is also passive. Supply a module implementing
 `Opsmaru.Incus.OCI.Adapter` and an opaque host-owned configuration reference:
 
 ```elixir
-oci = Opsmaru.Incus.OCI.new!(connection, context, MyHost.OCIAdapter, private_adapter_ref)
+oci =
+  Opsmaru.Incus.OCI.new!(connection, context, MyHost.OCIAdapter, private_adapter_ref,
+    certificate: registry_certificate_pem
+  )
 {:ok, %{alias: alias_model, image: image_model}, oci} =
   Opsmaru.Incus.OCI.resolve(oci, "library/alpine:latest@sha256:approved_digest", "container")
 {:ok, cached} = Opsmaru.Incus.OCI.image(oci, alias_model.data["target"])
@@ -116,7 +121,12 @@ oci = Opsmaru.Incus.OCI.new!(connection, context, MyHost.OCIAdapter, private_ada
 
 `MyHost.OCIAdapter` is a host implementation, not a provided Opsmaru module.
 The adapter receives the connection/context, normalized alias, unique call
-identity and absolute monotonic deadline. It owns verified registry TLS,
+identity and absolute monotonic deadline. A conversion request also carries
+`metadata_yaml`: Go's exact `metadata.yaml` bytes, which the adapter packs
+next to `config.json` in the metadata tarball. The optional `certificate:` is
+Go's `TLSServerCert`: connection info reports it and targets receive it when
+they pull from the registry. It does not change how this connection verifies
+the registry. It owns verified registry TLS,
 credentials, subprocesses and conversion files. Inspection JSON is capped at
 the lesser of 1 MiB and `max_response_bytes`; cached images are capped at the
 lesser of 128 and `queue_limit`. `resolve` returns a new immutable client cache.
@@ -134,8 +144,10 @@ The OCI oracle uses the unchanged pinned client with a fixture-only skopeo
 stdout stub for alias/image projections and unsupported helper errors; it does
 not run real skopeo, unpack an image, use root or contact a registry. Conversion
 contents, actual registry TLS/authentication and external process/file cleanup
-require separate installed-host-adapter acceptance. OCI connection-info/HTTP/
-disconnect and alias-architecture helpers remain uncovered. SimpleStreams now has a separate verified partial catalog/full-file slice below.
+require separate installed-host-adapter acceptance. Connection info, origin
+HTTP, disconnect and alias architectures have their own pinned comparisons;
+S11 certification is described with image copy below, and S12 SimpleStreams
+certification in its own section below.
 
 HTTPS uses peer trust, hostname and certificate validity checks. Hosts select
 CA and client certificate/private-key files, or an exact SHA-256 server pin.
@@ -155,8 +167,8 @@ the explicit connection. Host readiness and authorization still precede I/O.
 
 Image-based create/rebuild requires `approved_origin:` for a remote source,
 before generating a private-image token. A subsequent target failure retains
-the token operation response for reconciliation. Only local images and native
-Incus HTTPS sources are covered; OCI/SimpleStreams image sources remain missing.
+the token operation response for reconciliation. Local images and native
+Incus HTTPS, OCI and SimpleStreams sources are covered.
 
 Mint 1.11.0/hpax 1.1.0 and MintWebSocket 1.0.5 are locked. HTTP requests have
 connection/send/receive deadlines and header/body budgets. Transfers use bounded
@@ -169,8 +181,10 @@ no pending queue or replay. A local success is never hardware acceptance.
 Private image exports preserve the pinned `setQueryParam` double form encoding
 for unusual token characters. Ordinary token values are unaffected. The client
 uses only its explicit connection, with no `/dev/incus/sock` fallback. Image
-sinks/options and upgrade path/options are validated before I/O. Storage SFTP
-and read-only/writable NBD have dedicated unchanged typed-method comparisons
+sinks/options are validated before I/O. Raw upgrade names are escaped and sent
+unchecked, like the pinned helpers; only the pinned extension guards and the
+boolean `reuse`/`writable` types are checked first. Instance and storage SFTP
+and NBD, with `reuse` and `writable`, have unchanged typed-method comparisons
 over Unix and HTTPS; coalesced bytes use independent preservation fixtures.
 
 `NativeConfig.from_json/3` is an explicit native normalization step. Model
@@ -285,7 +299,7 @@ the queued WebSocket frames. Existing owner/lifetime/frame/queue bounds and
 close/error/EOF semantics apply. This does not expose an arbitrary dialer or
 an OIDC adapter.
 
-The checked manifest currently has 294 JSON descriptors (268 named-Go methods and 26 REST-specific descriptors: 25 PATCH methods and `GetAPIVersions`), 1239 partial
+The checked manifest currently has 307 JSON descriptors (268 named-Go methods and 39 REST-specific descriptors: 25 PATCH methods, four storage reads, recorded exec output list and delete, debug repair, four bucket backup calls, two collection volume creates and `GetAPIVersions`), 1239 partial
 reference mappings and 41 missing declarations out of 1,280. Native Incus
 method evidence is scoped to that implementation; OCI and SimpleStreams each
 have 20 partial concrete method mappings and none missing; full protocol/option
@@ -320,13 +334,21 @@ The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavior
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
-pairs plus 46 query/access variants; 148 pairs are currently in the checked
-evidence manifest. 146 are complete under reviewed completion records:
-native wait, events, exec, seven single-method B01 mutations, conditional instance
+pairs plus 46 query/access variants; all 247 pairs are in the checked
+evidence manifest and complete under reviewed completion records:
+native wait, events, exec, all eight B01 mutations, conditional instance
 PATCH, all twenty B02 inspection rows, 51 B09 network rows, all forty B10
-administrative rows and all 24 B05 PATCH rows. The other 2 are partial. It retains remaining copy/stream/model/helper scope without
-treating already verified slices as wholly missing. No full-port or new backend/
-hardware acceptance follows from those fixtures.
+administrative rows, all 24 B05 PATCH rows, 28 stream-free B08 storage rows and
+all nineteen stream-free B11 instance and image rows, all three B07 recorded exec
+output rows, the B12 debug repair row, the eight S07 auxiliary byte stream
+rows, the eight S04 file transfer rows, the nineteen S06 backup and archive
+rows, the six S10 copy and migration rows, the three S05 image transfer
+rows, the two S02 console rows (console attachment and the operation
+WebSocket), the two S08 NBD rows and the two S09 SFTP rows. S11 (OCI) and
+S12 (SimpleStreams) are certified under rowless records that name their pinned
+declarations, so every stream contract is certified. Task 3.9 and
+`complete_port` stay incomplete until the closing review. No
+full-port or new backend/hardware acceptance follows from those fixtures.
 
 The callback listener has at most `min(queue_limit, 128)` handlers and one callback
 worker at a time. Each worker is limited by the connection timeout and remaining
@@ -349,8 +371,8 @@ it does not reconnect automatically. Opsmaru follows this local channel lifetime
 and keeps native operation identities available for host reconciliation. Neither
 stream EOF nor successful forwarding proves backend copy/migration completion.
 
-Direct backup POST comparisons use no selected member: the pinned Go helpers
-append project but omit target. Opsmaru retains the explicit member parameter
+Direct backup POST and instance and bucket export comparisons also run with no
+selected member: those pinned Go helpers append project but omit target. Opsmaru retains the explicit member parameter
 under the approved connection contract, checked independently by a wire fixture.
 Actual backend forwarding remains a real-Incus acceptance item.
 
@@ -378,17 +400,20 @@ oracle defect is recorded, not treated as correct behavior or an approval gate.
 
 The official console helper with nil I/O accepts its POST before returning
 `A terminal must be set`; the method fixture compares the POST and separately
-checks this error. Actual channel/control behavior is checked independently in
-`session_test.exs`. Private-image positive comparisons use native hexadecimal
+checks this error. Actual channel and control behavior is compared with the
+pinned helpers in `console_contract_test.exs`. Private-image positive comparisons use native hexadecimal
 secrets; the pinned Go private-image helper double-escapes special-character
 secrets. No upstream patch or real workload is used by these fixtures.
 
 
-SimpleStreams is a verified partial slice, constructed without contacting a backend:
+SimpleStreams (stream contract S12) is **certified** by
+`s12_simplestreams_image_server_v1` (2026-11-02), matching the pinned
+`ProtocolSimpleStreams` client over explicit verified HTTPS. It is constructed
+without contacting a backend:
 
 ```elixir
 stream = Opsmaru.Incus.SimpleStreams.new!(https_connection, context,
-  architecture: "aarch64")
+  architecture: "aarch64", certificate: server_pem)
 {:ok, catalog} = Opsmaru.Incus.SimpleStreams.refresh(stream)
 {:ok, image} = Opsmaru.Incus.SimpleStreams.alias(catalog, "ubuntu/24.04/arm64", "container")
 {:ok, result} = Opsmaru.Incus.SimpleStreams.image_file(catalog, image.data["target"],
@@ -399,14 +424,29 @@ Supply a connection without project/member or Incus-authenticated-header selecti
 The host supplies architecture explicitly; pin-equivalent platform selection uses
 the oracle's native architecture (including its Darwin x86_64 fallback). Catalog
 requests share one deadline and aggregate response byte limit; `queue_limit`
-bounds image/alias expansion. Sinks acknowledge binary chunks with `:ok`. Parts
-are verified against SHA-256 and size at completion; a failure can leave partial
-host output, which the host must discard or reconcile. There is no automatic retry,
-HTTP downgrade, redirect following, `/dev/incus/sock` discovery or file creation.
-Without an optional host delta adapter/base, downloads use full files. Conversion failure never falls back or replays delivered bytes.
-The four HTTP/connection/disconnect conveniences and complete cache/error variants
-remain open. These fixture results do not establish installed converter or
-real-backend acceptance.
+bounds image/alias expansion. Sinks acknowledge binary chunks with `:ok`. As
+natively, each part is checked against its SHA-256 only ("Hash mismatch for
+<url>: ..."), and the delivered metadata then rootfs bytes must hash to the
+image fingerprint ("Image fingerprint doesn't match. Got ... expected ...").
+Requesting only one part of a split image therefore fails, as in Go. A failure
+can leave partial host output, which the host must discard or reconcile.
+Catalog and download failures carry Go's text, such as "Failed parsing stream:
+Unable to fetch <url>: 404 Not Found". There is no automatic retry, HTTP
+downgrade, redirect following, `/dev/incus/sock` discovery or file creation.
+Without an optional host delta adapter and source, downloads use full files.
+Conversion failure never falls back or replays delivered bytes.
+
+`certificate:` is Go's `TLSServerCert`: one public PEM that connection info
+reports and copies send as the source certificate (empty by default). An
+optional `cache_adapter:` with `cache_config:` (and `cache_expiry:`, one hour by
+default) implements `SimpleStreams.CacheAdapter` in place of Go's cache
+directory, with the same namespace, expiry, stale fallback and 404 invalidation;
+shared code writes no files. Approved differences: `refresh/1` is explicit
+where Go loads lazily, one deterministic delta is converted, a catalog JSON
+decoding error's detail is the Elixir decoder's, a connection, TLS or timeout
+failure is the library's error kind rather than Go `net/http` text, and the
+local architecture is host-supplied. These fixture results do not establish installed converter or
+cache, public server or real-backend acceptance.
 
 
 Image-based create/rebuild retains the source connection's project. An explicitly
@@ -433,16 +473,21 @@ stream = Opsmaru.Incus.SimpleStreams.new!(https_connection, context,
   delta_config: private_converter_ref)
 {:ok, catalog} = Opsmaru.Incus.SimpleStreams.refresh(stream)
 {:ok, files} = Opsmaru.Incus.SimpleStreams.image_file(catalog, fingerprint,
-  %{rootfs: rootfs_sink},
-  delta_base: %{fingerprint: old_fingerprint, source: host_owned_base_ref})
+  %{metadata: metadata_sink, rootfs: rootfs_sink},
+  delta_source: fn base_fingerprint -> MyHost.base_ref(base_fingerprint) end)
 ```
+
+`delta_source:` is Go's `DeltaSourceRetriever`: it receives the source
+fingerprint of each `root.delta-<fingerprint>` file and returns an opaque base
+source or `nil`. The first match by source fingerprint is converted.
 
 `MyHost.DeltaConverter` implements `SimpleStreams.DeltaAdapter`. Its `convert/3`
 receives a unique `call_id`, absolute `deadline`, verified connection/context,
-opaque host base source and native delta/rootfs manifests. Call
+opaque host base source (as `base.source`) and native delta/rootfs manifests. Call
 `request.download_delta.(delta_sink)` synchronously once to receive checksum-
 verified delta bytes, then emit converted rootfs chunks through the acknowledged
-emitter. Root output must match the native size and SHA-256. Repeated/reentrant
+emitter. As natively, converted output is checked by the combined image
+fingerprint, not against the full rootfs manifest. Repeated/reentrant
 or foreign calls and failed acknowledgements reject further output. Delta plus
 converted-output bytes share the remaining aggregate stream budget. Resources
 are host-owned; `cleanup/3` receives the call identity and completion/failure/
@@ -477,8 +522,8 @@ OCI alias architecture keys use the host-supplied local architecture, which
 can differ from the inspected image architecture. The result returns a new
 immutable cache and native alias models; invalid local configuration and the
 pinned VM-type rejection occur before adapter work. No platform CLI is invoked.
-OCI HTTP/connection-info and SimpleStreams connection-info remain missing;
-these additional differential fixtures do not establish full protocol parity.
+OCI and SimpleStreams connection info and HTTP are compared with the pinned
+client under S11 and S12.
 
 
 Image pull/push failures preserve an inner `:uncertain` as the top-level kind;
@@ -499,8 +544,9 @@ without edits by omitting `--write`.
 
 `SimpleStreams.connection_info/1` returns the canonical explicit HTTPS origin
 and native protocol/default fields without a request or credential-file read.
-Certificate PEM is empty because a CA/fingerprint reference is not a supplied
-server PEM; the native CA-configured getter has the same result. TLS verification
+Its certificate is the explicit `certificate:` PEM, empty by default: a
+CA/fingerprint reference is never read as a server PEM, and the native
+CA-configured getter has the same result. TLS verification
 still uses the connection's explicit trust and client-key references when needed.
 
 `RequestContext.new!(timeout: milliseconds)` creates an explicit local lifetime
@@ -586,43 +632,119 @@ The native names `GetInstanceFileSFTP` (`%{"name" => instance}`) and
 `GetStoragePoolVolumeFileSFTP` (`%{"pool" => pool, "type" => type, "name" => name}`)
 also dispatch through `Incus.call/4` with no options. They return `SFTP` sessions,
 distinct from the raw connections returned by `sftp/2` and `volume_sftp/4`.
-Only the creating process can invoke session operations. Both sessions and
-`SFTP.Handle` values redact native bytes on inspection; explicit handle fields
-are privileged data for the host.
+Sessions and `SFTP.File` values redact native bytes on inspection; a file's
+native handle stays inside its session.
 
 ```elixir
 {:ok, sftp} = Incus.file_sftp(client, "instance")
-{:ok, file} = SFTP.open(sftp, "/known-size-file", :read)
-{:ok, bytes} = SFTP.read_at(sftp, file, 0, 1024)
-:ok = SFTP.close_file(sftp, file)
+:ok = SFTP.mkdir_all(sftp, "srv/app")
+{:ok, entries} = SFTP.read_dir(sftp, "srv")
+{:ok, stat} = SFTP.stat(sftp, "srv/app")
+{:ok, matches} = SFTP.glob(sftp, "srv/*.conf")
+{:ok, file} = SFTP.create(sftp, "srv/app/config")
+{:ok, _bytes_read} = SFTP.File.read_from(file, File.stream!("config", 65_536))
+{:ok, _offset} = SFTP.File.seek(file, 0, :start)
+{:ok, _written} = SFTP.File.write_to(file, fn chunk -> IO.binwrite(device, chunk) end)
+:ok = SFTP.File.close(file)
 :ok = SFTP.close(sftp)
 ```
 
-Supported modes are `:read`, `:write`, `:read_write`, `:append` (existing file),
-and `:create` (read/write plus create/truncate). Read/write calls accept positive
-sizes up to 128 KiB and nonnegative signed-int64 offsets. Reads accept one full
-requested DATA response or EOF; short/empty DATA rejects rather than generating
-more requests. Paths are valid UTF-8, NUL-free and at most 4096 bytes. Each
-outgoing packet must fit both `max_request_bytes` and `max_chunk_bytes`, so a
-128-KiB write requires room for its native framing as well. Reply packets are
-limited to 132096 bytes and `max_response_bytes`; raw stream/queue/chunk limits
-still apply. Extensions are limited to 64 pairs (1024-byte names/4096-byte data),
-and live nonempty handle values to 256 bytes, with at most
-`min(queue_limit, 128)` handles.
+Typed SFTP (stream contract S09) is **certified** by `s09_typed_sftp_v1`
+(2026-10-30), completing instance SFTP (`GET /1.0/instances/{name}/sftp`) and
+custom volume SFTP (`GET /1.0/storage-pools/{pool}/volumes/{type}/{name}/sftp`)
+on Unix and mutual HTTPS together with S08. It matches the pinned `pkg/sftp`
+v1.13.10 client the Incus helpers return: 128 KiB packets and the package
+defaults otherwise.
 
-Every request has an absolute local deadline. Closing, protocol failure, caller
-loss, cancellation, remote EOF or local stream expiry releases the local channel;
-stream expiry does not cancel a shared host context or another session. Failed
-file-close attempts invalidate the handle as natively. SFTP status errors retain
-wire code/message/language; known codes are not replaced by Go filesystem errors.
-Unanswered or malformed replies to potentially dispatched mutations return
-`:uncertain` with the native request ID when known. Privileged error response data
-retains the connection, verified host identity and session reference even after
-the process ends. Reconcile backend file state
-before any further mutation; the helper never replays, unlinks a file or sends
-Incus cancellation. `unsupported/2` returns `:unsupported_sftp_operation` for
-other protocol operations. This remains a fixture-verified subset, not complete
-SFTP, directory/stat/attribute/extension-operation or installed-backend acceptance.
+- A session is shared, as goroutines share a Go `*sftp.Client`: any process may
+  call it, and requests are pipelined with distinct ids whose replies are
+  matched by id. It closes on `close/1`, peer EOF, its stream lifetime, or when
+  the process that opened it exits. In-flight requests are bounded by the
+  connection's `queue_limit`.
+- `stat/2`, `lstat/2`, `read_dir/2`, `read_link/2`, `real_path/2`, `getwd/1`,
+  `link/3` (`hardlink@openssh.com`), `symlink/3` (OpenSSH argument order),
+  `chmod/3`, `chown/4`, `chtimes/4`, `truncate/3`, `set_extended_data/3`,
+  `stat_vfs/2` (`statvfs@openssh.com`), `remove/2`, `remove_directory/2`,
+  `rename/3`, `posix_rename/3` (`posix-rename@openssh.com`), `mkdir/2`,
+  `mkdir_all/2`, `remove_all/2` and `has_extension/2` send the pinned packets,
+  including the compound steps of `remove/2`, `mkdir_all/2` and
+  `remove_all/2`.
+- `glob/2` and `walk/3` (the kr/fs `Walker` order, with a `skip:` function for
+  `SkipDir`) follow the pinned client, and `join/1`, `split/1` and `match/2`
+  are Go's `path.Join`, `path.Split` and `path.Match`.
+- `SFTP.Stat` carries Go's `FileInfo` name (the base of the requested path),
+  signed size and `FileMode` (`file_mode`, with `Stat.dir?/1`), plus the native
+  mode, times, owner, group and extended pairs. `SFTP.StatVFS` carries the
+  extension's eleven fields.
+- Paths are sent as given, as the pinned client does; only packet and
+  connection bounds apply. Each outgoing packet must fit `max_request_bytes`
+  and `max_chunk_bytes`; replies are limited to 132096 bytes and
+  `max_response_bytes`.
+- Native status errors are `:sftp_status` with the code, message and language,
+  plus `response.class` (`:eof`, `:not_exist`, `:permission` or `nil`) as Go
+  normalizes them and `response.op`/`response.path` where Go returns an
+  `os.PathError`. `mkdir_all/2` on a file returns `:not_directory`, and
+  `glob/2` with a malformed pattern `:bad_pattern`.
+- A request whose local deadline passes fails alone; the session continues. A
+  possibly dispatched mutation is `:uncertain` with its native request id and
+  is never replayed, and its late reply is discarded. A compound call stops at
+  the first error that is not a native status rather than sending further
+  mutations. A reply that does not decode fails its own request (mutations as
+  `:uncertain`); malformed, oversized or unmatched frames end the session and
+  fail every pending request.
+
+Files mirror the pinned `*sftp.File`:
+
+- `open/2`, `create/2` and `open_file/3` send Go's OPEN. The flags
+  `:read_only`, `:write_only`, `:read_write`, `:append`, `:create`,
+  `:truncate` and `:exclusive` map like Go's `toPflags`: no access flag means
+  read-only, and conflicting access flags send neither read nor write.
+- Any process may use a file. Go's per-file lock is kept: cursor calls
+  (`read/2`, `write/2`, `seek/3`, `write_to/2`, `read_from/2`, `sync/1`,
+  `close/1`) take turns, positional and attribute calls (`read_at/3`,
+  `write_at/3`, `stat/1`, `chmod/2`, `chown/3`, `truncate/2`,
+  `set_extended_data/2`) overlap each other but not a cursor call, and a waiting
+  cursor call holds back later calls. A process that exits while holding or
+  waiting for the lock releases it.
+- Reads up to 128 KiB are one request, continued after short replies. Larger
+  reads are pipelined in 128 KiB chunks in offset order with up to 64 requests
+  per file plus one dispatched ahead, within the connection's `queue_limit`; a
+  short chunk means end of file. Reads that reach the end return
+  `{:eof, data}`.
+- Writes and `read_from/2` send one 128 KiB WRITE at a time, as the helpers
+  leave Go's concurrent writes off. `read_from_with_concurrency/3` is Go's
+  explicit pipelined upload. A full 128 KiB WRITE frame is 131,097 bytes plus
+  the handle, so `max_chunk_bytes` and `max_request_bytes` must allow it
+  (132,096 does); smaller bounds reject it before I/O.
+- `write_to/2` sends Go's STAT of the opened path, then streams the file into an
+  acknowledged sink: regular files over 128 KiB with Go's read-ahead, others one
+  request at a time. As natively, a pipelined copy leaves the position at the
+  read that found the end. `read_from/2` takes an enumerable of binary chunks.
+- `sync/1` sends `fsync@openssh.com` only when the server announced it with
+  data `"1"`; otherwise it fails locally with status 8, as Go does.
+- Failures keep the byte count Go returns in `response.count`, and for reads
+  the bytes received in `response.data`. A WRITE, CLOSE, FSETSTAT or FSYNC whose
+  outcome is unknown is `:uncertain`; transfers stop at the first failure and
+  never resend a chunk. After `close/1`, every call fails with `:file_closed`
+  without I/O.
+
+`test/sftp_operations_reference_test.exs` runs the unchanged pinned client
+against an unchanged `pkg/sftp` server fixture rooted in a temporary directory,
+on Unix and mutual HTTPS, for instance and volume sessions, with one script of
+path and metadata calls and one of file calls. Our client then runs the same
+script against the recorded replies, where every request packet (ids
+normalized) and result must agree, and again live against a fresh copy of the
+tree. Go's pipelined `WriteTo` keeps reading ahead until it handles the end of
+the file, so the replay allows only extra reads past an end already seen on
+the same handle, and lists them. `test/sftp_session_test.exs` covers
+concurrent out-of-order replies, opener and caller exit, request deadlines,
+frame failures, the in-flight bound, the file lock, the pipelining window,
+uncertain writes, upload and sink failures and FSYNC.
+
+Approved differences: `read_from/2` reports a failed final short write, which
+Go's `ReadFrom` ignores, and sessions end with their stream lifetime, which
+also bounds lock waits. Approved exclusions: cluster forwarding, real-daemon
+SFTP acceptance and Go client options the Incus helpers never set.
 
 ## Live noninteractive exec output
 
@@ -781,6 +903,392 @@ snapshot types are an approved exclusion. The daemon does not check If-Match on
 forward, load balancer, peer or bucket PATCH; the ETag is still required and
 sent. Network peer PATCH is a full replace in the daemon, not a merge, so send
 every field you want to keep.
+
+Storage reads the pinned client lacks are REST descriptors called through
+`Incus.call/4`:
+
+- `GetStoragePoolVolumeTypeNames`, `GetStoragePoolVolumesByType` and
+  `GetStoragePoolVolumesByTypeFull` (`pool` and `volType` arguments) list
+  the volumes of one type as names, volumes and full volumes.
+- `GetStorageVolumeBitmap` (`pool`, `volumeType`, `volumeName` and
+  `bitmapName`) reads one bitmap.
+
+The volume type is passed through unchanged. Bucket, bucket key, pool resource,
+volume snapshot, bitmap and volume state reads are compared with the pinned
+client for every daemon volume type (custom, container, virtual-machine,
+image).
+
+Storage writes follow the same contract. The asynchronous ones return an
+accepted operation, observed through native `/wait`: volume snapshot create,
+rename and delete, and volume rebuild. `CreateStoragePoolBucketKey` returns the
+created `StorageBucketKey` model, which the client decodes; a reply it cannot
+decode is uncertain. `UpdateStoragePoolVolume` with a `restore` field needs
+`storage_api_volume_snapshots`, as in the pinned client. Bitmap create and
+delete are synchronous.
+
+The stream-free instance and image calls work the same way:
+
+- image alias create, rename, update, get, list and delete
+- image update, refresh and secret
+- instance access, log file names, metadata get and update
+- console log delete, log file delete and instance bitmap create
+- instance rebuild and snapshot update
+
+Image refresh, image secret, instance rebuild and snapshot update return an
+accepted operation. `CreateImageSecret` returns the secret in the operation
+metadata, which `Inspect` never shows. `UpdateInstances` (`PUT /1.0/instances`)
+changes the state of every instance in the connection's project at once, as an
+accepted operation. Whether a tool may expose it is a separate policy decision.
+The public `?public` alias view is not supported.
+
+Recorded exec output (`container_exec_recording`) is never fetched or deleted
+implicitly, unlike the pinned client's `ExecInstance`:
+
+- `GetInstanceExecOutputNames` (`name`) lists an instance's recorded files.
+- `Opsmaru.Incus.Streams.instance_exec_output/4` streams one file to an
+  acknowledged sink within the connection's response bound.
+- `DeleteInstanceExecOutput` (`name`, `filename`) deletes a file only when
+  called.
+- File names must be one path segment (not empty, `.`, `..` or containing `/`).
+
+The `Opsmaru.Incus.Streams` byte helpers are certified as stream contract S07:
+
+- `metrics/2`
+- `network_acl_log/3`
+- `instance_logfile/4`
+- `instance_console_log/3`
+- `instance_debug_memory/4`
+- `instance_template_file/4`
+- `create_instance_template_file/4`
+
+They are certified together with the `GetInstanceTemplateFiles` and
+`DeleteInstanceTemplateFile` calls. Each download delivers raw bytes to an
+acknowledged sink within the connection's byte, chunk and deadline bounds.
+Cancelling the request context or losing the caller mid-stream closes the
+socket and stops the sink. A lost template upload reply is uncertain and never
+replayed. The console log helper downloads the text log only; the console
+`type` selector (such as the `vga` screenshot) is not supported.
+
+Instance and storage volume files are certified as stream contract S04:
+
+- `Files.read/4` and `Files.volume_read/6` stream a file's bytes to an
+  acknowledged sink with its parsed owner, group, mode and type. A directory's
+  entries come back as metadata, and a symlink's target as bytes.
+- `Files.create/5` and `Files.volume_create/7` upload a file, directory or
+  symlink with owner, group, mode and write mode (`overwrite` or `append`).
+- `DeleteInstanceFile` and `Files.volume_delete/5` delete one.
+- `Files.head/3` and `Files.volume_head/5` send a native `HEAD`. They return
+  the same parsed metadata plus the modification time and, for a file, its
+  size, with no body. The pinned client has no HEAD method.
+- The volume type is passed through unchanged.
+- Agent-mode file access (`/1.0/files` inside an instance) is not supported.
+
+Bucket backups the pinned client cannot list, read or rename are REST
+descriptors called through `Incus.call/4` with `poolName`, `bucketName` and,
+for one backup, `name`:
+
+- `GetStoragePoolBucketBackupNames`
+- `GetStoragePoolBucketBackups`
+- `GetStoragePoolBucketBackup`
+- `RenameStoragePoolBucketBackup`, which returns an accepted operation
+
+They require `storage_bucket_backup`.
+
+Backups and archives are certified as stream contract S06, with the control
+plane above and these archive helpers:
+
+- `Files.backup_download/4`, `Files.volume_backup_download/6` and
+  `Files.bucket_backup_download/5` stream a backup export to an acknowledged
+  sink.
+- `Files.backup_stream/4` sends a direct backup POST (`direct_backup`) for an
+  instance, volume or bucket and streams the archive to a sink. Its body is the
+  typed backup model. A canceled or lost direct backup is uncertain and is
+  never resent.
+- `Files.backup_import/3` imports an instance backup, with optional `name`,
+  `pool`, `config` and `devices` overrides, each behind its native extension.
+- `Files.volume_import/4` imports a custom volume backup, or an ISO with
+  `type: :iso` and a required `name`.
+- `Files.bucket_import/4` imports a bucket backup.
+- Imports stream caller chunks and return the accepted operation. A lost
+  import reply is uncertain and is never replayed.
+- The volume type is passed through unchanged; the pinned volume methods
+  address only custom volumes.
+- No helper reads or writes a host file; callers own every source and sink.
+
+Copy and migration are certified as stream contract S10, on Unix and mutual
+HTTPS:
+
+- `RenameInstance`, `RenameInstanceSnapshot` and `RenameStoragePoolVolume`
+  rename; the instance and snapshot renames reject `migration: true` before
+  dispatch.
+- `MigrateInstance`, `MigrateInstanceSnapshot` and `MigrateStoragePoolVolume`
+  require `migration: true`. `MigrateInstance` checks `instance_only`, `pool`,
+  `project` and `allow_inconsistent` against their extensions before dispatch,
+  and moves an instance to another pool, project or target member. A custom
+  volume snapshot (`volume/snapshot`) migrates through its snapshot path only
+  with `storage_api_remote_volume_snapshot_copy`.
+- `CreateStoragePoolVolume` (synchronous) and
+  `CreateStoragePoolVolumeFromMigration` create a volume, including a local
+  copy or a pull or push migration target. The pinned client never uses the
+  collection route `POST /1.0/storage-pools/{pool}/volumes`; the REST
+  descriptors `CreateStoragePoolVolumeInCollection` and
+  `CreateStoragePoolVolumeInCollectionFromMigration` (`poolName`) send it with
+  the volume type in the body.
+- `Copy.instance/4`, `Copy.snapshot/5` and `Copy.volume/6` copy locally or by
+  pull, push or relay. Pull and push need the exact host-approved HTTPS origin;
+  advertised addresses are never tried. Live instances and stateful snapshots
+  also negotiate and relay the `criu` channel.
+- `Migration.relay/2` forwards every channel until EOF or its deadline. It
+  needs identical source and target channel sets, and a channel that fails to
+  open fails the relay and closes the others. The pinned client accepts a
+  source superset, skips a failed data channel and starts its relay inside
+  `Copy*`.
+- `Migration.wait_target/2` and `Migration.cancel_target/1` act on the
+  destination operation. In push mode the pinned `RemoteOperation` tracks the
+  source's migrate operation instead, and for volume copies it tracks none, so
+  its `CancelTarget` cannot cancel. Cancel the source explicitly with
+  `Operation.cancel/1` on `migration.source`.
+- A lost or malformed source or target reply is uncertain and is never
+  replayed. The handle already accepted (the source in pull and relay mode,
+  the target in push mode) is kept, and nothing is cancelled.
+
+Image copy is certified with S05, and the operation WebSocket row with S02.
+
+Image binary handoff (stream contract S05) is **certified** by
+`s05_image_transfer_v1` (2026-10-28). It completes image creation, upload and
+copy target (`POST /1.0/images`), image download
+(`GET /1.0/images/{fingerprint}/export`) and push export
+(`POST /1.0/images/{fingerprint}/export`) on Unix and mutual HTTPS:
+
+- `CreateImage` JSON bodies for every source kind agree with the pinned client:
+  - a private image pull with a secret
+  - a public SimpleStreams alias pull
+  - a push token request
+  - a URL
+  - instance and snapshot publish
+
+  A `compression_algorithm` needs `image_compression_algorithm` before dispatch.
+- `Images.import/4` uploads send the pinned client's path, headers and bytes:
+  - unified uploads, and split uploads with a container `rootfs` or a
+    virtual-machine `rootfs.img` part
+  - the public, filename, properties, profiles and aliases headers, and a push
+    target's fingerprint and secret
+
+  A lost upload is uncertain and never resent.
+- `Images.download/4` agrees with the pinned `GetImageFile` on unified, split
+  and OCI exports: names, sizes, bytes and native errors. A fingerprint
+  mismatch, a missing filename and a misordered split export fail. A split
+  export with only a metadata sink is refused before any byte is written.
+- `ExportImage` pushes to an approved target with aliases and profiles and
+  requires `images_push_relay`.
+- `Images.copy(target, source, image, opts)` copies by pull (the default), push
+  or relay. It agrees with the pinned `CopyImage` on every request, body and
+  header: secrets, aliases (`copy_aliases` and explicit), profiles,
+  `auto_update`, `public` and the image type.
+
+  ```elixir
+  {:ok, copy} =
+    Images.copy(target, source, image,
+      mode: "pull",
+      approved_origin: "https://source.example:8443",
+      aliases: [%{"name" => "base"}]
+    )
+
+  {:ok, copy} = Images.wait_copy(copy, timeout: 600_000)
+  ```
+
+  Pull and push need `:approved_origin`, the exact HTTPS origin of the side the
+  other backend connects to (the source in pull mode, the target in push
+  mode). A Unix peer, a missing origin or any other origin is refused with
+  `:unapproved_copy_origin` before any request. Relay works over either
+  transport and stages bytes through the host's `:relay` adapter. A profile
+  override needs `image_copy_profile` on the target before any request.
+- `Images.copy/4` returns an `ImageCopy` with the bound `source` and `target`
+  operation handles and performs no cleanup:
+  - pull: `source` is the download secret (nil for a public image) and
+    `target` is the image creation
+  - push: `target` is the push token and `source` is the export
+  - relay: `target` is the upload
+- `Images.wait_copy/2` waits on the operation that drives the copy: the target
+  in pull and relay mode, the source export in push mode. It then performs the
+  pinned cleanup:
+  - once a push export is final, it cancels the token
+  - after a successful relay, or a pull against a target without
+    `image_create_aliases`, it creates the requested aliases
+
+  It agrees with the pinned `RemoteOperation.Wait` on success, failure and
+  cancellation; cancel the driving handle with `Operation.cancel/1`. A local
+  deadline performs no cleanup, because the copy may still be running.
+- A lost or malformed source, target or alias reply is uncertain and never
+  replayed. Every handle already accepted is kept in `response.accepted`,
+  including the pull secret operation when its reply has no usable secret, and
+  nothing is cancelled. Each alias is sent at most once: the returned copy
+  keeps only aliases never sent, and an alias failure names its alias in
+  `response.alias`, so waiting again never resends one.
+- Malformed option values (aliases without a string name, non-list profiles,
+  non-boolean flags) are refused with `:invalid_copy_options` before any
+  request.
+
+Approved differences from the pinned client:
+
+- Cleanup is explicit in `wait_copy/2`, not inside `copy/4`.
+- When the push export fails, the token handle is kept and not cancelled;
+  cancel it with `Operation.cancel/1`.
+- A push to a source without `images_push_relay` is refused before the token
+  request. The pinned client creates the token, fails the export guard and
+  cancels the token.
+- A failed or cancelled relay is reported as the native failure. The pinned
+  relay reports success, because `remoteOperationError(msg, nil)` is nil.
+
+Approved exclusions:
+
+- the `?public` documentation views
+- the pinned `/dev/incus/sock` download path
+- trying each address a server advertises
+- cluster forwarding beyond host project and target routing
+
+OCI and SimpleStreams sources are certified with S11 and S12 (below).
+Real-daemon image acceptance is separately recorded.
+
+The OCI image server (stream contract S11) is **certified** by
+`s11_oci_image_server_v1` (2026-10-31), matching the pinned `ProtocolOCI`
+client behind the explicit host adapter. A resolved `OCI` value can be the
+source of `Images.copy/4` and of `ImageInstances.create/5` and `rebuild/6`, as
+the pinned `CopyImage`, `CreateInstanceFromImage` and
+`RebuildInstanceFromImage` accept a `ProtocolOCI` source:
+
+- A pull tells the target protocol `oci`, the approved registry origin, the
+  registry certificate and the fingerprint (or, for an instance, the alias
+  when one is given). OCI images are public, so no secret is requested; a
+  private image fails before any request with Go's error.
+- `registry_credentials: {username, password}` adds user information to the
+  pull's server URL, escaped as Go's `url.UserPassword` escapes it (a `nil`
+  password gives Go's `url.User` form). Push and relay copies, and Incus
+  sources, refuse it.
+- A relay converts through `OCI.image_file/3` into the relay's metadata and
+  rootfs sinks and uploads a split image, so it needs both staging sinks.
+- A push fails like Go: the target's push token is requested, the copy
+  returns "Exporting images is not supported with OCI registry" and the token
+  is cancelled.
+
+Approved differences: a failed lookup is not cached for a later `image/2`,
+`alias_architectures/4` keys by the host-supplied local architecture, and
+registry credentials are a separate option rather than URL user information.
+Installed adapter conversion, registry TLS and authentication and real-daemon
+pulls remain separately recorded.
+
+A refreshed `SimpleStreams` value can likewise be the source of
+`Images.copy/4`, `ImageInstances.create/5` and `rebuild/6`, as the pinned
+callers accept a `ProtocolSimpleStreams` source (S12):
+
+- A pull tells the target protocol `simplestreams`, the approved origin, the
+  explicit certificate and the fingerprint (or, for an instance, the alias when
+  one is given). SimpleStreams images are public; a private image fails before
+  any request with "Private images aren't supported by the simplestreams
+  protocol". Registry credentials are refused.
+- A relay downloads through `SimpleStreams.image_file/4` into the relay's
+  sinks and uploads a unified or split image named after the image filename.
+- A push requests the target's push token, returns "Exporting images is not
+  supported by the simplestreams protocol" and cancels the token.
+
+Target requests and the image files fetched agree with the unchanged pinned
+callers on Unix and mutual HTTPS targets.
+
+Consoles (stream contract S02) are **certified** by `s02_console_v1`
+(2026-10-28). It completes console attachment
+(`POST /1.0/instances/{name}/console`) and the operation WebSocket
+(`GET /1.0/operations/{id}/websocket`) on Unix and mutual HTTPS:
+
+- `Session.console/3` (static) and `DynamicConsole.open/4` (repeated
+  attachments) agree with the pinned `ConsoleInstance` and
+  `ConsoleInstanceDynamic` on every request, channel and client frame:
+  - the `InstanceConsolePost` body, with the `console` type by default, `vga`,
+    width and height, and `force`
+  - the `console` extension, and `console_vga_type` and `console_force` before
+    dispatch
+  - the control channel opens before channel 0
+  - window-resize control text, binary data and the empty-text write barrier
+  - the `1000 "Detaching from console"` close frame on the control channel
+    when the host closes the console
+- A static console opens only the control channel and channel 0, and ignores
+  any other channel. `Session.output/1` reads channel 0 for a console.
+- Native 400/403/404 rejections are preserved. A reply without a control
+  secret fails as in the pinned client.
+- A lost or malformed POST reply is uncertain and never replayed. A missing or
+  malformed channel secret fails closed with `:invalid_stream_metadata` and the
+  accepted operation, before any channel opens. A rejected data channel
+  returns `:stream_negotiation` with the accepted operation and detaches the
+  control channel already open.
+- Invalid bodies and options fail with `:invalid_console_arguments` before any
+  request.
+
+Approved differences from the pinned client:
+
+- Hosts drive the channels: they send and receive frames, write barriers,
+  resize and detach. There is no `Control` callback, `ConsoleDisconnect`
+  channel or `ws.Mirror`.
+- Local arguments are checked before the POST. The pinned client sends the
+  POST and only then rejects a nil `Terminal` or `Control`, leaving the
+  accepted console without a client.
+- A missing or empty channel secret opens no channel. The pinned static
+  helper dials channel 0 with an empty secret.
+- A rejected data channel detaches the control channel. The pinned helper
+  leaves it open.
+- Detaching ends each data channel with a close frame. The pinned mirror
+  closes the socket after the echoed barrier.
+
+Approved exclusions:
+
+- the `?public` documentation view of the operation WebSocket
+- cluster forwarding beyond host project and target routing
+
+The daemon acts only on `window-resize`; other bounded JSON control messages
+are sent as given. Real-daemon console acceptance is separately recorded.
+
+Raw SFTP/NBD upgrades (stream contract S08) are **certified** by
+`s08_raw_upgrades_v1` (2026-10-29). It completes instance NBD
+(`GET /1.0/instances/{name}/nbd`) and custom volume NBD
+(`GET /1.0/storage-pools/{pool}/volumes/{type}/{name}/nbd`) on Unix and mutual
+HTTPS. The two SFTP rows are also linked to typed SFTP (S09) and complete with
+its certification.
+
+- `Incus.sftp/2`, `nbd/3`, `volume_sftp/4` and `volume_nbd/5` agree with the
+  pinned `GetInstanceFileSFTPConn`, `GetInstanceNBDConn`,
+  `GetStoragePoolVolumeFileSFTPConn` and `GetStoragePoolVolumeBlockNBDConn`:
+  - the request path, `reuse=1` and `writable=1`, project and target routing,
+    and the `Upgrade` and `Connection` headers
+  - empty, long and special-character names, escaped like Go's
+    `url.PathEscape` and sent unchecked so the server answers natively
+  - the bytes received after the 101 response and the bytes written
+  - backend half-close over Unix, after which writes still reach the server
+- Only the pinned extension guards run before I/O: `instance_nbd`,
+  `custom_volume_sftp` and `storage_volume_nbd`. Instance SFTP has none.
+  `reuse` and `writable` must be booleans, standing in for Go's typed
+  arguments.
+- Native rejections match the pinned error and are sent once.
+- Existing evidence is linked: coalesced bytes, caller loss, lifetime, byte
+  and handshake bounds, blocked-write caps and bad upgrade framing.
+
+Approved differences from the pinned client:
+
+- Protocol bytes that arrive with the 101 response are kept. The pinned
+  `rawConn` discards them.
+- Over mutual HTTPS, a backend half-close ends the connection, because OTP
+  TLS closes on the peer's `close_notify`. Later writes return
+  `:write_closed` and bytes already received stay readable. A Go `tls.Conn`
+  can keep writing; incusd's `UpgradeResponse` never half-closes, so a real
+  daemon never triggers this.
+
+Approved exclusions:
+
+- cluster forwarding beyond host project and target routing
+- real-daemon NBD export and SFTP file semantics, which stay with separately
+  recorded acceptance. The NBD payload protocol is caller-owned.
+
+`RepairInstance` (`name`, body `%{"action" => "rebuild-config-volume"}`,
+`instances_debug_repair`) sends the daemon's registered
+`POST /1.0/instances/{name}/debug/repair`. The REST document lists this route
+as GET, but the client never sends it that way.
 
 The `initial_mutation_lifecycle_v1` fixture scope covers eight existing B01 methods:
 CreateInstance, UpdateInstance (including a separate restore body),

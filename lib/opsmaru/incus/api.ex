@@ -60,7 +60,8 @@ defmodule Opsmaru.Incus.API do
     if is_map(args) and Enum.sort(Map.keys(args)) == Enum.sort(method["params"]) and
          Keyword.keys(opts) -- [:body, :etag] == [] and
          Enum.all?(args, fn {name, value} -> valid_argument?(name, value) end) and
-         wait_secret?(method, args) and conditional?(method, args, opts),
+         wait_secret?(method, args) and file_segment?(method, args) and
+         conditional?(method, args, opts),
        do: :ok,
        else: {:error, :invalid_arguments}
   end
@@ -82,6 +83,13 @@ defmodule Opsmaru.Incus.API do
     do: secret =~ ~r/\A[0-9a-f]+\z/
 
   defp wait_secret?(_, _), do: true
+
+  # A recorded exec output name is one safe path segment; the daemon's own name rule
+  # (and its native 400) stays authoritative.
+  defp file_segment?(%{"name" => "DeleteInstanceExecOutput"}, %{"filename" => name}),
+    do: name not in ["", ".", ".."] and not String.contains?(name, "/")
+
+  defp file_segment?(_, _), do: true
 
   defp valid_argument?("force", value), do: is_boolean(value)
   defp valid_argument?("timeout", value), do: is_integer(value) and value in 0..3600

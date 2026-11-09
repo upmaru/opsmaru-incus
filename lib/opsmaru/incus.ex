@@ -83,10 +83,10 @@ defmodule Opsmaru.Incus do
     end
   end
 
-  @doc "Initialize the approved owner-bound SFTP v3 file-I/O subset."
+  @doc "Open a shared SFTP session matching the pinned `GetInstanceFileSFTP`."
   def file_sftp(client, instance), do: SFTP.instance(client, instance)
 
-  @doc "Initialize the bounded volume SFTP v3 subset after its native extension check."
+  @doc "Open a shared volume SFTP session after its native extension check, like `GetStoragePoolVolumeFileSFTP`."
   def volume_file_sftp(client, pool, type, name), do: SFTP.volume(client, pool, type, name)
 
   @doc "Open the native NBD byte connection after checking the native extension."
@@ -137,8 +137,9 @@ defmodule Opsmaru.Incus do
   defp path_escape(value),
     do: URI.encode(value, &(URI.char_unreserved?(&1) or &1 in ~c"$&+:=@"))
 
+  # Like the pinned helpers, any string name is escaped and sent; the server answers natively.
   defp upgrade_segments(values) do
-    if Enum.all?(values, &(is_binary(&1) and byte_size(&1) in 1..1024 and String.valid?(&1))),
+    if Enum.all?(values, &is_binary/1),
       do: :ok,
       else: {:error, %Error{kind: :invalid_arguments}}
   end
@@ -220,7 +221,14 @@ defmodule Opsmaru.Incus do
         {:error, error}
 
       {:error, kind}
-      when kind in [:response, :deadline, :response_limit, :invalid_response, :invalid_envelope] ->
+      when kind in [
+             :response,
+             :response_closed,
+             :deadline,
+             :response_limit,
+             :invalid_response,
+             :invalid_envelope
+           ] ->
         {:error, %Error{kind: if(method in ["GET", "HEAD"], do: kind, else: :uncertain)}}
 
       {:error, kind} ->

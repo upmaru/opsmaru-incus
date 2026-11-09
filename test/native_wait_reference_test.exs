@@ -1,8 +1,9 @@
 defmodule Opsmaru.Incus.NativeWaitReferenceTest do
+  # Serial: its expiring deadline must also cover the HTTPS connection.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Model, RequestContext, Server}
-  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity, WireComparison}
+  alias Opsmaru.TestSupport.{HTTPFixture, Timing, TLSIdentity, WireComparison}
   @driver Path.expand("../.integration/native-wait-driver", __DIR__)
   @uuid "01234567-89ab-cdef-0123-456789abcdef"
   @secret "0123456789abcdef0123456789abcdef"
@@ -49,7 +50,12 @@ defmodule Opsmaru.Incus.NativeWaitReferenceTest do
         tag = make_ref()
         fixture = backend(root, identity, fn _ -> gated(parent, tag, response(200), :closed) end)
         original = client(fixture, identity)
-        scope = RequestContext.new!(timeout: if(mode == :deadline, do: 3_000, else: 30_000))
+
+        scope =
+          RequestContext.new!(
+            timeout: if(mode == :deadline, do: Timing.expiring_deadline(), else: 30_000)
+          )
+
         scoped = Incus.with_context(original, scope)
 
         {pid, monitor} =
@@ -178,7 +184,9 @@ defmodule Opsmaru.Incus.NativeWaitReferenceTest do
 
       :reset ->
         assert expected["error"]
-        assert {:error, %Error{kind: :response} = error} = actual
+        # This fixture closes before writing any response headers; it is not
+        # the separate truncated-body EOF case above.
+        assert {:error, %Error{kind: :response_closed} = error} = actual
         refute inspect(error) =~ @secret
 
       native when native in [:forbidden, :not_found] ->

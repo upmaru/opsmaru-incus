@@ -1,4 +1,5 @@
 defmodule Opsmaru.Incus.MetadataKeysReferenceTest do
+  # Serial: it compares the VM-wide atom count before and after.
   use ExUnit.Case, async: false
   alias Opsmaru.Incus.{Error, Metadata, Model}
   @driver Path.expand("../.integration/metadata-keys-driver", __DIR__)

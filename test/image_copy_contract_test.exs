@@ -1,0 +1,1167 @@
+defmodule Opsmaru.Incus.ImageCopyContractTest do
+  @moduledoc "S05 image copy (with S11 OCI and S12 SimpleStreams sources) compared with the pinned CopyImage."
+  use ExUnit.Case, async: true
+  alias Opsmaru.Incus
+
+  alias Opsmaru.Incus.{
+    Connection,
+    Context,
+    Error,
+    ImageCopy,
+    Images,
+    Model,
+    OCI,
+    Operation,
+    Server
+  }
+
+  alias Opsmaru.TestSupport.{HTTPFixture, SimpleStreamsFixture, TLSIdentity, WebSocketFixture}
+  @driver Path.expand("../.integration/image-copy-driver", __DIR__)
+  @extensions ~w(images_push_relay image_copy_profile)
+  @metadata :binary.copy(<<0, 255, 128, 13, 10>>, 64)
+  @rootfs :binary.copy(<<255, 0, 128, 1>>, 96)
+  @guid "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+  @oci_info %{
+    "Name" => "library/alpine",
+    "Architecture" => "amd64",
+    "Created" => "2026-10-11T00:00:00Z",
+    "Layers" => ["sha256:one", "sha256:two"],
+    "LayersData" => [%{"Size" => 2}, %{"Size" => 4}]
+  }
+
+  # The host conversion the Go fixture source stands in for: the same two parts.
+  defmodule OCIAdapter do
+    @moduledoc false
+    @behaviour Opsmaru.Incus.OCI.Adapter
+    def inspect_image(config, _request), do: {:ok, Jason.encode!(config.info)}
+
+    def image_file(config, _request, emit) do
+      with :ok <- emit.(:metadata, config.metadata), do: emit.(:rootfs, config.rootfs)
+    end
+
+    def cleanup(_config, _id, _outcome), do: :ok
+  end
+
+  setup_all do
+    File.mkdir_p!(Path.dirname(@driver))
+
+    {out, status} =
+      System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "./imagecopy"],
+        cd: Path.expand("reference", __DIR__),
+        env: [{"GOTOOLCHAIN", "local"}],
+        stderr_to_stdout: true
+      )
+
+    assert status == 0, out
+    :ok
+  end
+
+  setup do
+    root = Path.join(System.tmp_dir!(), "op-s05-#{System.unique_integer([:positive])}")
+    File.mkdir!(root)
+    File.chmod!(root, 0o700)
+    on_exit(fn -> File.rm_rf!(root) end)
+    %{root: root}
+  end
+
+  for transport <- [:unix, :https] do
+    test "#{transport} S05 image copy and wait agree with the pinned CopyImage", %{root: root} do
+      identity = identity(root, unquote(transport))
+      modes = if unquote(transport) == :https, do: [:pull, :push, :relay], else: [:relay]
+
+      for {mode, image, opts, extensions} <- cases(),
+          mode in modes,
+          outcome <- [:success, :failure, :cancel] do
+        label = inspect({mode, opts, extensions, outcome})
+        {source, target} = pair(root, identity, image, extensions, outcome)
+        native = reference(root, identity, mode, image, opts, source, target, outcome)
+
+        {source2, target2} = pair(root, identity, image, extensions, outcome)
+        assert {:ok, %ImageCopy{} = copy} = copy(mode, image, opts, source2, target2), label
+        driving = if mode == :push, do: copy.source, else: copy.target
+
+        if outcome == :cancel do
+          # A local deadline is not completion: no token is cancelled, no alias created.
+          assert {:error, %Error{kind: :deadline, response: %{accepted: ^copy}}} =
+                   Images.wait_copy(copy, timeout: 50)
+
+          assert deletes(source2) == [] and deletes(target2) == []
+          assert count(source2, target2, :alias) == 0
+          assert native["canceled"], label
+          assert {:ok, _} = Operation.cancel(driving)
+        end
+
+        waited = Images.wait_copy(copy, timeout: 3_000)
+
+        case outcome do
+          :success ->
+            assert native["completed"], label <> inspect(native)
+            assert {:ok, %ImageCopy{} = done} = waited, label
+            assert Operation.successful?(if mode == :push, do: done.source, else: done.target)
+
+          _ when mode == :relay ->
+            # Recorded difference: the pinned relay builds its failure with
+            # remoteOperationError(msg, nil), which is nil, so a failed or cancelled
+            # upload reports success (and still creates no alias). This reports it.
+            assert native["completed"], label <> inspect(native)
+
+            assert {:error, %Error{kind: :operation_failed, response: %{accepted: kept}}} =
+                     waited
+
+            assert kept.target
+
+          _ ->
+            assert native["error"], label
+            assert {:error, %Error{kind: :operation_failed, response: %{accepted: kept}}} = waited
+            assert kept.target && (mode != :push or kept.source)
+        end
+
+        # The same mutations, bodies and headers reached each side in the same order.
+        assert mutations(source2) == mutations(source), label
+        assert mutations(target2) == mutations(target), label
+
+        # Waiting again on a finished copy sends nothing more: no alias, no cancel.
+        if outcome == :success do
+          {:ok, done} = waited
+          assert done.aliases == []
+          sent = mutations(source2) ++ mutations(target2)
+          assert {:ok, _} = Images.wait_copy(done, timeout: 3_000)
+          assert mutations(source2) ++ mutations(target2) == sent, label
+        end
+
+        # Only the driving operation is waited on; a push also reads its token to cancel it.
+        driving_id = if mode == :push, do: "export", else: "copy"
+        read = operation_reads(source2) ++ operation_reads(target2)
+        assert driving_id in read, label
+        assert Enum.uniq(read) -- [driving_id, "token"] == [], label
+        if mode != :push, do: refute("token" in read)
+      end
+    end
+
+    test "#{transport} S05 lost or malformed copy replies are uncertain and never replayed", %{
+      root: root
+    } do
+      identity = identity(root, unquote(transport))
+      modes = if unquote(transport) == :https, do: [:pull, :push, :relay], else: [:relay]
+      image = image(:unified)
+      opts = [aliases: [%{"name" => "one"}, %{"name" => "two"}]]
+
+      for mode <- modes, reply <- [:lost, :malformed] do
+        # Each mutation of the copy in order, with the handles accepted before it.
+        steps =
+          case mode do
+            :pull -> [{:secret, []}, {:create, [source: "secret"]}]
+            :push -> [{:token, []}, {:export, [target: "token"]}]
+            :relay -> [{:upload, []}]
+          end
+
+        for {kind, kept} <- steps do
+          {source, target} = pair(root, identity, image, @extensions, :success, %{kind => reply})
+
+          assert {:error, %Error{kind: :uncertain, response: %{accepted: accepted}}} =
+                   copy(mode, image, opts, source, target),
+                 inspect({mode, kind, reply})
+
+          for side <- [:source, :target] do
+            case kept[side] do
+              nil -> assert is_nil(Map.fetch!(accepted, side))
+              id -> assert Map.fetch!(accepted, side).url == "/1.0/operations/" <> id
+            end
+          end
+
+          # The lost request was sent once, nothing after it was sent, nothing cancelled.
+          assert count(source, target, kind) == 1
+          assert Enum.all?(later(mode, kind), &(count(source, target, &1) == 0))
+          assert deletes(source) == [] and deletes(target) == []
+        end
+
+        # A lost alias creation stops the cleanup: the copy stays, nothing is resent.
+        if mode != :push do
+          {source, target} = pair(root, identity, image, @extensions, :success, %{alias: reply})
+          assert {:ok, copy} = copy(mode, image, opts, source, target)
+
+          assert {:error, %Error{kind: :uncertain, response: %{accepted: kept, alias: "one"}}} =
+                   Images.wait_copy(copy, timeout: 3_000)
+
+          assert Operation.successful?(kept.target)
+          assert count(source, target, :alias) == 1
+
+          # Waiting again sends only the aliases never sent; the uncertain one is not resent.
+          assert kept.aliases == ["two"]
+
+          assert {:error, %Error{kind: :uncertain, response: %{accepted: rest, alias: "two"}}} =
+                   Images.wait_copy(kept, timeout: 3_000)
+
+          assert rest.aliases == []
+          assert alias_names(target) == ["one", "two"]
+          assert deletes(source) == [] and deletes(target) == []
+        end
+      end
+    end
+  end
+
+  for transport <- [:unix, :https] do
+    test "#{transport} S11 OCI-source copies agree with the pinned CopyImage", %{root: root} do
+      identity = identity(root, unquote(transport))
+      # A push needs the target's approved HTTPS origin; the registry is always HTTPS.
+      modes = if unquote(transport) == :https, do: [:pull, :push, :relay], else: [:pull, :relay]
+
+      for mode <- modes,
+          {opts, credentials, pinned} <- oci_cases(mode),
+          outcome <- if(mode == :push, do: [:success], else: [:success, :failure]) do
+        label = inspect({mode, opts, credentials, outcome})
+        registry = registry(root, pinned)
+        target = backend(root, identity, "target", registry.image, @extensions, outcome, %{})
+        native = oci_reference(root, identity, mode, registry, credentials, opts, target)
+        target2 = backend(root, identity, "target", registry.image, @extensions, outcome, %{})
+        result = oci_copy(mode, registry, opts, credentials, target2)
+
+        case {mode, outcome} do
+          {:push, _} ->
+            # As natively: the token is requested, the OCI export fails, the token is
+            # cancelled, and nothing is exported.
+            assert native["error"] == "Exporting images is not supported with OCI registry"
+
+            assert {:error, %Error{kind: :native, message: message, response: %{accepted: kept}}} =
+                     result
+
+            assert message == native["error"]
+            assert kept.target.url == "/1.0/operations/token" and is_nil(kept.source)
+
+            assert [{"POST", "/1.0/images" <> _, _}, {"DELETE", "/1.0/operations/token" <> _, _}] =
+                     mutations(target2)
+
+          {_, :success} ->
+            assert native["completed"], label <> inspect(native)
+            assert {:ok, copy} = result, label
+            assert {:ok, done} = Images.wait_copy(copy, timeout: 3_000), label
+            assert Operation.successful?(done.target)
+
+          {:relay, :failure} ->
+            # The recorded S05 relay difference: the pinned relay reports success.
+            assert native["completed"], label <> inspect(native)
+            assert {:ok, copy} = result, label
+
+            assert {:error, %Error{kind: :operation_failed}} =
+                     Images.wait_copy(copy, timeout: 3_000)
+
+          {:pull, :failure} ->
+            assert native["error"], label
+            assert {:ok, copy} = result, label
+
+            assert {:error, %Error{kind: :operation_failed}} =
+                     Images.wait_copy(copy, timeout: 3_000)
+        end
+
+        # The same mutations, bodies and headers reached the target, in the same order,
+        # and neither client contacted the registry.
+        assert mutations(target2) == mutations(target), label
+        assert HTTPFixture.requests(registry.fixture) == []
+
+        if mode == :pull do
+          [{"POST", _, body} | _] = mutations(target2)
+          assert body["source"]["protocol"] == "oci"
+          refute inspect(result) =~ "s3cret"
+        end
+      end
+    end
+  end
+
+  for transport <- [:unix, :https] do
+    test "#{transport} S12 SimpleStreams-source copies agree with the pinned CopyImage", %{
+      root: root
+    } do
+      identity = identity(root, unquote(transport))
+      modes = if unquote(transport) == :https, do: [:pull, :push, :relay], else: [:pull, :relay]
+
+      for mode <- modes,
+          {opts, _, pinned} <- oci_cases(mode),
+          outcome <- if(mode == :push, do: [:success], else: [:success, :failure]) do
+        label = inspect({mode, opts, outcome})
+        server = SimpleStreamsFixture.start(root, pinned)
+        target = backend(root, identity, "target", server.image, @extensions, outcome, %{})
+        native = streams_reference(root, identity, mode, server, opts, target)
+        native_downloads = SimpleStreamsFixture.downloads(server)
+        target2 = backend(root, identity, "target", server.image, @extensions, outcome, %{})
+        result = streams_copy(mode, server, opts, target2)
+
+        case {mode, outcome} do
+          {:push, _} ->
+            assert native["error"] ==
+                     "Exporting images is not supported by the simplestreams protocol"
+
+            assert {:error, %Error{kind: :native, message: message, response: %{accepted: kept}}} =
+                     result
+
+            assert message == native["error"]
+            assert kept.target.url == "/1.0/operations/token" and is_nil(kept.source)
+
+            assert [{"POST", "/1.0/images" <> _, _}, {"DELETE", "/1.0/operations/token" <> _, _}] =
+                     mutations(target2)
+
+          {_, :success} ->
+            assert native["completed"], label <> inspect(native)
+            assert {:ok, copy} = result, label
+            assert {:ok, done} = Images.wait_copy(copy, timeout: 3_000), label
+            assert Operation.successful?(done.target)
+
+          {:relay, :failure} ->
+            # The recorded S05 relay difference: the pinned relay reports success.
+            assert native["completed"], label <> inspect(native)
+            assert {:ok, copy} = result, label
+
+            assert {:error, %Error{kind: :operation_failed}} =
+                     Images.wait_copy(copy, timeout: 3_000)
+
+          {:pull, :failure} ->
+            assert native["error"], label
+            assert {:ok, copy} = result, label
+
+            assert {:error, %Error{kind: :operation_failed}} =
+                     Images.wait_copy(copy, timeout: 3_000)
+        end
+
+        # The same target requests in the same order, and the same image files
+        # fetched from the server: only a relay downloads, metadata then rootfs.
+        assert mutations(target2) == mutations(target), label
+        ours = SimpleStreamsFixture.downloads(server) -- native_downloads
+        assert ours == native_downloads, label
+
+        if mode == :relay,
+          do:
+            assert(
+              native_downloads == [
+                "/images/fixture/incus.tar.xz",
+                "/images/fixture/root.squashfs"
+              ]
+            ),
+          else: assert(native_downloads == [])
+
+        if mode == :pull do
+          [{"POST", _, body} | _] = mutations(target2)
+          assert body["source"]["protocol"] == "simplestreams"
+        end
+      end
+    end
+  end
+
+  test "S12 SimpleStreams sources refuse private images, credentials and unapproved origins", %{
+    root: root
+  } do
+    identity = identity(root, :https)
+    server = SimpleStreamsFixture.start(root, true)
+    target = backend(root, identity, "target", server.image, @extensions, :success, %{})
+    private = %{server.image | "public" => false}
+    native = streams_reference(root, identity, :pull, %{server | image: private}, [], target)
+    assert native["error"] == "Private images aren't supported by the simplestreams protocol"
+
+    assert {:error, %Error{kind: :native, message: message}} =
+             streams_copy(:pull, %{server | image: private}, [], target)
+
+    assert message == native["error"]
+
+    assert {:error, %Error{kind: :invalid_copy_options}} =
+             Images.copy(target.client, server.client, server.image,
+               mode: "pull",
+               approved_origin: server.origin,
+               registry_credentials: {"user", "s3cret"}
+             )
+
+    for origin <- [nil, target.origin, "https://streams.invalid"] do
+      opts = if origin, do: [mode: "pull", approved_origin: origin], else: [mode: "pull"]
+
+      assert {:error, %Error{kind: :unapproved_copy_origin}} =
+               Images.copy(target.client, server.client, server.image, opts)
+    end
+
+    # A registry behind the target's own origin is still a remote SimpleStreams source.
+    shared = %{server.client | connection: target.client.connection}
+
+    assert {:ok, _} =
+             Images.copy(target.client, shared, server.image,
+               mode: "pull",
+               approved_origin: target.origin
+             )
+
+    assert [{"POST", "/1.0/images" <> _, body}] = mutations(target)
+    assert body["source"]["protocol"] == "simplestreams"
+  end
+
+  test "S11 OCI sources refuse private images and misplaced credentials before any request", %{
+    root: root
+  } do
+    identity = identity(root, :https)
+    registry = registry(root, true)
+    target = backend(root, identity, "target", registry.image, @extensions, :success, %{})
+    private = %{registry.image | "public" => false}
+
+    native =
+      oci_reference(root, identity, :pull, %{registry | image: private}, nil, [], target)
+
+    assert native["error"] == "Private images aren't supported with OCI registry"
+
+    assert {:error, %Error{kind: :native, message: message}} =
+             oci_copy(:pull, %{registry | image: private}, [], nil, target)
+
+    assert message == native["error"]
+
+    for mode <- [:push, :relay], credentials <- [{"user", "s3cret"}] do
+      assert {:error, %Error{kind: :invalid_copy_options}} =
+               oci_copy(mode, registry, [], credentials, target)
+    end
+
+    for credentials <- [{"user"}, {nil, "s3cret"}, {"user", 1}, "user:s3cret"] do
+      assert {:error, %Error{kind: :invalid_copy_options}} =
+               oci_copy(:pull, registry, [], credentials, target)
+    end
+
+    # The target pulls from the approved registry origin only.
+    for origin <- [nil, target.origin, "https://registry.invalid"] do
+      opts = if origin, do: [mode: "pull", approved_origin: origin], else: [mode: "pull"]
+
+      assert {:error, %Error{kind: :unapproved_copy_origin}} =
+               Images.copy(target.client, registry.client, registry.image, opts)
+    end
+
+    # A relay converts both parts, so it needs both staging sinks.
+    assert {:error, %Error{kind: :missing_relay_adapter}} =
+             Images.copy(target.client, registry.client, registry.image,
+               mode: "relay",
+               relay: Map.drop(stage(false), [:rootfs_sink, :rootfs_source])
+             )
+
+    assert mutations(target) == []
+    assert HTTPFixture.requests(registry.fixture) == []
+
+    # As the pinned isSameServer compares protocols, a registry behind the target's own
+    # origin (and project) is still a remote OCI source: the target pulls from it.
+    shared = %{registry.client | connection: target.client.connection}
+
+    assert {:ok, _copy} =
+             Images.copy(target.client, shared, registry.image,
+               mode: "pull",
+               approved_origin: target.origin
+             )
+
+    assert [{"POST", "/1.0/images" <> _, body}] = mutations(target)
+    # mutations/1 reads every local fixture origin as "origin".
+    assert body["source"]["protocol"] == "oci" and body["source"]["server"] == "origin"
+  end
+
+  test "https S05 copy guards agree with the pinned CopyImage before any mutation", %{
+    root: root
+  } do
+    identity = identity(root, :https)
+    image = image(:unified)
+
+    for mode <- [:pull, :push, :relay] do
+      # A profile override needs image_copy_profile on the target, before any request.
+      {source, target} = pair(root, identity, image, ~w(images_push_relay), :success)
+      native = reference(root, identity, mode, image, [profiles: ["p"]], source, target, :wait)
+      assert native["error"] =~ "image_copy_profile"
+
+      {source2, target2} = pair(root, identity, image, ~w(images_push_relay), :success)
+
+      assert {:error, %Error{kind: :unsupported_extension, extension: "image_copy_profile"}} =
+               copy(mode, image, [profiles: ["p"]], source2, target2)
+
+      assert mutations(source) == [] and mutations(target) == []
+      assert mutations(source2) == [] and mutations(target2) == []
+    end
+
+    # Recorded difference: the pinned push asks the target for a token, fails the
+    # source's images_push_relay guard in ExportImage and cancels the token. This
+    # client refuses before the token request, so nothing is created or cancelled.
+    {source, target} = pair(root, identity, image, ~w(image_copy_profile), :success)
+    native = reference(root, identity, :push, image, [], source, target, :wait)
+    assert native["error"] =~ "images_push_relay"
+
+    assert [{"POST", "/1.0/images" <> _, _}, {"DELETE", "/1.0/operations/token" <> _, _}] =
+             mutations(target)
+
+    {source, target} = pair(root, identity, image, ~w(image_copy_profile), :success)
+
+    assert {:error, %Error{kind: :unsupported_extension, extension: "images_push_relay"}} =
+             copy(:push, image, [], source, target)
+
+    assert mutations(source) == [] and mutations(target) == []
+
+    # Pull and push connect the other side to the approved origin only.
+    {source, target} = pair(root, identity, image, @extensions, :success)
+
+    for {mode, origin} <- [pull: target.origin, push: source.origin, pull: nil, push: nil] do
+      opts = [mode: Atom.to_string(mode)] ++ if(origin, do: [approved_origin: origin], else: [])
+
+      assert {:error, %Error{kind: :unapproved_copy_origin}} =
+               Images.copy(target.client, source.client, image, opts)
+    end
+
+    # Malformed option values are refused before the secret request, so no handle
+    # is left behind.
+    for bad <- [
+          [aliases: ["base"]],
+          [aliases: [%{"name" => ""}]],
+          [aliases: [%{name: "base"}]],
+          [profiles: "p"],
+          [public: "yes"],
+          [type: 1]
+        ] do
+      assert {:error, %Error{kind: :invalid_copy_options}} =
+               Images.copy(
+                 target.client,
+                 source.client,
+                 image,
+                 [mode: "pull", approved_origin: source.origin] ++ bad
+               ),
+             inspect(bad)
+    end
+
+    assert {:error, %Error{kind: :same_backend}} =
+             Images.copy(source.client, source.client, image, mode: "relay")
+
+    assert {:error, %Error{kind: :invalid_copy_options}} =
+             Images.copy(target.client, source.client, image, retries: 1)
+
+    # Registry credentials describe an OCI registry, never an Incus source.
+    assert {:error, %Error{kind: :invalid_copy_options}} =
+             Images.copy(target.client, source.client, image,
+               mode: "pull",
+               approved_origin: source.origin,
+               registry_credentials: {"user", "s3cret"}
+             )
+
+    assert mutations(source) == [] and mutations(target) == []
+  end
+
+  test "unix S05 pull and push need an approved HTTPS origin before any request", %{root: root} do
+    image = image(:unified)
+    {source, target} = pair(root, nil, image, @extensions, :success)
+
+    for mode <- [:pull, :push] do
+      assert {:error, %Error{kind: :unapproved_copy_origin}} =
+               copy(mode, image, [], source, target)
+    end
+
+    assert HTTPFixture.requests(source.fixture) == []
+    assert HTTPFixture.requests(target.fixture) == []
+  end
+
+  # {mode, image, copy options, extensions on both sides}. Pull against a server
+  # without image_create_aliases creates the aliases after the copy, as natively.
+  defp cases do
+    aliases = [%{"name" => "one", "description" => "first"}, %{"name" => "two"}]
+    newer = @extensions ++ ~w(image_create_aliases)
+
+    [
+      {:pull, image(:unified),
+       [aliases: aliases, copy_aliases: true, auto_update: true, public: true, type: "container"],
+       @extensions},
+      {:pull, image(:unified), [aliases: aliases, profiles: ["p", "q"]], newer},
+      {:pull, %{image(:unified) | "public" => true}, [], @extensions},
+      {:push, image(:unified),
+       [aliases: aliases, copy_aliases: true, auto_update: true, public: true], @extensions},
+      {:push, image(:unified), [profiles: ["p"]], @extensions},
+      {:relay, image(:unified), [aliases: aliases, public: true, auto_update: true], @extensions},
+      {:relay, image(:split), [copy_aliases: true, profiles: ["p"]], @extensions}
+    ]
+  end
+
+  defp image(kind) do
+    {type, bytes} =
+      if kind == :split,
+        do: {"virtual-machine", @metadata <> @rootfs},
+        else: {"container", @metadata}
+
+    %{
+      "fingerprint" => fingerprint(bytes),
+      "public" => false,
+      "type" => type,
+      "filename" => "native.tar.xz",
+      "aliases" => [%{"name" => "base", "description" => "native"}],
+      "properties" => %{"os" => "fixture", "release" => "1"},
+      "profiles" => ["source-only"],
+      "expires_at" => "2030-01-01T00:00:00Z"
+    }
+  end
+
+  defp copy(mode, image, opts, source, target) do
+    origin =
+      case mode do
+        :pull -> source.origin
+        :push -> target.origin
+        :relay -> nil
+      end
+
+    opts = [mode: Atom.to_string(mode)] ++ opts
+    opts = if origin, do: Keyword.put(opts, :approved_origin, origin), else: opts
+
+    opts =
+      if mode == :relay,
+        do: Keyword.put(opts, :relay, stage(image["type"] == "virtual-machine")),
+        else: opts
+
+    Images.copy(target.client, source.client, image, opts)
+  end
+
+  # Host staging: an agent per part, replayed as the upload source.
+  defp stage(split) do
+    {:ok, agent} = Agent.start_link(fn -> %{metadata: [], rootfs: []} end)
+
+    sink = fn kind ->
+      fn bytes -> Agent.update(agent, &Map.update!(&1, kind, fn c -> [bytes | c] end)) end
+    end
+
+    replay = fn kind -> fn -> Agent.get(agent, &Enum.reverse(Map.fetch!(&1, kind))) end end
+    adapter = %{metadata_sink: sink.(:metadata), metadata_source: replay.(:metadata)}
+
+    if split,
+      do: Map.merge(adapter, %{rootfs_sink: sink.(:rootfs), rootfs_source: replay.(:rootfs)}),
+      else: adapter
+  end
+
+  defp reference(root, identity, mode, image, opts, source, target, outcome) do
+    args = %{
+      Mode: Atom.to_string(mode),
+      Aliases: opts[:aliases],
+      CopyAliases: opts[:copy_aliases] == true,
+      AutoUpdate: opts[:auto_update] == true,
+      Public: opts[:public] == true,
+      Type: opts[:type] || "",
+      Profiles: opts[:profiles]
+    }
+
+    input = %{
+      after: if(outcome == :cancel, do: "cancel", else: "wait"),
+      source: native(source, identity),
+      target: native(target, identity),
+      image: image,
+      args: args,
+      temp: root
+    }
+
+    file = Path.join(root, "copy-#{System.unique_integer([:positive])}.json")
+    File.write!(file, Jason.encode!(input))
+    File.chmod!(file, 0o600)
+    {out, status} = System.cmd(@driver, [file], stderr_to_stdout: true)
+    assert status == 0, out
+    Jason.decode!(out)
+  end
+
+  defp native(side, nil), do: %{socket: side.endpoint.socket, project: "fixture"}
+
+  defp native(side, identity),
+    do: %{
+      url: side.endpoint.url,
+      server_cert: File.read!(identity.certfile),
+      client_cert: File.read!(identity.certfile),
+      client_key: File.read!(identity.keyfile),
+      project: "fixture"
+    }
+
+  # {copy options, registry credentials, whether the registry certificate is pinned}.
+  defp oci_cases(:pull) do
+    aliases = [%{"name" => "one", "description" => "first"}, %{"name" => "two"}]
+
+    [
+      {[aliases: aliases, copy_aliases: true, auto_update: true, public: true, type: "container"],
+       nil, true},
+      {[], {"robot$user", "p@ss:/?#[]!*'() é"}, false},
+      {[aliases: aliases], {"token", nil}, true}
+    ]
+  end
+
+  defp oci_cases(:push),
+    do: [{[aliases: [%{"name" => "one"}], copy_aliases: true, public: true], nil, true}]
+
+  defp oci_cases(:relay),
+    do: [
+      {[aliases: [%{"name" => "one"}, %{"name" => "two"}], public: true], nil, false},
+      {[copy_aliases: true, profiles: ["p"]], nil, true}
+    ]
+
+  # An OCI registry the targets are told about; nothing ever connects to it.
+  defp registry(root, pinned) do
+    identity =
+      TLSIdentity.generate(root, "s11-#{System.unique_integer([:positive])}", "localhost")
+
+    fixture =
+      start_supervised!(
+        {HTTPFixture,
+         transport: :ssl,
+         certfile: identity.certfile,
+         keyfile: identity.keyfile,
+         handler: fn _ -> %{status: 500, body: %{}} end},
+        id: make_ref()
+      )
+
+    url = HTTPFixture.endpoint(fixture).url
+    tls = [cacertfile: identity.cafile, certfile: identity.certfile, keyfile: identity.keyfile]
+    connection = Connection.https!(url, owner: :fixture, timeout: 5_000, tls: tls)
+    context = Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end)
+    certificate = if pinned, do: File.read!(identity.certfile), else: ""
+    config = %{info: @oci_info, metadata: @metadata, rootfs: @rootfs}
+    oci = OCI.new!(connection, context, OCIAdapter, config, certificate: certificate)
+    {:ok, %{image: image}, oci} = OCI.resolve(oci, "library/alpine:latest")
+
+    %{
+      fixture: fixture,
+      origin: url,
+      client: oci,
+      certificate: certificate,
+      image: Model.encode(image)
+    }
+  end
+
+  defp oci_copy(mode, registry, opts, credentials, target) do
+    opts = [mode: Atom.to_string(mode)] ++ opts
+
+    opts =
+      case mode do
+        :pull -> Keyword.put(opts, :approved_origin, registry.origin)
+        :push -> Keyword.put(opts, :approved_origin, target.origin)
+        :relay -> Keyword.put(opts, :relay, stage(true))
+      end
+
+    opts = if credentials, do: Keyword.put(opts, :registry_credentials, credentials), else: opts
+    Images.copy(target.client, registry.client, registry.image, opts)
+  end
+
+  defp streams_copy(mode, server, opts, target) do
+    opts = [mode: Atom.to_string(mode)] ++ opts
+
+    opts =
+      case mode do
+        :pull -> Keyword.put(opts, :approved_origin, server.origin)
+        :push -> Keyword.put(opts, :approved_origin, target.origin)
+        :relay -> Keyword.put(opts, :relay, stage(true))
+      end
+
+    Images.copy(target.client, server.client, server.image, opts)
+  end
+
+  defp streams_reference(root, identity, mode, server, opts, target) do
+    source = %{
+      simplestreams: true,
+      url: server.origin,
+      server_cert: server.certificate,
+      ca: server.ca
+    }
+
+    args = %{
+      Mode: Atom.to_string(mode),
+      Aliases: opts[:aliases],
+      CopyAliases: opts[:copy_aliases] == true,
+      AutoUpdate: opts[:auto_update] == true,
+      Public: opts[:public] == true,
+      Type: opts[:type] || "",
+      Profiles: opts[:profiles]
+    }
+
+    input = %{
+      after: "wait",
+      source: source,
+      target: native(target, identity),
+      image: server.image,
+      args: args,
+      temp: root
+    }
+
+    file = Path.join(root, "streams-copy-#{System.unique_integer([:positive])}.json")
+    File.write!(file, Jason.encode!(input))
+    File.chmod!(file, 0o600)
+    {out, status} = System.cmd(@driver, [file], stderr_to_stdout: true)
+    assert status == 0, out
+    Jason.decode!(out)
+  end
+
+  defp oci_reference(root, identity, mode, registry, credentials, opts, target) do
+    {user, password} = credentials || {"", nil}
+
+    source = %{
+      oci: true,
+      url: registry.origin,
+      server_cert: registry.certificate,
+      metadata: Base.encode64(@metadata),
+      rootfs: Base.encode64(@rootfs),
+      user: user,
+      password: password
+    }
+
+    args = %{
+      Mode: Atom.to_string(mode),
+      Aliases: opts[:aliases],
+      CopyAliases: opts[:copy_aliases] == true,
+      AutoUpdate: opts[:auto_update] == true,
+      Public: opts[:public] == true,
+      Type: opts[:type] || "",
+      Profiles: opts[:profiles]
+    }
+
+    input = %{
+      after: "wait",
+      source: source,
+      target: native(target, identity),
+      image: registry.image,
+      args: args,
+      temp: root
+    }
+
+    file = Path.join(root, "oci-copy-#{System.unique_integer([:positive])}.json")
+    File.write!(file, Jason.encode!(input))
+    File.chmod!(file, 0o600)
+    {out, status} = System.cmd(@driver, [file], stderr_to_stdout: true)
+    assert status == 0, out
+    Jason.decode!(out)
+  end
+
+  # Every POST and DELETE a side received, in order: JSON bodies compared as the Go
+  # DTO decodes them (zero values dropped), uploads by their headers and parts.
+  defp mutations(side) do
+    for request <- HTTPFixture.requests(side.fixture), request.method in ["POST", "DELETE"] do
+      {request.method, request.target, body(request)}
+    end
+  end
+
+  defp body(%{body: ""}), do: nil
+
+  defp body(request) do
+    case request.headers["content-type"] do
+      "application/json" <> _ ->
+        zero(Jason.decode!(request.body))
+
+      "multipart/form-data" <> _ ->
+        {headers(request), parts(request)}
+
+      type ->
+        {type, headers(request), request.body}
+    end
+  end
+
+  defp headers(request),
+    do: Enum.sort(for {"x-incus-" <> _ = key, value} <- request.headers, do: {key, value})
+
+  defp zero(map) when is_map(map) do
+    map
+    |> Enum.map(fn {key, value} -> {key, zero(value)} end)
+    |> Enum.reject(fn {_, value} -> value in [nil, "", false, 0, [], %{}] end)
+    |> Map.new()
+  end
+
+  defp zero(list) when is_list(list), do: Enum.map(list, &zero/1)
+  # The other side's origin differs between fixture pairs; Go's zero time is a zero value.
+  defp zero("https://localhost:" <> _), do: "origin"
+  defp zero("0001-01-01T00:00:00Z"), do: nil
+  defp zero(value), do: value
+
+  # Every multipart part as {form name, filename, bytes}.
+  defp parts(request) do
+    {_, _, params} = :cow_http_hd.parse_content_type(request.headers["content-type"])
+    {_, boundary} = List.keyfind(params, "boundary", 0)
+    parts(request.body, boundary, [])
+  end
+
+  defp parts(body, boundary, acc) do
+    case :cow_multipart.parse_headers(body, boundary) do
+      {:ok, headers, rest} ->
+        {_, disposition} = List.keyfind(headers, "content-disposition", 0)
+        {"form-data", params} = :cow_multipart.parse_content_disposition(disposition)
+        {:done, bytes, rest} = :cow_multipart.parse_body(rest, boundary)
+        name = elem(List.keyfind(params, "name", 0), 1)
+        filename = elem(List.keyfind(params, "filename", 0), 1)
+        parts(rest, boundary, [{name, filename, bytes} | acc])
+
+      {:done, _} ->
+        Enum.reverse(acc)
+    end
+  end
+
+  # The operation IDs a side's operation reads (waits and polls) named.
+  defp operation_reads(side),
+    do:
+      for(
+        request <- HTTPFixture.requests(side.fixture),
+        request.method == "GET",
+        "/1.0/operations/" <> rest <- [URI.parse(request.target).path],
+        do: rest |> String.split("/") |> hd()
+      )
+
+  defp alias_names(side),
+    do:
+      for(
+        request <- HTTPFixture.requests(side.fixture),
+        kind(request) == :alias,
+        do: Jason.decode!(request.body)["name"]
+      )
+
+  defp deletes(side), do: for({"DELETE", target, _} <- mutations(side), do: target)
+
+  defp count(source, target, kind),
+    do:
+      Enum.count(
+        HTTPFixture.requests(source.fixture) ++ HTTPFixture.requests(target.fixture),
+        &(kind(&1) == kind)
+      )
+
+  defp later(:pull, :secret), do: [:create]
+  defp later(:push, :token), do: [:export]
+  defp later(_, _), do: [:alias]
+
+  # The image copy request a fixture request is.
+  defp kind(%{method: "POST"} = request) do
+    case String.split(URI.parse(request.target).path, "/", trim: true) do
+      ["1.0", "images", "aliases"] -> :alias
+      ["1.0", "images", _, "secret"] -> :secret
+      ["1.0", "images", _, "export"] -> :export
+      ["1.0", "images"] -> image_post(request)
+      _ -> :other
+    end
+  end
+
+  defp kind(_request), do: :read
+
+  defp image_post(request) do
+    case request.headers["content-type"] do
+      "application/json" <> _ ->
+        if get_in(Jason.decode!(request.body), ["source", "mode"]) == "push",
+          do: :token,
+          else: :create
+
+      _ ->
+        :upload
+    end
+  end
+
+  # Source and target backends serving one image, whose copy operation ends with
+  # `outcome` and whose mutation replies of the given kinds are lost or malformed.
+  defp pair(root, identity, image, extensions, outcome, replies \\ %{}) do
+    sides =
+      for name <- ["source", "target"],
+          do: backend(root, identity, name, image, extensions, outcome, replies)
+
+    List.to_tuple(sides)
+  end
+
+  defp backend(root, identity, name, image, extensions, outcome, replies) do
+    state = start_supervised!({Agent, fn -> MapSet.new() end}, id: make_ref())
+    certificate = if identity, do: File.read!(identity.certfile), else: ""
+
+    side = %{
+      name: name,
+      image: image,
+      extensions: extensions,
+      certificate: certificate,
+      outcome: outcome,
+      replies: replies,
+      state: state
+    }
+
+    options =
+      if identity,
+        do: [
+          transport: :ssl,
+          certfile: identity.certfile,
+          keyfile: identity.keyfile,
+          peer_options: [
+            cacertfile: identity.cafile,
+            verify: :verify_peer,
+            fail_if_no_peer_cert: true
+          ]
+        ],
+        else: [
+          transport: :gen_tcp,
+          path: Path.join(root, "#{name}-#{System.unique_integer([:positive])}")
+        ]
+
+    handler = &respond(side, &1)
+    fixture = start_supervised!({HTTPFixture, options ++ [handler: handler]}, id: make_ref())
+    endpoint = HTTPFixture.endpoint(fixture)
+    connection_opts = [owner: :fixture, project: "fixture", timeout: 5_000]
+
+    connection =
+      if identity,
+        do:
+          Connection.https!(
+            endpoint.url,
+            connection_opts ++
+              [
+                tls: [
+                  cacertfile: identity.cafile,
+                  certfile: identity.certfile,
+                  keyfile: identity.keyfile
+                ]
+              ]
+          ),
+        else: Connection.unix!(endpoint.socket, connection_opts)
+
+    client = %Incus{
+      connection: connection,
+      context: Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end),
+      server: %Server{
+        api_extensions: extensions,
+        environment: %{"server_name" => name, "certificate" => certificate}
+      }
+    }
+
+    %{name: name, fixture: fixture, endpoint: endpoint, client: client, origin: endpoint[:url]}
+  end
+
+  defp respond(side, request) do
+    path = URI.parse(request.target).path
+
+    case {request.method, String.split(path, "/", trim: true)} do
+      {"GET", ["1.0"]} ->
+        discovery(side)
+
+      {"POST", _} ->
+        case side.replies[kind(request)] do
+          :lost -> %{raw: ""}
+          :malformed -> %{status: 200, body: "malformed"}
+          nil -> mutation(kind(request))
+        end
+
+      # The pinned upload's operation waits on the event stream rather than /wait.
+      {"GET", ["1.0", "events"]} ->
+        %{upgrade: &events(side, request, &1, &2)}
+
+      {"GET", ["1.0", "images", _, "export"]} ->
+        export(side.image)
+
+      {"GET", ["1.0", "operations", id | wait]} ->
+        # The pinned wait blocks on /wait until the operation is final; polls answer now.
+        if wait != [], do: settle(side, id, System.monotonic_time(:millisecond) + 3_000)
+        %{status: 200, body: %{type: "sync", metadata: operation(side, id)}}
+
+      {"DELETE", ["1.0", "operations", id]} ->
+        Agent.update(side.state, &MapSet.put(&1, id))
+        %{status: 200, body: %{type: "sync", status_code: 200, metadata: %{}}}
+    end
+  end
+
+  defp discovery(side),
+    do: %{
+      status: 200,
+      body: %{
+        type: "sync",
+        metadata: %{
+          api_version: "1.0",
+          auth: "trusted",
+          api_extensions: side.extensions,
+          environment: %{server_name: side.name, certificate: side.certificate}
+        }
+      }
+    }
+
+  defp mutation(:alias),
+    do: %{status: 200, body: %{type: "sync", status_code: 200, metadata: %{}}}
+
+  defp mutation(:secret), do: accepted("secret", %{secret: "pull-secret"})
+  defp mutation(:token), do: accepted("token", %{secret: "push-secret"})
+  defp mutation(:export), do: accepted("export", %{})
+  defp mutation(_create_or_upload), do: accepted("copy", %{})
+
+  defp accepted(id, metadata),
+    do: %{
+      status: 202,
+      body: %{
+        type: "async",
+        status_code: 100,
+        operation: "/1.0/operations/" <> id,
+        metadata: running(id, metadata)
+      }
+    }
+
+  defp running(id, metadata),
+    do: %{
+      id: id,
+      class: if(id in ["copy", "export"], do: "task", else: "token"),
+      status: "Running",
+      status_code: 103,
+      err: "",
+      may_cancel: true,
+      metadata: metadata
+    }
+
+  defp operation(side, id) do
+    cond do
+      MapSet.member?(Agent.get(side.state, & &1), id) ->
+        %{id: id, status: "Cancelled", status_code: 401, err: "operation cancelled"}
+
+      id not in ["copy", "export"] or side.outcome == :cancel ->
+        running(id, if(id == "token", do: %{secret: "push-secret"}, else: %{}))
+
+      side.outcome == :failure ->
+        %{id: id, status: "Failure", status_code: 400, err: "boom", may_cancel: false}
+
+      true ->
+        %{
+          id: id,
+          status: "Success",
+          status_code: 200,
+          err: "",
+          may_cancel: false,
+          metadata: %{fingerprint: side.image["fingerprint"]}
+        }
+    end
+  end
+
+  defp settle(side, id, deadline) do
+    if operation(side, id).status == "Running" and id in ["copy", "export"] and
+         System.monotonic_time(:millisecond) < deadline do
+      Process.sleep(10)
+      settle(side, id, deadline)
+    end
+  end
+
+  # Complete the upgrade, then send the copy operation's event once it is final.
+  defp events(side, request, transport, socket) do
+    accept = Base.encode64(:crypto.hash(:sha, request.headers["sec-websocket-key"] <> @guid))
+
+    :ok =
+      transport.send(socket, [
+        "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: ",
+        accept,
+        "\r\n\r\n"
+      ])
+
+    settle(side, "copy", System.monotonic_time(:millisecond) + 3_000)
+
+    event = %{
+      type: "operation",
+      timestamp: "2026-10-28T00:00:00Z",
+      metadata: operation(side, "copy")
+    }
+
+    transport.send(socket, WebSocketFixture.frame(1, Jason.encode!(event)))
+    # Hold the stream until the client disconnects.
+    transport.recv(socket, 0, 3_000)
+  end
+
+  defp export(%{"type" => "virtual-machine"}) do
+    body =
+      part("metadata", "meta.tar", @metadata) <>
+        part("rootfs.img", "root.img", @rootfs) <> "--fixture-export--\r\n"
+
+    raw(body, "multipart/form-data; boundary=fixture-export")
+  end
+
+  defp export(_image), do: raw(@metadata, "application/octet-stream")
+
+  defp raw(body, type),
+    do: %{
+      raw:
+        "HTTP/1.1 200 OK\r\nContent-Type: #{type}\r\nContent-Length: #{byte_size(body)}\r\nContent-Disposition: attachment; filename=\"meta.tar\"\r\n\r\n" <>
+          body
+    }
+
+  defp part(name, filename, bytes),
+    do:
+      ~s(--fixture-export\r\nContent-Disposition: form-data; name="#{name}"; filename="#{filename}"\r\nContent-Type: application/octet-stream\r\n\r\n) <>
+        bytes <> "\r\n"
+
+  defp fingerprint(bytes), do: Base.encode16(:crypto.hash(:sha256, bytes), case: :lower)
+
+  defp identity(_root, :unix), do: nil
+
+  defp identity(root, :https),
+    do: TLSIdentity.generate(root, "s05-#{System.unique_integer([:positive])}", "localhost")
+end

@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.OCIOriginReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus.{Connection, Context, Error, HTTP, OCI, RequestContext}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
   @info_driver Path.expand("../.integration/oci-origin-info-driver", __DIR__)
@@ -36,15 +36,35 @@ defmodule Opsmaru.Incus.OCIOriginReferenceTest do
   end
 
   test "native origin metadata and HTTP handle are passive and independent of credential files",
-       %{identity: identity} do
+       %{root: root} do
+    # Each pass deletes its credential files, so each gets its own identity.
+    for pinned <- [false, true] do
+      identity = TLSIdentity.generate(root, "oci-origin-#{pinned}", "localhost")
+      origin(identity, if(pinned, do: File.read!(identity.certfile), else: ""))
+    end
+  end
+
+  test "an OCI certificate must be one PEM certificate", %{identity: identity} do
     fixture = fixture(identity, fn _ -> %{status: 200, body: %{}} end)
-    client = client(fixture, identity)
+    pem = File.read!(identity.certfile)
+
+    for certificate <- [nil, "not pem", pem <> pem, File.read!(identity.keyfile)] do
+      assert_raise ArgumentError, fn -> client(fixture, identity, certificate: certificate) end
+    end
+
+    assert_raise ArgumentError, fn -> client(fixture, identity, other: true) end
+  end
+
+  defp origin(identity, certificate) do
+    fixture = fixture(identity, fn _ -> %{status: 200, body: %{}} end)
+    client = client(fixture, identity, certificate: certificate)
 
     expected =
       oracle(@info_driver, %{
         Protocol: "oci",
         URL: HTTPFixture.endpoint(fixture).url,
-        CA: File.read!(identity.cafile)
+        CA: File.read!(identity.cafile),
+        Certificate: certificate
       })
 
     for path <- [identity.cafile, identity.certfile, identity.keyfile], do: File.rm!(path)
@@ -180,7 +200,9 @@ defmodule Opsmaru.Incus.OCIOriginReferenceTest do
     fixture =
       fixture(identity, fn _ ->
         send(parent, :dispatched)
-        Process.sleep(200)
+
+        # Outlast the cancellation however slow the VM; the response is never read.
+        Process.sleep(5_000)
         %{status: 200, body: %{}}
       end)
 
@@ -191,14 +213,14 @@ defmodule Opsmaru.Incus.OCIOriginReferenceTest do
     task =
       Task.async(fn -> OCI.http_request(client, "POST", "/v2/mutation", body: <<0, 255>>) end)
 
-    assert_receive :dispatched, 1_000
+    assert_receive :dispatched, 2_500
     RequestContext.cancel(scope)
     assert {:error, %Error{kind: :uncertain}} = Task.await(task, 1_000)
     assert length(HTTPFixture.requests(fixture)) == 1
     assert original.connection.request_context == nil
   end
 
-  defp client(fixture, identity) do
+  defp client(fixture, identity, opts \\ []) do
     connection =
       Connection.https!(HTTPFixture.endpoint(fixture).url,
         owner: :fixture,
@@ -209,10 +231,13 @@ defmodule Opsmaru.Incus.OCIOriginReferenceTest do
 
     context = Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end)
 
-    OCI.new!(connection, context, NoCallAdapter, %{
-      private: "adapter credentials",
-      origin: "https://other.invalid"
-    })
+    OCI.new!(
+      connection,
+      context,
+      NoCallAdapter,
+      %{private: "adapter credentials", origin: "https://other.invalid"},
+      opts
+    )
   end
 
   defp fixture(identity, handler),

@@ -1,9 +1,9 @@
 name: CI
-# One run per commit: pull requests into the long-lived branches, and pushes
-# after merge. Feature branches get CI through their PR.
+# One run per commit: every pull request (including stacked PRs whose base is
+# another feature branch), and pushes to the long-lived branches after merge.
+# Feature branch pushes never trigger on their own; they get CI through their PR.
 on:
   pull_request:
-    branches: [develop, main]
   push:
     branches: [develop, main]
   workflow_dispatch:
@@ -16,7 +16,10 @@ jobs:
       matrix:
         os: [ubuntu-24.04, macos-15]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 35
+    # Measured Nov 2026 with the parallel suite: whole jobs take ~10 min on
+    # ubuntu-24.04 (4 cores) and ~9 min on macos-15 (3 cores), down from 32-35 min
+    # serial. 30 leaves headroom for a cold Go cache and a growing suite.
+    timeout-minutes: 30
     env:
       # Hostile web settings: the library must ignore them.
       PHX_SERVER: 'true'
@@ -30,11 +33,35 @@ jobs:
           install: false
       - run: mise trust && mise install
       - run: mise exec -- mix local.hex --force && mise exec -- mix local.rebar --force && mise exec -- mix deps.get
+      - name: Locate Go caches
+        id: go-cache
+        run: |
+          echo "build=$(mise exec -- go env GOCACHE)" >> "$GITHUB_OUTPUT"
+          echo "modules=$(mise exec -- go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ steps.go-cache.outputs.build }}
+            ${{ steps.go-cache.outputs.modules }}
+          key: go-${{ runner.os }}-${{ hashFiles('test/reference/go.sum', 'mise.toml') }}
+          restore-keys: go-${{ runner.os }}-
+      # The async suite builds dozens of reference drivers at once; compile their
+      # shared packages first so that burst is only linking.
+      - name: Warm the Go reference build
+        working-directory: test/reference
+        run: mise exec -- go build ./...
       - run: mise run check
       - run: mise run check:reference
       - name: Isolated immutable Git consumer
         env:
+          OPSMARU_INCUS_GATEWAY_REPORT: ${{ runner.temp }}/gateway-consumer-${{ runner.os }}.json
           # PR github.sha is a synthetic merge commit, absent from normal Git fetches.
           OPSMARU_INCUS_FIXTURE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
           OPSMARU_INCUS_FIXTURE_REPOSITORY: ${{ github.event.pull_request.head.repo.clone_url || format('{0}/{1}.git', github.server_url, github.repository) }}
         run: python3 scripts/check-consumer.py
+      - name: Gateway consumer evidence
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gateway-consumer-${{ runner.os }}
+          path: ${{ runner.temp }}/gateway-consumer-${{ runner.os }}.json
+          if-no-files-found: error
