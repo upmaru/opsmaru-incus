@@ -1,0 +1,20 @@
+{
+  "source_repository": "https://github.com/upmaru/macus",
+  "source_revision": "5a8fb236dfbed28e513b6789b18f0f6ee6e7fbc0",
+  "license": "MIT; see priv/notices/macus-MIT.txt and priv/notices/MACUS-NOTICE.md",
+  "adaptation": "Module namespace Macus.TestSupport. renamed to Opsmaru.TestSupport.Gateway.; no other change. Later Opsmaru edits are tracked by Git and must update transferred_sha256 deliberately.",
+  "files": [
+    {
+      "source": "server/test/support/cowboy_upgrade_fixture.ex",
+      "destination": "test/support/gateway/cowboy_upgrade_fixture.ex",
+      "source_sha256": "a2256b35fe9137c73eb26a7a8398bf7bd016782e40a0617b94534ca16c49a024",
+      "transferred_sha256": "4db9c2a7e0ac0e2b9011a820d2c972b8103f9f962244807e6f3f250fa444113c"
+    },
+    {
+      "source": "LICENSE",
+      "destination": "priv/notices/macus-MIT.txt",
+      "source_sha256": "4540d8d1933847e351ecc79aea1e532b1b712b957c0c6b670abbb55abc828488",
+      "transferred_sha256": "4540d8d1933847e351ecc79aea1e532b1b712b957c0c6b670abbb55abc828488"
+    }
+  ]
+}

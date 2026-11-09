@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.ProjectionsReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus.{Error, Model, Projections}
   @driver Path.expand("../.integration/projections-driver", __DIR__)
 

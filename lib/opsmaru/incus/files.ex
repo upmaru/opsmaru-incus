@@ -78,6 +78,61 @@ defmodule Opsmaru.Incus.Files do
 
   defp finish_read(_, info), do: {:ok, info}
 
+  @doc """
+  Native `HEAD /1.0/instances/{name}/files?path=...`: the file's metadata from the
+  response headers (uid, gid, mode, type, modification time and, for a file, its
+  size), with no body. The pinned client has no HEAD method. Returns
+  `{:ok, %Opsmaru.Incus.Transfer{result: metadata}}`.
+  """
+  def head(client, instance, path), do: head_path(client, file_path(instance, path))
+
+  @doc "Native `HEAD` of a storage volume file; see `head/3`."
+  def volume_head(client, pool, type, name, path),
+    do:
+      head_path(
+        client,
+        volume_path(pool, type, name) <> "/files?" <> URI.encode_query(path: path)
+      )
+
+  defp head_path(client, path) do
+    ref = make_ref()
+
+    handler = fn
+      {:headers, headers} ->
+        Process.put(ref, Map.merge(Process.get(ref, %{}), headers))
+        :ok
+
+      # A HEAD response never carries a body.
+      {:data, _} ->
+        {:error, :invalid_response}
+
+      :done ->
+        headers = Process.get(ref, %{})
+
+        with {:ok, parsed} <- FileHeaders.parse(headers),
+             {:ok, size} <- size(headers["content-length"]) do
+          {:ok,
+           Map.merge(parsed, %{
+             modified: headers["x-incus-modified"],
+             size: size,
+             headers: headers
+           })}
+        end
+    end
+
+    Transfer.head(client, path, handler)
+  end
+
+  # Only regular files report a size; directories and symlinks omit it.
+  defp size(nil), do: {:ok, nil}
+
+  defp size(value) do
+    case Integer.parse(value) do
+      {size, ""} when size >= 0 -> {:ok, size}
+      _ -> {:error, :invalid_response}
+    end
+  end
+
   def create(client, instance, path, source, opts \\ []) do
     create_path(client, file_path(instance, path), source, opts)
   end

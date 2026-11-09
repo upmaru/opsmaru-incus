@@ -16,12 +16,49 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
       ~w(request field_presence routing native_400 native_403 native_404 native_412 response_loss_no_replay deadline cancellation preflight unconditional_rejection),
     "sync_mutation" =>
       ~w(request sync_success routing binding native_400 native_403 native_404 native_409 native_412 malformed_reply response_loss_no_replay preflight),
+    "file_transfer" =>
+      ~w(request routing path_selector read_bytes directory_entries symlink ownership_mode create_headers write_modes delete head_metadata head_no_body native_400 native_403 native_404 byte_bounds upload_bounds deadline cancellation caller_loss response_loss_no_replay preflight),
+    "byte_stream" =>
+      ~w(request populated routing exact_selectors acknowledged_sink native_400 native_403 native_404 byte_bounds chunk_bounds deadline cancellation caller_loss no_host_files upload response_loss_no_replay preflight template_list template_delete),
+    "archive" =>
+      ~w(request populated routing native_400 native_403 native_404 backup_inspection backup_writes native_wait accepted_identity bucket_create export_bytes direct_backup instance_import import_overrides volume_import iso_import bucket_import acknowledged_sink byte_bounds upload_bounds deadline cancellation caller_loss no_host_files response_loss_no_replay preflight),
+    "migration" =>
+      ~w(request routing sync_success native_400 native_403 native_404 native_409 native_412 accepted_identity native_wait response_loss_no_replay rename migration_guards migration_sources instance_moves local_copy pull push relay relay_channels live_channels relay_differences relay_lifetime remote_wait remote_cancel approved_origin collection_route volume_types import_modes preflight),
+    "image_transfer" =>
+      ~w(request routing native_400 native_403 native_404 native_409 native_412 accepted_identity native_wait response_loss_no_replay image_sources uploads upload_headers split_images compression downloads host_sinks oci_exports fingerprint_checks push_export pull push relay remote_wait remote_cancel token_cleanup aliases local_deadline copy_differences copy_guards approved_origin preflight),
+    "console" =>
+      ~w(request routing native_400 native_403 native_404 accepted_identity response_loss_no_replay static_console dynamic_console console_types terminal_size force control_first ignored_channels control_frames data_frames write_barriers detach_close missing_control invalid_stream_metadata stream_negotiation repeated_attachments capacity channel_failure owner_loss lifetime peer_closure redaction host_channels preflight),
+    "raw_upgrade" =>
+      ~w(request routing upgrade_headers path_escaping reuse writable initial_bytes duplex coalesced_bytes oracle_byte_loss half_close half_close_writes native_403 native_404 no_retry redaction bad_framing response_bound handshake_deadline caller_loss blocked_writes local_close lifetime typed_options preflight extension_guards),
+    "typed_sftp" =>
+      ~w(request routing version_extensions path_operations compound_operations path_helpers attributes status_errors open_flags cursor_io positional_io end_of_file short_reads pipelined_reads read_ahead sequential_writes concurrent_uploads host_sources host_sinks file_attributes fsync closed_files file_lock shared_sessions opener_lifetime request_deadline response_loss_no_replay frame_failures in_flight_bound caller_loss packet_bounds preflight),
+    "oci_image_server" =>
+      ~w(construction readiness alias_normalization projection fingerprint architectures alias_architectures vm_rejection unsupported_methods immutable_cache cache_miss failed_lookup connection_info certificate http_requests uncertain_http disconnect metadata_yaml binary_sinks stream_bounds foreign_emitter inspection_bounds deadline cancellation caller_loss cleanup host_failures redaction copy_pull copy_push copy_relay registry_credentials private_images instance_create instance_rebuild approved_origin preflight),
+    "simplestreams_image_server" =>
+      ~w(construction readiness connection_info certificate http_requests disconnect explicit_refresh projection aliases alias_architectures unsupported_methods catalog_errors catalog_limits image_files file_checksum combined_fingerprint download_errors stream_bounds cache_expiry stale_fallback cache_invalidation cache_failures delta_manifest delta_source delta_fallback delta_failures deadline cancellation caller_loss cleanup redaction copy_pull copy_push copy_relay private_images instance_create instance_rebuild approved_origin preflight),
+    "binary_download" =>
+      ~w(request populated routing native_400 native_403 native_404 byte_bounds deadline cancellation acknowledged_sink no_implicit_delete preflight),
     "read_contract" =>
       ~w(request populated empty corrupt native_403 native_404 routing binding response_bound readiness deadline cancellation),
     "live_exec" =>
       ~w(collected non_waiting interactive record_output user_group_cwd_size empty_output routing upgrade_targets extension_guards control_frames control_range native_400 native_403 native_404 accepted_identity response_loss_no_replay stream_negotiation invalid_stream_metadata pending_status missing_channels redaction preflight stdin_chunking blocked_stdin deadline cancellation owner_loss sink_limit running_failed close_barrier_abrupt peer_closure)
   }
   @evidence_kinds ~w(named_go_differential raw_query_transport independent_fixture)
+  # A protocol-level contract without REST rows names the pinned declarations it
+  # covers instead; every declaration matching its prefixes, and each exact source
+  # path it certifies, must be listed.
+  @rowless %{
+    "oci_image_server" =>
+      {["client/method/ProtocolOCI.", "client/function/ConnectOCI"],
+       ~w(client/method/ProtocolIncus.CopyImage client/method/ProtocolIncus.CreateInstanceFromImage client/method/ProtocolIncus.RebuildInstanceFromImage)},
+    "simplestreams_image_server" =>
+      {["client/method/ProtocolSimpleStreams.", "client/function/ConnectSimpleStreams"],
+       ~w(client/method/ProtocolIncus.CopyImage client/method/ProtocolIncus.CreateInstanceFromImage client/method/ProtocolIncus.RebuildInstanceFromImage)}
+  }
+  # A documented route the daemon does not register, reconciled to the route it does
+  # (approved source discrepancy): the row maps the registered method, never sent as
+  # the documented verb.
+  @reconciled %{"GET /1.0/instances/{}/debug/repair" => "POST /1.0/instances/{}/debug/repair"}
 
   # Classification and link integrity, plus reviewed completion-record consistency.
   # Records name their evidence; the canonical check runs the actual tests.
@@ -34,7 +71,8 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     assert audit["source"] == %{"path" => native["source"], "sha256" => native["sha256"]}
     assert audit["server_sources"] == native["server_sources"], "stale server sources"
     assert audit["classification_complete"] == true
-    assert audit["behavior_complete"] == false and audit["complete_port"] == false
+    assert is_boolean(audit["behavior_complete"])
+    assert audit["complete_port"] == false
     rows = audit["entries"]
     keys = Enum.map(rows, & &1["pair"])
     assert length(keys) == 247 and length(Enum.uniq(keys)) == 247, "duplicate or missing pairs"
@@ -76,9 +114,16 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
 
     anchor!(audit["baseline_evidence"])
     for row <- rows, do: row!(row, methods, audit, server, selected_rows)
-    extras!(audit, server, keys)
+    extras!(audit, server, keys, methods)
     links!(audit)
     completion!(audit, selected, Map.new(methods, &{&1["name"], &1}))
+
+    if audit["behavior_complete"] do
+      assert Enum.all?(rows ++ audit["supplemental_server_entries"], & &1["behavior_complete"]) and
+               Enum.all?(audit["stream_contracts"], &(&1["status"] == "certified")),
+             "incomplete behavioral gate"
+    end
+
     :ok
   end
 
@@ -87,7 +132,11 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     exact = Enum.filter(methods, &(normalize(&1["verb"] <> " " <> &1["path"]) == key))
     custom = Enum.filter(methods, &(custom_pair(&1) == key and &1 not in exact))
     linked = exact ++ custom
-    assert row["methods"] == Enum.map(linked, & &1["name"]), "stale method mapping"
+
+    reconciled =
+      Enum.filter(methods, &(normalize(&1["verb"] <> " " <> &1["path"]) == @reconciled[key]))
+
+    assert row["methods"] == Enum.map(linked ++ reconciled, & &1["name"]), "stale method mapping"
     helper_ids = for {id, helper} <- audit["helpers"], helper["pair"] == key, do: id
     assert Enum.sort(row["helpers"]) == Enum.sort(helper_ids), "stale helper mapping"
 
@@ -182,7 +231,6 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
   defp classification(key, exact, custom, helper_ids) do
     cond do
       key == "GET /1.0/instances/{}/debug/repair" -> "source_discrepancy"
-      key == "POST /1.0/storage-pools/{}/volumes" -> "equivalent_route"
       exact != [] -> "catalogue"
       custom != [] -> "catalogue_custom"
       helper_ids != [] -> "helper"
@@ -190,7 +238,7 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     end
   end
 
-  defp extras!(audit, server, keys) do
+  defp extras!(audit, server, keys, methods) do
     extras = audit["supplemental_server_entries"]
 
     assert Enum.map(extras, & &1["pair"]) == Enum.sort(Map.keys(server) -- keys),
@@ -198,8 +246,24 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
 
     for row <- extras do
       assert row["server"] == server[row["pair"]]
-      assert row["classification"] == "missing_typed" and row["behavior_complete"] == false
+      typed = for m <- methods, normalize(m["verb"] <> " " <> m["path"]) == row["pair"], do: m
+
+      assert row["classification"] == if(typed == [], do: "missing_typed", else: "catalogue"),
+             "misleading classification"
+
       assert audit["backlog"][row["backlog"]]["exit"] not in [nil, ""]
+
+      # A server-only route completes only through the record of the documented row
+      # reconciled to it, which must list its typed methods.
+      if row["behavior_complete"] do
+        record = audit["completion_records"][row["completion_record"]]
+        assert record && typed != [], "unsupported completion claim"
+
+        assert Enum.all?(typed, &(&1["name"] in record["methods"])),
+               "unsupported completion claim"
+      else
+        assert is_nil(row["completion_record"]), "unsupported completion claim"
+      end
     end
   end
 
@@ -278,7 +342,11 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     required = required_cases(record, catalogue)
     assert approved?(record), "unapproved completion record"
     anchor!(record["design"])
-    assert record["rows"] != [], "empty completion record"
+
+    if Map.has_key?(@rowless, record["kind"]),
+      do: rowless!(record),
+      else: assert(record["rows"] != [], "empty completion record")
+
     listed = Enum.map(record["rows"], &rows[&1])
 
     for row <- listed,
@@ -304,6 +372,32 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
     for field <- ~w(bodies result separate_acceptance),
         do:
           assert(is_binary(record[field]) and record[field] != "", "missing completion #{field}")
+  end
+
+  defp rowless!(record) do
+    assert record["rows"] == [] and record["stream_contracts"] != [],
+           "unrelated completion record"
+
+    ids =
+      Jason.decode!(File.read!("priv/incus/coverage.json"))["entries"]
+      |> Enum.map(& &1["id"])
+
+    {prefixes, exact} = @rowless[record["kind"]]
+    required = Enum.filter(ids, &(String.starts_with?(&1, prefixes) or &1 in exact))
+    declarations = record["declarations"]
+
+    assert is_list(declarations) and declarations -- ids == [] and required -- declarations == [],
+           "stale completion declarations"
+
+    assert record["functions"] != [], "missing public client function"
+
+    for [module, function, arity] <- record["functions"] do
+      module = Module.concat([module])
+      Code.ensure_loaded!(module)
+
+      assert {String.to_existing_atom(function), arity} in module.__info__(:functions),
+             "missing public client function"
+    end
   end
 
   # Every documented view is supported with classified selectors or approved-excluded.
@@ -421,9 +515,16 @@ defmodule Opsmaru.TestSupport.EndpointInventory do
 
   defp approved?(_), do: false
 
+  # Raw reads skip the VM's single file server, which concurrent validations would queue on.
   defp anchor!([path, anchor]) do
-    assert anchor != "" and File.regular?(path) and String.contains?(File.read!(path), anchor),
+    assert anchor != "" and File.regular?(path, raw: true) and
+             String.contains?(raw_read!(path), anchor),
            "missing source anchor"
+  end
+
+  defp raw_read!(path) do
+    {:ok, source} = :file.read_file(path, [:raw])
+    source
   end
 
   defp normalize(pair),

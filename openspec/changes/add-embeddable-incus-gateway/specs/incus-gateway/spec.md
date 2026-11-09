@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Provides a native Incus gateway that a host can mount in its existing server, with explicit policy, transparent bounded transports and acceptance independent of Macus installation or virtualization.
+Provides a native Incus gateway that a host can mount in its existing server, with explicit policy, transparent bounded transports, cross-server migration at pinned Go client parity and acceptance independent of Macus installation or virtualization.
 
 ## ADDED Requirements
 
@@ -38,6 +38,11 @@ Discovery, advertised gateway identity and certificate enrollment/trust SHALL be
 - **WHEN** a standard Incus client inspects or enrolls against the gateway
 - **THEN** responses identify the host-selected public gateway and its host-owned trust policy without enrolling guest trust or exposing private addresses
 
+#### Scenario: Advertised server addresses
+
+- **WHEN** an authorized client reads `GET /1.0` through the gateway
+- **THEN** `environment.addresses` and `environment.certificate` carry only the host-approved public gateway addresses and certificate, and other environment fields stay native
+
 ### Requirement: Native HTTP relay
 
 Authorized workload HTTP SHALL preserve canonical routes, encoded paths, query semantics, native errors/statuses, ETags and operation identities. Binary requests/responses SHALL stream with bounded memory and backpressure. Header handling SHALL preserve end-to-end semantics and reject unsafe framing. Workload payloads MUST NOT be reconstructed through a typed-method catalogue.
@@ -60,6 +65,31 @@ Advertised capabilities SHALL reflect the verified backend, configured host poli
 
 - **WHEN** a backend or verified host policy cannot support a requested migration negotiation
 - **THEN** the gateway reports the specific unsupported condition without following private addresses, while any implementation or acceptance gap remains separately visible
+
+### Requirement: Cross-server migration parity
+
+Instance and snapshot copy/move SHALL work through the gateway in relay, pull and push modes, with the gateway as source or target, as the pinned v7.0.1 Go client negotiates them. Endpoints derived from the gateway connection SHALL resolve only to host-approved public gateway addresses. Guest-side reachability failures SHALL be reported natively without retrying through another address.
+
+The pinned v7.0.1 CLI's unsupported snapshot `move` SHALL preserve its native `400 Invalid instance name` failure before any migration mutation, retaining the source. These cases SHALL be recorded as native limitations separately from successful transfers and count as pinned native parity, following the explicit user decision on 2026-11-07. The gateway SHALL NOT synthesize a compensating copy or deletion.
+
+#### Scenario: Pull copy from the gateway
+
+- **WHEN** an authorized client copies an instance in pull mode from a gateway-fronted source to another Incus server
+- **THEN** the target server connects to the gateway's public address, is admitted to that operation's WebSocket only by host policy and the copy completes without any guest address being offered
+
+#### Scenario: Pinned CLI snapshot move limitation
+
+- **WHEN** the unchanged pinned CLI attempts snapshot `move` in relay, pull or push mode with either gateway orientation
+- **THEN** the native invalid-instance-name error is preserved before any migration POST or DELETE, and the case is reported as an upstream CLI limitation with the source retained
+
+### Requirement: Operation-secret peer admission
+
+An untrusted Incus server peer SHALL reach only the operation WebSocket route of the named operation, only with an operation secret and only after an explicit host admission decision. The backend SHALL still validate the secret, and diagnostics SHALL redact it.
+
+#### Scenario: Secret outside its operation
+
+- **WHEN** an untrusted server peer presents an operation secret on any other route or for another operation
+- **THEN** the gateway denies it before backend access
 
 ### Requirement: Native WebSocket relay
 
@@ -90,7 +120,7 @@ Requests and streams SHALL have bounded admission, deadlines, buffering and clea
 
 ### Requirement: Truthful mutation outcome
 
-The gateway MUST NOT automatically replay a potentially accepted mutation after disconnect, timeout, redirect or uncertain response. Known native operation identity SHALL remain available. Discovery/address and migration negotiation SHALL use host-approved public endpoints rather than automatically following guest-advertised addresses.
+The gateway MUST NOT automatically replay a potentially accepted mutation after disconnect, timeout, redirect or uncertain response. Known native operation identity SHALL remain available. Discovery/address and migration negotiation SHALL use host-approved public endpoints rather than automatically following guest-advertised addresses. A frontend disconnect during migration MUST NOT cancel or replay the backend migration.
 
 #### Scenario: Lost accepted response
 
@@ -106,7 +136,14 @@ Gateway fixtures, typed-client coverage, isolated real-Incus acceptance, install
 - **WHEN** an operator explicitly supplies an isolated Incus backend and permits scoped test mutations
 - **THEN** the library repository can verify gateway behavior independently, without modifying Macus or claiming its installation/hardware acceptance
 
+#### Scenario: Bounded acceptance metadata-read recovery
+
+- **WHEN** the explicitly started acceptance host encounters only a metadata GET connection failure or a transport close before any parsed response observation
+- **THEN** it may retry that read while retaining only already-verified authority within the original cache lifetime, without updating freshness/entry expiry, learning unknown operations or making an initially unready host ready; fresh admission and existing leases still enforce their documented expiry/recheck bounds
+- **AND** any observed HTTP status, malformed HTTP, deadline, native/model/schema failure, cancellation, owner loss, marker change or trust revocation remains fail-closed; ownership/cancellation are checked after blocked reads before renewal, and decisive diagnostics remain visible without raw metadata or secrets
+- **AND** the library never retries a mutation and preserves uncertainty when an accepted mutation loses its response
+
 #### Scenario: Proxy passes while client coverage is missing
 
-- **WHEN** a standard client succeeds through the gateway for an unimplemented typed-client entry
-- **THEN** gateway evidence is recorded and the foundation task 3.9 gap remains open
+- **WHEN** a standard client succeeds through the gateway for a native call with no typed-client evidence
+- **THEN** gateway evidence is recorded separately and the coverage ledger entry stays unchanged

@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.MetadataHelpersReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus.{Error, Model, Operation, Response, Tokens}
   @driver Path.expand("../.integration/metadata-helpers-driver", __DIR__)
 

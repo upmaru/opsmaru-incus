@@ -1,9 +1,33 @@
 defmodule Opsmaru.Incus.EndpointEvidenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
+  # Deterministic CPU-bound validation; slow CI runners have taken over 60 s per test.
+  @moduletag timeout: 180_000
   alias Opsmaru.TestSupport.{EndpointEvidence, EndpointInventory}
   @manifest Jason.decode!(File.read!("priv/incus/endpoint-evidence.json"))
 
+  @completion_shards 8
+
   setup_all do
+    %{native: native!()}
+  end
+
+  @doc false
+  # The native inventory, built once per run however many modules ask at the same time.
+  def native! do
+    :global.trans({{__MODULE__, :native}, self()}, fn ->
+      case :persistent_term.get({__MODULE__, :native}, nil) do
+        nil ->
+          native = build_native()
+          :persistent_term.put({__MODULE__, :native}, native)
+          native
+
+        native ->
+          native
+      end
+    end)
+  end
+
+  defp build_native do
     reference_dir = Path.expand("reference", __DIR__)
     env = [{"GOTOOLCHAIN", "local"}]
 
@@ -28,8 +52,11 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
 
     assert status == 0, out
     {out, 0} = System.cmd(driver, [module["Dir"]])
-    %{native: Jason.decode!(out)}
+    Jason.decode!(out)
   end
+
+  @doc false
+  def completion_shards, do: @completion_shards
 
   test "full inventory classifies every REST view and reconciles server registrations", %{
     native: native
@@ -41,13 +68,13 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     [view | other_views] = first["documented_views"]
     views = [%{view | "selectors" => %{"recursion" => "99"}} | other_views]
     wrong_parameters = [%{view | "query_parameters" => ["absent"]} | other_views]
-    # The first row is complete, so the invented completion targets a partial row.
-    partial = Enum.find(audit["entries"], &(not &1["behavior_complete"]))
+    # Every row is complete, so the invented completion drops a row's record.
+    claimed = Enum.find(rest, & &1["behavior_complete"])
 
     invented =
       Enum.map(
         audit["entries"],
-        &if(&1 == partial, do: %{&1 | "behavior_complete" => true}, else: &1)
+        &if(&1 == claimed, do: Map.delete(&1, "completion_record"), else: &1)
       )
 
     for changed <- [
@@ -63,12 +90,79 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
           put_in(audit, ["entries"], [Map.put(first, "documented_views", []) | rest]),
           %{audit | "server_sources" => %{}},
           %{audit | "supplemental_server_entries" => []},
-          %{audit | "behavior_complete" => true},
+          %{audit | "complete_port" => true},
           %{audit | "stream_contracts" => []}
         ] do
       assert_raise ExUnit.AssertionError, fn ->
         EndpointInventory.validate!(changed, native)
       end
+    end
+  end
+
+  test "global closure cannot hide a coherent partial row, supplemental route or rowless protocol",
+       %{native: native} do
+    audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
+    row = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/certificates"))
+    partial = row |> Map.put("behavior_complete", false) |> Map.delete("completion_record")
+    root = Path.join(System.tmp_dir!(), "op-closure-#{System.unique_integer([:positive])}")
+    File.mkdir!(root)
+    on_exit(fn -> File.rm_rf!(root) end)
+    path = Path.join(root, "evidence.json")
+
+    selected =
+      update_in(@manifest, ["entries"], fn entries ->
+        Enum.map(entries, fn entry ->
+          if entry["completion_record"] == row["completion_record"],
+            do: entry |> Map.put("status", "partial") |> Map.delete("completion_record"),
+            else: entry
+        end)
+      end)
+
+    File.write!(path, Jason.encode!(selected))
+
+    partial_row =
+      audit
+      |> Map.put("selected_evidence", path)
+      |> Map.update!(
+        "entries",
+        &Enum.map(&1, fn entry -> if entry == row, do: partial, else: entry end)
+      )
+      |> update_in(["completion_records"], &Map.delete(&1, row["completion_record"]))
+
+    partial_repair =
+      update_in(audit, ["supplemental_server_entries"], fn [repair] ->
+        [repair |> Map.put("behavior_complete", false) |> Map.delete("completion_record")]
+      end)
+
+    open_protocol =
+      audit
+      |> update_in(["stream_contracts"], fn contracts ->
+        Enum.map(contracts, fn contract ->
+          if contract["id"] == "S12",
+            do:
+              contract
+              |> Map.put("status", "open_contract_certification")
+              |> Map.delete("completion_record"),
+            else: contract
+        end)
+      end)
+      |> update_in(["completion_records"], &Map.delete(&1, "s12_simplestreams_image_server_v1"))
+
+    for changed <- [partial_row, partial_repair, open_protocol] do
+      # These are valid partial ledgers. Only the global completion claim is invalid.
+      assert :ok = EndpointInventory.validate!(%{changed | "behavior_complete" => false}, native)
+
+      assert_raise ExUnit.AssertionError, ~r/incomplete behavioral gate/, fn ->
+        EndpointInventory.validate!(changed, native)
+      end
+    end
+  end
+
+  test "complete evidence inventory cannot omit a newly enumerated native pair", %{native: native} do
+    changed = Map.update!(native, "pairs", &(&1 ++ ["GET /1.0/future-endpoint"]))
+
+    assert_raise ExUnit.AssertionError, ~r/misleading inventory completeness/, fn ->
+      EndpointEvidence.validate!(@manifest, changed)
     end
   end
 
@@ -130,7 +224,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     end
   end
 
-  test "148 selected pairs have pinned REST provenance and specific existing evidence", %{
+  test "247 selected pairs have pinned REST provenance and specific existing evidence", %{
     native: native
   } do
     assert :ok = EndpointEvidence.validate!(@manifest, native)
@@ -149,13 +243,19 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
                GetAPIVersions GetCertificateFingerprints GetCertificate GetCluster GetClusterGroups GetClusterGroup GetClusterMemberNames GetClusterMember GetClusterMemberState GetMetadataConfiguration GetProjectAccess GetProjectState GetServerResources GetWarningUUIDs GetWarning
                UpdateServer CreateCertificate UpdateCertificate DeleteCertificate UpdateCluster UpdateClusterCertificate CreateClusterGroup RenameClusterGroup UpdateClusterGroup DeleteClusterGroup CreateClusterMember RenameClusterMember UpdateClusterMember DeleteClusterMember UpdateClusterMemberState CreateProfile RenameProfile UpdateProfile DeleteProfile CreateProject RenameProject UpdateProject DeleteProject UpdateWarning DeleteWarning
                PatchServer PatchCertificate PatchClusterGroup PatchClusterMember PatchImageAlias PatchInstanceMetadata PatchWarning
-               PatchNetworkACL PatchNetworkAddressSet PatchNetworkIntegration PatchNetworkZone PatchNetworkZoneRecord PatchNetwork PatchNetworkForward PatchNetworkLoadBalancer PatchNetworkPeer PatchStoragePool PatchStoragePoolBucket PatchStoragePoolVolume PatchStoragePoolVolumeSnapshot)
+               PatchNetworkACL PatchNetworkAddressSet PatchNetworkIntegration PatchNetworkZone PatchNetworkZoneRecord PatchNetwork PatchNetworkForward PatchNetworkLoadBalancer PatchNetworkPeer PatchStoragePool PatchStoragePoolBucket PatchStoragePoolVolume PatchStoragePoolVolumeSnapshot
+               GetStoragePoolBucketNames GetStoragePoolBucket GetStoragePoolBucketKeyNames GetStoragePoolBucketKey GetStoragePoolResources GetStoragePoolVolumeTypeNames GetStorageVolumeBitmaps GetStorageVolumeBitmap GetStoragePoolVolumeSnapshotNames GetStoragePoolVolumeSnapshot GetStoragePoolVolumeState
+               DeleteStoragePool DeleteStoragePoolBucket DeleteStoragePoolBucketKey DeleteStoragePoolVolume DeleteStorageVolumeBitmap DeleteStoragePoolVolumeSnapshot CreateStoragePool CreateStoragePoolBucketKey CreateStorageVolumeBitmap RebuildStoragePoolVolume CreateStoragePoolVolumeSnapshot RenameStoragePoolVolumeSnapshot UpdateStoragePool UpdateStoragePoolBucket UpdateStoragePoolBucketKey UpdateStoragePoolVolume UpdateStoragePoolVolumeSnapshot
+               DeleteImageAlias DeleteInstanceConsoleLog DeleteInstanceLogfile GetImageAliases GetImageAlias GetInstanceAccess GetInstanceLogfiles GetInstanceMetadata CreateImageAlias RenameImageAlias RefreshImage CreateImageSecret CreateInstanceBitmap RebuildInstance UpdateImageAlias UpdateImage UpdateInstances UpdateInstanceMetadata UpdateInstanceSnapshot
+               GetInstanceExecOutputNames DeleteInstanceExecOutput RepairInstance
+               GetInstanceTemplateFiles DeleteInstanceTemplateFile
+               DeleteInstanceFile
+               GetInstanceBackupNames GetInstanceBackup CreateInstanceBackup RenameInstanceBackup DeleteInstanceBackup GetStorageVolumeBackups GetStorageVolumeBackup CreateStorageVolumeBackup RenameStorageVolumeBackup DeleteStorageVolumeBackup GetStoragePoolBucketBackupNames GetStoragePoolBucketBackup CreateStoragePoolBucketBackup RenameStoragePoolBucketBackup DeleteStoragePoolBucketBackup CreateStoragePoolBucket
+               RenameInstance RenameInstanceSnapshot CreateStoragePoolVolume RenameStoragePoolVolume CreateStoragePoolVolumeInCollection
+               CreateImage ExportImage ConsoleInstance)
              )
 
-    assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{
-             "partial" => 2,
-             "complete" => 146
-           }
+    assert Enum.frequencies_by(@manifest["entries"], & &1["status"]) == %{"complete" => 247}
 
     coverage = Jason.decode!(File.read!("priv/incus/coverage.json"))
     assert coverage["endpoint_evidence"] == "priv/incus/endpoint-evidence.json"
@@ -300,8 +400,15 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"DELETE /1.0/certificates/{}", "b10_delete_certificates_one_v1"},
              {"DELETE /1.0/cluster/groups/{}", "b10_delete_cluster_groups_one_v1"},
              {"DELETE /1.0/cluster/members/{}", "b10_delete_cluster_members_one_v1"},
+             {"DELETE /1.0/images/aliases/{}", "b11_delete_images_aliases_one_v1"},
              {"DELETE /1.0/images/{}", "b01_delete_image_v1"},
              {"DELETE /1.0/instances/{}", "b01_delete_instance_v1"},
+             {"DELETE /1.0/instances/{}/backups/{}", "s06_archives_v1"},
+             {"DELETE /1.0/instances/{}/console", "b11_delete_instances_one_console_v1"},
+             {"DELETE /1.0/instances/{}/files", "s04_file_transfer_v1"},
+             {"DELETE /1.0/instances/{}/logs/exec-output/{}", "b07_delete_exec_output_one_v1"},
+             {"DELETE /1.0/instances/{}/logs/{}", "b11_delete_instances_one_logs_one_v1"},
+             {"DELETE /1.0/instances/{}/metadata/templates", "s07_byte_streams_v1"},
              {"DELETE /1.0/instances/{}/snapshots/{}", "b01_delete_instance_snapshot_v1"},
              {"DELETE /1.0/network-acls/{}", "b09_delete_network_acls_one_v1"},
              {"DELETE /1.0/network-address-sets/{}", "b09_delete_network_address_sets_one_v1"},
@@ -317,6 +424,20 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"DELETE /1.0/operations/{}", "b01_cancel_operation_v1"},
              {"DELETE /1.0/profiles/{}", "b10_delete_profiles_one_v1"},
              {"DELETE /1.0/projects/{}", "b10_delete_projects_one_v1"},
+             {"DELETE /1.0/storage-pools/{}", "b08_delete_storage_pools_one_v1"},
+             {"DELETE /1.0/storage-pools/{}/buckets/{}",
+              "b08_delete_storage_pools_one_buckets_one_v1"},
+             {"DELETE /1.0/storage-pools/{}/buckets/{}/backups/{}", "s06_archives_v1"},
+             {"DELETE /1.0/storage-pools/{}/buckets/{}/keys/{}",
+              "b08_delete_storage_pools_one_buckets_one_keys_one_v1"},
+             {"DELETE /1.0/storage-pools/{}/volumes/{}/{}",
+              "b08_delete_storage_pools_one_volumes_one_one_v1"},
+             {"DELETE /1.0/storage-pools/{}/volumes/{}/{}/backups/{}", "s06_archives_v1"},
+             {"DELETE /1.0/storage-pools/{}/volumes/{}/{}/bitmaps/{}",
+              "b08_delete_storage_pools_one_volumes_one_one_bitmaps_one_v1"},
+             {"DELETE /1.0/storage-pools/{}/volumes/{}/{}/files", "s04_file_transfer_v1"},
+             {"DELETE /1.0/storage-pools/{}/volumes/{}/{}/snapshots/{}",
+              "b08_delete_storage_pools_one_volumes_one_one_snapshots_one_v1"},
              {"DELETE /1.0/warnings/{}", "b10_delete_warnings_one_v1"},
              {"GET /", "b10_root_v1"},
              {"GET /1.0", "b02_discovery_v1"},
@@ -330,15 +451,36 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/cluster/members/{}/state", "b10_cluster_members_one_state_v1"},
              {"GET /1.0/events", "b03_events_v1"},
              {"GET /1.0/images", "b02_images_v1"},
+             {"GET /1.0/images/aliases", "b11_images_aliases_v1"},
+             {"GET /1.0/images/aliases/{}", "b11_images_aliases_one_v1"},
              {"GET /1.0/images/{}", "b02_image_v1"},
+             {"GET /1.0/images/{}/export", "s05_image_transfer_v1"},
              {"GET /1.0/instances", "b02_instances_v1"},
              {"GET /1.0/instances/{}", "b02_instance_v1"},
+             {"GET /1.0/instances/{}/access", "b11_instances_one_access_v1"},
+             {"GET /1.0/instances/{}/backups", "s06_archives_v1"},
+             {"GET /1.0/instances/{}/backups/{}", "s06_archives_v1"},
+             {"GET /1.0/instances/{}/backups/{}/export", "s06_archives_v1"},
+             {"GET /1.0/instances/{}/console", "s07_byte_streams_v1"},
+             {"GET /1.0/instances/{}/debug/memory", "s07_byte_streams_v1"},
+             {"GET /1.0/instances/{}/debug/repair", "b12_debug_repair_v1"},
+             {"GET /1.0/instances/{}/files", "s04_file_transfer_v1"},
+             {"GET /1.0/instances/{}/logs", "b11_instances_one_logs_v1"},
+             {"GET /1.0/instances/{}/logs/exec-output", "b07_exec_output_v1"},
+             {"GET /1.0/instances/{}/logs/exec-output/{}", "b07_exec_output_one_v1"},
+             {"GET /1.0/instances/{}/logs/{}", "s07_byte_streams_v1"},
+             {"GET /1.0/instances/{}/metadata", "b11_instances_one_metadata_v1"},
+             {"GET /1.0/instances/{}/metadata/templates", "s07_byte_streams_v1"},
+             {"GET /1.0/instances/{}/nbd", "s08_raw_upgrades_v1"},
+             {"GET /1.0/instances/{}/sftp", "s09_typed_sftp_v1"},
              {"GET /1.0/instances/{}/snapshots", "b02_instance_snapshots_v1"},
              {"GET /1.0/instances/{}/snapshots/{}", "b02_instance_snapshot_v1"},
              {"GET /1.0/instances/{}/state", "b02_instance_state_v1"},
              {"GET /1.0/metadata/configuration", "b10_metadata_configuration_v1"},
+             {"GET /1.0/metrics", "s07_byte_streams_v1"},
              {"GET /1.0/network-acls", "b09_network_acls_v1"},
              {"GET /1.0/network-acls/{}", "b09_network_acls_one_v1"},
+             {"GET /1.0/network-acls/{}/log", "s07_byte_streams_v1"},
              {"GET /1.0/network-address-sets", "b09_network_address_sets_v1"},
              {"GET /1.0/network-address-sets/{}", "b09_network_address_sets_one_v1"},
              {"GET /1.0/network-allocations", "b09_network_allocations_v1"},
@@ -363,6 +505,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/operations", "b02_operations_v1"},
              {"GET /1.0/operations/{}", "b02_operation_v1"},
              {"GET /1.0/operations/{}/wait", "b03_native_wait_v1"},
+             {"GET /1.0/operations/{}/websocket", "s02_console_v1"},
              {"GET /1.0/profiles", "b02_profiles_v1"},
              {"GET /1.0/profiles/{}", "b02_profile_v1"},
              {"GET /1.0/projects", "b02_projects_v1"},
@@ -372,10 +515,39 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"GET /1.0/resources", "b10_resources_v1"},
              {"GET /1.0/storage-pools", "b02_storage_pools_v1"},
              {"GET /1.0/storage-pools/{}", "b02_storage_pool_v1"},
+             {"GET /1.0/storage-pools/{}/buckets", "b08_storage_pools_one_buckets_v1"},
+             {"GET /1.0/storage-pools/{}/buckets/{}", "b08_storage_pools_one_buckets_one_v1"},
+             {"GET /1.0/storage-pools/{}/buckets/{}/backups", "s06_archives_v1"},
+             {"GET /1.0/storage-pools/{}/buckets/{}/backups/{}", "s06_archives_v1"},
+             {"GET /1.0/storage-pools/{}/buckets/{}/backups/{}/export", "s06_archives_v1"},
+             {"GET /1.0/storage-pools/{}/buckets/{}/keys",
+              "b08_storage_pools_one_buckets_one_keys_v1"},
+             {"GET /1.0/storage-pools/{}/buckets/{}/keys/{}",
+              "b08_storage_pools_one_buckets_one_keys_one_v1"},
+             {"GET /1.0/storage-pools/{}/resources", "b08_storage_pools_one_resources_v1"},
              {"GET /1.0/storage-pools/{}/volumes", "b02_storage_volumes_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}", "b08_storage_pools_one_volumes_one_v1"},
              {"GET /1.0/storage-pools/{}/volumes/{}/{}", "b02_storage_volume_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/backups", "s06_archives_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/backups/{}", "s06_archives_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/backups/{}/export", "s06_archives_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/bitmaps",
+              "b08_storage_pools_one_volumes_one_one_bitmaps_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/bitmaps/{}",
+              "b08_storage_pools_one_volumes_one_one_bitmaps_one_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/files", "s04_file_transfer_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/nbd", "s08_raw_upgrades_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/sftp", "s09_typed_sftp_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/snapshots",
+              "b08_storage_pools_one_volumes_one_one_snapshots_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/snapshots/{}",
+              "b08_storage_pools_one_volumes_one_one_snapshots_one_v1"},
+             {"GET /1.0/storage-pools/{}/volumes/{}/{}/state",
+              "b08_storage_pools_one_volumes_one_one_state_v1"},
              {"GET /1.0/warnings", "b10_warnings_v1"},
              {"GET /1.0/warnings/{}", "b10_warnings_one_v1"},
+             {"HEAD /1.0/instances/{}/files", "s04_file_transfer_v1"},
+             {"HEAD /1.0/storage-pools/{}/volumes/{}/{}/files", "s04_file_transfer_v1"},
              {"PATCH /1.0", "b05_patch_server_v1"},
              {"PATCH /1.0/certificates/{}", "b05_patch_certificates_one_v1"},
              {"PATCH /1.0/cluster/groups/{}", "b05_patch_cluster_groups_one_v1"},
@@ -412,8 +584,24 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"POST /1.0/cluster/members", "b10_post_cluster_members_v1"},
              {"POST /1.0/cluster/members/{}", "b10_post_cluster_members_one_v1"},
              {"POST /1.0/cluster/members/{}/state", "b10_post_cluster_members_one_state_v1"},
+             {"POST /1.0/images", "s05_image_transfer_v1"},
+             {"POST /1.0/images/aliases", "b11_post_images_aliases_v1"},
+             {"POST /1.0/images/aliases/{}", "b11_post_images_aliases_one_v1"},
+             {"POST /1.0/images/{}/export", "s05_image_transfer_v1"},
+             {"POST /1.0/images/{}/refresh", "b11_post_images_one_refresh_v1"},
+             {"POST /1.0/images/{}/secret", "b11_post_images_one_secret_v1"},
+             {"POST /1.0/instances", "s10_migration_v1"},
+             {"POST /1.0/instances/{}", "s10_migration_v1"},
+             {"POST /1.0/instances/{}/backups", "s06_archives_v1"},
+             {"POST /1.0/instances/{}/backups/{}", "s06_archives_v1"},
+             {"POST /1.0/instances/{}/bitmaps", "b11_post_instances_one_bitmaps_v1"},
+             {"POST /1.0/instances/{}/console", "s02_console_v1"},
              {"POST /1.0/instances/{}/exec", "b03_exec_v1"},
+             {"POST /1.0/instances/{}/files", "s04_file_transfer_v1"},
+             {"POST /1.0/instances/{}/metadata/templates", "s07_byte_streams_v1"},
+             {"POST /1.0/instances/{}/rebuild", "b11_post_instances_one_rebuild_v1"},
              {"POST /1.0/instances/{}/snapshots", "b01_create_instance_snapshot_v1"},
+             {"POST /1.0/instances/{}/snapshots/{}", "s10_migration_v1"},
              {"POST /1.0/network-acls", "b09_post_network_acls_v1"},
              {"POST /1.0/network-acls/{}", "b09_post_network_acls_one_v1"},
              {"POST /1.0/network-address-sets", "b09_post_network_address_sets_v1"},
@@ -431,13 +619,38 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"POST /1.0/profiles/{}", "b10_post_profiles_one_v1"},
              {"POST /1.0/projects", "b10_post_projects_v1"},
              {"POST /1.0/projects/{}", "b10_post_projects_one_v1"},
+             {"POST /1.0/storage-pools", "b08_post_storage_pools_v1"},
+             {"POST /1.0/storage-pools/{}/buckets", "s06_archives_v1"},
+             {"POST /1.0/storage-pools/{}/buckets/{}/backups", "s06_archives_v1"},
+             {"POST /1.0/storage-pools/{}/buckets/{}/backups/{}", "s06_archives_v1"},
+             {"POST /1.0/storage-pools/{}/buckets/{}/keys",
+              "b08_post_storage_pools_one_buckets_one_keys_v1"},
+             {"POST /1.0/storage-pools/{}/volumes", "s10_migration_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}", "s10_migration_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}", "s10_migration_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}/backups", "s06_archives_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}/backups/{}", "s06_archives_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}/bitmaps",
+              "b08_post_storage_pools_one_volumes_one_one_bitmaps_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}/files", "s04_file_transfer_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}/rebuild",
+              "b08_post_storage_pools_one_volumes_one_one_rebuild_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}/snapshots",
+              "b08_post_storage_pools_one_volumes_one_one_snapshots_v1"},
+             {"POST /1.0/storage-pools/{}/volumes/{}/{}/snapshots/{}",
+              "b08_post_storage_pools_one_volumes_one_one_snapshots_one_v1"},
              {"PUT /1.0", "b10_put_server_v1"},
              {"PUT /1.0/certificates/{}", "b10_put_certificates_one_v1"},
              {"PUT /1.0/cluster", "b10_put_cluster_v1"},
              {"PUT /1.0/cluster/certificate", "b10_put_cluster_certificate_v1"},
              {"PUT /1.0/cluster/groups/{}", "b10_put_cluster_groups_one_v1"},
              {"PUT /1.0/cluster/members/{}", "b10_put_cluster_members_one_v1"},
+             {"PUT /1.0/images/aliases/{}", "b11_put_images_aliases_one_v1"},
+             {"PUT /1.0/images/{}", "b11_put_images_one_v1"},
+             {"PUT /1.0/instances", "b11_put_instances_v1"},
              {"PUT /1.0/instances/{}", "b01_update_instance_v1"},
+             {"PUT /1.0/instances/{}/metadata", "b11_put_instances_one_metadata_v1"},
+             {"PUT /1.0/instances/{}/snapshots/{}", "b11_put_instances_one_snapshots_one_v1"},
              {"PUT /1.0/instances/{}/state", "b01_update_instance_state_v1"},
              {"PUT /1.0/network-acls/{}", "b09_put_network_acls_one_v1"},
              {"PUT /1.0/network-address-sets/{}", "b09_put_network_address_sets_one_v1"},
@@ -451,13 +664,216 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
              {"PUT /1.0/networks/{}/peers/{}", "b09_put_networks_one_peers_one_v1"},
              {"PUT /1.0/profiles/{}", "b10_put_profiles_one_v1"},
              {"PUT /1.0/projects/{}", "b10_put_projects_one_v1"},
+             {"PUT /1.0/storage-pools/{}", "b08_put_storage_pools_one_v1"},
+             {"PUT /1.0/storage-pools/{}/buckets/{}", "b08_put_storage_pools_one_buckets_one_v1"},
+             {"PUT /1.0/storage-pools/{}/buckets/{}/keys/{}",
+              "b08_put_storage_pools_one_buckets_one_keys_one_v1"},
+             {"PUT /1.0/storage-pools/{}/volumes/{}/{}",
+              "b08_put_storage_pools_one_volumes_one_one_v1"},
+             {"PUT /1.0/storage-pools/{}/volumes/{}/{}/snapshots/{}",
+              "b08_put_storage_pools_one_volumes_one_one_snapshots_one_v1"},
              {"PUT /1.0/warnings/{}", "b10_put_warnings_one_v1"}
            ]
 
     assert for(%{"status" => "certified", "id" => id} <- audit["stream_contracts"], do: id) ==
-             ["S01", "S03"]
+             ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08", "S09", "S10", "S11", "S12"]
 
-    refute audit["behavior_complete"] or audit["complete_port"]
+    assert audit["behavior_complete"]
+    refute audit["complete_port"]
+    image_transfer = ["completion_records", "s05_image_transfer_v1"]
+    s05 = get_in(audit, image_transfer)
+
+    assert {s05["kind"], s05["stream_contracts"], s05["methods"], s05["helpers"]} ==
+             {"image_transfer", ["S05"], ["CreateImage", "ExportImage"], ["download"]}
+
+    assert Enum.sort(Map.keys(s05["excluded_views"])) ==
+             ["GET /1.0/images/{fingerprint}/export?public", "POST /1.0/images?public"]
+
+    console = ["completion_records", "s02_console_v1"]
+    s02 = get_in(audit, console)
+
+    assert {s02["kind"], s02["stream_contracts"], s02["methods"], s02["helpers"]} ==
+             {"console", ["S02"], ["ConsoleInstance"], ["websocket"]}
+
+    assert Map.keys(s02["excluded_views"]) == ["GET /1.0/operations/{id}/websocket?public"]
+
+    raw_upgrade = ["completion_records", "s08_raw_upgrades_v1"]
+    s08 = get_in(audit, raw_upgrade)
+
+    assert {s08["kind"], s08["stream_contracts"], s08["methods"], s08["helpers"]} ==
+             {"raw_upgrade", ["S08"], [], ["nbd", "volume_nbd"]}
+
+    assert s08["rows"] == [
+             "GET /1.0/instances/{}/nbd",
+             "GET /1.0/storage-pools/{}/volumes/{}/{}/nbd"
+           ]
+
+    assert s08["excluded_views"] == %{}
+    assert length(s08["approved_differences"]) == 2
+
+    # The SFTP rows are linked to S08 and S09 and complete under the S09 record.
+    s09 = get_in(audit, ["completion_records", "s09_typed_sftp_v1"])
+
+    assert {s09["kind"], s09["stream_contracts"], s09["methods"], s09["helpers"]} ==
+             {"typed_sftp", ["S09"], [], ["file_sftp", "sftp", "volume_file_sftp", "volume_sftp"]}
+
+    assert s09["rows"] == [
+             "GET /1.0/instances/{}/sftp",
+             "GET /1.0/storage-pools/{}/volumes/{}/{}/sftp"
+           ]
+
+    assert s09["excluded_views"] == %{}
+    assert length(s09["approved_differences"]) == 2
+
+    for pair <- s09["rows"] do
+      row = Enum.find(audit["entries"], &(&1["pair"] == pair))
+      assert row["stream_contracts"] == ["S08", "S09"]
+      assert row["behavior_complete"] and row["completion_record"] == "s09_typed_sftp_v1"
+    end
+
+    # S11 has no REST rows: its record names every pinned OCI declaration instead.
+    s11 = get_in(audit, ["completion_records", "s11_oci_image_server_v1"])
+
+    assert {s11["kind"], s11["stream_contracts"], s11["rows"], s11["methods"]} ==
+             {"oci_image_server", ["S11"], [], []}
+
+    assert length(s11["declarations"]) == 24
+    assert "client/method/ProtocolIncus.CopyImage" in s11["declarations"]
+    assert length(s11["approved_differences"]) == 5
+    refute Enum.any?(audit["entries"], &(&1["completion_record"] == "s11_oci_image_server_v1"))
+
+    # S12 likewise names every pinned SimpleStreams declaration.
+    s12 = get_in(audit, ["completion_records", "s12_simplestreams_image_server_v1"])
+
+    assert {s12["kind"], s12["stream_contracts"], s12["rows"], s12["methods"]} ==
+             {"simplestreams_image_server", ["S12"], [], []}
+
+    assert length(s12["declarations"]) == 24
+    assert "client/function/ConnectSimpleStreams" in s12["declarations"]
+    assert length(s12["approved_differences"]) == 8
+
+    refute Enum.any?(
+             audit["entries"],
+             &(&1["completion_record"] == "s12_simplestreams_image_server_v1")
+           )
+  end
+
+  # The reviewed completion-record negative cases run in the async modules below.
+
+  test "repair, open linked stream and selected-row completion claims are rejected", %{
+    native: native
+  } do
+    audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
+    raw_upgrade = ["completion_records", "s08_raw_upgrades_v1"]
+
+    # The reconciled repair row maps the registered POST method; the server-only POST
+    # completes only through that record.
+    [supplemental] = audit["supplemental_server_entries"]
+    repair = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/instances/{}/debug/repair"))
+
+    for {changed, message} <- [
+          {%{
+             audit
+             | "supplemental_server_entries" => [Map.delete(supplemental, "completion_record")]
+           }, "unsupported completion claim"},
+          {%{
+             audit
+             | "supplemental_server_entries" => [
+                 %{supplemental | "classification" => "missing_typed"}
+               ]
+           }, "misleading classification"},
+          {%{
+             audit
+             | "entries" =>
+                 Enum.map(
+                   audit["entries"],
+                   &if(&1 == repair, do: %{&1 | "methods" => []}, else: &1)
+                 )
+           }, "stale method mapping"}
+        ] do
+      assert_raise ExUnit.AssertionError, ~r/#{message}/, fn ->
+        EndpointInventory.validate!(changed, native)
+      end
+    end
+
+    # A completed row whose linked stream contract is reopened cannot stay complete,
+    # even though the row's other contract (S08) is certified.
+    reopened =
+      update_in(audit, ["stream_contracts"], fn contracts ->
+        Enum.map(contracts, fn contract ->
+          if contract["id"] == "S09",
+            do: %{contract | "status" => "open_contract_certification"},
+            else: contract
+        end)
+      end)
+
+    assert_raise ExUnit.AssertionError, ~r/open linked stream contract/, fn ->
+      EndpointInventory.validate!(reopened, native)
+    end
+
+    # The S08 record cannot complete an SFTP row in place of the S09 record.
+    sftp = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/instances/{}/sftp"))
+
+    moved =
+      audit
+      |> update_in(raw_upgrade ++ ["rows"], &(&1 ++ [sftp["pair"]]))
+      |> update_in(raw_upgrade ++ ["helpers"], &(&1 ++ sftp["helpers"]))
+      |> Map.update!("entries", fn entries ->
+        Enum.map(
+          entries,
+          &if(&1 == sftp, do: %{sftp | "completion_record" => "s08_raw_upgrades_v1"}, else: &1)
+        )
+      end)
+
+    assert_raise ExUnit.AssertionError,
+                 ~r/stale selected completion|unrelated completion record row/,
+                 fn -> EndpointInventory.validate!(moved, native) end
+
+    # Each S08 evidence key must stay linked from both selected NBD rows.
+    root = Path.join(System.tmp_dir!(), "op-s08-record-#{System.unique_integer([:positive])}")
+    File.mkdir!(root)
+    on_exit(fn -> File.rm_rf!(root) end)
+    path = Path.join(root, "endpoint-evidence.json")
+
+    unlinked =
+      Enum.map(@manifest["entries"], fn row ->
+        if row["completion_record"] == "s08_raw_upgrades_v1" and row["backlog"] == "B08",
+          do: %{row | "evidence" => row["evidence"] -- ["s08_half_close"]},
+          else: row
+      end)
+
+    File.write!(path, Jason.encode!(%{@manifest | "entries" => unlinked}))
+
+    assert_raise ExUnit.AssertionError, ~r/unlinked completion evidence/, fn ->
+      EndpointInventory.validate!(%{audit | "selected_evidence" => path}, native)
+    end
+
+    # Selected rows cannot drop or claim completion independently of the full ledger.
+    for {verb, pair, status} <- [
+          {"GET", "/1.0/operations/{id}/wait", "partial"},
+          {"POST", "/1.0/instances/{name}/console", "partial"},
+          {"GET", "/1.0/instances/{name}/nbd", "partial"},
+          {"GET", "/1.0/storage-pools/{poolName}/volumes/{type}/{volumeName}/nbd", "partial"},
+          {"GET", "/1.0/instances/{name}/sftp", "partial"},
+          {"GET", "/1.0/storage-pools/{poolName}/volumes/{type}/{volumeName}/sftp", "partial"}
+        ] do
+      entries =
+        Enum.map(@manifest["entries"], fn row ->
+          if row["path"] == pair and row["verb"] == verb,
+            do: %{row | "status" => status},
+            else: row
+        end)
+
+      assert_raise ExUnit.AssertionError, ~r/unsupported completion claim/, fn ->
+        EndpointEvidence.validate!(%{@manifest | "entries" => entries}, native)
+      end
+    end
+  end
+
+  # Negative completion-record cases, split across tests so each stays within
+  # the ExUnit timeout on slower runners; every case still runs.
+  @doc false
+  def completion_negative_cases(audit) do
     wait = ["completion_records", "b03_native_wait_v1"]
     update = ["completion_records", "b01_update_instance_v1"]
     delete = ["completion_records", "b01_delete_image_v1"]
@@ -472,6 +888,17 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     cluster_update = ["completion_records", "b10_put_cluster_v1"]
     server_patch = ["completion_records", "b05_patch_server_v1"]
     snapshot_patch = ["completion_records", "b05_patch_instances_one_snapshots_one_v1"]
+    download = ["completion_records", "b07_exec_output_one_v1"]
+    byte_streams = ["completion_records", "s07_byte_streams_v1"]
+    file_transfer = ["completion_records", "s04_file_transfer_v1"]
+    archives = ["completion_records", "s06_archives_v1"]
+    migration = ["completion_records", "s10_migration_v1"]
+    image_transfer = ["completion_records", "s05_image_transfer_v1"]
+    console = ["completion_records", "s02_console_v1"]
+    raw_upgrade = ["completion_records", "s08_raw_upgrades_v1"]
+    typed_sftp = ["completion_records", "s09_typed_sftp_v1"]
+    oci = ["completion_records", "s11_oci_image_server_v1"]
+    streams = ["completion_records", "s12_simplestreams_image_server_v1"]
     events = ["completion_records", "b03_events_v1"]
     socket = Enum.find(audit["entries"], &(&1["pair"] == "GET /1.0/operations/{}/websocket"))
     head = Enum.find(audit["entries"], &(&1["pair"] == "HEAD /1.0/instances/{}/files"))
@@ -487,174 +914,276 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
       %{audit | "entries" => entries}
     end
 
-    for {changed, message} <- [
-          {update_in(audit, wait ++ ["cases"], &Map.delete(&1, "native_404")),
-           "missing completion case"},
-          {put_in(audit, wait ++ ["cases", "invented"], ["native_wait"]),
-           "missing completion case"},
-          {put_in(audit, wait ++ ["transports"], ["unix"]), "missing completion transport"},
-          {put_in(audit, events ++ ["cases", "native_403"], []), "missing completion evidence"},
-          {put_in(audit, events ++ ["evidence_kinds", "event_rejection"], "proxy_success"),
-           "unknown completion evidence kind"},
-          {update_in(audit, wait ++ ["evidence_kinds"], &Map.delete(&1, "native_wait_preflight")),
-           "stale completion evidence kinds"},
-          {put_in(audit, wait ++ ["excluded_views"], %{}), "unlisted completion view"},
-          {put_in(
-             audit,
-             wait ++ ["excluded_views", "GET /1.0/operations/{id}/wait?public", "approved"],
-             nil
-           ), "unapproved exclusion"},
-          {update_in(audit, wait ++ ["excluded_scope"], &[%{"scope" => "unapproved"} | &1]),
-           "unapproved exclusion"},
-          {update_in(audit, events ++ ["selectors"], &Map.delete(&1, "type")),
-           "unclassified completion selector"},
-          {put_in(audit, events ++ ["selectors", "type"], nil),
-           "unclassified completion selector"},
-          {put_in(audit, events ++ ["selectors", "type"], ""),
-           "unclassified completion selector"},
-          {put_in(audit, wait ++ ["methods"], ["GetOperationWait"]), "stale completion methods"},
-          {put_in(audit, wait ++ ["approved"], nil), "unapproved completion record"},
-          {put_in(audit, wait ++ ["rows"], ["GET /1.0/operations/{}/wait", socket["pair"]]),
-           "unrelated completion record row"},
-          {complete.(socket, "b03_native_wait_v1"), "unsupported completion claim"},
-          {complete.(head, "b03_native_wait_v1"), "unsupported completion claim"},
-          {update_in(audit, ["stream_contracts"], fn contracts ->
-             Enum.map(contracts, fn contract ->
-               if contract["id"] == "S03",
-                 do: Map.merge(contract, %{"status" => "open_contract_certification"}),
-                 else: contract
-             end)
-           end), "open linked stream contract"},
-          {update_in(audit, ["stream_contracts"], fn contracts ->
-             Enum.map(contracts, fn contract ->
-               if contract["id"] == "S02",
-                 do: %{contract | "status" => "certified"},
-                 else: contract
-             end)
-           end), "unsupported certification claim"},
-          {update_in(audit, update ++ ["cases"], &Map.delete(&1, "extension_guards")),
-           "missing completion case"},
-          {update_in(audit, update ++ ["cases"], &Map.delete(&1, "etag")),
-           "missing completion case"},
-          {update_in(
-             audit,
-             ["completion_records", "b03_exec_v1", "cases"],
-             &Map.delete(&1, "body_fields")
-           ), "missing completion case"},
-          {update_in(audit, patch ++ ["cases"], &Map.delete(&1, "unconditional_rejection")),
-           "missing completion case"},
-          {put_in(audit, delete ++ ["cases", "native_404"], ["mutation_guards"])
-           |> put_in(delete ++ ["evidence_kinds", "mutation_guards"], "named_go_differential"),
-           "unlinked completion evidence"},
-          {put_in(audit, patch ++ ["excluded_scope"], [%{"scope" => "unconditional PATCH"}]),
-           "unapproved exclusion"},
-          {put_in(audit, cancel ++ ["kind"], "async_mutation"), "missing completion case"},
-          {update_in(audit, instances ++ ["cases"], &Map.delete(&1, "selectors")),
-           "missing completion case"},
-          {update_in(audit, images ++ ["cases"], &Map.delete(&1, "extension_guards")),
-           "missing completion case"},
-          {update_in(audit, discovery ++ ["cases"], &Map.delete(&1, "discovery_version")),
-           "missing completion case"},
-          {put_in(audit, images ++ ["excluded_views", "GET /1.0/images?public", "approved"], nil),
-           "unapproved exclusion"},
-          {update_in(audit, instances ++ ["selectors"], &Map.delete(&1, "filter")),
-           "unclassified completion selector"},
-          {update_in(audit, instances ++ ["methods"], &List.delete(&1, "GetInstancesFull")),
-           "stale completion methods"},
-          {update_in(audit, network_update ++ ["cases"], &Map.delete(&1, "native_409")),
-           "missing completion case"},
-          {update_in(audit, network_update ++ ["cases"], &Map.delete(&1, "etag")),
-           "missing completion case"},
-          {update_in(audit, peer_create ++ ["evidence_kinds"], &Map.delete(&1, "peer_guard")),
-           "stale completion evidence kinds"},
-          {put_in(audit, network_update ++ ["kind"], "read_contract"), "missing completion case"},
-          # A synchronous record with an operation-returning method proves its lifecycle.
-          {update_in(audit, certificates ++ ["cases"], &Map.delete(&1, "running")),
-           "missing completion case"},
-          {update_in(audit, certificates ++ ["methods"], &(&1 -- ["CreateCertificateToken"])),
-           "stale completion methods"},
-          {update_in(
-             audit,
-             cluster_update ++ ["evidence_kinds"],
-             &Map.delete(&1, "admin_guards")
-           ), "stale completion evidence kinds"},
-          # A conditional PATCH proves its own result kind: empty sync or accepted /wait.
-          {update_in(audit, server_patch ++ ["cases"], &Map.delete(&1, "empty_sync")),
-           "missing completion case"},
-          {update_in(audit, snapshot_patch ++ ["cases"], &Map.delete(&1, "running")),
-           "missing completion case"},
-          {update_in(
-             audit,
-             server_patch ++ ["cases"],
-             &Map.put(&1, "restore_rejection", ["rest_patch"])
-           ), "missing completion case"},
-          {%{audit | "behavior_complete" => true}, ""},
-          {%{audit | "complete_port" => true}, ""}
-        ] do
-      assert_raise ExUnit.AssertionError, ~r/#{message}/, fn ->
-        EndpointInventory.validate!(changed, native)
-      end
-    end
-
-    # A completed row whose linked stream contract is still open cannot complete.
-    record = get_in(audit, events)
-
-    shared =
-      Map.merge(socket, %{"behavior_complete" => true, "completion_record" => "b03_events_v1"})
-
-    changed =
-      audit
-      |> put_in(events ++ ["rows"], record["rows"] ++ [socket["pair"]])
-      |> Map.update!("entries", fn entries ->
-        Enum.map(entries, &if(&1 == socket, do: shared, else: &1))
-      end)
-
-    assert_raise ExUnit.AssertionError, ~r/open linked stream contract/, fn ->
-      EndpointInventory.validate!(changed, native)
-    end
-
-    # Instance creation stays partial while its archive and migration contracts are open.
-    create = Enum.find(audit["entries"], &(&1["pair"] == "POST /1.0/instances"))
-    record = get_in(audit, update)
-
-    changed =
-      audit
-      |> put_in(update ++ ["rows"], record["rows"] ++ [create["pair"]])
-      |> put_in(update ++ ["methods"], record["methods"] ++ ["CreateInstance"])
-      |> Map.update!("entries", fn entries ->
-        Enum.map(
-          entries,
-          &if(&1 == create,
-            do:
-              Map.merge(create, %{
-                "behavior_complete" => true,
-                "completion_record" => "b01_update_instance_v1"
-              }),
-            else: &1
-          )
-        )
-      end)
-
-    assert_raise ExUnit.AssertionError, ~r/open linked stream contract/, fn ->
-      EndpointInventory.validate!(changed, native)
-    end
-
-    # Selected rows cannot drop or claim completion independently of the full ledger.
-    for {verb, pair, status} <- [
-          {"GET", "/1.0/operations/{id}/wait", "partial"},
-          {"POST", "/1.0/instances", "complete"}
-        ] do
-      entries =
-        Enum.map(@manifest["entries"], fn row ->
-          if row["path"] == pair and row["verb"] == verb,
-            do: %{row | "status" => status},
-            else: row
-        end)
-
-      assert_raise ExUnit.AssertionError, ~r/unsupported completion claim/, fn ->
-        EndpointEvidence.validate!(%{@manifest | "entries" => entries}, native)
-      end
-    end
+    [
+      {update_in(audit, wait ++ ["cases"], &Map.delete(&1, "native_404")),
+       "missing completion case"},
+      {put_in(audit, wait ++ ["cases", "invented"], ["native_wait"]), "missing completion case"},
+      {put_in(audit, wait ++ ["transports"], ["unix"]), "missing completion transport"},
+      {put_in(audit, events ++ ["cases", "native_403"], []), "missing completion evidence"},
+      {put_in(audit, events ++ ["evidence_kinds", "event_rejection"], "proxy_success"),
+       "unknown completion evidence kind"},
+      {update_in(audit, wait ++ ["evidence_kinds"], &Map.delete(&1, "native_wait_preflight")),
+       "stale completion evidence kinds"},
+      {put_in(audit, wait ++ ["excluded_views"], %{}), "unlisted completion view"},
+      {put_in(
+         audit,
+         wait ++ ["excluded_views", "GET /1.0/operations/{id}/wait?public", "approved"],
+         nil
+       ), "unapproved exclusion"},
+      {update_in(audit, wait ++ ["excluded_scope"], &[%{"scope" => "unapproved"} | &1]),
+       "unapproved exclusion"},
+      {update_in(audit, events ++ ["selectors"], &Map.delete(&1, "type")),
+       "unclassified completion selector"},
+      {put_in(audit, events ++ ["selectors", "type"], nil), "unclassified completion selector"},
+      {put_in(audit, events ++ ["selectors", "type"], ""), "unclassified completion selector"},
+      {put_in(audit, wait ++ ["methods"], ["GetOperationWait"]), "stale completion methods"},
+      {put_in(audit, wait ++ ["approved"], nil), "unapproved completion record"},
+      {put_in(audit, wait ++ ["rows"], ["GET /1.0/operations/{}/wait", socket["pair"]]),
+       "unrelated completion record row"},
+      {complete.(socket, "b03_native_wait_v1"), "unsupported completion claim"},
+      {complete.(head, "b03_native_wait_v1"), "unsupported completion claim"},
+      {update_in(audit, ["stream_contracts"], fn contracts ->
+         Enum.map(contracts, fn contract ->
+           if contract["id"] == "S03",
+             do: Map.merge(contract, %{"status" => "open_contract_certification"}),
+             else: contract
+         end)
+       end), "open linked stream contract"},
+      {update_in(audit, ["stream_contracts"], fn contracts ->
+         Enum.map(contracts, fn contract ->
+           if contract["id"] == "S12",
+             do: Map.delete(contract, "completion_record"),
+             else: contract
+         end)
+       end), "unsupported certification claim"},
+      {update_in(audit, update ++ ["cases"], &Map.delete(&1, "extension_guards")),
+       "missing completion case"},
+      {update_in(audit, update ++ ["cases"], &Map.delete(&1, "etag")), "missing completion case"},
+      {update_in(
+         audit,
+         ["completion_records", "b03_exec_v1", "cases"],
+         &Map.delete(&1, "body_fields")
+       ), "missing completion case"},
+      {update_in(audit, patch ++ ["cases"], &Map.delete(&1, "unconditional_rejection")),
+       "missing completion case"},
+      {put_in(audit, delete ++ ["cases", "native_404"], ["mutation_guards"])
+       |> put_in(delete ++ ["evidence_kinds", "mutation_guards"], "named_go_differential"),
+       "unlinked completion evidence"},
+      {put_in(audit, patch ++ ["excluded_scope"], [%{"scope" => "unconditional PATCH"}]),
+       "unapproved exclusion"},
+      {put_in(audit, cancel ++ ["kind"], "async_mutation"), "missing completion case"},
+      {update_in(audit, instances ++ ["cases"], &Map.delete(&1, "selectors")),
+       "missing completion case"},
+      {update_in(audit, images ++ ["cases"], &Map.delete(&1, "extension_guards")),
+       "missing completion case"},
+      {update_in(audit, discovery ++ ["cases"], &Map.delete(&1, "discovery_version")),
+       "missing completion case"},
+      {put_in(audit, images ++ ["excluded_views", "GET /1.0/images?public", "approved"], nil),
+       "unapproved exclusion"},
+      {update_in(audit, instances ++ ["selectors"], &Map.delete(&1, "filter")),
+       "unclassified completion selector"},
+      {update_in(audit, instances ++ ["methods"], &List.delete(&1, "GetInstancesFull")),
+       "stale completion methods"},
+      {update_in(audit, network_update ++ ["cases"], &Map.delete(&1, "native_409")),
+       "missing completion case"},
+      {update_in(audit, network_update ++ ["cases"], &Map.delete(&1, "etag")),
+       "missing completion case"},
+      {update_in(audit, peer_create ++ ["evidence_kinds"], &Map.delete(&1, "peer_guard")),
+       "stale completion evidence kinds"},
+      {put_in(audit, network_update ++ ["kind"], "read_contract"), "missing completion case"},
+      # A synchronous record with an operation-returning method proves its lifecycle.
+      {update_in(audit, certificates ++ ["cases"], &Map.delete(&1, "running")),
+       "missing completion case"},
+      {update_in(audit, certificates ++ ["methods"], &(&1 -- ["CreateCertificateToken"])),
+       "stale completion methods"},
+      {update_in(
+         audit,
+         cluster_update ++ ["evidence_kinds"],
+         &Map.delete(&1, "admin_guards")
+       ), "stale completion evidence kinds"},
+      # S06 certification needs ISO import, lost-reply evidence and its helpers.
+      {update_in(audit, archives ++ ["cases"], &Map.delete(&1, "iso_import")),
+       "missing completion case"},
+      {update_in(audit, archives ++ ["cases", "response_loss_no_replay"], fn _ -> [] end),
+       "missing completion evidence"},
+      {update_in(audit, archives ++ ["helpers"], &List.delete(&1, "bucket_import")),
+       "stale completion helpers"},
+      # S10 certification needs the relay differences, cancellation evidence, its
+      # helpers and approved differences.
+      {update_in(audit, migration ++ ["cases"], &Map.delete(&1, "relay_differences")),
+       "missing completion case"},
+      {update_in(audit, migration ++ ["cases", "remote_cancel"], fn _ -> [] end),
+       "missing completion evidence"},
+      {update_in(audit, migration ++ ["helpers"], &List.delete(&1, "volume_import")),
+       "stale completion helpers"},
+      {update_in(audit, migration ++ ["approved_differences"], fn [first | rest] ->
+         [Map.delete(first, "approved") | rest]
+       end), "unapproved exclusion"},
+      # S05 certification needs token cleanup, lost-copy evidence, the download
+      # helper, the excluded public views and its approved differences.
+      {update_in(audit, image_transfer ++ ["cases"], &Map.delete(&1, "token_cleanup")),
+       "missing completion case"},
+      {update_in(audit, image_transfer ++ ["cases", "aliases"], fn _ -> [] end),
+       "missing completion evidence"},
+      {update_in(audit, image_transfer ++ ["helpers"], &List.delete(&1, "download")),
+       "stale completion helpers"},
+      {update_in(
+         audit,
+         image_transfer ++ ["excluded_views"],
+         &Map.delete(&1, "POST /1.0/images?public")
+       ), "unlisted completion view"},
+      {update_in(audit, image_transfer ++ ["approved_differences"], fn [first | rest] ->
+         [Map.delete(first, "approved") | rest]
+       end), "unapproved exclusion"},
+      # S02 certification needs the detach close frame, the missing-control
+      # rejection, the websocket helper, the excluded public view and its approved
+      # differences.
+      {update_in(audit, console ++ ["cases"], &Map.delete(&1, "detach_close")),
+       "missing completion case"},
+      {update_in(audit, console ++ ["cases", "missing_control"], fn _ -> [] end),
+       "missing completion evidence"},
+      {update_in(audit, console ++ ["helpers"], &List.delete(&1, "websocket")),
+       "stale completion helpers"},
+      {put_in(audit, console ++ ["excluded_views"], %{}), "unlisted completion view"},
+      {update_in(audit, console ++ ["approved_differences"], fn [first | rest] ->
+         [Map.delete(first, "approved") | rest]
+       end), "unapproved exclusion"},
+      # S11 certification needs every pinned OCI declaration, the source and
+      # conversion cases, real client functions and no REST rows of its own.
+      {update_in(
+         audit,
+         oci ++ ["declarations"],
+         &List.delete(&1, "client/method/ProtocolOCI.GetImageFile")
+       ), "stale completion declarations"},
+      {update_in(audit, oci ++ ["declarations"], &["client/method/ProtocolOCI.Invented" | &1]),
+       "stale completion declarations"},
+      {update_in(
+         audit,
+         oci ++ ["declarations"],
+         &List.delete(&1, "client/method/ProtocolIncus.CopyImage")
+       ), "stale completion declarations"},
+      {update_in(
+         audit,
+         oci ++ ["declarations"],
+         &List.delete(&1, "client/method/ProtocolIncus.CreateInstanceFromImage")
+       ), "stale completion declarations"},
+      {update_in(
+         audit,
+         oci ++ ["declarations"],
+         &List.delete(&1, "client/method/ProtocolIncus.RebuildInstanceFromImage")
+       ), "stale completion declarations"},
+      {update_in(audit, oci ++ ["cases"], &Map.delete(&1, "metadata_yaml")),
+       "missing completion case"},
+      {update_in(audit, oci ++ ["cases"], &Map.delete(&1, "copy_push")),
+       "missing completion case"},
+      {put_in(audit, oci ++ ["functions"], [["Opsmaru.Incus.OCI", "export", 2]]),
+       "missing public client function"},
+      {put_in(audit, oci ++ ["rows"], ["GET /1.0/images/{}/export"]),
+       "unrelated completion record"},
+      {put_in(audit, oci ++ ["kind"], "image_transfer"), "empty completion record"},
+      {update_in(audit, oci ++ ["approved_differences"], fn [first | rest] ->
+         [Map.delete(first, "approved") | rest]
+       end), "unapproved exclusion"},
+      # S12 certification needs every pinned SimpleStreams declaration, the cache,
+      # delta and fingerprint cases, real client functions and no REST rows.
+      {update_in(
+         audit,
+         streams ++ ["declarations"],
+         &List.delete(&1, "client/method/ProtocolSimpleStreams.GetImageFile")
+       ), "stale completion declarations"},
+      {update_in(
+         audit,
+         streams ++ ["declarations"],
+         &List.delete(&1, "client/method/ProtocolIncus.CopyImage")
+       ), "stale completion declarations"},
+      {update_in(audit, streams ++ ["cases"], &Map.delete(&1, "stale_fallback")),
+       "missing completion case"},
+      {update_in(audit, streams ++ ["cases"], &Map.delete(&1, "combined_fingerprint")),
+       "missing completion case"},
+      {update_in(audit, streams ++ ["cases"], &Map.delete(&1, "delta_source")),
+       "missing completion case"},
+      {put_in(audit, streams ++ ["functions"], [["Opsmaru.Incus.SimpleStreams", "cache", 1]]),
+       "missing public client function"},
+      {put_in(audit, streams ++ ["rows"], ["GET /1.0/images"]), "unrelated completion record"},
+      {update_in(audit, streams ++ ["approved_differences"], fn [first | rest] ->
+         [Map.delete(first, "approved") | rest]
+       end), "unapproved exclusion"},
+      # S09 certification needs the pipelining, lock and host transfer cases, the
+      # typed and raw helpers of both rows, both transports, the Go differential
+      # and its approved differences.
+      {update_in(audit, typed_sftp ++ ["cases"], &Map.delete(&1, "file_lock")),
+       "missing completion case"},
+      {update_in(audit, typed_sftp ++ ["cases"], &Map.delete(&1, "read_ahead")),
+       "missing completion case"},
+      {put_in(audit, typed_sftp ++ ["cases", "pipelined_reads"], []),
+       "missing completion evidence"},
+      {update_in(audit, typed_sftp ++ ["helpers"], &List.delete(&1, "volume_file_sftp")),
+       "stale completion helpers"},
+      {put_in(audit, typed_sftp ++ ["transports"], ["mutual_https"]),
+       "missing completion transport"},
+      {update_in(audit, typed_sftp ++ ["evidence_kinds"], &Map.delete(&1, "s09_files")),
+       "stale completion evidence kinds"},
+      {put_in(audit, typed_sftp ++ ["evidence_kinds", "s09_files"], "raw_proxy_success"),
+       "unknown completion evidence kind"},
+      {update_in(audit, typed_sftp ++ ["approved_differences"], fn [first | rest] ->
+         [Map.delete(first, "approved") | rest]
+       end), "unapproved exclusion"},
+      {put_in(audit, typed_sftp ++ ["stream_contracts"], []), "unsupported certification claim"},
+      # S08 certification needs coalesced bytes, the half-close writes, both NBD
+      # helpers and only them, both transports, the reuse/writable selectors, the
+      # oracle evidence and its approved differences.
+      {update_in(audit, raw_upgrade ++ ["cases"], &Map.delete(&1, "coalesced_bytes")),
+       "missing completion case"},
+      {put_in(audit, raw_upgrade ++ ["cases", "invented"], ["s08_instance"]),
+       "missing completion case"},
+      {update_in(audit, raw_upgrade ++ ["cases", "half_close_writes"], fn _ -> [] end),
+       "missing completion evidence"},
+      {update_in(audit, raw_upgrade ++ ["helpers"], &List.delete(&1, "volume_nbd")),
+       "stale completion helpers"},
+      {update_in(audit, raw_upgrade ++ ["helpers"], &(&1 ++ ["sftp"])),
+       "stale completion helpers"},
+      {put_in(audit, raw_upgrade ++ ["transports"], ["unix"]), "missing completion transport"},
+      {update_in(audit, raw_upgrade ++ ["selectors"], &Map.delete(&1, "writable")),
+       "unclassified completion selector"},
+      {put_in(audit, raw_upgrade ++ ["selectors", "reuse"], ""),
+       "unclassified completion selector"},
+      {update_in(
+         audit,
+         raw_upgrade ++ ["evidence_kinds"],
+         &Map.delete(&1, "s08_oracle_loss")
+       ), "stale completion evidence kinds"},
+      {put_in(audit, raw_upgrade ++ ["evidence_kinds", "s08_coalesced"], "raw_proxy_success"),
+       "unknown completion evidence kind"},
+      {update_in(audit, raw_upgrade ++ ["approved_differences"], fn [first | rest] ->
+         [Map.delete(first, "approved") | rest]
+       end), "unapproved exclusion"},
+      {put_in(audit, raw_upgrade ++ ["stream_contracts"], []), "unsupported certification claim"},
+      # S04 certification needs the HEAD body check and its helpers.
+      {update_in(audit, file_transfer ++ ["cases"], &Map.delete(&1, "head_no_body")),
+       "missing completion case"},
+      {update_in(audit, file_transfer ++ ["helpers"], &List.delete(&1, "volume_head")),
+       "stale completion helpers"},
+      # S07 certification needs mid-stream cleanup and the stream link itself.
+      {update_in(audit, byte_streams ++ ["cases"], &Map.delete(&1, "caller_loss")),
+       "missing completion case"},
+      {put_in(audit, byte_streams ++ ["stream_contracts"], []),
+       "unsupported certification claim"},
+      # A byte download proves its sink, bounds and that it never deletes.
+      {update_in(audit, download ++ ["cases"], &Map.delete(&1, "no_implicit_delete")),
+       "missing completion case"},
+      # A conditional PATCH proves its own result kind: empty sync or accepted /wait.
+      {update_in(audit, server_patch ++ ["cases"], &Map.delete(&1, "empty_sync")),
+       "missing completion case"},
+      {update_in(audit, snapshot_patch ++ ["cases"], &Map.delete(&1, "running")),
+       "missing completion case"},
+      {update_in(
+         audit,
+         server_patch ++ ["cases"],
+         &Map.put(&1, "restore_rejection", ["rest_patch"])
+       ), "missing completion case"},
+      {%{audit | "complete_port" => true}, ""},
+      {%{audit | "complete_port" => true}, ""}
+    ]
   end
 
   test "exec completion certifies S01 only with its full mode, failure and transport evidence", %{
@@ -756,7 +1285,7 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
   for {field, value, message} <- [
         {"reference_revision", "stale", "stale reference"},
         {"source", %{}, "stale REST source"},
-        {"inventory_complete", true, "false"},
+        {"inventory_complete", false, "misleading inventory completeness"},
         {"complete_port", true, "false"}
       ] do
     test "rejects misleading or stale #{field}", %{native: native} do
@@ -813,6 +1342,34 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
 
     assert_raise ExUnit.AssertionError, ~r/missing test anchor/, fn ->
       EndpointEvidence.validate!(%{@manifest | "evidence" => evidence}, native)
+    end
+  end
+end
+
+# Each validation is CPU-bound and takes about a second, so the negative cases are
+# split across async modules instead of running one after another in this module.
+for shard <- 0..(Opsmaru.Incus.EndpointEvidenceTest.completion_shards() - 1) do
+  defmodule Module.concat(Opsmaru.Incus.EndpointEvidenceTest, "Completion#{shard}") do
+    use ExUnit.Case, async: true
+    @moduletag timeout: 180_000
+    alias Opsmaru.Incus.EndpointEvidenceTest, as: Evidence
+    alias Opsmaru.TestSupport.EndpointInventory
+
+    setup_all do
+      %{native: Evidence.native!()}
+    end
+
+    test "reviewed completion records reject removed or overclaimed evidence, part #{shard + 1} of #{Evidence.completion_shards()}",
+         %{native: native} do
+      audit = Jason.decode!(File.read!("priv/incus/endpoint-inventory.json"))
+
+      for {{changed, message}, index} <-
+            Enum.with_index(Evidence.completion_negative_cases(audit)),
+          rem(index, Evidence.completion_shards()) == unquote(shard) do
+        assert_raise ExUnit.AssertionError, ~r/#{message}/, fn ->
+          EndpointInventory.validate!(changed, native)
+        end
+      end
     end
   end
 end

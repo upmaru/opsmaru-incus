@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.FileHeadersReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, FileHeaders, Files, Server}
   alias Opsmaru.TestSupport.HTTPFixture

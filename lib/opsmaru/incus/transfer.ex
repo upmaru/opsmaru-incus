@@ -23,13 +23,18 @@ defmodule Opsmaru.Incus.Transfer do
     do: run(client, "POST", path, headers, source, sink)
 
   @doc false
+  # Native HEAD: headers only. An error status carries no body (HTTP HEAD), so only
+  # the status is native.
+  def head(client, path, handler), do: run(client, "HEAD", path, [], nil, {:events, handler})
+
+  @doc false
   def download_events(client, path, handler, headers \\ []),
     do: run(client, "GET", path, headers, nil, {:events, handler})
 
   @doc false
   def download_origin_events(%{connection: %{transport: :https}} = client, path, handler),
     do:
-      run(client, "GET", path, [], nil, {:events, handler}, fn _, path ->
+      run(client, "GET", path, [], nil, {:origin_events, handler}, fn _, path ->
         SimpleStreams.path(path)
       end)
 
@@ -88,6 +93,7 @@ defmodule Opsmaru.Incus.Transfer do
                {:ok, socket} <- upload_source(socket, ref, source, connection, deadline) do
             receive_response(socket, ref, connection, deadline, sink, %{
               method: method,
+              deadline: deadline,
               status: nil,
               headers: %{},
               bytes: 0,
@@ -134,6 +140,10 @@ defmodule Opsmaru.Incus.Transfer do
           {:error, kind} -> failed(acc.method, kind)
         end
 
+      # recv waits only for the remaining stream budget; its timeout is the deadline.
+      {:error, _, %Mint.TransportError{reason: :timeout}, _} ->
+        failed(acc.method, :deadline)
+
       {:error, _, _, _} ->
         failed(acc.method, :transfer)
     end
@@ -155,7 +165,7 @@ defmodule Opsmaru.Incus.Transfer do
 
     if acc.bytes + byte_size(data) <= maximum do
       if sink && acc.status in 200..299 do
-        with :ok <- deliver(data, sink, connection.max_chunk_bytes),
+        with :ok <- deliver(data, sink, connection.max_chunk_bytes, acc.deadline),
              do: collect(rest, ref, connection, sink, %{acc | bytes: acc.bytes + byte_size(data)})
       else
         collect(rest, ref, connection, sink, %{
@@ -181,27 +191,41 @@ defmodule Opsmaru.Incus.Transfer do
     acc = %{acc | headers: native_headers}
 
     case sink do
-      {:events, handler} when acc.status in 200..299 ->
+      {tag, handler} when tag in [:events, :origin_events] and acc.status in 200..299 ->
         with :ok <- handler.({:headers, acc.headers}),
              do: collect(rest, ref, connection, sink, acc)
+
+      # Like the pinned DownloadFileHash, an origin error status is final once its
+      # headers arrive; its body is never read.
+      {:origin_events, _} ->
+        {:done, acc}
 
       _ ->
         collect(rest, ref, connection, sink, acc)
     end
   end
 
-  defp deliver(<<>>, _, _), do: :ok
+  defp deliver(<<>>, _, _, _), do: :ok
 
-  defp deliver(data, {:events, handler}, maximum),
-    do: deliver(data, fn chunk -> handler.({:data, chunk}) end, maximum)
+  defp deliver(data, {tag, handler}, maximum, deadline) when tag in [:events, :origin_events],
+    do: deliver(data, fn chunk -> handler.({:data, chunk}) end, maximum, deadline)
 
-  defp deliver(data, sink, maximum) do
+  # Sink time counts against the stream deadline here in the worker, so a sink that
+  # outlives it never completes the transfer even if the bounded caller and its
+  # guard are scheduled late and the worker's result reaches the caller first.
+  defp deliver(data, sink, maximum, deadline) do
     size = min(byte_size(data), maximum)
     <<chunk::binary-size(size), rest::binary>> = data
-    if sink.(chunk) == :ok, do: deliver(rest, sink, maximum), else: {:error, :sink_failed}
+
+    cond do
+      sink.(chunk) != :ok -> {:error, :sink_failed}
+      remaining(deadline) == 0 -> {:error, :deadline}
+      true -> deliver(rest, sink, maximum, deadline)
+    end
   end
 
-  defp finish(acc, {:events, handler}) when acc.status in 200..299 do
+  defp finish(acc, {tag, handler})
+       when tag in [:events, :origin_events] and acc.status in 200..299 do
     case handler.(:done) do
       {:ok, result} ->
         {:ok,
@@ -212,10 +236,22 @@ defmodule Opsmaru.Incus.Transfer do
            result: result
          }}
 
+      # A handler's own error (such as invalid file headers) keeps its kind.
+      {:error, %Error{} = error} ->
+        {:error, error}
+
       {:error, kind} ->
         failed(acc.method, kind)
     end
   end
+
+  # An origin download reports its status line as the pinned DownloadFileHash does;
+  # its body is never decoded as a native response.
+  defp finish(%{status: status}, {:origin_events, _}),
+    do: {:error, %Error{kind: :native, http_status: status}}
+
+  defp finish(%{method: "HEAD", status: status}, _sink) when status >= 400,
+    do: {:error, %Error{kind: :native, http_status: status}}
 
   defp finish(acc, sink) when not is_nil(sink) and acc.status in 200..299,
     do: {:ok, %__MODULE__{http_status: acc.status, headers: acc.headers, bytes: acc.bytes}}
@@ -254,11 +290,13 @@ defmodule Opsmaru.Incus.Transfer do
                "transfer-encoding",
                "authorization"
              ]
-         end), do: :ok, else: {:error, :invalid_headers}
+         end),
+       do: :ok,
+       else: {:error, :invalid_headers}
   end
 
   defp failed(method, kind),
-    do: {:error, %Error{kind: if(method == "GET", do: kind, else: :uncertain)}}
+    do: {:error, %Error{kind: if(method in ["GET", "HEAD"], do: kind, else: :uncertain)}}
 
   defp now, do: System.monotonic_time(:millisecond)
   defp remaining(deadline), do: max(0, deadline - now())

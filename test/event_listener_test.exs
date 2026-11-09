@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.EventListenerTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
   import ExUnit.CaptureLog
   alias Opsmaru.Incus
 
@@ -330,7 +331,9 @@ defmodule Opsmaru.Incus.EventListenerTest do
 
     test "#{transport} blocked callback is killed within its budget and result remains repeatable",
          %{root: root} do
-      {client, _} = fixture(unquote(transport), root, timeout: 100)
+      # The timeout is also the callback budget, and it bounds the open: leave room
+      # for a TLS handshake on a loaded VM.
+      {client, _} = fixture(unquote(transport), root, timeout: 1_000)
       {:ok, listener} = EventListener.open(client)
       parent = self()
 
@@ -345,7 +348,7 @@ defmodule Opsmaru.Incus.EventListenerTest do
 
       assert :ok = EventListener.send_event(listener, @event)
       assert_receive {:callback, worker}, 1_000
-      monitor = Process.monitor(worker)
+      monitor = monitor!(worker)
       assert {:error, %Error{kind: :callback_timeout}} = EventListener.wait(listener)
       assert {:error, %Error{kind: :callback_timeout}} = EventListener.wait(listener)
       assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 1_000
@@ -409,8 +412,8 @@ defmodule Opsmaru.Incus.EventListenerTest do
       assert {:error, %Error{kind: :owner_mismatch}} = GenServer.call(listener.pid, :disconnect)
       send(owner, :send)
       assert_receive {:blocked, worker}, 1_000
-      worker_monitor = Process.monitor(worker)
-      listener_monitor = Process.monitor(listener.pid)
+      worker_monitor = monitor!(worker)
+      listener_monitor = monitor!(listener.pid)
       Process.exit(owner, :kill)
       assert_receive {:DOWN, ^worker_monitor, :process, ^worker, :killed}, 1_000
       assert_receive {:DOWN, ^listener_monitor, :process, _, :normal}, 1_000
@@ -434,7 +437,7 @@ defmodule Opsmaru.Incus.EventListenerTest do
 
       assert :ok = EventListener.send_event(listener, @event)
       assert_receive {:trapping_callback, worker}, 1_000
-      monitor = Process.monitor(worker)
+      monitor = monitor!(worker)
       Process.exit(listener.pid, :kill)
       assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 1_000
       assert_peer_closed()
@@ -578,6 +581,36 @@ defmodule Opsmaru.Incus.EventListenerTest do
         refute EventListener.active?(listener)
         assert_peer_closed()
       end
+    end
+
+    test "#{transport} a channel failure between reads keeps its precise kind", %{root: root} do
+      parent = self()
+      large = Jason.encode!(%{@event | "metadata" => %{"pad" => String.duplicate("x", 2_048)}})
+
+      {client, _} =
+        fixture(unquote(transport), root, [max_response_bytes: 1_024],
+          response_frames: fn _, _ ->
+            send(parent, {:frames_gate, self()})
+            receive do: (:release -> WebSocketFixture.frame(1, large))
+          end
+        )
+
+      {:ok, listener} = EventListener.open(client)
+      assert :ok = EventListener.send_event(listener, @event)
+      assert_receive {:frames_gate, gate}, 5_000
+
+      # Suspension takes effect between callbacks, so no read is pending at the
+      # channel when the oversized frame ends it.
+      :ok = :sys.suspend(listener.pid)
+      channel = :sys.get_state(listener.pid).channel.pid
+      monitor = Process.monitor(channel)
+      send(gate, :release)
+      assert_receive {:DOWN, ^monitor, :process, ^channel, _}, 5_000
+      :ok = :sys.resume(listener.pid)
+
+      assert {:error, %Error{kind: :overflow}} = EventListener.wait(listener)
+      refute EventListener.active?(listener)
+      assert_peer_closed()
     end
   end
 

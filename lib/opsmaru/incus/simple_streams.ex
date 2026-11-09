@@ -5,23 +5,45 @@ defmodule Opsmaru.Incus.SimpleStreams do
   its native architecture explicitly, including any pinned platform fallback.
 
   Catalog responses share one request deadline and aggregate byte/entry bounds.
-  There is no disk cache, socket discovery, HTTP downgrade or automatic retry.
-  An optional host delta adapter owns conversion and temporary state; installed
-  conversion remains a separate acceptance gate.
+  There is no socket discovery, HTTP downgrade or automatic retry. An optional
+  host cache adapter keeps the pinned cache directory's expiry, stale fallback
+  and invalidation without shared code writing files. An optional host delta
+  adapter owns conversion and temporary state; installed conversion and cache
+  storage remain separate acceptance gates.
+
+  `certificate:` is the pinned `TLSServerCert`: one public PEM certificate that
+  `connection_info/1` reports and copies send as the source certificate. It is
+  empty by default, which tells a target to use system trust.
   """
-  alias Opsmaru.Incus.{Connection, Context, Discovery, Error, HTTP, Transport}
+  alias Opsmaru.Incus.{Connection, Context, Discovery, Error, HTTP, StatusError, Transport}
   alias Opsmaru.Incus.SimpleStreams.{Catalog, Download}
   @enforce_keys [:connection, :context, :architecture]
-  defstruct [:connection, :context, :architecture, :catalog, :delta_adapter, :delta_config]
+  defstruct [
+    :connection,
+    :context,
+    :architecture,
+    :catalog,
+    :delta_adapter,
+    :delta_config,
+    :cache,
+    certificate: ""
+  ]
+
+  @options ~w(architecture delta_adapter delta_config certificate cache_adapter cache_config cache_expiry)a
+  # The pinned ConnectSimpleStreams default when CacheExpiry is zero.
+  @cache_expiry 3_600_000
 
   def new!(%Connection{transport: :https} = connection, %Context{} = context, opts) do
     unless Keyword.keyword?(opts) and
-             Keyword.keys(opts) -- [:architecture, :delta_adapter, :delta_config] == [] and
+             Keyword.keys(opts) -- @options == [] and
              length(opts) == length(Enum.uniq(Keyword.keys(opts))) and
              is_nil(connection.project) and is_nil(connection.member) and
              not connection.require_authenticated,
            do:
              raise(ArgumentError, "SimpleStreams requires explicit HTTPS and native architecture")
+
+    unless certificate?(Keyword.get(opts, :certificate, "")),
+      do: raise(ArgumentError, "SimpleStreams certificate must be one PEM certificate")
 
     case Catalog.architecture(opts[:architecture]) do
       {:ok, architecture} ->
@@ -32,7 +54,9 @@ defmodule Opsmaru.Incus.SimpleStreams do
           context: context,
           architecture: architecture,
           delta_adapter: adapter,
-          delta_config: opts[:delta_config]
+          delta_config: opts[:delta_config],
+          cache: cache!(connection, opts),
+          certificate: Keyword.get(opts, :certificate, "")
         }
 
       _ ->
@@ -45,14 +69,14 @@ defmodule Opsmaru.Incus.SimpleStreams do
   @doc "Native no-op disconnect; the immutable catalog owns no pool, files or conversion worker."
   def disconnect(%__MODULE__{}), do: :ok
 
-  @doc "Native origin metadata without network or credential-file access. Public PEM is not inferred from trust references."
+  @doc "Native origin metadata without network or credential-file access; the certificate is the explicit `certificate:` PEM, never inferred from trust references."
   def connection_info(client) do
     with :ok <- authorize(client) do
       url = URI.to_string(client.connection.address)
 
       {:ok,
        %Discovery{
-         certificate: "",
+         certificate: client.certificate,
          protocol: "simplestreams",
          url: url,
          addresses: [url],
@@ -88,6 +112,47 @@ defmodule Opsmaru.Incus.SimpleStreams do
     end
   end
 
+  defp certificate?(""), do: true
+
+  defp certificate?(pem) when is_binary(pem) and byte_size(pem) <= 65_536 do
+    match?([{:Certificate, _, :not_encrypted}], :public_key.pem_decode(pem))
+  rescue
+    _ -> false
+  end
+
+  defp certificate?(_), do: false
+
+  # The pinned cache directory is namespaced by the hex SHA-256 of the stream URL.
+  defp cache!(connection, opts) do
+    case {opts[:cache_adapter], Keyword.has_key?(opts, :cache_config), opts[:cache_expiry]} do
+      {nil, false, nil} ->
+        nil
+
+      {adapter, true, expiry}
+      when is_atom(adapter) and not is_nil(adapter) and
+             (is_nil(expiry) or (is_integer(expiry) and expiry > 0)) ->
+        cache_adapter!(adapter)
+        url = URI.to_string(connection.address)
+
+        %{
+          adapter: adapter,
+          config: opts[:cache_config],
+          expiry: expiry || @cache_expiry,
+          namespace: :crypto.hash(:sha256, url) |> Base.encode16(case: :lower)
+        }
+
+      _ ->
+        raise ArgumentError, "SimpleStreams cache requires explicit adapter configuration"
+    end
+  end
+
+  defp cache_adapter!(adapter) do
+    unless Code.ensure_loaded?(adapter) and function_exported?(adapter, :read, 3) and
+             function_exported?(adapter, :write, 4) and
+             function_exported?(adapter, :invalidate, 2),
+           do: raise(ArgumentError, "SimpleStreams cache requires a complete host adapter")
+  end
+
   def refresh(client) do
     with :ok <- authorize(client) do
       Transport.bounded(
@@ -107,19 +172,23 @@ defmodule Opsmaru.Incus.SimpleStreams do
     do: read(client, &{:ok, Enum.map(&1.images, fn image -> image.data["fingerprint"] end)})
 
   def image(client, fingerprint) when is_binary(fingerprint) do
+    case lookup(client, fingerprint) do
+      {:error, %Error{kind: :native, message: message} = error} ->
+        {:error, %{error | message: "Failed getting image: " <> message}}
+
+      other ->
+        other
+    end
+  end
+
+  # The pinned shared client's GetImage, which GetImageFile calls without a prefix.
+  @doc false
+  def lookup(client, fingerprint) do
     read(client, fn catalog ->
       case Enum.filter(catalog.images, &String.starts_with?(&1.data["fingerprint"], fingerprint)) do
-        [image] ->
-          {:ok, image}
-
-        [] ->
-          error(:native, "Failed getting image: The requested image couldn't be found")
-
-        _ ->
-          error(
-            :native,
-            "Failed getting image: More than one match for the provided partial fingerprint"
-          )
+        [image] -> {:ok, image}
+        [] -> error(:native, "The requested image couldn't be found")
+        _ -> error(:native, "More than one match for the provided partial fingerprint")
       end
     end)
   end
@@ -157,7 +226,7 @@ defmodule Opsmaru.Incus.SimpleStreams do
   end
 
   def files(client, fingerprint) do
-    with {:ok, image} <- image(client, fingerprint),
+    with {:ok, image} <- lookup(client, fingerprint),
          do: {:ok, client.catalog.files[image.data["fingerprint"]]}
   end
 
@@ -194,8 +263,8 @@ defmodule Opsmaru.Incus.SimpleStreams do
   defp refresh_catalog(client) do
     deadline = now() + client.connection.timeout
 
-    with {:ok, index, bytes} <- json(client, "/streams/v1/index.json", deadline),
-         entries when is_map(entries) <- index["index"],
+    with {:ok, index, bytes} <- stream(client, deadline),
+         entries = index["index"] || %{},
          :ok <- capacity(map_size(entries), client.connection.queue_limit),
          paths =
            for(
@@ -215,13 +284,36 @@ defmodule Opsmaru.Incus.SimpleStreams do
     end
   end
 
+  # The pinned parseStream and getImages wrapping.
+  defp stream(client, deadline) do
+    path = "streams/v1/index.json"
+
+    with {:ok, body} <- cached_download(client, path, deadline),
+         {:ok, index} <- decode(body, ~w(index format)) do
+      {:ok, index, byte_size(body)}
+    else
+      {:error, %Error{kind: :native, message: message} = error} ->
+        {:error, %{error | message: "Failed parsing stream: " <> message}}
+
+      {:error, :decode, detail, body} ->
+        error(
+          :native,
+          "Failed parsing stream: Failed decoding stream JSON from #{go_quote(url(client, "/" <> path))}: " <>
+            "#{detail} (#{go_quote(body)})"
+        )
+
+      error ->
+        error
+    end
+  end
+
   defp capacity(count, limit) when count <= limit, do: :ok
   defp capacity(_, _), do: error(:catalog_limit, nil)
 
   defp products(client, paths, deadline, bytes) do
     Enum.reduce_while(paths, {:ok, [], bytes, 0}, fn path, {:ok, acc, used, count} ->
-      with {:ok, data, size} <- json(client, path, deadline),
-           entries when is_map(entries) <- data["products"],
+      with {:ok, data, size} <- product_file(client, path, deadline),
+           entries = data["products"] || %{},
            true <- used + size <= client.connection.max_response_bytes,
            true <- map_size(entries) <= client.connection.queue_limit,
            weight = candidate_count(entries, client.connection.queue_limit),
@@ -258,19 +350,158 @@ defmodule Opsmaru.Incus.SimpleStreams do
     )
   end
 
-  defp json(client, path, deadline) do
-    with {:ok, path} <- path(path),
-         true <- deadline > now(),
-         connection = %{client.connection | timeout: max(1, deadline - now())},
-         {:ok, response} <- Transport.request(connection, "GET", path, [], nil),
-         true <- response.status == 200,
-         {:ok, data} when is_map(data) <- Jason.decode(response.body) do
-      {:ok, data, byte_size(response.body)}
+  # The pinned parseProducts, which names the relative path and omits the body.
+  defp product_file(client, path, deadline) do
+    with true <- is_binary(path) or error(:invalid_path, nil),
+         {:ok, body} <- cached_download(client, path, deadline),
+         {:ok, data} <- decode(body, ~w(products)) do
+      {:ok, data, byte_size(body)}
     else
-      {:error, %Error{} = error} -> {:error, error}
-      _ -> error(:simplestreams_response, nil)
+      {:error, %Error{kind: :native, message: message} = error} ->
+        {:error, %{error | message: "Failed parsing products: " <> message}}
+
+      {:error, :decode, detail, _} ->
+        error(
+          :native,
+          "Failed parsing products: Failed decoding products JSON from #{go_quote(path)}: #{detail}"
+        )
+
+      error ->
+        error
     end
   end
+
+  # The pinned cachedDownload: a fresh cache entry is used without a request; a
+  # failed request or non-200 reply falls back to any cached entry, expired or not.
+  defp cached_download(client, path, deadline) do
+    name = path |> String.split("/") |> List.last()
+    cached = cache_read(client, name)
+
+    case cached do
+      {body, false} ->
+        {:ok, body}
+
+      _ ->
+        case fetch(client, path, deadline) do
+          {:ok, 200, ""} ->
+            error(:native, "No content in download from #{go_quote(url(client, path))}")
+
+          {:ok, 200, body} ->
+            cache_call(client, :write, [name, body])
+            {:ok, body}
+
+          {:ok, status, _} when is_nil(cached) ->
+            error(:native, "Unable to fetch #{url(client, path)}: #{status_line(status)}")
+
+          {:error, %Error{kind: :invalid_path}} = error ->
+            error
+
+          {:error, _} = error when is_nil(cached) ->
+            error
+
+          _ ->
+            {:ok, elem(cached, 0)}
+        end
+    end
+  end
+
+  defp fetch(client, path, deadline) do
+    with {:ok, path} <- path(path),
+         true <- deadline > now() or error(:deadline, nil),
+         connection = %{client.connection | timeout: max(1, deadline - now())},
+         {:ok, response} <- Transport.request(connection, "GET", path, [], nil) do
+      {:ok, response.status, response.body}
+    end
+  end
+
+  defp decode(body, keys) do
+    case Jason.decode(body) do
+      {:ok, data} when is_map(data) ->
+        if Enum.all?(keys, &(is_nil(data[&1]) or is_map(data[&1]) or &1 == "format")),
+          do: {:ok, data},
+          else: {:error, :decode, "cannot unmarshal into the pinned catalog type", body}
+
+      {:ok, _} ->
+        {:error, :decode, "cannot unmarshal into the pinned catalog type", body}
+
+      {:error, %Jason.DecodeError{} = error} ->
+        {:error, :decode, Exception.message(error), body}
+    end
+  end
+
+  defp cache_read(%{cache: nil}, _), do: nil
+
+  defp cache_read(%{cache: cache} = client, name) do
+    case cache_call(client, :read, [name]) do
+      {:ok, body, age} when is_binary(body) and is_integer(age) and age >= 0 ->
+        if byte_size(body) <= client.connection.max_response_bytes,
+          do: {body, age > cache.expiry},
+          else: nil
+
+      _ ->
+        nil
+    end
+  end
+
+  # Cache failures are ignored as natively: a failed read is a miss and a failed
+  # write or invalidation leaves the result unchanged.
+  @doc false
+  def cache_call(%{cache: nil}, _, _), do: :ok
+
+  def cache_call(%{cache: cache}, function, args) do
+    apply(cache.adapter, function, [cache.config, cache.namespace | args])
+  rescue
+    _ -> :error
+  catch
+    _, _ -> :error
+  end
+
+  @doc false
+  def url(client, path),
+    do: URI.to_string(client.connection.address) <> "/" <> String.trim_leading(path, "/")
+
+  # Go's http.Response.Status for the standard reason phrase.
+  @doc false
+  def status_line(status),
+    do: String.trim("#{status} #{StatusError.error(%StatusError{status: status})}")
+
+  # Go strconv.Quote, as the pinned %q formats names and bodies.
+  @doc false
+  def go_quote(value), do: ~s(") <> quote_chars(value, []) <> ~s(")
+
+  defp quote_chars(<<>>, acc), do: acc |> Enum.reverse() |> IO.iodata_to_binary()
+
+  defp quote_chars(<<char::utf8, rest::binary>>, acc),
+    do: quote_chars(rest, [escape(char) | acc])
+
+  defp quote_chars(<<byte, rest::binary>>, acc),
+    do: quote_chars(rest, ["\\x" <> hex(byte, 2) | acc])
+
+  @escapes %{
+    ?" => ~S(\"),
+    ?\\ => ~S(\\),
+    ?\a => ~S(\a),
+    ?\b => ~S(\b),
+    ?\f => ~S(\f),
+    ?\n => ~S(\n),
+    ?\r => ~S(\r),
+    ?\t => ~S(\t),
+    ?\v => ~S(\v)
+  }
+
+  defp escape(c) when is_map_key(@escapes, c), do: @escapes[c]
+  defp escape(c) when c < 0x20 or c == 0x7F, do: "\\x" <> hex(c, 2)
+
+  defp escape(c) when c in 0x80..0x9F or c in [0xAD, 0xFEFF] or c in 0x2028..0x2029,
+    do: unicode(c)
+
+  defp escape(c), do: <<c::utf8>>
+
+  defp unicode(c) when c < 0x10000, do: "\\u" <> hex(c, 4)
+  defp unicode(c), do: "\\U" <> hex(c, 8)
+
+  defp hex(value, width),
+    do: value |> Integer.to_string(16) |> String.downcase() |> String.pad_leading(width, "0")
 
   @doc false
   def path(value) when is_binary(value) and byte_size(value) <= 16_384 do

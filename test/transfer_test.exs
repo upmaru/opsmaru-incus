@@ -1,5 +1,6 @@
 defmodule Opsmaru.Incus.TransferTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Transfer}
   alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
@@ -87,16 +88,23 @@ defmodule Opsmaru.Incus.TransferTest do
           else: %{raw: ""}
       end)
 
-    client = client(fixture, context, max_stream_bytes: 3, stream_timeout: 30)
+    # Only the deadline case gets a short budget: a loaded runner can spend 300 ms
+    # before the byte limit is reached.
+    client = client(fixture, context, max_stream_bytes: 3, stream_timeout: 5_000)
 
     assert {:error, %Error{kind: :stream_limit}} =
              Transfer.download(client, "/1.0/files", fn _ -> :ok end)
 
-    client = %{client | connection: %{client.connection | max_stream_bytes: 100}}
+    # The deadline covers connecting too: leave room for that on a loaded VM, and
+    # let the stalled sink below outlast it.
+    client = %{
+      client
+      | connection: %{client.connection | max_stream_bytes: 100, stream_timeout: 300}
+    }
 
     assert {:error, %Error{kind: :deadline}} =
              Transfer.download(client, "/1.0/files", fn _ ->
-               Process.sleep(100)
+               Process.sleep(1_000)
                :ok
              end)
 
@@ -162,9 +170,9 @@ defmodule Opsmaru.Incus.TransferTest do
 
       owner = spawn(fn -> trapped_transfer(unquote(mode), client, block) end)
       on_exit(fn -> if Process.alive?(owner), do: Process.exit(owner, :kill) end)
-      assert_receive {:blocked, worker}, 1_000
+      assert_receive {:blocked, worker}, 5_000
       on_exit(fn -> if Process.alive?(worker), do: Process.exit(worker, :kill) end)
-      monitor = Process.monitor(worker)
+      monitor = monitor!(worker)
       Process.exit(owner, :kill)
       assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, 500
       assert Process.alive?(self())

@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.NetworkModelsReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus.{Error, Model, NetworkModels}
   @driver Path.expand("../.integration/incus-network-models", __DIR__)
   setup_all do

@@ -3,13 +3,15 @@ defmodule Opsmaru.Incus.RawChannel do
   Owner-monitored native SFTP/NBD duplex byte channel. No WebSocket framing.
 
   A pull reader and bounded inbound queue expose backpressure; overflow is
-  visible. Read EOF leaves the write direction usable. Lifetime, chunks, byte
+  visible. Read EOF leaves the write direction usable over Unix; over TLS the
+  peer's close_notify ends the connection, so later writes return
+  `:write_closed`. Lifetime, chunks, byte
   totals and every blocking socket write are bounded. Closing the local channel
   never cancels an operation or owns host/Incus lifecycle.
   """
   use GenServer
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Context, Error, Response, Transport, Upgrade}
+  alias Opsmaru.Incus.{Context, Error, Redaction, Response, Transport, Upgrade}
   defstruct [:pid, :ref]
 
   def open(client, path, protocol) when protocol in ["sftp", "nbd"] do
@@ -98,6 +100,7 @@ defmodule Opsmaru.Incus.RawChannel do
               received: 0,
               written: 0,
               pending: nil,
+              armed: false,
               read_eof: false,
               notify_read_eof: false,
               write_eof: false
@@ -105,8 +108,7 @@ defmodule Opsmaru.Incus.RawChannel do
 
             case enqueue(state, initial) do
               {:ok, state} ->
-                rearm(state)
-                {:ok, state}
+                {:ok, rearm(state)}
 
               _ ->
                 transport.close(socket)
@@ -170,8 +172,7 @@ defmodule Opsmaru.Incus.RawChannel do
   def handle_call({:recv, timeout}, from, state) do
     case :queue.out(state.queue) do
       {{:value, bytes}, queue} ->
-        state = %{state | queue: queue, queued: state.queued - 1}
-        rearm(state)
+        state = rearm(%{state | queue: queue, queued: state.queued - 1})
         {:reply, {:ok, bytes}, state}
 
       {:empty, _} ->
@@ -224,11 +225,9 @@ defmodule Opsmaru.Incus.RawChannel do
 
   @impl true
   def handle_info({tag, socket, bytes}, %{socket: socket} = state) when tag in [:tcp, :ssl] do
-    case enqueue(state, bytes) do
+    case enqueue(%{state | armed: false}, bytes) do
       {:ok, state} ->
-        state = deliver(state)
-        rearm(state)
-        {:noreply, state}
+        {:noreply, state |> deliver() |> rearm()}
 
       _ ->
         terminate_error(state, :overflow)
@@ -237,7 +236,9 @@ defmodule Opsmaru.Incus.RawChannel do
 
   def handle_info({tag, socket}, %{socket: socket} = state)
       when tag in [:tcp_closed, :ssl_closed] do
-    state = %{state | read_eof: true}
+    # OTP TLS ends the whole connection on the peer's close_notify, unlike a Go tls.Conn;
+    # later writes report write_closed while already received bytes stay readable.
+    state = %{state | read_eof: true, write_eof: state.write_eof or tag == :ssl_closed}
     if state.notify_read_eof, do: send(state.owner, {state.ref, :read_eof})
 
     if state.pending do
@@ -250,7 +251,8 @@ defmodule Opsmaru.Incus.RawChannel do
   end
 
   def handle_info({tag, socket, _}, %{socket: socket} = state)
-      when tag in [:tcp_error, :ssl_error], do: terminate_error(state, :channel_io)
+      when tag in [:tcp_error, :ssl_error],
+      do: terminate_error(state, :channel_io)
 
   def handle_info({:read_timeout, tag}, %{pending: {from, tag, _}} = state) do
     GenServer.reply(from, {:error, %Error{kind: :deadline}})
@@ -300,12 +302,18 @@ defmodule Opsmaru.Incus.RawChannel do
     %{state | queue: queue, queued: state.queued - 1, pending: nil}
   end
 
-  defp rearm(%{read_eof: false} = state) do
-    if state.queued < state.connection.queue_limit, do: setopts(state, active: :once)
-    :ok
+  # At most one active-once delivery is outstanding: one already in the mailbox
+  # still needs queue space, so the socket is armed again only after it is handled.
+  defp rearm(%{read_eof: false, armed: false} = state) do
+    if state.queued < state.connection.queue_limit do
+      setopts(state, active: :once)
+      %{state | armed: true}
+    else
+      state
+    end
   end
 
-  defp rearm(_), do: :ok
+  defp rearm(state), do: state
   defp setopts(%{transport: :gen_tcp} = state, opts), do: :inet.setopts(state.socket, opts)
   defp setopts(state, opts), do: :ssl.setopts(state.socket, opts)
   defp fail(state, kind), do: {:stop, :normal, {:error, %Error{kind: kind}}, state}
@@ -324,6 +332,6 @@ defmodule Opsmaru.Incus.RawChannel do
   end
 
   @impl true
-  def format_status(status), do: %{status | state: :private_native_channel}
+  def format_status(status), do: Redaction.status(status, :private_native_channel)
   defp now, do: System.monotonic_time(:millisecond)
 end

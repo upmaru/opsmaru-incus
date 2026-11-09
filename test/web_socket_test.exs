@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.WebSocketTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Events, Server, WebSocket}
   alias Opsmaru.TestSupport.{HTTPFixture, WebSocketFixture}
@@ -53,8 +53,10 @@ defmodule Opsmaru.Incus.WebSocketTest do
     assert {:ok, {:binary, <<0, 255, 128>>}} = WebSocket.recv(channel)
     assert :ok = WebSocket.send_frame(channel, {:binary, payload})
     assert {:ok, {:binary, ^payload}} = WebSocket.recv(channel)
+    monitor = Process.monitor(channel.pid)
     assert :ok = WebSocket.close(channel)
-    refute Process.alive?(channel.pid)
+    # close/1 replies before the channel process finishes exiting.
+    assert_receive {:DOWN, ^monitor, :process, _, _}, 1_000
 
     requests =
       WebSocketFixture.requests(fixture) |> Enum.reject(&(URI.parse(&1.target).path == "/1.0"))
@@ -116,8 +118,10 @@ defmodule Opsmaru.Incus.WebSocketTest do
     configured = %{configured | connection: %{configured.connection | stream_timeout: 40}}
     {:ok, channel} = WebSocket.open(configured, "/1.0/events")
     ref = channel.ref
+    monitor = Process.monitor(channel.pid)
     assert_receive {^ref, :error, %Error{kind: :deadline}}, 1_000
-    refute Process.alive?(channel.pid)
+    # The channel reports its failure, then exits.
+    assert_receive {:DOWN, ^monitor, :process, _, _}, 1_000
     parent = self()
 
     owner =

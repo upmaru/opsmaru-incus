@@ -1,9 +1,12 @@
 defmodule Opsmaru.Incus.CleanupBudgetTest do
-  use ExUnit.Case, async: false
+  # It sets VM-wide trace patterns on :gen_server calls under TraceLock.
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus.WebSocket
   alias Opsmaru.TestSupport.CleanupAssertions, as: Cleanup
+  alias Opsmaru.TestSupport.TraceLock
 
   test "blocked closes batch requests and spend one shared grace allowance" do
+    TraceLock.acquire!()
     parent = self()
     pids = for _ <- 1..3, do: spawn(fn -> receive do: (:never -> :ok) end)
     monitors = Cleanup.monitor(pids)

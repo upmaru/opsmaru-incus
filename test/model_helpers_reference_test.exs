@@ -1,5 +1,5 @@
 defmodule Opsmaru.Incus.ModelHelpersReferenceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias Opsmaru.Incus.{Model, ModelURL, Status}
   @driver Path.expand("../.integration/model-helpers-driver", __DIR__)
   @schemas Jason.decode!(File.read!(Path.expand("../priv/incus/models.json", __DIR__)))[
