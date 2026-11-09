@@ -17,12 +17,17 @@ Creating a request context SHALL create no process, socket or file. It MAY creat
 
 ### Requirement: No polling while waiting
 
-Request guards, channel watchers and operation waits MUST NOT wake periodically while waiting on a request context. They SHALL react to explicit cancellation, context-owner exit and the absolute deadline as delivered events.
+Request guards, channel watchers, operation waits and host adapter call waits MUST NOT wake periodically while waiting on a request context. They SHALL react to explicit cancellation, context-owner exit and the absolute deadline as delivered events.
 
 #### Scenario: Idle channel with a context
 
 - **WHEN** an event listener with a host request context stays open with no traffic
 - **THEN** its watcher performs no periodic wakeups until a channel, owner, cancellation or deadline event occurs
+
+#### Scenario: Pending adapter call with a context
+
+- **WHEN** an OCI or SimpleStreams delta adapter call with a host request context is waiting on the host callback
+- **THEN** its controller performs no periodic wakeups, and cancellation ends the call with `:adapter_canceled` and runs per-call cleanup once
 
 ### Requirement: Exactly-once cancellation delivery
 
@@ -40,7 +45,7 @@ Every waiter registered on a context SHALL observe its terminal state exactly on
 
 ### Requirement: Unchanged status and outcomes
 
-`RequestContext.status/1` and `check/1` SHALL return the same values as before for every combination of cancellation, owner exit and deadline. Requests, channels and operation waits SHALL report the same error and closure kinds, and local cancellation MUST NOT send any backend request.
+`RequestContext.status/1` and `check/1` SHALL return the same values as before for every combination of cancellation, owner exit and deadline. Requests, channels, operation waits and adapter calls SHALL report the same error and closure kinds, and local cancellation MUST NOT send any backend request.
 
 #### Scenario: Owner exits during a request
 

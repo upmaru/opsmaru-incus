@@ -4,27 +4,30 @@
 
 See [proposal.md](proposal.md). `RequestContext.new!/1` validates a finite timeout and a local owner and returns `%RequestContext{owner, deadline, cancelled}`, where `cancelled` is a one-slot `:atomics` array: `0` active, `1` cancelled, `2` deadline. `cancel/1` compare-and-exchanges `0` to `1` (or to `2` if the deadline already passed). `status/1` reads the slot and, while it is `0`, also checks the deadline and `Process.alive?(owner)`, recording either result with the same compare-and-exchange.
 
-Three loops call `status/1` on a 20 ms tick when a context is present:
+Four loops call `status/1` on a 20 ms tick when a context is present:
 
 | Site | Process | Duration |
 | --- | --- | --- |
 | `Transport.guard_until/5` | one guard per bounded request | the request |
 | `Transport.watch_until/4` | one watcher per channel (`WebSocket`, `RawChannel`, `SFTP`, `DynamicConsole`, `EventListener`) | the channel's life |
-| `Operation.sleep_until/2` | the caller | each gap between polls |
+| `Operation.sleep_until/2` | the caller | each gap between polls (`poll_interval`, default 50 ms) |
+| `OCI.AdapterCall.await_result/6` | one controller per OCI or SimpleStreams delta adapter call | the host callback |
 
-The guard and watcher already monitor their worker or channel and its caller, so caller death is event-driven today. The context owner can differ from the caller (`owner:` option), and that is the only reason `Process.alive?/1` is polled. `SFTP.lifetime/1` creates a private context from `stream_timeout` for every session, and `ExecRun` creates one per execution.
+The guard, watcher and adapter controller already monitor their worker or channel and its caller, so caller death is event-driven today. The context owner can differ from the caller (`owner:` option), and that is the only reason `Process.alive?/1` is polled. `SFTP.lifetime/1` creates a private context from `stream_timeout` for every session and watches it, plus a second watcher when the host supplied a context. `ExecRun` creates one private context per execution, copies it with the host context's tighter deadline (the copy shares the atomic) and cancels it in its `after` clause.
+
+The proposal's Scope section lists the newer wait loops (gateway lease rechecks and watchdog, WebSocket relay reads, `NativeYaml` decoding, single-timer lifetimes) and why each stays as it is.
 
 ## Goals / Non-Goals
 
 **Goals:** no periodic wakeups while waiting on a context; cancellation, owner exit and deadline observed as soon as the BEAM delivers them; identical `status/1`, `check/1` and error classification; contexts remain values with no process.
 
-**Non-Goals:** backend cancellation (local cancellation still never sends a `DELETE`), cancellation across nodes, changes to deadlines or default timeouts, propagating a host context's cancellation into library-internal contexts beyond what happens today, and changes to `WorkScope`.
+**Non-Goals:** backend cancellation (local cancellation still never sends a `DELETE`), cancellation across nodes, changes to deadlines or default timeouts, propagating a host context's cancellation into library-internal contexts beyond what happens today, changes to `WorkScope`, and changes to gateway recheck, idle or lifetime timing.
 
 ## Decisions
 
 ### 1. Measure first
 
-Before any implementation, record on macOS and Linux, for 1, 100 and 1,000 concurrently open event listeners and SFTP sessions with and without a host context: scheduler wakeups (`:erlang.statistics(:context_switches)` and scheduler wall time over an idle interval), process CPU and observed cancellation latency. Repeat for a waiting `Operation.wait/2`. Continue only if idle cost or latency is material for Macus; otherwise record the numbers and archive the change unimplemented.
+Before any implementation, record on macOS and Linux, for 1, 100 and 1,000 concurrently open event listeners and SFTP sessions with and without a host context: scheduler wakeups (`:erlang.statistics(:context_switches)` and scheduler wall time over an idle interval), process CPU and observed cancellation latency. Repeat for a waiting `Operation.wait/2` and a pending OCI adapter call. Continue only if idle cost or latency is material for Macus; otherwise record the numbers and archive the change unimplemented.
 
 ### 2. Subscriber table with the owner as heir
 
@@ -34,7 +37,7 @@ Before any implementation, record on macOS and Linux, for 1, 100 and 1,000 concu
 :ets.new(__MODULE__, [:set, :public, {:heir, owner, :request_context}, read_concurrency: false])
 ```
 
-and stores its id in a new `subscribers` field. The creating process owns it; if the creator exits before the owner, the table passes to the owner. When the owner exits, the table is deleted, which matches the existing rule that owner exit cancels the context. No process is created, and the table name is not registered.
+and stores its id in a new `subscribers` field. The creating process owns it; if the creator exits before the owner, the table passes to the owner. A struct copy with a tightened `deadline`, as `ExecRun` makes, shares the table with the original, and each waiter uses the deadline of the struct it holds. When the owner exits, the table is deleted, which matches the existing rule that owner exit cancels the context. No process is created, and the table name is not registered.
 
 The table holds `{alias, true}` rows only. It is never the source of truth: a missing table, a failed insert or an empty table cannot make a context look active or cancelled. `status/1` and `check/1` keep reading the atomic exactly as today.
 
@@ -62,14 +65,15 @@ Waiters call `Process.monitor(context.owner)` unless the owner is a process they
 - **Request guard.** `guard_until/5` becomes one `receive` over the worker and caller `:DOWN`s (existing), the context owner `:DOWN`, the cancellation alias and the deadline. Any of the last three kills the worker as today. The caller's outcome classification in `bounded_active/4` is unchanged.
 - **Channel watcher.** `watch_until/4` becomes one `receive` over the existing channel and owner `:DOWN`s, the context owner `:DOWN`, the alias and the context deadline. The 100 ms grace period after owner exit is unchanged. Without a context there is no alias, monitor or timer beyond today's.
 - **Operation wait.** `sleep_until/2` waits in the caller with `receive` on the alias and the context owner `:DOWN`, `after` the next poll time capped at the deadline. It unsubscribes, demonitors with `:flush` and unaliases before returning.
+- **Adapter call.** `await_result/6` adds the alias and the context owner `:DOWN` to its `receive` over the result, worker and caller `:DOWN`s, and waits `after` the call deadline instead of 20 ms. Cancellation and deadline still map to `:adapter_canceled` and `:adapter_deadline`, and per-call cleanup still runs.
 
-The `tick/2` helper is removed.
+The `tick/2` helper and the adapter call's 20 ms bound are removed.
 
 ### 6. Internal contexts
 
-`SFTP` stops creating a lifetime `RequestContext`. The session keeps a plain absolute deadline and a `Process.send_after/3` timer, as `RawChannel` already does for its lifetime, and `closed_kind/2` reports `:deadline` from that value. Only a host-supplied context gets a watcher.
+`SFTP` stops creating a lifetime `RequestContext`. The session struct and server state keep a plain absolute deadline, the server sets a `Process.send_after/3` timer, as `RawChannel` already does for its lifetime, and `closed_kind/2`, `request_deadline/2` and the lock wait read that value instead of the context. Only a host-supplied context gets a watcher.
 
-`ExecRun` keeps its private context, because its workers already share it, and cancels it when `execute/8` returns. Its status is never read after that point, so cancelling only releases the table and wakes any remaining waiter.
+`ExecRun` keeps its private context, because its workers already share it, and already cancels it when `execute/8` returns. Its status is never read after that point, so with the table that cancel only releases it and wakes any remaining waiter. No `ExecRun` code change is expected.
 
 ### 7. Table lifetime
 
