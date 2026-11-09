@@ -1,8 +1,11 @@
 # Gateway real-Incus gate (G6 / 7.4)
 
-The live gateway gate is **incomplete** because strict NBD stays unrun. The
-latest isolated run (2026-11-09) at source
-`9224c71700c801105128293b81e75468e2f1a5d0` completed every other case.
+The live gateway gate is **closed under an accepted NBD limitation**. The
+isolated run on 2026-11-09 at source
+`9224c71700c801105128293b81e75468e2f1a5d0` completed every case except NBD.
+NBD remains `unrun`; it has not passed. The user accepted that result on
+2026-11-09 as a pinned-native limitation and asked to revisit it later (see
+"Accepted NBD limitation" below).
 
 ## 2026-11-09 run on a flow-relay test appliance
 
@@ -33,9 +36,27 @@ This run supersedes the earlier relay copy failure. That failure matched a
 Macus vsock head-of-line stall, not a gateway defect. With the flow-controlled
 relay, all twelve copies and six instance moves completed. This is not Macus
 hardware or ZFS qualification evidence, because the appliance runs an
-unqualified kernel/ZFS pair on an unmerged Macus build. Task 7.4 stays
-unchecked until NBD either passes or the user explicitly accepts it as a
-native limitation.
+unqualified kernel/ZFS pair on an unmerged Macus build.
+
+### Accepted NBD limitation
+
+On 2026-11-09 the user accepted the NBD result as a pinned-native limitation
+and closed task 7.4. They asked to revisit it later.
+
+- **Custom volume.** The unchanged v7.0.1 client requests `Writable: false`.
+  Incus completes the fixed-newstyle handshake, but the `NBD_INFO_EXPORT`
+  transmission flags omit `NBD_FLAG_READ_ONLY`. The strict verifier stops
+  before any block request, so no data is read or written. The same failure
+  occurs directly and through the gateway, so the gateway preserves native
+  behavior. Whether Incus enforces read-only access server-side without
+  advertising the flag is not verified.
+- **Instance.** Instance NBD is VM-only. The gate provisions only containers,
+  so Incus returned its native 400. No positive VM case ran.
+
+This acceptance does not mark NBD passed and does not loosen the verifier.
+Possible revisits include a relaxed single-block read with zero writes, a VM
+instance case on an appliance with nested virtualization, or confirming
+upstream whether the read-only flag should be advertised.
 
 Operator notes from this session:
 
@@ -175,8 +196,10 @@ condition occurs through the gateway, the runner compares it with the same
 unchanged helper directly on the same owned volume. Only matching
 `native_nbd_readonly_unavailable` results leave NBD `unrun` and allow denial,
 interruption and migration checks to continue. Unknown or mismatched errors
-stop the run. This does not accept an NBD parity exception, mark NBD passed or
-complete task 7.4; the incomplete ledger retains resources for reconciliation.
+stop the run. The runner itself never accepts an NBD parity exception, marks
+NBD passed or completes task 7.4; its incomplete ledger retains resources for
+reconciliation. The 2026-11-09 closure of task 7.4 rests on the user's
+explicit acceptance recorded above, not on runner output.
 
 Unexpected native CLI exit results also retain a bounded operator-only diagnostic
 sidecar in the run's private `0700` state directory. Each exclusive `0600`
