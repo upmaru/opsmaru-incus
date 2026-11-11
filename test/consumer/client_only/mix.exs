@@ -9,17 +9,12 @@ defmodule ClientOnlyConsumer.MixProject do
   def application, do: [extra_applications: [:logger]]
 
   defp deps do
-    revision = System.fetch_env!("OPSMARU_INCUS_FIXTURE_REVISION")
-    unless Regex.match?(~r/\A[0-9a-f]{40}\z/, revision), do: raise("immutable revision required")
+    # scripts/check-consumer.py extracts the `mix hex.build` tarball here, so the
+    # consumer compiles exactly the files the Hex package publishes.
+    package = System.fetch_env!("OPSMARU_INCUS_PACKAGE_PATH")
 
     [
-      {:opsmaru_incus,
-       git:
-         System.get_env(
-           "OPSMARU_INCUS_FIXTURE_REPOSITORY",
-           "https://github.com/upmaru/opsmaru-incus.git"
-         ),
-       ref: revision},
+      {:opsmaru_incus, path: package},
       {:jason, "~> 1.4"}
     ]
   end

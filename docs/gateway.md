@@ -284,8 +284,9 @@ Each evidence class is recorded separately, and none substitutes for another:
 - **Fixtures and pinned-client conformance:** the portable suites described on
   this page, plus the unchanged pinned v7.0.1 CLI matrix (18 successful cases
   and six accepted snapshot-move limitations). See `docs/gateway-acceptance.md`.
-- **Immutable consumer:** `mise run check:consumer` builds a pushed revision in a
-  fresh Phoenix consumer on Linux and macOS. See `docs/gateway-acceptance.md`.
+- **Package consumer:** `mise run check:consumer` builds the Hex package and
+  compiles it in a fresh Phoenix consumer on Linux and macOS. See
+  `docs/gateway-acceptance.md`.
 - **Real Incus:** the explicit isolated gate passed 28 of 35 cases on
   2026-11-09, including every copy mode in both gateway orientations. Snapshot
   move is the accepted pinned-native limitation, and NBD stays `unrun` under an
@@ -385,7 +386,7 @@ silent deadlines, TLS separation, ownership and redaction evidence.
 v7.0.1 Go exec, console, events and operation-WebSocket drivers through a
 mutual-TLS gateway. Exec output/exit metadata and static/dynamic console results
 are compared directly with their backend-fixture baselines. This is fixture
-conformance; immutable consumer, real-Incus and installed Macus/hardware
+conformance; package consumer, real-Incus and installed Macus/hardware
 evidence are recorded separately (see "Evidence status"). The typed-client coverage ledger is unchanged.
 
 ## Native SFTP/NBD on the host listener (G4)
@@ -531,7 +532,7 @@ fixtures isolate one frontend exchange from client-owned orchestration and
 prove at most one backend POST with no gateway DELETE after frontend loss or
 an uncertain reply. The pinned client itself owns its multi-public-address
 attempts and explicit cancellations; those are distinct incoming requests,
-not gateway retries. Unmodified CLI copy/move, immutable consumer and
+not gateway retries. Unmodified CLI copy/move, package consumer and
 real-Incus results are recorded separately (see "Evidence status"); installed
 Macus/hardware evidence belongs to the consumer.
 

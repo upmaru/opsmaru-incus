@@ -1,0 +1,9 @@
+opsmaru-incus
+Copyright 2026 opsmaru-incus contributors
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes material derived from Incus (https://github.com/lxc/incus),
+licensed under the Apache License, Version 2.0, and code adapted from
+pkg/sftp and Macus under their own licences. The attributions and full
+licence texts are in priv/notices/.

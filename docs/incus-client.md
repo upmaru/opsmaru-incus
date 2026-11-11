@@ -330,7 +330,7 @@ source, but the actual `CopyInstance` receiver checks the target. Dependent
 instance migration devices use the native capitalized `Devices` key. Internal
 volume copy source location falls back to the discovered server name; local
 snapshot copies send the native empty type rather than the remote parent type.
-The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavioral-checklist--audited-2026-10-15)
+The current [task 3.9 behavioral checklist](https://github.com/upmaru/opsmaru-incus/blob/main/docs/task-3-9-closure.md#current-behavioral-checklist--audited-2026-10-15)
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
@@ -425,8 +425,7 @@ The host supplies architecture explicitly; pin-equivalent platform selection use
 the oracle's native architecture (including its Darwin x86_64 fallback). Catalog
 requests share one deadline and aggregate response byte limit; `queue_limit`
 bounds image/alias expansion. Sinks acknowledge binary chunks with `:ok`. As
-natively, each part is checked against its SHA-256 only ("Hash mismatch for
-<url>: ..."), and the delivered metadata then rootfs bytes must hash to the
+natively, each part is checked against its SHA-256 only (`"Hash mismatch for <url>: ..."`), and the delivered metadata then rootfs bytes must hash to the
 image fingerprint ("Image fingerprint doesn't match. Got ... expected ...").
 Requesting only one part of a split image therefore fails, as in Go. A failure
 can leave partial host output, which the host must discard or reconcile.

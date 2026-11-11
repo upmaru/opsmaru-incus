@@ -1,8 +1,9 @@
-"""Build a committed revision in an isolated consumer without sibling paths.
+"""Build the Hex package from this checkout and verify it in isolated consumers.
 
-OPSMARU_INCUS_FIXTURE_REVISION must identify an existing implemented commit.
-The optional repository override is development/fixture-only. Production
-consumers use the documented published immutable Git revision.
+Hex is the only distribution route. This script runs `mix hex.build` on the
+checkout, extracts exactly the files the tarball would publish and points two
+fresh consumers at that extracted package. The tarball's SHA-256 is the Hex
+outer checksum, so the report can be compared with the published release.
 """
 import os
 from pathlib import Path
@@ -12,17 +13,44 @@ import tempfile
 import json
 import importlib.util
 import hashlib
-import re
 import sys
+import tarfile
 
 sys.dont_write_bytecode = True
 
 source = Path(__file__).resolve().parents[1]
-revision = os.environ.get("OPSMARU_INCUS_FIXTURE_REVISION") or (source / "test/consumer/revision.txt").read_text().strip()
-if not re.fullmatch(r"[0-9a-f]{40}", revision):
-    raise SystemExit("OPSMARU_INCUS_FIXTURE_REVISION must be an immutable 40-hex commit")
+revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=source, text=True).strip()
+source_clean = not subprocess.check_output(["git", "status", "--porcelain"], cwd=source, text=True).strip()
+
+
+def tree_digest(directory):
+    digest = hashlib.sha256()
+    for path in sorted(directory.rglob("*")):
+        if path.is_file():
+            digest.update(str(path.relative_to(directory)).encode() + b"\0" + path.read_bytes() + b"\0")
+    return digest.hexdigest()
+
+
 with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
     root = Path(directory)
+    tarball = root / "opsmaru_incus.tar"
+    subprocess.run(["mise", "exec", "--", "mix", "hex.build", "--output", str(tarball)], cwd=source, check=True)
+    package_sha256 = hashlib.sha256(tarball.read_bytes()).hexdigest()
+    package = root / "package"
+    with tarfile.open(tarball) as outer:
+        outer.extract("contents.tar.gz", root / "outer", filter="data")
+        version = outer.extractfile("metadata.config").read().decode()
+    with tarfile.open(root / "outer/contents.tar.gz") as contents:
+        contents.extractall(package, filter="data")
+    for required in ["mix.exs", "LICENSE", "NOTICE", "priv/incus/coverage.json", "priv/notices/INCUS-NOTICE.md"]:
+        if not (package / required).is_file():
+            raise SystemExit(f"Hex package is missing {required}")
+    for forbidden in ["test", "scripts", "openspec", "docs", "mix.lock"]:
+        if (package / forbidden).exists():
+            raise SystemExit(f"Hex package must not contain {forbidden}")
+    package_version = next(line.split("<<\"", 1)[1].split("\">>", 1)[0]
+                           for line in version.splitlines() if line.startswith("{<<\"version\">>"))
+    package_digest = tree_digest(package)
     shutil.copytree(source / "test/consumer", root / "consumer")
     if not (root / "consumer/mix.lock").is_file():
         shutil.copy(source / "mix.lock", root / "consumer/mix.lock")
@@ -44,7 +72,7 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
     env = os.environ.copy()
     for key in ["DATABASE_URL", "OIDC_ISSUER", "SECRET_KEY_BASE", "OPSMARU_MODE"]:
         env.pop(key, None)
-    env.update(MIX_ENV="test", PHX_SERVER="true", PORT="not-a-port", OPSMARU_INCUS_FIXTURE_REVISION=revision)
+    env.update(MIX_ENV="test", PHX_SERVER="true", PORT="not-a-port", OPSMARU_INCUS_PACKAGE_PATH=str(package))
     spec = importlib.util.spec_from_file_location("gateway_conformance", source / "scripts/gateway-conformance.py")
     conformance = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(conformance)
@@ -60,10 +88,8 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
         subprocess.run(args, cwd=root / "consumer", env=env, check=True)
     if env.get("OPSMARU_INCUS_FIXTURE_LOCK_OUTPUT"):
         shutil.copy(root / "consumer/mix.lock", env["OPSMARU_INCUS_FIXTURE_LOCK_OUTPUT"])
-    dependency = root / "consumer/deps/opsmaru_incus"
-    fetched = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=dependency, text=True).strip()
-    if fetched != revision or subprocess.check_output(["git", "status", "--porcelain"], cwd=dependency, text=True).strip():
-        raise SystemExit("consumer dependency must remain the exact clean immutable revision")
+    if tree_digest(package) != package_digest:
+        raise SystemExit("consumer build must not modify the extracted Hex package")
     migration_cases = [json.loads(line) for line in Path(env["OPSMARU_INCUS_GATEWAY_CASES"]).read_text().splitlines()]
     case_keys = {(case["kind"], case["action"], case["mode"], case["gateway"]) for case in migration_cases}
     expected_cases = {(kind, action, mode, gateway) for kind in ["instance", "snapshot"]
@@ -87,9 +113,8 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
     for args in [["mise", "exec", "--", "mix", "compile", "--warnings-as-errors"],
                  ["mise", "exec", "--", "mix", "test"]]:
         subprocess.run(args, cwd=root / "client", env=env, check=True)
-    client_dependency = root / "client/deps/opsmaru_incus"
-    if subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=client_dependency, text=True).strip() != revision or subprocess.check_output(["git", "status", "--porcelain"], cwd=client_dependency, text=True).strip():
-        raise SystemExit("client-only dependency must remain the exact clean immutable revision")
+    if tree_digest(package) != package_digest:
+        raise SystemExit("client-only build must not modify the extracted Hex package")
     harness_paths = [
         source / relative for relative in ["scripts/check-consumer.py", "scripts/gateway-conformance.py",
           "priv/incus/reference.json", "mise.toml", "mix.lock"]
@@ -99,8 +124,8 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
     ]
     report = {
         "schema": "opsmaru-incus-gateway-acceptance/v1",
-        "evidence": "immutable-consumer-fixture", "revision": revision,
-        "repository": env.get("OPSMARU_INCUS_FIXTURE_REPOSITORY", "https://github.com/upmaru/opsmaru-incus.git"),
+        "evidence": "hex-package-consumer-fixture", "revision": revision, "source_clean": source_clean,
+        "package": {"name": "opsmaru_incus", "version": package_version, "sha256": package_sha256},
         "native_cli": provenance, "isolated_client_state": True,
         "harness_revision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=source, text=True).strip(),
         "harness_clean": not subprocess.check_output(["git", "status", "--porcelain"], cwd=source, text=True).strip(),
@@ -108,7 +133,6 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
             str(path.relative_to(source)): hashlib.sha256(path.read_bytes()).hexdigest()
             for path in harness_paths
         },
-        "published_repository": not bool(env.get("OPSMARU_INCUS_FIXTURE_REPOSITORY")) or env["OPSMARU_INCUS_FIXTURE_REPOSITORY"].startswith("https://github.com/"),
         "host_consumer": "passed", "client_only_consumer": "passed",
         "migration_cases": migration_cases,
         "migration_cli_completion": "pinned native parity: 18 successful cases and 6 unsupported snapshot moves rejected before mutation",

@@ -33,5 +33,5 @@ run = [
 ]
 
 [tasks."check:consumer"]
-description = "Build a pushed immutable revision in an isolated Macus-compatible consumer"
+description = "Build the Hex package and verify it in isolated Macus-compatible consumers"
 run = "python3 scripts/check-consumer.py"

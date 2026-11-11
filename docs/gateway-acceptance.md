@@ -1,35 +1,36 @@
 # Gateway conformance and evidence
 
-`mise run check:consumer` builds a supplied immutable Git revision in a fresh
-temporary consumer. The consumer has its own Phoenix 1.8.15 endpoint and router,
-with the gateway's Cowboy dispatch on that endpoint's TLS listener. Native HTTP,
-WebSocket and raw SFTP/NBD requests all traverse this consumer-owned listener.
-The ordinary consumer endpoint and `/runtime` and `/mcp` host routes retain host
-ownership. Neither dependency loading nor `Gateway.new!` starts the gateway.
+`mise run check:consumer` builds this checkout's Hex package with
+`mix hex.build`, extracts exactly the files the tarball publishes and compiles
+that package in a fresh temporary consumer. The consumer has its own Phoenix
+1.8.15 endpoint and router, with the gateway's Cowboy dispatch on that
+endpoint's TLS listener. Native HTTP, WebSocket and raw SFTP/NBD requests all
+traverse this consumer-owned listener. The ordinary consumer endpoint and
+`/runtime` and `/mcp` host routes retain host ownership. Neither dependency
+loading nor `Gateway.new!` starts the gateway.
 
-Run against a pushed source revision:
+Run from a committed checkout:
 
 ```sh
-OPSMARU_INCUS_FIXTURE_REVISION=<full-40-character-commit> \
 OPSMARU_INCUS_GATEWAY_REPORT=/absolute/new/report.json \
 mise run check:consumer
 ```
 
-The report path must not already exist. The optional
-`OPSMARU_INCUS_FIXTURE_REPOSITORY` override supports local development clones;
-such runs are development fixture evidence, not published-revision acceptance.
-The default repository is `https://github.com/upmaru/opsmaru-incus.git`.
-The default consumer dependency is pinned to
-`2ebc4a6ee3246134105cc4265dc14ecb26ba0a07`, including the default-queue
-WebSocket upload backpressure fix and precise early-response-close classification.
-This published revision passed nine independent host tests and two warning-free,
-passive client-only tests with clean exact Git dependencies. The verifier recorded
-18 successful fixture migration cases and six accepted native CLI snapshot-move
-limitations. Earlier evidence revisions remain historical.
-The script checks the fetched dependency's exact commit and clean working tree.
-The report separately identifies the verifier's source commit, cleanliness and
-fixture/driver source hashes because the harness may differ from the dependency
-revision being verified. It never copies a sibling checkout into the dependency.
+The report path must not already exist. The script fails if the package lacks
+`mix.exs`, `LICENSE`, `NOTICE`, the compile-time `priv/incus` data or the
+upstream notices, or if it contains `test/`, `scripts/`, `openspec/`, `docs/`
+or `mix.lock`. It also fails if either consumer build modifies the extracted
+package. The report records the checkout's commit and cleanliness, the package
+version and the tarball SHA-256, which is the Hex outer checksum and can be
+compared with the published release. It separately records fixture and driver
+source hashes. A run from an uncommitted checkout is development evidence only.
+
+A host consumer and a warning-free client-only consumer without Plug, Cowboy,
+Phoenix or `tama_mcp` both run. The verifier records the 24-case native CLI
+migration matrix: 18 successful cases and six accepted snapshot-move
+limitations. Before Hex packaging, the same consumers verified pushed Git
+revisions; the last was `2ebc4a6ee3246134105cc4265dc14ecb26ba0a07`. That evidence
+remains historical.
 
 The verifier builds the unmodified Incus v7.0.1 CLI from the module ZIP at
 `13f3992766142d5087fff2e362cd2e1a75294fe8`, checks its origin and checksum against
