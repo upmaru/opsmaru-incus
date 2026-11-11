@@ -30,6 +30,14 @@ is the only distribution route; Git revision pins are no longer documented.
   `cowboy` stay optional, so client-only consumers compile without them. See
   `docs/gateway.md`.
 
+### Fixed before release
+
+- `incus_instance_exec` wrote all stdin before reading any output. A command
+  that echoes its input could fill the bounded output frame queue (64 frames)
+  first and lose its output and exit status. `Session.collect/4` now accepts a
+  `:stdin` option that writes input while both outputs drain, and the
+  operation uses it.
+
 ### Packaging
 
 - Apache-2.0 `LICENSE` and `NOTICE`; upstream Incus, pkg/sftp and Macus

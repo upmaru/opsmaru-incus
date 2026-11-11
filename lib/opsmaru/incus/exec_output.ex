@@ -2,8 +2,11 @@ defmodule Opsmaru.Incus.ExecOutput do
   @moduledoc false
   alias Opsmaru.Incus.{Context, Error, Operation, RequestContext, Session, Transport}
 
-  def collect(%Session{operation: %Operation{}} = session, stdout, stderr, opts) do
-    collect(session, stdout, stderr, opts, nil)
+  def collect(%Session{operation: %Operation{} = operation} = session, stdout, stderr, opts) do
+    case stdin(opts, operation.client.connection) do
+      {:ok, stdin, opts} -> collect(session, stdout, stderr, opts, stdin)
+      :error -> retain({:error, %Error{kind: :invalid_exec_collection}}, operation)
+    end
   end
 
   def collect(_, _, _, _), do: {:error, %Error{kind: :invalid_exec_collection}}
@@ -32,6 +35,26 @@ defmodule Opsmaru.Incus.ExecOutput do
     else
       {:error, %Error{} = error} -> retain({:error, error}, operation)
       {:error, kind} -> retain({:error, %Error{kind: kind}}, operation)
+    end
+  end
+
+  # Optional finite stdin is written while both outputs drain; without it the
+  # caller has already sent input and collection sends only the barrier.
+  defp stdin(opts, connection) do
+    if Keyword.keyword?(opts) do
+      case Keyword.pop_values(opts, :stdin) do
+        {[], opts} ->
+          {:ok, nil, opts}
+
+        {[bytes], opts}
+        when is_binary(bytes) and byte_size(bytes) <= connection.max_stream_bytes ->
+          {:ok, bytes, opts}
+
+        _ ->
+          :error
+      end
+    else
+      {:ok, nil, opts}
     end
   end
 
