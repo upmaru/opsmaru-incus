@@ -13,6 +13,7 @@ import tempfile
 import json
 import importlib.util
 import hashlib
+import re
 import sys
 import tarfile
 
@@ -48,8 +49,10 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
     for forbidden in ["test", "scripts", "openspec", "docs", "mix.lock"]:
         if (package / forbidden).exists():
             raise SystemExit(f"Hex package must not contain {forbidden}")
-    package_version = next(line.split("<<\"", 1)[1].split("\">>", 1)[0]
-                           for line in version.splitlines() if line.startswith("{<<\"version\">>"))
+    match = re.search(r'^\{<<"version">>,<<"([^"]+)">>\}\.$', version, re.MULTILINE)
+    if not match:
+        raise SystemExit("Hex package metadata has no version")
+    package_version = match.group(1)
     package_digest = tree_digest(package)
     shutil.copytree(source / "test/consumer", root / "consumer")
     if not (root / "consumer/mix.lock").is_file():
