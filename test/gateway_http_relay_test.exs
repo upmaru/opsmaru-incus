@@ -712,7 +712,11 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
           StreamBackend.await_close(conn)
         end)
 
-      gateway = mount(context, connection, max_lifetime: 300)
+      # The lifetime starts when the relay starts, so backend connect, request
+      # and response must all fit inside it before the first chunk; under a
+      # loaded full suite that took longer than the old 300 ms. Keep the setup
+      # window wide and the first chunk's delivery longer than the lifetime.
+      gateway = mount(context, connection, max_lifetime: 1_500)
       {:ok, slot} = Admission.acquire(context.admission)
       admitted = %Policy.Admitted{slot: slot, admission: elem(slot, 0), grant: :fixture_grant}
       path = "/1.0/instances/c1/logs/console.log"
@@ -721,7 +725,7 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
       # Delivering the first chunk outlasts the lifetime, as a slow caller would.
       conn = %{
         Plug.Test.conn(:get, path)
-        | adapter: {SlowChunkAdapter, %{observer: self(), delay: 600}}
+        | adapter: {SlowChunkAdapter, %{observer: self(), delay: 2_000}}
       }
 
       assert catch_exit(HTTPRelay.relay(conn, gateway, request, admitted)) ==

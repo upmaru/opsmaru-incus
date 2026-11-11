@@ -7,7 +7,7 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Context, Error, RequestContext}
   alias Opsmaru.Incus.Gateway.{Policy, Request}
-  alias Opsmaru.TestSupport.HTTPFixture
+  alias Opsmaru.TestSupport.{HTTPFixture, Ports}
   alias OpsmaruGatewayAcceptance, as: Runner
   alias OpsmaruGatewayAcceptance.Host
   alias OpsmaruGatewayAcceptance.Journal
@@ -1332,9 +1332,9 @@ defmodule Opsmaru.Incus.GatewayAcceptanceHostTest do
     sides =
       for side <- ~w(source target), into: %{} do
         server = TLSIdentity.generate(context.root, "live-front-" <> side, "localhost")
-        {:ok, socket} = :gen_tcp.listen(0, ip: {127, 0, 0, 1})
-        {:ok, {_, port}} = :inet.sockname(socket)
-        :gen_tcp.close(socket)
+        # The script binds this origin port later, so it must not be an
+        # ephemeral port the kernel can hand to another socket meanwhile.
+        port = Ports.reserve!()
 
         {side,
          %{

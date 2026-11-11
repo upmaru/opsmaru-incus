@@ -8,3 +8,6 @@ ExUnit.start(max_cases: System.schedulers_online())
 
 # Gateway fixture routing; owned by the runner so it outlives every test.
 :ok = Opsmaru.TestSupport.GatewayServer.init()
+
+# Named-before-bind listener ports, outside the kernel's ephemeral range.
+:ok = Opsmaru.TestSupport.Ports.init()
