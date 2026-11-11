@@ -429,13 +429,21 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
       flag = :atomics.new(1, [])
       :atomics.put(flag, 1, 1)
       {fixture, connection} = gated_backend(context)
+      # Reaching the default-queue pause takes 32 relay calls, each of which can
+      # wait behind the relay's 20 ms backend poll, so setup alone needs about
+      # 0.7 s even on an idle machine. Only the stop under test may end the
+      # channel: revocation and owner loss get a lifetime they can never reach,
+      # the deadline case gets a lifetime well beyond setup, and the recheck
+      # budget (a quarter of the interval) is wide enough that a late host
+      # callback on a loaded runner is not mistaken for revocation.
+      lifetime = if stop == :deadline, do: 5_000, else: 60_000
 
       mount(context, connection,
         max_request_bytes: 1_073_741_824,
         max_response_bytes: 1_073_741_824,
-        idle_timeout: 10_000,
-        max_lifetime: 2_000,
-        recheck_interval: 200,
+        idle_timeout: 60_000,
+        max_lifetime: lifetime,
+        recheck_interval: 1_000,
         host_config: %{valid: fn _, _ -> :atomics.get(flag, 1) == 1 end}
       )
 
@@ -444,7 +452,7 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
       if stop == :revocation, do: :atomics.put(flag, 1, 0)
       if stop == :owner_loss, do: Process.exit(state.owner, :kill)
 
-      case recv_frame(channel) do
+      case recv_frame(channel, min(lifetime, 5_000) + 3_000) do
         {:close, code, _} -> assert code in [1008, 1011]
         :closed -> :ok
       end
@@ -452,7 +460,10 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
       eventually(fn -> Admission.count(context.admission) == 0 end)
       assert Task.await(writer, 3_000) in 0..256
       eventually(fn -> not Process.alive?(relay) and not Process.alive?(state.writer) end)
-      send(gate, :release)
+      # The dead relay's backend port still holds the blocked write's bytes.
+      # Let the backend read them so the port closes now, instead of when that
+      # write's send timeout (bounded by idle timeout and lifetime) expires.
+      send(gate, :discard)
       eventually(fn -> Port.info(Mint.HTTP.get_socket(state.conn)) == nil end)
       assert length(WebSocketFixture.requests(fixture)) == 1
       close(channel)
@@ -847,13 +858,19 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
             send(observer, {:backend_gated, self()})
 
             receive do
-              :release -> Process.put(:released, true)
+              :release -> Process.put(:released, :echo)
+              # Drain without echoing. Once the gateway has dropped the channel nobody
+              # reads echoes, so an echoing backend blocks on small Unix socket buffers
+              # and never drains the closed relay socket's queued bytes.
+              :discard -> Process.put(:released, :discard)
             after
-              10_000 -> :ok
+              30_000 -> :ok
             end
           end
 
-          WebSocketFixture.frame(opcode, data)
+          if Process.get(:released) == :discard,
+            do: "",
+            else: WebSocketFixture.frame(opcode, data)
         end
       )
 
@@ -886,7 +903,11 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
       try do
         Map.get(:sys.get_state(relay), :input_paused) != nil
       catch
-        :exit, _ -> flunk("gateway closed a valid upload before applying backpressure")
+        :exit, _ ->
+          flunk(
+            "gateway closed a valid upload before applying backpressure: " <>
+              inspect(recv_frame(channel))
+          )
       end
     end)
 
@@ -970,19 +991,19 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
     channel
   end
 
-  defp recv_frame(channel) do
+  defp recv_frame(channel, timeout \\ 3_000) do
     case Process.get(channel.cursor) do
       {conn, socket, [frame | frames]} ->
         Process.put(channel.cursor, {conn, socket, frames})
         frame
 
       {conn, socket, []} ->
-        case Mint.WebSocket.recv(conn, 0, 3_000) do
+        case Mint.WebSocket.recv(conn, 0, timeout) do
           {:ok, conn, responses} ->
             bytes = for {:data, _, data} <- responses, into: <<>>, do: data
             {:ok, socket, frames} = Mint.WebSocket.decode(socket, bytes)
             Process.put(channel.cursor, {conn, socket, frames})
-            recv_frame(channel)
+            recv_frame(channel, timeout)
 
           {:error, _, :closed, _} ->
             :closed
