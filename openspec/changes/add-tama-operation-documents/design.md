@@ -225,12 +225,16 @@ Errors use the curated error object, so the `default` schema holds.
 ### 8. Release cassette
 
 Each opsmaru_incus release also publishes a **cassette**: a tama-dex index file
-in the format defined by tama-dex's `cassette` capability. It holds both
-sources (`opsmaru_incus` and `opsmaru_incus_native`). Macus can import it at
+in the format defined by tama-dex's `cassette` capability. It is one cassette
+named `opsmaru_incus`, holding both sources (`opsmaru_incus` and
+`opsmaru_incus_native`). In a host's tama-dex index the cassette name is the
+namespace, so agents address these operations as
+`(opsmaru_incus, <operation_id>)` and other cassettes may reuse the names. Macus can import it at
 install or `macus start` without indexing.
 
 - **Build:** the `v*` tag workflow builds the cassette after the Hex publish
-  succeeds, with `mix tama.dex.cassette`, from
+  succeeds, with `mix tama.dex.cassette --name opsmaru_incus --version
+  <version>`, from
   `Opsmaru.Incus.Operations.openapi/0` and
   `Opsmaru.Incus.NativeOperations.openapi/0`.
   - `tama_dex` is a dev/test-only dependency (`runtime: false`), so consumers
