@@ -11,7 +11,7 @@ opsmaru_incus to publish its operations in that profile.
 On 2026-11-12 the user asked for two things:
 - opsmaru_incus should publish the right document, so it plugs into tama-dex
   without either side depending on the other's internals;
-- the native Incus client API should be offered too, not just the 32 curated
+- the native Incus client API should be offered too, not just the 32 composite
   operations.
 
 For the native API, the user chose `priv/incus/methods.json` (307 methods
@@ -20,7 +20,16 @@ verified against the pinned Go client) as the authority. The Incus-published
 
 ## What Changes
 
-- **Curated document:** `Opsmaru.Incus.Operations.openapi/0` returns the 32
+- **Module layout (user request, 2026-11-12):** operations are split into two
+  namespaces. `Opsmaru.Incus.Operations.Composite` holds the 32 composite
+  operations shipped in 0.1.0 as `Opsmaru.Incus.Operations` (`all/0`,
+  `describe/1`, `run/3`, `unavailable/0`, and their implementation modules).
+  `Opsmaru.Incus.Operations.Native` holds the native operations. Shared
+  infrastructure (`Operations.Host`, descriptors, schemas, fragments, results,
+  evidence) stays under `Opsmaru.Incus.Operations`. The 0.1.0 functions on
+  `Opsmaru.Incus.Operations` remain as deprecated delegates to `Composite` for
+  the 0.2.x series.
+- **Composite document:** `Opsmaru.Incus.Operations.Composite.openapi/0` returns the 32
   exported operations as a `tama-operations/1` document (source
   `opsmaru_incus`).
   - Each operation's name, title, description, scope, destructive flag,
@@ -28,9 +37,9 @@ verified against the pinned Go client) as the authority. The Incus-published
     branches map field for field.
   - `requires` is kept as `x-opsmaru-requires`, and mutations declare
     `x-tama-identity: ["operation_id", "status"]`.
-  - `Operations.run/3` remains the executor. Unavailable operations are not
+  - `Operations.Composite.run/3` remains the executor. Unavailable operations are not
     listed.
-- **Native document:** `Opsmaru.Incus.NativeOperations.openapi/0` returns a
+- **Native document:** `Opsmaru.Incus.Operations.Native.openapi/0` returns a
   second document (source `opsmaru_incus_native`). It is generated from
   `methods.json` and `models.json`:
   - Operation IDs are `incus_native_<snake_method>`.
@@ -39,7 +48,7 @@ verified against the pinned Go client) as the authority. The Incus-published
   - Summaries, descriptions and field descriptions come from the pinned
     `rest-api.yaml`, matched by verb and normalized path.
 - **Native policy:**
-  - Separate scopes, never implied by the curated ones: `incus.native.read`,
+  - Separate scopes, never implied by the composite ones: `incus.native.read`,
     `incus.native.write`, `incus.native.delete` and `incus.native.admin`.
   - Every `DELETE` and `PUT` is destructive, with `confirm` repeating the
     target resource.
@@ -47,8 +56,8 @@ verified against the pinned Go client) as the authority. The Incus-published
     calls that select another backend or carry credentials, and methods
     without evidence.
   - A reviewed `priv/incus/native-policy.json` holds the overrides.
-- **Native execution:** `NativeOperations.run(name, input, host:, caller:,
-  scopes:)` applies the same trust model as `Operations.run/3`:
+- **Native execution:** `Operations.Native.run(name, input, host:, caller:,
+  scopes:)` applies the same trust model as `Operations.Composite.run/3`:
   - scope, schema and confirmation checks;
   - the restricted-config rules for `config`/`devices`;
   - host `binding/2` and `authorize/3`.
@@ -68,21 +77,22 @@ verified against the pinned Go client) as the authority. The Incus-published
   GitHub Release asset with its SHA-256 and build provenance attestation.
   Macus can import it at install or start instead of indexing. This part waits
   for the tama_dex release.
-- **Release:** opsmaru_incus 0.2.0. The existing `describe/1` contract and
-  `coverage.json` are unchanged. Native tool success never counts as client
+- **Release:** opsmaru_incus 0.2.0. Operation names, schemas, the
+  `describe/1` data contract and `coverage.json` are unchanged; only the
+  module that provides them moves, with deprecated delegates kept. Native tool success never counts as client
   evidence.
 
 ## Capabilities
 
 ### Modified Capabilities
 
-- `incus-operations`: adds the curated document, the native document and its
+- `incus-operations`: adds the composite document, the native document and its
   policy, native execution and the pinned upstream text.
 
 ## Impact
 
 - **Consumers:** Macus loads both documents into tama-dex and registers
-  `Operations.run/3` and `NativeOperations.run/3` as executors. Its host module
+  `Operations.Composite.run/3` and `Operations.Native.run/3` as executors. Its host module
   serves both, because the native executor uses the same `Operations.Host`
   callbacks.
 - **No new runtime dependency:** opsmaru_incus doesn't depend on tama_dex.
