@@ -51,3 +51,19 @@ is the selected 247-pair evidence ledger (all 247 complete) with fixture-verifie
 [`task-3-9-backlog.md`](../../docs/task-3-9-backlog.md) for counts and exits.
 The canonical endpoint test uses Go's standard AST parser and the existing YAML
 parser against the unchanged pin; Go is development-only and never a sidecar.
+
+## Upstream REST API description
+
+`rest-api.yaml` is the unmodified Swagger 2.0 description that Incus publishes
+as `doc/rest-api.yaml` at the pinned revision
+`13f3992766142d5087fff2e362cd2e1a75294fe8` (SHA-256
+`7b4e07375da92f30e7eadf766f1bbdf40bf9968ee305a16be1afe5998e72e91f`). It is
+generated from code comments and is not verified against the client. It is
+used only as descriptive text (summaries, descriptions and field descriptions)
+for the native operations document, joined to verified `methods.json` entries
+by verb and path. It never decides which methods exist or what their schemas
+are. Re-download and compare at the pin:
+
+```sh
+curl -sfL https://raw.githubusercontent.com/lxc/incus/13f3992766142d5087fff2e362cd2e1a75294fe8/doc/rest-api.yaml | shasum -a 256
+```
