@@ -1,0 +1,539 @@
+defmodule Opsmaru.TestSupport.EndpointInventory do
+  @moduledoc false
+  import ExUnit.Assertions
+
+  # Required cases per completion-record kind; equality rejects removed or invented cases.
+  @record_cases %{
+    "native_long_poll" =>
+      ~w(running completed failed cancelled etag routing native_403 native_404 response_loss_no_replay deadline cancellation caller_loss preflight redaction),
+    "event_stream" =>
+      ~w(populated field_presence selectors routing native_400 native_403 native_404 no_retry preflight handlers capacity callback_failure owner_loss caller_loss eof malformed overflow byte_bounds deadline cancellation local_wait send peer_closure),
+    "async_mutation" =>
+      ~w(request accepted_identity running completed failed cancelled routing binding native_403 native_404 native_409 native_412 malformed_reply response_loss_no_replay local_lifetime),
+    "sync_cancellation" =>
+      ~w(request routing binding native_403 native_404 malformed_reply authoritative_inspection may_cancel_denied single_delete completion_race lost_reply_identity),
+    "conditional_patch" =>
+      ~w(request field_presence routing native_400 native_403 native_404 native_412 response_loss_no_replay deadline cancellation preflight unconditional_rejection),
+    "sync_mutation" =>
+      ~w(request sync_success routing binding native_400 native_403 native_404 native_409 native_412 malformed_reply response_loss_no_replay preflight),
+    "file_transfer" =>
+      ~w(request routing path_selector read_bytes directory_entries symlink ownership_mode create_headers write_modes delete head_metadata head_no_body native_400 native_403 native_404 byte_bounds upload_bounds deadline cancellation caller_loss response_loss_no_replay preflight),
+    "byte_stream" =>
+      ~w(request populated routing exact_selectors acknowledged_sink native_400 native_403 native_404 byte_bounds chunk_bounds deadline cancellation caller_loss no_host_files upload response_loss_no_replay preflight template_list template_delete),
+    "archive" =>
+      ~w(request populated routing native_400 native_403 native_404 backup_inspection backup_writes native_wait accepted_identity bucket_create export_bytes direct_backup instance_import import_overrides volume_import iso_import bucket_import acknowledged_sink byte_bounds upload_bounds deadline cancellation caller_loss no_host_files response_loss_no_replay preflight),
+    "migration" =>
+      ~w(request routing sync_success native_400 native_403 native_404 native_409 native_412 accepted_identity native_wait response_loss_no_replay rename migration_guards migration_sources instance_moves local_copy pull push relay relay_channels live_channels relay_differences relay_lifetime remote_wait remote_cancel approved_origin collection_route volume_types import_modes preflight),
+    "image_transfer" =>
+      ~w(request routing native_400 native_403 native_404 native_409 native_412 accepted_identity native_wait response_loss_no_replay image_sources uploads upload_headers split_images compression downloads host_sinks oci_exports fingerprint_checks push_export pull push relay remote_wait remote_cancel token_cleanup aliases local_deadline copy_differences copy_guards approved_origin preflight),
+    "console" =>
+      ~w(request routing native_400 native_403 native_404 accepted_identity response_loss_no_replay static_console dynamic_console console_types terminal_size force control_first ignored_channels control_frames data_frames write_barriers detach_close missing_control invalid_stream_metadata stream_negotiation repeated_attachments capacity channel_failure owner_loss lifetime peer_closure redaction host_channels preflight),
+    "raw_upgrade" =>
+      ~w(request routing upgrade_headers path_escaping reuse writable initial_bytes duplex coalesced_bytes oracle_byte_loss half_close half_close_writes native_403 native_404 no_retry redaction bad_framing response_bound handshake_deadline caller_loss blocked_writes local_close lifetime typed_options preflight extension_guards),
+    "typed_sftp" =>
+      ~w(request routing version_extensions path_operations compound_operations path_helpers attributes status_errors open_flags cursor_io positional_io end_of_file short_reads pipelined_reads read_ahead sequential_writes concurrent_uploads host_sources host_sinks file_attributes fsync closed_files file_lock shared_sessions opener_lifetime request_deadline response_loss_no_replay frame_failures in_flight_bound caller_loss packet_bounds preflight),
+    "oci_image_server" =>
+      ~w(construction readiness alias_normalization projection fingerprint architectures alias_architectures vm_rejection unsupported_methods immutable_cache cache_miss failed_lookup connection_info certificate http_requests uncertain_http disconnect metadata_yaml binary_sinks stream_bounds foreign_emitter inspection_bounds deadline cancellation caller_loss cleanup host_failures redaction copy_pull copy_push copy_relay registry_credentials private_images instance_create instance_rebuild approved_origin preflight),
+    "simplestreams_image_server" =>
+      ~w(construction readiness connection_info certificate http_requests disconnect explicit_refresh projection aliases alias_architectures unsupported_methods catalog_errors catalog_limits image_files file_checksum combined_fingerprint download_errors stream_bounds cache_expiry stale_fallback cache_invalidation cache_failures delta_manifest delta_source delta_fallback delta_failures deadline cancellation caller_loss cleanup redaction copy_pull copy_push copy_relay private_images instance_create instance_rebuild approved_origin preflight),
+    "binary_download" =>
+      ~w(request populated routing native_400 native_403 native_404 byte_bounds deadline cancellation acknowledged_sink no_implicit_delete preflight),
+    "read_contract" =>
+      ~w(request populated empty corrupt native_403 native_404 routing binding response_bound readiness deadline cancellation),
+    "live_exec" =>
+      ~w(collected non_waiting interactive record_output user_group_cwd_size empty_output routing upgrade_targets extension_guards control_frames control_range native_400 native_403 native_404 accepted_identity response_loss_no_replay stream_negotiation invalid_stream_metadata pending_status missing_channels redaction preflight stdin_chunking blocked_stdin deadline cancellation owner_loss sink_limit running_failed close_barrier_abrupt peer_closure)
+  }
+  @evidence_kinds ~w(named_go_differential raw_query_transport independent_fixture)
+  # A protocol-level contract without REST rows names the pinned declarations it
+  # covers instead; every declaration matching its prefixes, and each exact source
+  # path it certifies, must be listed.
+  @rowless %{
+    "oci_image_server" =>
+      {["client/method/ProtocolOCI.", "client/function/ConnectOCI"],
+       ~w(client/method/ProtocolIncus.CopyImage client/method/ProtocolIncus.CreateInstanceFromImage client/method/ProtocolIncus.RebuildInstanceFromImage)},
+    "simplestreams_image_server" =>
+      {["client/method/ProtocolSimpleStreams.", "client/function/ConnectSimpleStreams"],
+       ~w(client/method/ProtocolIncus.CopyImage client/method/ProtocolIncus.CreateInstanceFromImage client/method/ProtocolIncus.RebuildInstanceFromImage)}
+  }
+  # A documented route the daemon does not register, reconciled to the route it does
+  # (approved source discrepancy): the row maps the registered method, never sent as
+  # the documented verb.
+  @reconciled %{"GET /1.0/instances/{}/debug/repair" => "POST /1.0/instances/{}/debug/repair"}
+
+  # Classification and link integrity, plus reviewed completion-record consistency.
+  # Records name their evidence; the canonical check runs the actual tests.
+  def validate!(audit, native) do
+    selected = Jason.decode!(File.read!(audit["selected_evidence"]))
+    methods = Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
+    assert audit["schema"] == 1
+    assert audit["reference_revision"] == selected["reference_revision"], "stale reference"
+    assert audit["source"] == selected["source"], "stale REST source"
+    assert audit["source"] == %{"path" => native["source"], "sha256" => native["sha256"]}
+    assert audit["server_sources"] == native["server_sources"], "stale server sources"
+    assert audit["classification_complete"] == true
+    assert is_boolean(audit["behavior_complete"])
+    assert audit["complete_port"] == false
+    rows = audit["entries"]
+    keys = Enum.map(rows, & &1["pair"])
+    assert length(keys) == 247 and length(Enum.uniq(keys)) == 247, "duplicate or missing pairs"
+
+    assert Enum.sort(keys) ==
+             native["pairs"] |> Enum.map(&normalize/1) |> Enum.uniq() |> Enum.sort()
+
+    views = Enum.flat_map(rows, & &1["documented_views"])
+
+    assert Enum.sort(Enum.map(views, & &1["operation"])) == native["pairs"],
+           "missing native views"
+
+    assert Enum.all?(
+             views,
+             &(&1["query_parameters"] == native["query_parameters"][&1["operation"]])
+           ),
+           "stale documented query parameters"
+
+    server = Map.new(native["server_routes"], &{normalize(&1["pair"]), &1})
+
+    selected_rows =
+      Map.new(selected["entries"], &{normalize(&1["verb"] <> " " <> &1["path"]), &1})
+
+    assert Enum.frequencies_by(rows, & &1["backlog"]) == %{
+             "B01" => 8,
+             "B02" => 20,
+             "B03" => 4,
+             "B04" => 1,
+             "B05" => 24,
+             "B06" => 2,
+             "B07" => 3,
+             "B08" => 49,
+             "B09" => 53,
+             "B10" => 40,
+             "B11" => 42,
+             "B12" => 1
+           },
+           "stale backlog partition"
+
+    anchor!(audit["baseline_evidence"])
+    for row <- rows, do: row!(row, methods, audit, server, selected_rows)
+    extras!(audit, server, keys, methods)
+    links!(audit)
+    completion!(audit, selected, Map.new(methods, &{&1["name"], &1}))
+
+    if audit["behavior_complete"] do
+      assert Enum.all?(rows ++ audit["supplemental_server_entries"], & &1["behavior_complete"]) and
+               Enum.all?(audit["stream_contracts"], &(&1["status"] == "certified")),
+             "incomplete behavioral gate"
+    end
+
+    :ok
+  end
+
+  defp row!(row, methods, audit, server, selected_rows) do
+    key = row["pair"]
+    exact = Enum.filter(methods, &(normalize(&1["verb"] <> " " <> &1["path"]) == key))
+    custom = Enum.filter(methods, &(custom_pair(&1) == key and &1 not in exact))
+    linked = exact ++ custom
+
+    reconciled =
+      Enum.filter(methods, &(normalize(&1["verb"] <> " " <> &1["path"]) == @reconciled[key]))
+
+    assert row["methods"] == Enum.map(linked ++ reconciled, & &1["name"]), "stale method mapping"
+    helper_ids = for {id, helper} <- audit["helpers"], helper["pair"] == key, do: id
+    assert Enum.sort(row["helpers"]) == Enum.sort(helper_ids), "stale helper mapping"
+
+    expected = classification(key, exact, custom, helper_ids)
+
+    assert row["classification"] == expected, "misleading classification"
+    assert is_boolean(row["behavior_complete"]), "unsupported completion claim"
+    assert audit["backlog"][row["backlog"]]["exit"] not in [nil, ""], "missing backlog"
+
+    expected_server =
+      if key == "GET /",
+        do: %{"source" => "cmd/incusd/api.go", "symbol" => "restServer", "pair" => "GET /"},
+        else: server[key]
+
+    assert row["server"] == expected_server, "stale server mapping"
+
+    if custom != [],
+      do: assert(row["restriction"] not in [nil, ""], "missing subtype restriction")
+
+    selected? = Map.has_key?(selected_rows, key)
+    assert row["selected_evidence_pair"] == key == selected?
+
+    assert row["verified_scope"] == get_in(selected_rows, [key, "verified_scope"]),
+           "stale fixture scope"
+
+    for view <- row["documented_views"],
+        do: view!(view, key, linked, helper_ids, expected, audit["helpers"])
+
+    if mode = row["additional_body_mode"], do: anchor!(mode)
+  end
+
+  defp view!(view, key, linked, helper_ids, expected, helpers) do
+    assert normalize(view["operation"]) == key, "misplaced native view"
+
+    query =
+      view["operation"] |> String.split("?", parts: 2) |> Enum.at(1, "") |> URI.decode_query()
+
+    assert view["selectors"] == Map.delete(query, "public"), "stale query selectors"
+
+    access =
+      if Map.has_key?(query, "public"),
+        do: "public_documentation_view",
+        else: "authenticated_or_default"
+
+    assert view["access"] == access, "misleading public view"
+
+    matching =
+      for method <- linked,
+          Map.get(method["query"], "recursion", "0") == Map.get(query, "recursion", "0"),
+          do: method["name"]
+
+    assert view["methods"] == matching, "stale query mapping"
+    parameters!(view, Enum.filter(linked, &(&1["name"] in matching)), helper_ids, helpers)
+
+    obligation =
+      cond do
+        access == "public_documentation_view" -> "public_access_evidence_or_scope_decision"
+        matching != [] -> "catalogue_selector_evidence"
+        helper_ids != [] -> "helper_selector_evidence"
+        expected in ["source_discrepancy", "equivalent_route"] -> "source_reconciliation"
+        true -> "missing_selector_or_implementation"
+      end
+
+    assert view["obligation"] == obligation, "misleading view obligation"
+  end
+
+  defp parameters!(view, matched_methods, helper_ids, helpers) do
+    bindings =
+      Map.new(view["query_parameters"], fn query ->
+        kind =
+          cond do
+            query in ["project", "target"] ->
+              "host_routing"
+
+            Map.has_key?(view["selectors"], query) or
+                Enum.any?(matched_methods, &Map.has_key?(&1["query"], query)) ->
+              "catalogue_contract"
+
+            Enum.any?(helper_ids, &(query in helpers[&1]["supported_queries"])) ->
+              "helper_contract"
+
+            true ->
+              "unmapped_selector"
+          end
+
+        {query, kind}
+      end)
+
+    assert view["query_classification"] == bindings, "stale parameter classification"
+  end
+
+  defp classification(key, exact, custom, helper_ids) do
+    cond do
+      key == "GET /1.0/instances/{}/debug/repair" -> "source_discrepancy"
+      exact != [] -> "catalogue"
+      custom != [] -> "catalogue_custom"
+      helper_ids != [] -> "helper"
+      true -> "missing_typed"
+    end
+  end
+
+  defp extras!(audit, server, keys, methods) do
+    extras = audit["supplemental_server_entries"]
+
+    assert Enum.map(extras, & &1["pair"]) == Enum.sort(Map.keys(server) -- keys),
+           "missing server-only pairs"
+
+    for row <- extras do
+      assert row["server"] == server[row["pair"]]
+      typed = for m <- methods, normalize(m["verb"] <> " " <> m["path"]) == row["pair"], do: m
+
+      assert row["classification"] == if(typed == [], do: "missing_typed", else: "catalogue"),
+             "misleading classification"
+
+      assert audit["backlog"][row["backlog"]]["exit"] not in [nil, ""]
+
+      # A server-only route completes only through the record of the documented row
+      # reconciled to it, which must list its typed methods.
+      if row["behavior_complete"] do
+        record = audit["completion_records"][row["completion_record"]]
+        assert record && typed != [], "unsupported completion claim"
+
+        assert Enum.all?(typed, &(&1["name"] in record["methods"])),
+               "unsupported completion claim"
+      else
+        assert is_nil(row["completion_record"]), "unsupported completion claim"
+      end
+    end
+  end
+
+  defp links!(audit) do
+    for helper <- Map.values(audit["helpers"]) do
+      [module, function, arity] = helper["client"]
+      module = Module.concat([module])
+      Code.ensure_loaded!(module)
+
+      assert Enum.any?(module.__info__(:functions), fn {name, count} ->
+               Atom.to_string(name) == function and count == arity
+             end),
+             "missing helper function"
+
+      anchor!(helper["evidence"])
+    end
+
+    for contract <- audit["stream_contracts"] do
+      assert contract["status"] in ["open_contract_certification", "certified"]
+      assert contract["remaining"] not in [nil, ""] and contract["boundary"] not in [nil, ""]
+      anchor!(contract["evidence"])
+    end
+
+    assert Enum.map(audit["stream_contracts"], & &1["id"]) ==
+             Enum.map(1..12, &("S" <> String.pad_leading(to_string(&1), 2, "0")))
+
+    :ok
+  end
+
+  defp completion!(audit, selected, catalogue) do
+    records = audit["completion_records"]
+    assert is_map(records), "missing completion records"
+    rows = Map.new(audit["entries"], &{&1["pair"], &1})
+    streams = Map.new(audit["stream_contracts"], &{&1["id"], &1})
+
+    selected_rows =
+      Map.new(selected["entries"], &{normalize(&1["verb"] <> " " <> &1["path"]), &1})
+
+    for row <- audit["entries"] do
+      id = row["completion_record"]
+      chosen = selected_rows[row["pair"]]
+
+      if row["behavior_complete"] do
+        assert records[id] && row["pair"] in records[id]["rows"], "unsupported completion claim"
+        assert row["classification"] != "missing_typed", "unsupported completion claim"
+
+        for stream <- Map.get(row, "stream_contracts", []),
+            do: assert(streams[stream]["status"] == "certified", "open linked stream contract")
+
+        assert chosen["status"] == "complete" and chosen["completion_record"] == id,
+               "stale selected completion"
+      else
+        assert is_nil(id), "unsupported completion claim"
+        if chosen, do: assert(chosen["status"] != "complete", "stale selected completion")
+      end
+    end
+
+    for stream <- audit["stream_contracts"] do
+      id = stream["completion_record"]
+
+      if stream["status"] == "certified",
+        do:
+          assert(
+            records[id] && stream["id"] in records[id]["stream_contracts"],
+            "unsupported certification claim"
+          ),
+        else: assert(is_nil(id), "unsupported certification claim")
+    end
+
+    for {id, record} <- records,
+        do: record!(id, record, rows, streams, selected_rows, selected["evidence"], catalogue)
+  end
+
+  defp record!(id, record, rows, streams, selected_rows, evidence, catalogue) do
+    assert Map.has_key?(@record_cases, record["kind"]), "unknown completion record kind"
+    required = required_cases(record, catalogue)
+    assert approved?(record), "unapproved completion record"
+    anchor!(record["design"])
+
+    if Map.has_key?(@rowless, record["kind"]),
+      do: rowless!(record),
+      else: assert(record["rows"] != [], "empty completion record")
+
+    listed = Enum.map(record["rows"], &rows[&1])
+
+    for row <- listed,
+        do:
+          assert(
+            (row && row["behavior_complete"]) and row["completion_record"] == id,
+            "unrelated completion record row"
+          )
+
+    for stream <- record["stream_contracts"],
+        do: assert(streams[stream]["completion_record"] == id, "unrelated completion stream")
+
+    for {field, key} <- [{"methods", "methods"}, {"helpers", "helpers"}] do
+      assert Enum.sort(record[field]) ==
+               listed |> Enum.flat_map(& &1[key]) |> Enum.uniq() |> Enum.sort(),
+             "stale completion #{field}"
+    end
+
+    record_views!(record, Enum.flat_map(listed, & &1["documented_views"]))
+    assert record["transports"] == ["unix", "mutual_https"], "missing completion transport"
+    record_evidence!(record, required, listed, selected_rows, evidence)
+
+    for field <- ~w(bodies result separate_acceptance),
+        do:
+          assert(is_binary(record[field]) and record[field] != "", "missing completion #{field}")
+  end
+
+  defp rowless!(record) do
+    assert record["rows"] == [] and record["stream_contracts"] != [],
+           "unrelated completion record"
+
+    ids =
+      Jason.decode!(File.read!("priv/incus/coverage.json"))["entries"]
+      |> Enum.map(& &1["id"])
+
+    {prefixes, exact} = @rowless[record["kind"]]
+    required = Enum.filter(ids, &(String.starts_with?(&1, prefixes) or &1 in exact))
+    declarations = record["declarations"]
+
+    assert is_list(declarations) and declarations -- ids == [] and required -- declarations == [],
+           "stale completion declarations"
+
+    assert record["functions"] != [], "missing public client function"
+
+    for [module, function, arity] <- record["functions"] do
+      module = Module.concat([module])
+      Code.ensure_loaded!(module)
+
+      assert {String.to_existing_atom(function), arity} in module.__info__(:functions),
+             "missing public client function"
+    end
+  end
+
+  # Every documented view is supported with classified selectors or approved-excluded.
+  defp record_views!(record, views) do
+    excluded = record["excluded_views"]
+
+    assert Enum.sort(record["supported_views"] ++ Map.keys(excluded)) ==
+             Enum.sort(Enum.map(views, & &1["operation"])),
+           "unlisted completion view"
+
+    for view <- views do
+      if view["operation"] in record["supported_views"] do
+        for query <- view["query_parameters"],
+            do: assert(described?(record["selectors"][query]), "unclassified completion selector")
+      else
+        assert approved?(excluded[view["operation"]]), "unapproved exclusion"
+      end
+    end
+
+    for entry <- record["excluded_scope"] ++ record["approved_differences"],
+        do: assert(approved?(entry), "unapproved exclusion")
+  end
+
+  # Each required case names anchored evidence of a known kind linked to the selected row.
+  defp record_evidence!(record, required, listed, selected_rows, evidence) do
+    assert Enum.sort(Map.keys(record["cases"])) == Enum.sort(required),
+           "missing completion case"
+
+    assert Enum.all?(Map.values(record["cases"]), &(&1 != [])), "missing completion evidence"
+
+    used =
+      Enum.uniq(
+        List.flatten(Map.values(record["cases"])) ++
+          Enum.map(record["rejected_variants"], & &1["evidence"])
+      )
+
+    assert Enum.sort(Map.keys(record["evidence_kinds"])) == Enum.sort(used),
+           "stale completion evidence kinds"
+
+    for {key, kind} <- record["evidence_kinds"] do
+      assert kind in @evidence_kinds, "unknown completion evidence kind"
+      assert Map.has_key?(evidence, key), "missing completion evidence"
+      anchor!(evidence[key])
+
+      for row <- listed,
+          do:
+            assert(key in selected_rows[row["pair"]]["evidence"], "unlinked completion evidence")
+    end
+  end
+
+  # Kinds name the base cases; the catalogue adds what each listed method declares:
+  # a body needs body_fields, a declared or field-guarded extension needs
+  # extension_guards, a PUT or conditional method needs its ETag precondition, and
+  # filter/all-projects/instance-type queries need selectors.
+  defp required_cases(record, catalogue) do
+    # Unknown methods fail the separate stale-method check, not this derivation.
+    methods = Enum.flat_map(record["methods"], &List.wrap(catalogue[&1]))
+
+    derived =
+      for {case, needed?} <- [
+            {"body_fields", &(&1["body"] != nil)},
+            {"extension_guards",
+             &(&1["extension"] not in [nil, []] or
+                 Enum.any?(&1["guards"], fn guard -> guard["extension"] end))},
+            {"etag", &(&1["verb"] == "PUT" or conditional?(&1))},
+            {"selectors",
+             &(Map.keys(&1["query"]) -- ["filter", "all-projects", "instance-type"] !=
+                 Map.keys(&1["query"]))}
+          ],
+          Enum.any?(methods, needed?),
+          do: case
+
+    # Server discovery also proves its required-field and version guards.
+    discovery =
+      if "connect" in record["helpers"],
+        do: ~w(discovery_required_fields discovery_version),
+        else: []
+
+    # A synchronous write or conditional PATCH record listing an operation-returning
+    # method also proves acceptance and the native /wait lifecycle; other kinds name
+    # their own.
+    async =
+      if record["kind"] in ["sync_mutation", "conditional_patch"] and
+           Enum.any?(methods, &(&1["result"] == "operation")),
+         do: ~w(accepted_identity running completed failed cancelled local_lifetime),
+         else: []
+
+    Enum.uniq(
+      @record_cases[record["kind"]] ++ derived ++ discovery ++ async ++ patch(record, methods)
+    )
+  end
+
+  # A conditional PATCH proves its empty synchronous result, and an instance body its
+  # native restore-mode rejection.
+  defp patch(%{"kind" => "conditional_patch"}, methods),
+    do:
+      for(
+        {case, needed?} <- [
+          {"empty_sync", &(&1["result"] == "empty_sync")},
+          {"restore_rejection", &(&1["body"] == "InstancePut")}
+        ],
+        Enum.any?(methods, needed?),
+        do: case
+      )
+
+  defp patch(_, _), do: []
+
+  # Mirrors the client: explicit conditional descriptors and empty-sync PATCH require an ETag.
+  defp conditional?(method), do: method["conditional"] == true or method["result"] == "empty_sync"
+
+  defp described?(value), do: is_binary(value) and String.trim(value) != ""
+
+  defp approved?(%{"approved" => date}) when is_binary(date),
+    do: Regex.match?(~r/\A\d{4}-\d{2}-\d{2}\z/, date)
+
+  defp approved?(_), do: false
+
+  # Raw reads skip the VM's single file server, which concurrent validations would queue on.
+  defp anchor!([path, anchor]) do
+    assert anchor != "" and File.regular?(path, raw: true) and
+             String.contains?(raw_read!(path), anchor),
+           "missing source anchor"
+  end
+
+  defp raw_read!(path) do
+    {:ok, source} = :file.read_file(path, [:raw])
+    source
+  end
+
+  defp normalize(pair),
+    do: pair |> String.split("?", parts: 2) |> hd() |> String.replace(~r/\{[^}]+\}/, "{}")
+
+  defp custom_pair(method),
+    do:
+      normalize(
+        method["verb"] <>
+          " " <> String.replace(method["path"], "/volumes/custom/", "/volumes/{type}/")
+      )
+end

@@ -1,0 +1,6013 @@
+{
+  "models": {
+    "Access": {
+      "kind": "alias",
+      "fields": [],
+      "underlying": "[]AccessEntry"
+    },
+    "AccessEntry": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "identifier",
+          "type": "string"
+        },
+        {
+          "name": "role",
+          "type": "string"
+        },
+        {
+          "name": "provider",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tIdentifier string `json:\"identifier\" yaml:\"identifier\"`\n\n\tRole string `json:\"role\" yaml:\"role\"`\n\n\tProvider string `json:\"provider\" yaml:\"provider\"`\n}"
+    },
+    "BackupTarget": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "protocol",
+          "type": "string"
+        },
+        {
+          "name": "url",
+          "type": "string"
+        },
+        {
+          "name": "bucket_name",
+          "type": "string"
+        },
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "access_key",
+          "type": "string"
+        },
+        {
+          "name": "secret_key",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tProtocol string `json:\"protocol\" yaml:\"protocol\"`\n\n\tURL string `json:\"url\" yaml:\"url\"`\n\n\tBucketName string `json:\"bucket_name\" yaml:\"bucket_name\"`\n\n\tPath string `json:\"path\" yaml:\"path\"`\n\n\tAccessKey string `json:\"access_key\" yaml:\"access_key\"`\n\n\tSecretKey string `json:\"secret_key\" yaml:\"secret_key\"`\n}"
+    },
+    "Certificate": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "restricted",
+          "type": "bool"
+        },
+        {
+          "name": "projects",
+          "type": "[]string"
+        },
+        {
+          "name": "certificate",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "fingerprint",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tCertificatePut `yaml:\",inline\"`\n\n\tFingerprint string `json:\"fingerprint\" yaml:\"fingerprint\"`\n}"
+    },
+    "CertificateAddToken": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "client_name",
+          "type": "string"
+        },
+        {
+          "name": "fingerprint",
+          "type": "string"
+        },
+        {
+          "name": "addresses",
+          "type": "[]string"
+        },
+        {
+          "name": "secret",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "type": "time.Time"
+        }
+      ],
+      "underlying": "struct {\n\tClientName string `json:\"client_name\" yaml:\"client_name\"`\n\n\tFingerprint string `json:\"fingerprint\" yaml:\"fingerprint\"`\n\n\tAddresses []string `json:\"addresses\" yaml:\"addresses\"`\n\n\tSecret string `json:\"secret\" yaml:\"secret\"`\n\n\tExpiresAt time.Time `json:\"expires_at\" yaml:\"expires_at\"`\n}"
+    },
+    "CertificatePut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "restricted",
+          "type": "bool"
+        },
+        {
+          "name": "projects",
+          "type": "[]string"
+        },
+        {
+          "name": "certificate",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tRestricted bool `json:\"restricted\" yaml:\"restricted\"`\n\n\tProjects []string `json:\"projects\" yaml:\"projects\"`\n\n\tCertificate string `json:\"certificate\" yaml:\"certificate\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n}"
+    },
+    "CertificatesPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "restricted",
+          "type": "bool"
+        },
+        {
+          "name": "projects",
+          "type": "[]string"
+        },
+        {
+          "name": "certificate",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "trust_token",
+          "type": "string"
+        },
+        {
+          "name": "token",
+          "type": "bool"
+        }
+      ],
+      "underlying": "struct {\n\tCertificatePut `yaml:\",inline\"`\n\n\tTrustToken string `json:\"trust_token\" yaml:\"trust_token\"`\n\n\tToken bool `json:\"token\" yaml:\"token\"`\n}"
+    },
+    "Cluster": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "server_name",
+          "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool"
+        },
+        {
+          "name": "member_config",
+          "type": "[]ClusterMemberConfigKey"
+        }
+      ],
+      "underlying": "struct {\n\tServerName string `json:\"server_name\" yaml:\"server_name\"`\n\n\tEnabled bool `json:\"enabled\" yaml:\"enabled\"`\n\n\tMemberConfig []ClusterMemberConfigKey `json:\"member_config\" yaml:\"member_config\"`\n}"
+    },
+    "ClusterCertificatePut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "cluster_certificate",
+          "type": "string"
+        },
+        {
+          "name": "cluster_certificate_key",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tClusterCertificate string `json:\"cluster_certificate\" yaml:\"cluster_certificate\"`\n\n\tClusterCertificateKey string `json:\"cluster_certificate_key\" yaml:\"cluster_certificate_key\"`\n}"
+    },
+    "ClusterGroup": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "members",
+          "type": "[]string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "used_by",
+          "type": "[]string"
+        }
+      ],
+      "underlying": "struct {\n\tClusterGroupPut  `yaml:\",inline\"`\n\tClusterGroupPost `yaml:\",inline\"`\n\n\tUsedBy []string `json:\"used_by\" yaml:\"used_by\"`\n}"
+    },
+    "ClusterGroupPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "ClusterGroupPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "members",
+          "type": "[]string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        }
+      ],
+      "underlying": "struct {\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tMembers []string `json:\"members\" yaml:\"members\"`\n\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n}"
+    },
+    "ClusterGroupsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "members",
+          "type": "[]string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tClusterGroupPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "ClusterMember": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "roles",
+          "type": "[]string"
+        },
+        {
+          "name": "failure_domain",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "groups",
+          "type": "[]string"
+        },
+        {
+          "name": "server_name",
+          "type": "string"
+        },
+        {
+          "name": "url",
+          "type": "string"
+        },
+        {
+          "name": "database",
+          "type": "bool"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "message",
+          "type": "string"
+        },
+        {
+          "name": "architecture",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tClusterMemberPut `yaml:\",inline\"`\n\n\tServerName string `json:\"server_name\" yaml:\"server_name\"`\n\n\tURL string `json:\"url\" yaml:\"url\"`\n\n\tDatabase bool `json:\"database\" yaml:\"database\"`\n\n\tStatus string `json:\"status\" yaml:\"status\"`\n\n\tMessage string `json:\"message\" yaml:\"message\"`\n\n\tArchitecture string `json:\"architecture\" yaml:\"architecture\"`\n}"
+    },
+    "ClusterMemberConfigKey": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "entity",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "key",
+          "type": "string"
+        },
+        {
+          "name": "value",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tEntity string `json:\"entity\" yaml:\"entity\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tKey string `json:\"key\" yaml:\"key\"`\n\n\tValue string `json:\"value\" yaml:\"value\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n}"
+    },
+    "ClusterMemberJoinToken": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "server_name",
+          "type": "string"
+        },
+        {
+          "name": "fingerprint",
+          "type": "string"
+        },
+        {
+          "name": "addresses",
+          "type": "[]string"
+        },
+        {
+          "name": "secret",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "type": "time.Time"
+        }
+      ],
+      "underlying": "struct {\n\tServerName string `json:\"server_name\" yaml:\"server_name\"`\n\n\tFingerprint string `json:\"fingerprint\" yaml:\"fingerprint\"`\n\n\tAddresses []string `json:\"addresses\" yaml:\"addresses\"`\n\n\tSecret string `json:\"secret\" yaml:\"secret\"`\n\n\tExpiresAt time.Time `json:\"expires_at\" yaml:\"expires_at\"`\n}"
+    },
+    "ClusterMemberPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "server_name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tServerName string `json:\"server_name\" yaml:\"server_name\"`\n}"
+    },
+    "ClusterMemberPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "roles",
+          "type": "[]string"
+        },
+        {
+          "name": "failure_domain",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "groups",
+          "type": "[]string"
+        }
+      ],
+      "underlying": "struct {\n\tRoles []string `json:\"roles\" yaml:\"roles\"`\n\n\tFailureDomain string `json:\"failure_domain\" yaml:\"failure_domain\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n\n\tGroups []string `json:\"groups\" yaml:\"groups\"`\n}"
+    },
+    "ClusterMemberState": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "sysinfo",
+          "type": "ClusterMemberSysInfo"
+        },
+        {
+          "name": "storage_pools",
+          "type": "map[string]StoragePoolState"
+        }
+      ],
+      "underlying": "struct {\n\tSysInfo      ClusterMemberSysInfo        `json:\"sysinfo\" yaml:\"sysinfo\"`\n\tStoragePools map[string]StoragePoolState `json:\"storage_pools\" yaml:\"storage_pools\"`\n}"
+    },
+    "ClusterMemberStatePost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "action",
+          "type": "string"
+        },
+        {
+          "name": "mode",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tAction string `json:\"action\" yaml:\"action\"`\n\n\tMode string `json:\"mode\" yaml:\"mode\"`\n}"
+    },
+    "ClusterMemberSysInfo": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "uptime",
+          "type": "int64"
+        },
+        {
+          "name": "load_averages",
+          "type": "[]float64"
+        },
+        {
+          "name": "total_ram",
+          "type": "uint64"
+        },
+        {
+          "name": "free_ram",
+          "type": "uint64"
+        },
+        {
+          "name": "shared_ram",
+          "type": "uint64"
+        },
+        {
+          "name": "buffered_ram",
+          "type": "uint64"
+        },
+        {
+          "name": "total_swap",
+          "type": "uint64"
+        },
+        {
+          "name": "free_swap",
+          "type": "uint64"
+        },
+        {
+          "name": "processes",
+          "type": "uint16"
+        }
+      ],
+      "underlying": "struct {\n\tUptime       int64     `json:\"uptime\" yaml:\"uptime\"`\n\tLoadAverages []float64 `json:\"load_averages\" yaml:\"load_averages\"`\n\tTotalRAM     uint64    `json:\"total_ram\" yaml:\"total_ram\"`\n\tFreeRAM      uint64    `json:\"free_ram\" yaml:\"free_ram\"`\n\tSharedRAM    uint64    `json:\"shared_ram\" yaml:\"shared_ram\"`\n\tBufferRAM    uint64    `json:\"buffered_ram\" yaml:\"buffered_ram\"`\n\tTotalSwap    uint64    `json:\"total_swap\" yaml:\"total_swap\"`\n\tFreeSwap     uint64    `json:\"free_swap\" yaml:\"free_swap\"`\n\tProcesses    uint16    `json:\"processes\" yaml:\"processes\"`\n}"
+    },
+    "ClusterMembersPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "server_name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tServerName string `json:\"server_name\" yaml:\"server_name\"`\n}"
+    },
+    "ClusterPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "server_name",
+          "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool"
+        },
+        {
+          "name": "member_config",
+          "type": "[]ClusterMemberConfigKey"
+        },
+        {
+          "name": "cluster_address",
+          "type": "string"
+        },
+        {
+          "name": "cluster_certificate",
+          "type": "string"
+        },
+        {
+          "name": "server_address",
+          "type": "string"
+        },
+        {
+          "name": "cluster_token",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tCluster `yaml:\",inline\"`\n\n\tClusterAddress string `json:\"cluster_address\" yaml:\"cluster_address\"`\n\n\tClusterCertificate string `json:\"cluster_certificate\" yaml:\"cluster_certificate\"`\n\n\tServerAddress string `json:\"server_address\" yaml:\"server_address\"`\n\n\tClusterToken string `json:\"cluster_token\" yaml:\"cluster_token\"`\n}"
+    },
+    "ConfigMap": {
+      "kind": "alias",
+      "fields": [],
+      "underlying": "map[string]string"
+    },
+    "DevicesMap": {
+      "kind": "alias",
+      "fields": [],
+      "underlying": "map[string]map[string]string"
+    },
+    "Event": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "timestamp",
+          "type": "time.Time"
+        },
+        {
+          "name": "metadata",
+          "type": "json.RawMessage"
+        },
+        {
+          "name": "location",
+          "type": "string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tType string `yaml:\"type\" json:\"type\"`\n\n\tTimestamp time.Time `yaml:\"timestamp\" json:\"timestamp\"`\n\n\tMetadata json.RawMessage `yaml:\"metadata\" json:\"metadata\"`\n\n\tLocation string `yaml:\"location,omitempty\" json:\"location,omitempty\"`\n\n\tProject string `yaml:\"project,omitempty\" json:\"project,omitempty\"`\n}"
+    },
+    "EventLifecycle": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "action",
+          "type": "string"
+        },
+        {
+          "name": "source",
+          "type": "string"
+        },
+        {
+          "name": "context",
+          "type": "map[string]any"
+        },
+        {
+          "name": "requestor",
+          "type": "*EventLifecycleRequestor"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tAction  string         `yaml:\"action\" json:\"action\"`\n\tSource  string         `yaml:\"source\" json:\"source\"`\n\tContext map[string]any `yaml:\"context,omitempty\" json:\"context,omitempty\"`\n\n\tRequestor *EventLifecycleRequestor `yaml:\"requestor,omitempty\" json:\"requestor,omitempty\"`\n\n\tName    string `yaml:\"name,omitempty\" json:\"name,omitempty\"`\n\tProject string `yaml:\"project,omitempty\" json:\"project,omitempty\"`\n}"
+    },
+    "EventLifecycleRequestor": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "username",
+          "type": "string"
+        },
+        {
+          "name": "protocol",
+          "type": "string"
+        },
+        {
+          "name": "address",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tUsername string `yaml:\"username\" json:\"username\"`\n\tProtocol string `yaml:\"protocol\" json:\"protocol\"`\n\n\tAddress string `yaml:\"address\" json:\"address\"`\n}"
+    },
+    "EventLogRecord": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "Time",
+          "type": "time.Time"
+        },
+        {
+          "name": "Lvl",
+          "type": "string"
+        },
+        {
+          "name": "Msg",
+          "type": "string"
+        },
+        {
+          "name": "Ctx",
+          "type": "[]any"
+        }
+      ],
+      "underlying": "struct {\n\tTime time.Time\n\tLvl  string\n\tMsg  string\n\tCtx  []any\n}"
+    },
+    "EventLogging": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "message",
+          "type": "string"
+        },
+        {
+          "name": "level",
+          "type": "string"
+        },
+        {
+          "name": "context",
+          "type": "map[string]string"
+        }
+      ],
+      "underlying": "struct {\n\tMessage string            `yaml:\"message\" json:\"message\"`\n\tLevel   string            `yaml:\"level\" json:\"level\"`\n\tContext map[string]string `yaml:\"context\" json:\"context\"`\n}"
+    },
+    "Image": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "auto_update",
+          "type": "bool"
+        },
+        {
+          "name": "properties",
+          "type": "map[string]string"
+        },
+        {
+          "name": "public",
+          "type": "bool"
+        },
+        {
+          "name": "expires_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "profiles",
+          "type": "[]string"
+        },
+        {
+          "name": "aliases",
+          "type": "[]ImageAlias"
+        },
+        {
+          "name": "architecture",
+          "type": "string"
+        },
+        {
+          "name": "cached",
+          "type": "bool"
+        },
+        {
+          "name": "filename",
+          "type": "string"
+        },
+        {
+          "name": "fingerprint",
+          "type": "string"
+        },
+        {
+          "name": "size",
+          "type": "int64"
+        },
+        {
+          "name": "update_source",
+          "type": "*ImageSource"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "last_used_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "uploaded_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tImagePut `yaml:\",inline\"`\n\n\tAliases []ImageAlias `json:\"aliases\" yaml:\"aliases\"`\n\n\tArchitecture string `json:\"architecture\" yaml:\"architecture\"`\n\n\tCached bool `json:\"cached\" yaml:\"cached\"`\n\n\tFilename string `json:\"filename\" yaml:\"filename\"`\n\n\tFingerprint string `json:\"fingerprint\" yaml:\"fingerprint\"`\n\n\tSize int64 `json:\"size\" yaml:\"size\"`\n\n\tUpdateSource *ImageSource `json:\"update_source,omitempty\" yaml:\"update_source,omitempty\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tCreatedAt time.Time `json:\"created_at\" yaml:\"created_at\"`\n\n\tLastUsedAt time.Time `json:\"last_used_at\" yaml:\"last_used_at\"`\n\n\tUploadedAt time.Time `json:\"uploaded_at\" yaml:\"uploaded_at\"`\n\n\tProject string `json:\"project\" yaml:\"project\"`\n}"
+    },
+    "ImageAlias": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n}"
+    },
+    "ImageAliasesEntry": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "target",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tImageAliasesEntryPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n}"
+    },
+    "ImageAliasesEntryPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "ImageAliasesEntryPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "target",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tTarget string `json:\"target\" yaml:\"target\"`\n}"
+    },
+    "ImageAliasesPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "target",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tImageAliasesEntry `yaml:\",inline\"`\n}"
+    },
+    "ImageExportPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "target",
+          "type": "string"
+        },
+        {
+          "name": "secret",
+          "type": "string"
+        },
+        {
+          "name": "certificate",
+          "type": "string"
+        },
+        {
+          "name": "aliases",
+          "type": "[]ImageAlias"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        },
+        {
+          "name": "profiles",
+          "type": "[]string"
+        }
+      ],
+      "underlying": "struct {\n\tTarget string `json:\"target\" yaml:\"target\"`\n\n\tSecret string `json:\"secret\" yaml:\"secret\"`\n\n\tCertificate string `json:\"certificate\" yaml:\"certificate\"`\n\n\tAliases []ImageAlias `json:\"aliases\" yaml:\"aliases\"`\n\n\tProject string `json:\"project\" yaml:\"project\"`\n\n\tProfiles []string `json:\"profiles\" yaml:\"profiles\"`\n}"
+    },
+    "ImageMetadata": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "architecture",
+          "type": "string"
+        },
+        {
+          "name": "creation_date",
+          "type": "int64"
+        },
+        {
+          "name": "expiry_date",
+          "type": "int64"
+        },
+        {
+          "name": "properties",
+          "type": "map[string]string"
+        },
+        {
+          "name": "templates",
+          "type": "map[string]*ImageMetadataTemplate"
+        }
+      ],
+      "underlying": "struct {\n\tArchitecture string `json:\"architecture\" yaml:\"architecture\"`\n\n\tCreationDate int64 `json:\"creation_date\" yaml:\"creation_date\"`\n\n\tExpiryDate int64 `json:\"expiry_date\" yaml:\"expiry_date\"`\n\n\tProperties map[string]string `json:\"properties\" yaml:\"properties\"`\n\n\tTemplates map[string]*ImageMetadataTemplate `json:\"templates\" yaml:\"templates\"`\n}"
+    },
+    "ImageMetadataTemplate": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "when",
+          "type": "[]string"
+        },
+        {
+          "name": "create_only",
+          "type": "bool"
+        },
+        {
+          "name": "template",
+          "type": "string"
+        },
+        {
+          "name": "properties",
+          "type": "map[string]string"
+        },
+        {
+          "name": "uid",
+          "type": "string"
+        },
+        {
+          "name": "gid",
+          "type": "string"
+        },
+        {
+          "name": "mode",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tWhen []string `json:\"when\" yaml:\"when\"`\n\n\tCreateOnly bool `json:\"create_only\" yaml:\"create_only\"`\n\n\tTemplate string `json:\"template\" yaml:\"template\"`\n\n\tProperties map[string]string `json:\"properties\" yaml:\"properties\"`\n\n\tUID string `json:\"uid,omitempty\" yaml:\"uid,omitempty\"`\n\n\tGID string `json:\"gid,omitempty\" yaml:\"gid,omitempty\"`\n\n\tMode string `json:\"mode,omitempty\" yaml:\"mode,omitempty\"`\n}"
+    },
+    "ImagePut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "auto_update",
+          "type": "bool"
+        },
+        {
+          "name": "properties",
+          "type": "map[string]string"
+        },
+        {
+          "name": "public",
+          "type": "bool"
+        },
+        {
+          "name": "expires_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "profiles",
+          "type": "[]string"
+        }
+      ],
+      "underlying": "struct {\n\tAutoUpdate bool `json:\"auto_update\" yaml:\"auto_update\"`\n\n\tProperties map[string]string `json:\"properties\" yaml:\"properties\"`\n\n\tPublic bool `json:\"public\" yaml:\"public\"`\n\n\tExpiresAt time.Time `json:\"expires_at\" yaml:\"expires_at\"`\n\n\tProfiles []string `json:\"profiles\" yaml:\"profiles\"`\n}"
+    },
+    "ImageSource": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "alias",
+          "type": "string"
+        },
+        {
+          "name": "certificate",
+          "type": "string"
+        },
+        {
+          "name": "protocol",
+          "type": "string"
+        },
+        {
+          "name": "server",
+          "type": "string"
+        },
+        {
+          "name": "image_type",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tAlias string `json:\"alias\" yaml:\"alias\"`\n\n\tCertificate string `json:\"certificate\" yaml:\"certificate\"`\n\n\tProtocol string `json:\"protocol\" yaml:\"protocol\"`\n\n\tServer string `json:\"server\" yaml:\"server\"`\n\n\tImageType string `json:\"image_type\" yaml:\"image_type\"`\n}"
+    },
+    "ImagesPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "auto_update",
+          "type": "bool"
+        },
+        {
+          "name": "properties",
+          "type": "map[string]string"
+        },
+        {
+          "name": "public",
+          "type": "bool"
+        },
+        {
+          "name": "expires_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "profiles",
+          "type": "[]string"
+        },
+        {
+          "name": "filename",
+          "type": "string"
+        },
+        {
+          "name": "source",
+          "type": "*ImagesPostSource"
+        },
+        {
+          "name": "compression_algorithm",
+          "type": "string"
+        },
+        {
+          "name": "format",
+          "type": "string"
+        },
+        {
+          "name": "aliases",
+          "type": "[]ImageAlias"
+        }
+      ],
+      "underlying": "struct {\n\tImagePut `yaml:\",inline\"`\n\n\tFilename string `json:\"filename\" yaml:\"filename\"`\n\n\tSource *ImagesPostSource `json:\"source\" yaml:\"source\"`\n\n\tCompressionAlgorithm string `json:\"compression_algorithm\" yaml:\"compression_algorithm\"`\n\n\tFormat string `json:\"format\" yaml:\"format\"`\n\n\tAliases []ImageAlias `json:\"aliases\" yaml:\"aliases\"`\n}"
+    },
+    "ImagesPostSource": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "alias",
+          "type": "string"
+        },
+        {
+          "name": "certificate",
+          "type": "string"
+        },
+        {
+          "name": "protocol",
+          "type": "string"
+        },
+        {
+          "name": "server",
+          "type": "string"
+        },
+        {
+          "name": "image_type",
+          "type": "string"
+        },
+        {
+          "name": "mode",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "url",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "fingerprint",
+          "type": "string"
+        },
+        {
+          "name": "secret",
+          "type": "string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tImageSource `yaml:\",inline\"`\n\n\tMode string `json:\"mode\" yaml:\"mode\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tURL string `json:\"url\" yaml:\"url\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tFingerprint string `json:\"fingerprint\" yaml:\"fingerprint\"`\n\n\tSecret string `json:\"secret\" yaml:\"secret\"`\n\n\tProject string `json:\"project\" yaml:\"project\"`\n}"
+    },
+    "InitClusterPreseed": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "server_name",
+          "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool"
+        },
+        {
+          "name": "member_config",
+          "type": "[]ClusterMemberConfigKey"
+        },
+        {
+          "name": "cluster_address",
+          "type": "string"
+        },
+        {
+          "name": "cluster_certificate",
+          "type": "string"
+        },
+        {
+          "name": "server_address",
+          "type": "string"
+        },
+        {
+          "name": "cluster_token",
+          "type": "string"
+        },
+        {
+          "name": "cluster_certificate_path",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tClusterPut `yaml:\",inline\"`\n\n\tClusterCertificatePath string `json:\"cluster_certificate_path\" yaml:\"cluster_certificate_path\"`\n}"
+    },
+    "InitLocalPreseed": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "networks",
+          "type": "[]InitNetworksProjectPost"
+        },
+        {
+          "name": "storage_pools",
+          "type": "[]StoragePoolsPost"
+        },
+        {
+          "name": "storage_volumes",
+          "type": "[]InitStorageVolumesProjectPost"
+        },
+        {
+          "name": "profiles",
+          "type": "[]InitProfileProjectPost"
+        },
+        {
+          "name": "projects",
+          "type": "[]ProjectsPost"
+        },
+        {
+          "name": "certificates",
+          "type": "[]CertificatesPost"
+        },
+        {
+          "name": "cluster_groups",
+          "type": "[]ClusterGroupsPost"
+        }
+      ],
+      "underlying": "struct {\n\tServerPut `yaml:\",inline\"`\n\n\tNetworks []InitNetworksProjectPost `json:\"networks\" yaml:\"networks\"`\n\n\tStoragePools []StoragePoolsPost `json:\"storage_pools\" yaml:\"storage_pools\"`\n\n\tStorageVolumes []InitStorageVolumesProjectPost `json:\"storage_volumes\" yaml:\"storage_volumes\"`\n\n\tProfiles []InitProfileProjectPost `json:\"profiles\" yaml:\"profiles\"`\n\n\tProjects []ProjectsPost `json:\"projects\" yaml:\"projects\"`\n\n\tCertificates []CertificatesPost `json:\"certificates\" yaml:\"certificates\"`\n\n\tClusterGroups []ClusterGroupsPost `json:\"cluster_groups\" yaml:\"cluster_groups\"`\n}"
+    },
+    "InitNetworksProjectPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "Project",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworksPost `yaml:\",inline\"`\n\n\tProject string\n}"
+    },
+    "InitPreseed": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "networks",
+          "type": "[]InitNetworksProjectPost"
+        },
+        {
+          "name": "storage_pools",
+          "type": "[]StoragePoolsPost"
+        },
+        {
+          "name": "storage_volumes",
+          "type": "[]InitStorageVolumesProjectPost"
+        },
+        {
+          "name": "profiles",
+          "type": "[]InitProfileProjectPost"
+        },
+        {
+          "name": "projects",
+          "type": "[]ProjectsPost"
+        },
+        {
+          "name": "certificates",
+          "type": "[]CertificatesPost"
+        },
+        {
+          "name": "cluster_groups",
+          "type": "[]ClusterGroupsPost"
+        },
+        {
+          "name": "cluster",
+          "type": "*InitClusterPreseed"
+        }
+      ],
+      "underlying": "struct {\n\tInitLocalPreseed `yaml:\",inline\"`\n\tCluster          *InitClusterPreseed `json:\"cluster\" yaml:\"cluster\"`\n}"
+    },
+    "InitProfileProjectPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "devices",
+          "type": "DevicesMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "Project",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tProfilesPost `yaml:\",inline\"`\n\n\tProject string\n}"
+    },
+    "InitStorageVolumesProjectPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "restore",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "source",
+          "type": "StorageVolumeSource"
+        },
+        {
+          "name": "content_type",
+          "type": "string"
+        },
+        {
+          "name": "Pool",
+          "type": "string"
+        },
+        {
+          "name": "Project",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tStorageVolumesPost `yaml:\",inline\"`\n\n\tPool string\n\n\tProject string\n}"
+    },
+    "Instance": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "architecture",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "devices",
+          "type": "DevicesMap"
+        },
+        {
+          "name": "ephemeral",
+          "type": "bool"
+        },
+        {
+          "name": "profiles",
+          "type": "[]string"
+        },
+        {
+          "name": "restore",
+          "type": "string"
+        },
+        {
+          "name": "disk_only",
+          "type": "bool"
+        },
+        {
+          "name": "stateful",
+          "type": "bool"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "expanded_config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "expanded_devices",
+          "type": "DevicesMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "status_code",
+          "type": "StatusCode"
+        },
+        {
+          "name": "last_used_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "location",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tInstancePut `yaml:\",inline\"`\n\n\tCreatedAt time.Time `json:\"created_at\" yaml:\"created_at\"`\n\n\tExpandedConfig ConfigMap `json:\"expanded_config,omitempty\" yaml:\"expanded_config,omitempty\"`\n\n\tExpandedDevices DevicesMap `json:\"expanded_devices,omitempty\" yaml:\"expanded_devices,omitempty\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tStatus string `json:\"status\" yaml:\"status\"`\n\n\tStatusCode StatusCode `json:\"status_code\" yaml:\"status_code\"`\n\n\tLastUsedAt time.Time `json:\"last_used_at\" yaml:\"last_used_at\"`\n\n\tLocation string `json:\"location\" yaml:\"location\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tProject string `json:\"project\" yaml:\"project\"`\n}"
+    },
+    "InstanceBackup": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "expires_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "instance_only",
+          "type": "bool"
+        },
+        {
+          "name": "optimized_storage",
+          "type": "bool"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tCreatedAt time.Time `json:\"created_at\" yaml:\"created_at\"`\n\n\tExpiresAt time.Time `json:\"expires_at\" yaml:\"expires_at\"`\n\n\tInstanceOnly bool `json:\"instance_only\" yaml:\"instance_only\"`\n\n\tOptimizedStorage bool `json:\"optimized_storage\" yaml:\"optimized_storage\"`\n}"
+    },
+    "InstanceBackupPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "InstanceBackupsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "instance_only",
+          "type": "bool"
+        },
+        {
+          "name": "root_only",
+          "type": "bool"
+        },
+        {
+          "name": "optimized_storage",
+          "type": "bool"
+        },
+        {
+          "name": "compression_algorithm",
+          "type": "string"
+        },
+        {
+          "name": "target",
+          "type": "*BackupTarget"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tExpiresAt time.Time `json:\"expires_at\" yaml:\"expires_at\"`\n\n\tInstanceOnly bool `json:\"instance_only\" yaml:\"instance_only\"`\n\n\tRootOnly bool `json:\"root_only\" yaml:\"root_only\"`\n\n\tOptimizedStorage bool `json:\"optimized_storage\" yaml:\"optimized_storage\"`\n\n\tCompressionAlgorithm string `json:\"compression_algorithm\" yaml:\"compression_algorithm\"`\n\n\tTarget *BackupTarget `json:\"target\" yaml:\"target\"`\n}"
+    },
+    "InstanceConsoleControl": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "command",
+          "type": "string"
+        },
+        {
+          "name": "args",
+          "type": "map[string]string"
+        }
+      ],
+      "underlying": "struct {\n\tCommand string            `json:\"command\" yaml:\"command\"`\n\tArgs    map[string]string `json:\"args\" yaml:\"args\"`\n}"
+    },
+    "InstanceConsolePost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "width",
+          "type": "int"
+        },
+        {
+          "name": "height",
+          "type": "int"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "force",
+          "type": "bool"
+        }
+      ],
+      "underlying": "struct {\n\tWidth int `json:\"width\" yaml:\"width\"`\n\n\tHeight int `json:\"height\" yaml:\"height\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tForce bool `json:\"force\" yaml:\"force\"`\n}"
+    },
+    "InstanceDebugRepairPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "action",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tAction string `json:\"action\" yaml:\"action\"`\n}"
+    },
+    "InstanceExecControl": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "command",
+          "type": "string"
+        },
+        {
+          "name": "args",
+          "type": "map[string]string"
+        },
+        {
+          "name": "signal",
+          "type": "int"
+        }
+      ],
+      "underlying": "struct {\n\tCommand string            `json:\"command\" yaml:\"command\"`\n\tArgs    map[string]string `json:\"args\" yaml:\"args\"`\n\tSignal  int               `json:\"signal\" yaml:\"signal\"`\n}"
+    },
+    "InstanceExecPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "command",
+          "type": "[]string"
+        },
+        {
+          "name": "wait-for-websocket",
+          "type": "bool"
+        },
+        {
+          "name": "interactive",
+          "type": "bool"
+        },
+        {
+          "name": "environment",
+          "type": "map[string]string"
+        },
+        {
+          "name": "width",
+          "type": "int"
+        },
+        {
+          "name": "height",
+          "type": "int"
+        },
+        {
+          "name": "record-output",
+          "type": "bool"
+        },
+        {
+          "name": "user",
+          "type": "uint32"
+        },
+        {
+          "name": "group",
+          "type": "uint32"
+        },
+        {
+          "name": "cwd",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tCommand []string `json:\"command\" yaml:\"command\"`\n\n\tWaitForWS bool `json:\"wait-for-websocket\" yaml:\"wait-for-websocket\"`\n\n\tInteractive bool `json:\"interactive\" yaml:\"interactive\"`\n\n\tEnvironment map[string]string `json:\"environment\" yaml:\"environment\"`\n\n\tWidth int `json:\"width\" yaml:\"width\"`\n\n\tHeight int `json:\"height\" yaml:\"height\"`\n\n\tRecordOutput bool `json:\"record-output\" yaml:\"record-output\"`\n\n\tUser uint32 `json:\"user\" yaml:\"user\"`\n\n\tGroup uint32 `json:\"group\" yaml:\"group\"`\n\n\tCwd string `json:\"cwd\" yaml:\"cwd\"`\n}"
+    },
+    "InstanceFull": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "architecture",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "devices",
+          "type": "DevicesMap"
+        },
+        {
+          "name": "ephemeral",
+          "type": "bool"
+        },
+        {
+          "name": "profiles",
+          "type": "[]string"
+        },
+        {
+          "name": "restore",
+          "type": "string"
+        },
+        {
+          "name": "disk_only",
+          "type": "bool"
+        },
+        {
+          "name": "stateful",
+          "type": "bool"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "expanded_config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "expanded_devices",
+          "type": "DevicesMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "status_code",
+          "type": "StatusCode"
+        },
+        {
+          "name": "last_used_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "location",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        },
+        {
+          "name": "backups",
+          "type": "[]InstanceBackup"
+        },
+        {
+          "name": "state",
+          "type": "*InstanceState"
+        },
+        {
+          "name": "snapshots",
+          "type": "[]InstanceSnapshot"
+        }
+      ],
+      "underlying": "struct {\n\tInstance `yaml:\",inline\"`\n\n\tBackups []InstanceBackup `json:\"backups\" yaml:\"backups\"`\n\n\tState *InstanceState `json:\"state\" yaml:\"state\"`\n\n\tSnapshots []InstanceSnapshot `json:\"snapshots\" yaml:\"snapshots\"`\n}"
+    },
+    "InstancePost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "migration",
+          "type": "bool"
+        },
+        {
+          "name": "live",
+          "type": "bool"
+        },
+        {
+          "name": "instance_only",
+          "type": "bool"
+        },
+        {
+          "name": "target",
+          "type": "*InstancePostTarget"
+        },
+        {
+          "name": "pool",
+          "type": "string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        },
+        {
+          "name": "allow_inconsistent",
+          "type": "bool"
+        },
+        {
+          "name": "Config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "Devices",
+          "type": "DevicesMap"
+        },
+        {
+          "name": "Profiles",
+          "type": "[]string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tMigration bool `json:\"migration\" yaml:\"migration\"`\n\n\tLive bool `json:\"live\" yaml:\"live\"`\n\n\tInstanceOnly bool `json:\"instance_only\" yaml:\"instance_only\"`\n\n\tTarget *InstancePostTarget `json:\"target\" yaml:\"target\"`\n\n\tPool string `json:\"pool\" yaml:\"pool\"`\n\n\tProject string `json:\"project\" yaml:\"project\"`\n\n\tAllowInconsistent bool `json:\"allow_inconsistent\" yaml:\"allow_inconsistent\"`\n\n\tConfig ConfigMap\n\n\tDevices DevicesMap\n\n\tProfiles []string\n}"
+    },
+    "InstancePostTarget": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "certificate",
+          "type": "string"
+        },
+        {
+          "name": "operation",
+          "type": "string"
+        },
+        {
+          "name": "secrets",
+          "type": "map[string]string"
+        }
+      ],
+      "underlying": "struct {\n\tCertificate string `json:\"certificate\" yaml:\"certificate\"`\n\n\tOperation string `json:\"operation,omitempty\" yaml:\"operation,omitempty\"`\n\n\tWebsockets map[string]string `json:\"secrets,omitempty\" yaml:\"secrets,omitempty\"`\n}"
+    },
+    "InstancePut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "architecture",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "devices",
+          "type": "DevicesMap"
+        },
+        {
+          "name": "ephemeral",
+          "type": "bool"
+        },
+        {
+          "name": "profiles",
+          "type": "[]string"
+        },
+        {
+          "name": "restore",
+          "type": "string"
+        },
+        {
+          "name": "disk_only",
+          "type": "bool"
+        },
+        {
+          "name": "stateful",
+          "type": "bool"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tArchitecture string `json:\"architecture\" yaml:\"architecture\"`\n\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n\n\tDevices DevicesMap `json:\"devices\" yaml:\"devices\"`\n\n\tEphemeral bool `json:\"ephemeral\" yaml:\"ephemeral\"`\n\n\tProfiles []string `json:\"profiles\" yaml:\"profiles\"`\n\n\tRestore string `json:\"restore,omitempty\" yaml:\"restore,omitempty\"`\n\n\tDiskOnly bool `json:\"disk_only,omitempty\" yaml:\"disk_only,omitempty\"`\n\n\tStateful bool `json:\"stateful\" yaml:\"stateful\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n}"
+    },
+    "InstanceRebuildPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "source",
+          "type": "InstanceSource"
+        }
+      ],
+      "underlying": "struct {\n\tSource InstanceSource `json:\"source\" yaml:\"source\"`\n}"
+    },
+    "InstanceSnapshot": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "expires_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "architecture",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "created_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "devices",
+          "type": "DevicesMap"
+        },
+        {
+          "name": "ephemeral",
+          "type": "bool"
+        },
+        {
+          "name": "expanded_config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "expanded_devices",
+          "type": "DevicesMap"
+        },
+        {
+          "name": "last_used_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "profiles",
+          "type": "[]string"
+        },
+        {
+          "name": "stateful",
+          "type": "bool"
+        },
+        {
+          "name": "size",
+          "type": "int64"
+        }
+      ],
+      "underlying": "struct {\n\tInstanceSnapshotPut `yaml:\",inline\"`\n\n\tArchitecture string `json:\"architecture\" yaml:\"architecture\"`\n\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n\n\tCreatedAt time.Time `json:\"created_at\" yaml:\"created_at\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tDevices DevicesMap `json:\"devices\" yaml:\"devices\"`\n\n\tEphemeral bool `json:\"ephemeral\" yaml:\"ephemeral\"`\n\n\tExpandedConfig ConfigMap `json:\"expanded_config,omitempty\" yaml:\"expanded_config,omitempty\"`\n\n\tExpandedDevices DevicesMap `json:\"expanded_devices,omitempty\" yaml:\"expanded_devices,omitempty\"`\n\n\tLastUsedAt time.Time `json:\"last_used_at\" yaml:\"last_used_at\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tProfiles []string `json:\"profiles\" yaml:\"profiles\"`\n\n\tStateful bool `json:\"stateful\" yaml:\"stateful\"`\n\n\tSize int64 `json:\"size\" yaml:\"size\"`\n}"
+    },
+    "InstanceSnapshotPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "migration",
+          "type": "bool"
+        },
+        {
+          "name": "target",
+          "type": "*InstancePostTarget"
+        },
+        {
+          "name": "live",
+          "type": "bool"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tMigration bool `json:\"migration\" yaml:\"migration\"`\n\n\tTarget *InstancePostTarget `json:\"target\" yaml:\"target\"`\n\n\tLive bool `json:\"live,omitempty\" yaml:\"live,omitempty\"`\n}"
+    },
+    "InstanceSnapshotPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "expires_at",
+          "type": "time.Time"
+        }
+      ],
+      "underlying": "struct {\n\tExpiresAt time.Time `json:\"expires_at\" yaml:\"expires_at\"`\n}"
+    },
+    "InstanceSnapshotsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "stateful",
+          "type": "bool"
+        },
+        {
+          "name": "expires_at",
+          "type": "*time.Time"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tStateful bool `json:\"stateful\" yaml:\"stateful\"`\n\n\tExpiresAt *time.Time `json:\"expires_at\" yaml:\"expires_at\"`\n}"
+    },
+    "InstanceSource": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "certificate",
+          "type": "string"
+        },
+        {
+          "name": "alias",
+          "type": "string"
+        },
+        {
+          "name": "fingerprint",
+          "type": "string"
+        },
+        {
+          "name": "properties",
+          "type": "map[string]string"
+        },
+        {
+          "name": "server",
+          "type": "string"
+        },
+        {
+          "name": "secret",
+          "type": "string"
+        },
+        {
+          "name": "protocol",
+          "type": "string"
+        },
+        {
+          "name": "base-image",
+          "type": "string"
+        },
+        {
+          "name": "mode",
+          "type": "string"
+        },
+        {
+          "name": "operation",
+          "type": "string"
+        },
+        {
+          "name": "secrets",
+          "type": "map[string]string"
+        },
+        {
+          "name": "source",
+          "type": "string"
+        },
+        {
+          "name": "live",
+          "type": "bool"
+        },
+        {
+          "name": "instance_only",
+          "type": "bool"
+        },
+        {
+          "name": "refresh",
+          "type": "bool"
+        },
+        {
+          "name": "refresh_exclude_older",
+          "type": "bool"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        },
+        {
+          "name": "allow_inconsistent",
+          "type": "bool"
+        }
+      ],
+      "underlying": "struct {\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tCertificate string `json:\"certificate\" yaml:\"certificate\"`\n\n\tAlias string `json:\"alias,omitempty\" yaml:\"alias,omitempty\"`\n\n\tFingerprint string `json:\"fingerprint,omitempty\" yaml:\"fingerprint,omitempty\"`\n\n\tProperties map[string]string `json:\"properties,omitempty\" yaml:\"properties,omitempty\"`\n\n\tServer string `json:\"server,omitempty\" yaml:\"server,omitempty\"`\n\n\tSecret string `json:\"secret,omitempty\" yaml:\"secret,omitempty\"`\n\n\tProtocol string `json:\"protocol,omitempty\" yaml:\"protocol,omitempty\"`\n\n\tBaseImage string `json:\"base-image,omitempty\" yaml:\"base-image,omitempty\"`\n\n\tMode string `json:\"mode,omitempty\" yaml:\"mode,omitempty\"`\n\n\tOperation string `json:\"operation,omitempty\" yaml:\"operation,omitempty\"`\n\n\tWebsockets map[string]string `json:\"secrets,omitempty\" yaml:\"secrets,omitempty\"`\n\n\tSource string `json:\"source,omitempty\" yaml:\"source,omitempty\"`\n\n\tLive bool `json:\"live,omitempty\" yaml:\"live,omitempty\"`\n\n\tInstanceOnly bool `json:\"instance_only,omitempty\" yaml:\"instance_only,omitempty\"`\n\n\tRefresh bool `json:\"refresh,omitempty\" yaml:\"refresh,omitempty\"`\n\n\tRefreshExcludeOlder bool `json:\"refresh_exclude_older,omitempty\" yaml:\"refresh_exclude_older,omitempty\"`\n\n\tProject string `json:\"project,omitempty\" yaml:\"project,omitempty\"`\n\n\tAllowInconsistent bool `json:\"allow_inconsistent\" yaml:\"allow_inconsistent\"`\n}"
+    },
+    "InstanceState": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "status_code",
+          "type": "StatusCode"
+        },
+        {
+          "name": "disk",
+          "type": "map[string]InstanceStateDisk"
+        },
+        {
+          "name": "memory",
+          "type": "InstanceStateMemory"
+        },
+        {
+          "name": "network",
+          "type": "map[string]InstanceStateNetwork"
+        },
+        {
+          "name": "pid",
+          "type": "int64"
+        },
+        {
+          "name": "processes",
+          "type": "int64"
+        },
+        {
+          "name": "cpu",
+          "type": "InstanceStateCPU"
+        },
+        {
+          "name": "started_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "os_info",
+          "type": "*InstanceStateOSInfo"
+        }
+      ],
+      "underlying": "struct {\n\tStatus string `json:\"status\" yaml:\"status\"`\n\n\tStatusCode StatusCode `json:\"status_code\" yaml:\"status_code\"`\n\n\tDisk map[string]InstanceStateDisk `json:\"disk\" yaml:\"disk\"`\n\n\tMemory InstanceStateMemory `json:\"memory\" yaml:\"memory\"`\n\n\tNetwork map[string]InstanceStateNetwork `json:\"network\" yaml:\"network\"`\n\n\tPid int64 `json:\"pid\" yaml:\"pid\"`\n\n\tProcesses int64 `json:\"processes\" yaml:\"processes\"`\n\n\tCPU InstanceStateCPU `json:\"cpu\" yaml:\"cpu\"`\n\n\tStartedAt time.Time `json:\"started_at\" yaml:\"started_at\"`\n\n\tOSInfo *InstanceStateOSInfo `json:\"os_info\" yaml:\"os_info\"`\n}"
+    },
+    "InstanceStateCPU": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "usage",
+          "type": "int64"
+        },
+        {
+          "name": "allocated_time",
+          "type": "int64"
+        }
+      ],
+      "underlying": "struct {\n\tUsage int64 `json:\"usage\" yaml:\"usage\"`\n\n\tAllocatedTime int64 `json:\"allocated_time\" yaml:\"allocated_time\"`\n}"
+    },
+    "InstanceStateDisk": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "usage",
+          "type": "int64"
+        },
+        {
+          "name": "total",
+          "type": "int64"
+        }
+      ],
+      "underlying": "struct {\n\tUsage int64 `json:\"usage\" yaml:\"usage\"`\n\n\tTotal int64 `json:\"total\" yaml:\"total\"`\n}"
+    },
+    "InstanceStateMemory": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "usage",
+          "type": "int64"
+        },
+        {
+          "name": "usage_peak",
+          "type": "int64"
+        },
+        {
+          "name": "total",
+          "type": "int64"
+        },
+        {
+          "name": "swap_usage",
+          "type": "int64"
+        },
+        {
+          "name": "swap_usage_peak",
+          "type": "int64"
+        }
+      ],
+      "underlying": "struct {\n\tUsage int64 `json:\"usage\" yaml:\"usage\"`\n\n\tUsagePeak int64 `json:\"usage_peak\" yaml:\"usage_peak\"`\n\n\tTotal int64 `json:\"total\" yaml:\"total\"`\n\n\tSwapUsage int64 `json:\"swap_usage\" yaml:\"swap_usage\"`\n\n\tSwapUsagePeak int64 `json:\"swap_usage_peak\" yaml:\"swap_usage_peak\"`\n}"
+    },
+    "InstanceStateNetwork": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "addresses",
+          "type": "[]InstanceStateNetworkAddress"
+        },
+        {
+          "name": "counters",
+          "type": "InstanceStateNetworkCounters"
+        },
+        {
+          "name": "hwaddr",
+          "type": "string"
+        },
+        {
+          "name": "host_name",
+          "type": "string"
+        },
+        {
+          "name": "mtu",
+          "type": "int"
+        },
+        {
+          "name": "state",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tAddresses []InstanceStateNetworkAddress `json:\"addresses\" yaml:\"addresses\"`\n\n\tCounters InstanceStateNetworkCounters `json:\"counters\" yaml:\"counters\"`\n\n\tHwaddr string `json:\"hwaddr\" yaml:\"hwaddr\"`\n\n\tHostName string `json:\"host_name\" yaml:\"host_name\"`\n\n\tMtu int `json:\"mtu\" yaml:\"mtu\"`\n\n\tState string `json:\"state\" yaml:\"state\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n}"
+    },
+    "InstanceStateNetworkAddress": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "family",
+          "type": "string"
+        },
+        {
+          "name": "address",
+          "type": "string"
+        },
+        {
+          "name": "netmask",
+          "type": "string"
+        },
+        {
+          "name": "scope",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tFamily string `json:\"family\" yaml:\"family\"`\n\n\tAddress string `json:\"address\" yaml:\"address\"`\n\n\tNetmask string `json:\"netmask\" yaml:\"netmask\"`\n\n\tScope string `json:\"scope\" yaml:\"scope\"`\n}"
+    },
+    "InstanceStateNetworkCounters": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "bytes_received",
+          "type": "int64"
+        },
+        {
+          "name": "bytes_sent",
+          "type": "int64"
+        },
+        {
+          "name": "packets_received",
+          "type": "int64"
+        },
+        {
+          "name": "packets_sent",
+          "type": "int64"
+        },
+        {
+          "name": "errors_received",
+          "type": "int64"
+        },
+        {
+          "name": "errors_sent",
+          "type": "int64"
+        },
+        {
+          "name": "packets_dropped_outbound",
+          "type": "int64"
+        },
+        {
+          "name": "packets_dropped_inbound",
+          "type": "int64"
+        }
+      ],
+      "underlying": "struct {\n\tBytesReceived int64 `json:\"bytes_received\" yaml:\"bytes_received\"`\n\n\tBytesSent int64 `json:\"bytes_sent\" yaml:\"bytes_sent\"`\n\n\tPacketsReceived int64 `json:\"packets_received\" yaml:\"packets_received\"`\n\n\tPacketsSent int64 `json:\"packets_sent\" yaml:\"packets_sent\"`\n\n\tErrorsReceived int64 `json:\"errors_received\" yaml:\"errors_received\"`\n\n\tErrorsSent int64 `json:\"errors_sent\" yaml:\"errors_sent\"`\n\n\tPacketsDroppedOutbound int64 `json:\"packets_dropped_outbound\" yaml:\"packets_dropped_outbound\"`\n\n\tPacketsDroppedInbound int64 `json:\"packets_dropped_inbound\" yaml:\"packets_dropped_inbound\"`\n}"
+    },
+    "InstanceStateOSInfo": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "os",
+          "type": "string"
+        },
+        {
+          "name": "os_version",
+          "type": "string"
+        },
+        {
+          "name": "kernel_version",
+          "type": "string"
+        },
+        {
+          "name": "hostname",
+          "type": "string"
+        },
+        {
+          "name": "fqdn",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tOS string `json:\"os\" yaml:\"os\"`\n\n\tOSVersion string `json:\"os_version\" yaml:\"os_version\"`\n\n\tKernelVersion string `json:\"kernel_version\" yaml:\"kernel_version\"`\n\n\tHostname string `json:\"hostname\" yaml:\"hostname\"`\n\n\tFQDN string `json:\"fqdn\" yaml:\"fqdn\"`\n}"
+    },
+    "InstanceStatePut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "action",
+          "type": "string"
+        },
+        {
+          "name": "timeout",
+          "type": "int"
+        },
+        {
+          "name": "force",
+          "type": "bool"
+        },
+        {
+          "name": "stateful",
+          "type": "bool"
+        }
+      ],
+      "underlying": "struct {\n\tAction string `json:\"action\" yaml:\"action\"`\n\n\tTimeout int `json:\"timeout\" yaml:\"timeout\"`\n\n\tForce bool `json:\"force\" yaml:\"force\"`\n\n\tStateful bool `json:\"stateful\" yaml:\"stateful\"`\n}"
+    },
+    "InstanceType": {
+      "kind": "alias",
+      "fields": [],
+      "underlying": "string"
+    },
+    "InstancesPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "architecture",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "devices",
+          "type": "DevicesMap"
+        },
+        {
+          "name": "ephemeral",
+          "type": "bool"
+        },
+        {
+          "name": "profiles",
+          "type": "[]string"
+        },
+        {
+          "name": "restore",
+          "type": "string"
+        },
+        {
+          "name": "disk_only",
+          "type": "bool"
+        },
+        {
+          "name": "stateful",
+          "type": "bool"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "source",
+          "type": "InstanceSource"
+        },
+        {
+          "name": "instance_type",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "InstanceType"
+        },
+        {
+          "name": "start",
+          "type": "bool"
+        }
+      ],
+      "underlying": "struct {\n\tInstancePut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tSource InstanceSource `json:\"source\" yaml:\"source\"`\n\n\tInstanceType string `json:\"instance_type\" yaml:\"instance_type\"`\n\n\tType InstanceType `json:\"type\" yaml:\"type\"`\n\n\tStart bool `json:\"start\" yaml:\"start\"`\n}"
+    },
+    "InstancesPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "state",
+          "type": "*InstanceStatePut"
+        }
+      ],
+      "underlying": "struct {\n\tState *InstanceStatePut `json:\"state\" yaml:\"state\"`\n}"
+    },
+    "MetadataConfig": {
+      "kind": "alias",
+      "fields": [],
+      "underlying": "map[MetadataConfigEntityName]map[MetadataConfigGroupName]MetadataConfigGroup"
+    },
+    "MetadataConfigEntityName": {
+      "kind": "alias",
+      "fields": [],
+      "underlying": "string"
+    },
+    "MetadataConfigGroup": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "keys",
+          "type": "[]map[string]MetadataConfigKey"
+        }
+      ],
+      "underlying": "struct {\n\tKeys []map[string]MetadataConfigKey `json:\"keys\" yaml:\"keys\"`\n}"
+    },
+    "MetadataConfigGroupName": {
+      "kind": "alias",
+      "fields": [],
+      "underlying": "string"
+    },
+    "MetadataConfigKey": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "condition",
+          "type": "string"
+        },
+        {
+          "name": "scope",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "defaultdesc",
+          "type": "string"
+        },
+        {
+          "name": "liveupdate",
+          "type": "string"
+        },
+        {
+          "name": "shortdesc",
+          "type": "string"
+        },
+        {
+          "name": "longdesc",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tCondition string `json:\"condition,omitempty\" yaml:\"condition,omitempty\"`\n\n\tScope string `json:\"scope,omitempty\" yaml:\"scope,omitempty\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tDefault string `json:\"defaultdesc,omitempty\" yaml:\"defaultdesc,omitempty\"`\n\n\tLiveUpdate string `json:\"liveupdate,omitempty\" yaml:\"liveupdate,omitempty\"`\n\n\tDescription string `json:\"shortdesc\" yaml:\"shortdesc\"`\n\n\tLongDescription string `json:\"longdesc\" yaml:\"longdesc\"`\n}"
+    },
+    "MetadataConfiguration": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "configs",
+          "type": "MetadataConfig"
+        }
+      ],
+      "underlying": "struct {\n\tConfig MetadataConfig `json:\"configs\" yaml:\"configs\"`\n}"
+    },
+    "Network": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "used_by",
+          "type": "[]string"
+        },
+        {
+          "name": "managed",
+          "type": "bool"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "locations",
+          "type": "[]string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tUsedBy []string `json:\"used_by\" yaml:\"used_by\"`\n\n\tManaged bool `json:\"managed\" yaml:\"managed\"`\n\n\tStatus string `json:\"status\" yaml:\"status\"`\n\n\tLocations []string `json:\"locations\" yaml:\"locations\"`\n\n\tProject string `json:\"project\" yaml:\"project\"`\n}"
+    },
+    "NetworkACL": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "egress",
+          "type": "[]NetworkACLRule"
+        },
+        {
+          "name": "ingress",
+          "type": "[]NetworkACLRule"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "used_by",
+          "type": "[]string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkACLPost `yaml:\",inline\"`\n\tNetworkACLPut  `yaml:\",inline\"`\n\n\tUsedBy []string `json:\"used_by\" yaml:\"used_by\"`\n\n\tProject string `json:\"project\" yaml:\"project\"`\n}"
+    },
+    "NetworkACLPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "NetworkACLPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "egress",
+          "type": "[]NetworkACLRule"
+        },
+        {
+          "name": "ingress",
+          "type": "[]NetworkACLRule"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        }
+      ],
+      "underlying": "struct {\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tEgress []NetworkACLRule `json:\"egress\" yaml:\"egress\"`\n\n\tIngress []NetworkACLRule `json:\"ingress\" yaml:\"ingress\"`\n\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n}"
+    },
+    "NetworkACLRule": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "action",
+          "type": "string"
+        },
+        {
+          "name": "source",
+          "type": "string"
+        },
+        {
+          "name": "destination",
+          "type": "string"
+        },
+        {
+          "name": "protocol",
+          "type": "string"
+        },
+        {
+          "name": "source_port",
+          "type": "string"
+        },
+        {
+          "name": "destination_port",
+          "type": "string"
+        },
+        {
+          "name": "icmp_type",
+          "type": "string"
+        },
+        {
+          "name": "icmp_code",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tAction string `json:\"action\" yaml:\"action\"`\n\n\tSource string `json:\"source,omitempty\" yaml:\"source,omitempty\"`\n\n\tDestination string `json:\"destination,omitempty\" yaml:\"destination,omitempty\"`\n\n\tProtocol string `json:\"protocol,omitempty\" yaml:\"protocol,omitempty\"`\n\n\tSourcePort string `json:\"source_port,omitempty\" yaml:\"source_port,omitempty\"`\n\n\tDestinationPort string `json:\"destination_port,omitempty\" yaml:\"destination_port,omitempty\"`\n\n\tICMPType string `json:\"icmp_type,omitempty\" yaml:\"icmp_type,omitempty\"`\n\n\tICMPCode string `json:\"icmp_code,omitempty\" yaml:\"icmp_code,omitempty\"`\n\n\tDescription string `json:\"description,omitempty\" yaml:\"description,omitempty\"`\n\n\tState string `json:\"state\" yaml:\"state\"`\n}"
+    },
+    "NetworkACLsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "egress",
+          "type": "[]NetworkACLRule"
+        },
+        {
+          "name": "ingress",
+          "type": "[]NetworkACLRule"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkACLPost `yaml:\",inline\"`\n\tNetworkACLPut  `yaml:\",inline\"`\n}"
+    },
+    "NetworkAddressSet": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "addresses",
+          "type": "[]string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "used_by",
+          "type": "[]string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkAddressSetPut  `yaml:\",inline\"`\n\tNetworkAddressSetPost `yaml:\",inline\"`\n\n\tUsedBy []string `json:\"used_by\" yaml:\"used_by\"`\n\n\tProject string `json:\"project\" yaml:\"project\"`\n}"
+    },
+    "NetworkAddressSetPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "NetworkAddressSetPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "addresses",
+          "type": "[]string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tAddresses []string `json:\"addresses\" yaml:\"addresses\"`\n\n\tConfig ConfigMap `json:\"config,omitempty\" yaml:\"config,omitempty\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n}"
+    },
+    "NetworkAddressSetsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "addresses",
+          "type": "[]string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkAddressSetPut  `yaml:\",inline\"`\n\tNetworkAddressSetPost `yaml:\",inline\"`\n}"
+    },
+    "NetworkAllocations": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "addresses",
+          "type": "string"
+        },
+        {
+          "name": "hwaddr",
+          "type": "string"
+        },
+        {
+          "name": "nat",
+          "type": "bool"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "used_by",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tAddress string `json:\"addresses\" yaml:\"addresses\"`\n\n\tHwaddr string `json:\"hwaddr\" yaml:\"hwaddr\"`\n\n\tNAT bool `json:\"nat\" yaml:\"nat\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tUsedBy string `json:\"used_by\" yaml:\"used_by\"`\n}"
+    },
+    "NetworkForward": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "ports",
+          "type": "[]NetworkForwardPort"
+        },
+        {
+          "name": "listen_address",
+          "type": "string"
+        },
+        {
+          "name": "location",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkForwardPut `yaml:\",inline\"`\n\n\tListenAddress string `json:\"listen_address\" yaml:\"listen_address\"`\n\n\tLocation string `json:\"location\" yaml:\"location\"`\n}"
+    },
+    "NetworkForwardPort": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "protocol",
+          "type": "string"
+        },
+        {
+          "name": "listen_port",
+          "type": "string"
+        },
+        {
+          "name": "target_port",
+          "type": "string"
+        },
+        {
+          "name": "target_address",
+          "type": "string"
+        },
+        {
+          "name": "snat",
+          "type": "bool"
+        }
+      ],
+      "underlying": "struct {\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tProtocol string `json:\"protocol\" yaml:\"protocol\"`\n\n\tListenPort string `json:\"listen_port\" yaml:\"listen_port\"`\n\n\tTargetPort string `json:\"target_port\" yaml:\"target_port\"`\n\n\tTargetAddress string `json:\"target_address\" yaml:\"target_address\"`\n\n\tSNAT bool `json:\"snat\" yaml:\"snat\"`\n}"
+    },
+    "NetworkForwardPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "ports",
+          "type": "[]NetworkForwardPort"
+        }
+      ],
+      "underlying": "struct {\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n\n\tPorts []NetworkForwardPort `json:\"ports\" yaml:\"ports\"`\n}"
+    },
+    "NetworkForwardsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "ports",
+          "type": "[]NetworkForwardPort"
+        },
+        {
+          "name": "listen_address",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkForwardPut `yaml:\",inline\"`\n\n\tListenAddress string `json:\"listen_address\" yaml:\"listen_address\"`\n}"
+    },
+    "NetworkIntegration": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "used_by",
+          "type": "[]string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkIntegrationPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tUsedBy []string `json:\"used_by\" yaml:\"used_by\"`\n}"
+    },
+    "NetworkIntegrationPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "NetworkIntegrationPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        }
+      ],
+      "underlying": "struct {\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n}"
+    },
+    "NetworkIntegrationsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkIntegrationPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n}"
+    },
+    "NetworkLease": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "hostname",
+          "type": "string"
+        },
+        {
+          "name": "hwaddr",
+          "type": "string"
+        },
+        {
+          "name": "address",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "location",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tHostname string `json:\"hostname\" yaml:\"hostname\"`\n\n\tHwaddr string `json:\"hwaddr\" yaml:\"hwaddr\"`\n\n\tAddress string `json:\"address\" yaml:\"address\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tLocation string `json:\"location\" yaml:\"location\"`\n}"
+    },
+    "NetworkLoadBalancer": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "backends",
+          "type": "[]NetworkLoadBalancerBackend"
+        },
+        {
+          "name": "ports",
+          "type": "[]NetworkLoadBalancerPort"
+        },
+        {
+          "name": "listen_address",
+          "type": "string"
+        },
+        {
+          "name": "location",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkLoadBalancerPut `yaml:\",inline\"`\n\n\tListenAddress string `json:\"listen_address\" yaml:\"listen_address\"`\n\n\tLocation string `json:\"location\" yaml:\"location\"`\n}"
+    },
+    "NetworkLoadBalancerBackend": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "target_port",
+          "type": "string"
+        },
+        {
+          "name": "target_address",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tTargetPort string `json:\"target_port\" yaml:\"target_port\"`\n\n\tTargetAddress string `json:\"target_address\" yaml:\"target_address\"`\n}"
+    },
+    "NetworkLoadBalancerPort": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "protocol",
+          "type": "string"
+        },
+        {
+          "name": "listen_port",
+          "type": "string"
+        },
+        {
+          "name": "target_backend",
+          "type": "[]string"
+        }
+      ],
+      "underlying": "struct {\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tProtocol string `json:\"protocol\" yaml:\"protocol\"`\n\n\tListenPort string `json:\"listen_port\" yaml:\"listen_port\"`\n\n\tTargetBackend []string `json:\"target_backend\" yaml:\"target_backend\"`\n}"
+    },
+    "NetworkLoadBalancerPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "backends",
+          "type": "[]NetworkLoadBalancerBackend"
+        },
+        {
+          "name": "ports",
+          "type": "[]NetworkLoadBalancerPort"
+        }
+      ],
+      "underlying": "struct {\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n\n\tBackends []NetworkLoadBalancerBackend `json:\"backends\" yaml:\"backends\"`\n\n\tPorts []NetworkLoadBalancerPort `json:\"ports\" yaml:\"ports\"`\n}"
+    },
+    "NetworkLoadBalancerState": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "backend_health",
+          "type": "map[string]NetworkLoadBalancerStateBackendHealth"
+        }
+      ],
+      "underlying": "struct {\n\tBackendHealth map[string]NetworkLoadBalancerStateBackendHealth `json:\"backend_health\" yaml:\"backend_health\"`\n}"
+    },
+    "NetworkLoadBalancerStateBackendHealth": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "address",
+          "type": "string"
+        },
+        {
+          "name": "ports",
+          "type": "[]NetworkLoadBalancerStateBackendHealthPort"
+        }
+      ],
+      "underlying": "struct {\n\tAddress string                                      `json:\"address\" yaml:\"address\"`\n\tPorts   []NetworkLoadBalancerStateBackendHealthPort `json:\"ports\" yaml:\"ports\"`\n}"
+    },
+    "NetworkLoadBalancerStateBackendHealthPort": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "protocol",
+          "type": "string"
+        },
+        {
+          "name": "port",
+          "type": "int"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tProtocol string `json:\"protocol\" yaml:\"protocol\"`\n\tPort     int    `json:\"port\" yaml:\"port\"`\n\tStatus   string `json:\"status\" yaml:\"status\"`\n}"
+    },
+    "NetworkLoadBalancersPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "backends",
+          "type": "[]NetworkLoadBalancerBackend"
+        },
+        {
+          "name": "ports",
+          "type": "[]NetworkLoadBalancerPort"
+        },
+        {
+          "name": "listen_address",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkLoadBalancerPut `yaml:\",inline\"`\n\n\tListenAddress string `json:\"listen_address\" yaml:\"listen_address\"`\n}"
+    },
+    "NetworkPeer": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "target_project",
+          "type": "string"
+        },
+        {
+          "name": "target_network",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "used_by",
+          "type": "[]string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "target_integration",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkPeerPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tTargetProject string `json:\"target_project,omitempty\" yaml:\"target_project,omitempty\"`\n\n\tTargetNetwork string `json:\"target_network,omitempty\" yaml:\"target_network,omitempty\"`\n\n\tStatus string `json:\"status\" yaml:\"status\"`\n\n\tUsedBy []string `json:\"used_by\" yaml:\"used_by\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tTargetIntegration string `json:\"target_integration,omitempty\" yaml:\"target_integration,omitempty\"`\n}"
+    },
+    "NetworkPeerPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        }
+      ],
+      "underlying": "struct {\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n}"
+    },
+    "NetworkPeersPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "target_project",
+          "type": "string"
+        },
+        {
+          "name": "target_network",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "target_integration",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkPeerPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tTargetProject string `json:\"target_project,omitempty\" yaml:\"target_project,omitempty\"`\n\n\tTargetNetwork string `json:\"target_network,omitempty\" yaml:\"target_network,omitempty\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tTargetIntegration string `json:\"target_integration,omitempty\" yaml:\"target_integration,omitempty\"`\n}"
+    },
+    "NetworkPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "NetworkPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n}"
+    },
+    "NetworkState": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "addresses",
+          "type": "[]NetworkStateAddress"
+        },
+        {
+          "name": "counters",
+          "type": "*NetworkStateCounters"
+        },
+        {
+          "name": "hwaddr",
+          "type": "string"
+        },
+        {
+          "name": "mtu",
+          "type": "int"
+        },
+        {
+          "name": "state",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "bond",
+          "type": "*NetworkStateBond"
+        },
+        {
+          "name": "bridge",
+          "type": "*NetworkStateBridge"
+        },
+        {
+          "name": "vlan",
+          "type": "*NetworkStateVLAN"
+        },
+        {
+          "name": "ovn",
+          "type": "*NetworkStateOVN"
+        }
+      ],
+      "underlying": "struct {\n\tAddresses []NetworkStateAddress `json:\"addresses\" yaml:\"addresses\"`\n\n\tCounters *NetworkStateCounters `json:\"counters\" yaml:\"counters\"`\n\n\tHwaddr string `json:\"hwaddr\" yaml:\"hwaddr\"`\n\n\tMtu int `json:\"mtu\" yaml:\"mtu\"`\n\n\tState string `json:\"state\" yaml:\"state\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tBond *NetworkStateBond `json:\"bond\" yaml:\"bond\"`\n\n\tBridge *NetworkStateBridge `json:\"bridge\" yaml:\"bridge\"`\n\n\tVLAN *NetworkStateVLAN `json:\"vlan\" yaml:\"vlan\"`\n\n\tOVN *NetworkStateOVN `json:\"ovn\" yaml:\"ovn\"`\n}"
+    },
+    "NetworkStateAddress": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "family",
+          "type": "string"
+        },
+        {
+          "name": "address",
+          "type": "string"
+        },
+        {
+          "name": "netmask",
+          "type": "string"
+        },
+        {
+          "name": "scope",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tFamily string `json:\"family\" yaml:\"family\"`\n\n\tAddress string `json:\"address\" yaml:\"address\"`\n\n\tNetmask string `json:\"netmask\" yaml:\"netmask\"`\n\n\tScope string `json:\"scope\" yaml:\"scope\"`\n}"
+    },
+    "NetworkStateBond": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "mode",
+          "type": "string"
+        },
+        {
+          "name": "transmit_policy",
+          "type": "string"
+        },
+        {
+          "name": "up_delay",
+          "type": "uint64"
+        },
+        {
+          "name": "down_delay",
+          "type": "uint64"
+        },
+        {
+          "name": "mii_frequency",
+          "type": "uint64"
+        },
+        {
+          "name": "mii_state",
+          "type": "string"
+        },
+        {
+          "name": "lower_devices",
+          "type": "[]string"
+        }
+      ],
+      "underlying": "struct {\n\tMode string `json:\"mode\" yaml:\"mode\"`\n\n\tTransmitPolicy string `json:\"transmit_policy\" yaml:\"transmit_policy\"`\n\n\tUpDelay uint64 `json:\"up_delay\" yaml:\"up_delay\"`\n\n\tDownDelay uint64 `json:\"down_delay\" yaml:\"down_delay\"`\n\n\tMIIFrequency uint64 `json:\"mii_frequency\" yaml:\"mii_frequency\"`\n\n\tMIIState string `json:\"mii_state\" yaml:\"mii_state\"`\n\n\tLowerDevices []string `json:\"lower_devices\" yaml:\"lower_devices\"`\n}"
+    },
+    "NetworkStateBridge": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string"
+        },
+        {
+          "name": "stp",
+          "type": "bool"
+        },
+        {
+          "name": "forward_delay",
+          "type": "uint64"
+        },
+        {
+          "name": "vlan_default",
+          "type": "uint64"
+        },
+        {
+          "name": "vlan_filtering",
+          "type": "bool"
+        },
+        {
+          "name": "upper_devices",
+          "type": "[]string"
+        }
+      ],
+      "underlying": "struct {\n\tID string `json:\"id\" yaml:\"id\"`\n\n\tSTP bool `json:\"stp\" yaml:\"stp\"`\n\n\tForwardDelay uint64 `json:\"forward_delay\" yaml:\"forward_delay\"`\n\n\tVLANDefault uint64 `json:\"vlan_default\" yaml:\"vlan_default\"`\n\n\tVLANFiltering bool `json:\"vlan_filtering\" yaml:\"vlan_filtering\"`\n\n\tUpperDevices []string `json:\"upper_devices\" yaml:\"upper_devices\"`\n}"
+    },
+    "NetworkStateCounters": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "bytes_received",
+          "type": "int64"
+        },
+        {
+          "name": "bytes_sent",
+          "type": "int64"
+        },
+        {
+          "name": "packets_received",
+          "type": "int64"
+        },
+        {
+          "name": "packets_sent",
+          "type": "int64"
+        }
+      ],
+      "underlying": "struct {\n\tBytesReceived int64 `json:\"bytes_received\" yaml:\"bytes_received\"`\n\n\tBytesSent int64 `json:\"bytes_sent\" yaml:\"bytes_sent\"`\n\n\tPacketsReceived int64 `json:\"packets_received\" yaml:\"packets_received\"`\n\n\tPacketsSent int64 `json:\"packets_sent\" yaml:\"packets_sent\"`\n}"
+    },
+    "NetworkStateOVN": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "chassis",
+          "type": "string"
+        },
+        {
+          "name": "logical_router",
+          "type": "string"
+        },
+        {
+          "name": "logical_switch",
+          "type": "string"
+        },
+        {
+          "name": "uplink_ipv4",
+          "type": "string"
+        },
+        {
+          "name": "uplink_ipv6",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tChassis string `json:\"chassis\" yaml:\"chassis\"`\n\n\tLogicalRouter string `json:\"logical_router\" yaml:\"logical_router\"`\n\n\tLogicalSwitch string `json:\"logical_switch\" yaml:\"logical_switch\"`\n\n\tUplinkIPv4 string `json:\"uplink_ipv4\" yaml:\"uplink_ipv4\"`\n\n\tUplinkIPv6 string `json:\"uplink_ipv6\" yaml:\"uplink_ipv6\"`\n}"
+    },
+    "NetworkStateVLAN": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "lower_device",
+          "type": "string"
+        },
+        {
+          "name": "vid",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tLowerDevice string `json:\"lower_device\" yaml:\"lower_device\"`\n\n\tVID uint64 `json:\"vid\" yaml:\"vid\"`\n}"
+    },
+    "NetworkZone": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "used_by",
+          "type": "[]string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkZonePut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tUsedBy []string `json:\"used_by\" yaml:\"used_by\"`\n\n\tProject string `json:\"project\" yaml:\"project\"`\n}"
+    },
+    "NetworkZonePut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        }
+      ],
+      "underlying": "struct {\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n}"
+    },
+    "NetworkZoneRecord": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "entries",
+          "type": "[]NetworkZoneRecordEntry"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkZoneRecordPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "NetworkZoneRecordEntry": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "ttl",
+          "type": "uint64"
+        },
+        {
+          "name": "value",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tTTL uint64 `json:\"ttl,omitempty\" yaml:\"ttl,omitempty\"`\n\n\tValue string `json:\"value\" yaml:\"value\"`\n}"
+    },
+    "NetworkZoneRecordPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "entries",
+          "type": "[]NetworkZoneRecordEntry"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        }
+      ],
+      "underlying": "struct {\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tEntries []NetworkZoneRecordEntry `json:\"entries\" yaml:\"entries\"`\n\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n}"
+    },
+    "NetworkZoneRecordsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "entries",
+          "type": "[]NetworkZoneRecordEntry"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkZoneRecordPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "NetworkZonesPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkZonePut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "NetworksPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tNetworkPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n}"
+    },
+    "Operation": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string"
+        },
+        {
+          "name": "class",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "updated_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "status_code",
+          "type": "StatusCode"
+        },
+        {
+          "name": "resources",
+          "type": "map[string][]string"
+        },
+        {
+          "name": "metadata",
+          "type": "map[string]any"
+        },
+        {
+          "name": "may_cancel",
+          "type": "bool"
+        },
+        {
+          "name": "err",
+          "type": "string"
+        },
+        {
+          "name": "location",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tID string `json:\"id\" yaml:\"id\"`\n\n\tClass string `json:\"class\" yaml:\"class\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tCreatedAt time.Time `json:\"created_at\" yaml:\"created_at\"`\n\n\tUpdatedAt time.Time `json:\"updated_at\" yaml:\"updated_at\"`\n\n\tStatus string `json:\"status\" yaml:\"status\"`\n\n\tStatusCode StatusCode `json:\"status_code\" yaml:\"status_code\"`\n\n\tResources map[string][]string `json:\"resources\" yaml:\"resources\"`\n\n\tMetadata map[string]any `json:\"metadata\" yaml:\"metadata\"`\n\n\tMayCancel bool `json:\"may_cancel\" yaml:\"may_cancel\"`\n\n\tErr string `json:\"err\" yaml:\"err\"`\n\n\tLocation string `json:\"location\" yaml:\"location\"`\n}"
+    },
+    "Profile": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "devices",
+          "type": "DevicesMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "used_by",
+          "type": "[]string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tProfilePut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\" db:\"primary=yes\"`\n\n\tUsedBy []string `json:\"used_by\" yaml:\"used_by\"`\n\n\tProject string `json:\"project\" yaml:\"project\"`\n}"
+    },
+    "ProfilePost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "ProfilePut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "devices",
+          "type": "DevicesMap"
+        }
+      ],
+      "underlying": "struct {\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tDevices DevicesMap `json:\"devices\" yaml:\"devices\"`\n}"
+    },
+    "ProfilesPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "devices",
+          "type": "DevicesMap"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tProfilePut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\" db:\"primary=yes\"`\n}"
+    },
+    "Project": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "used_by",
+          "type": "[]string"
+        }
+      ],
+      "underlying": "struct {\n\tProjectPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tUsedBy []string `json:\"used_by\" yaml:\"used_by\"`\n}"
+    },
+    "ProjectPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "ProjectPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n}"
+    },
+    "ProjectState": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "resources",
+          "type": "map[string]ProjectStateResource"
+        }
+      ],
+      "underlying": "struct {\n\tResources map[string]ProjectStateResource `json:\"resources\" yaml:\"resources\"`\n}"
+    },
+    "ProjectStateResource": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "Limit",
+          "type": "int64"
+        },
+        {
+          "name": "Usage",
+          "type": "int64"
+        }
+      ],
+      "underlying": "struct {\n\tLimit int64\n\n\tUsage int64\n}"
+    },
+    "ProjectsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tProjectPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "Resources": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "cpu",
+          "type": "ResourcesCPU"
+        },
+        {
+          "name": "memory",
+          "type": "ResourcesMemory"
+        },
+        {
+          "name": "gpu",
+          "type": "ResourcesGPU"
+        },
+        {
+          "name": "network",
+          "type": "ResourcesNetwork"
+        },
+        {
+          "name": "storage",
+          "type": "ResourcesStorage"
+        },
+        {
+          "name": "usb",
+          "type": "ResourcesUSB"
+        },
+        {
+          "name": "pci",
+          "type": "ResourcesPCI"
+        },
+        {
+          "name": "system",
+          "type": "ResourcesSystem"
+        },
+        {
+          "name": "load",
+          "type": "ResourcesLoad"
+        },
+        {
+          "name": "serial",
+          "type": "ResourcesSerial"
+        }
+      ],
+      "underlying": "struct {\n\tCPU ResourcesCPU `json:\"cpu\" yaml:\"cpu\"`\n\n\tMemory ResourcesMemory `json:\"memory\" yaml:\"memory\"`\n\n\tGPU ResourcesGPU `json:\"gpu\" yaml:\"gpu\"`\n\n\tNetwork ResourcesNetwork `json:\"network\" yaml:\"network\"`\n\n\tStorage ResourcesStorage `json:\"storage\" yaml:\"storage\"`\n\n\tUSB ResourcesUSB `json:\"usb\" yaml:\"usb\"`\n\n\tPCI ResourcesPCI `json:\"pci\" yaml:\"pci\"`\n\n\tSystem ResourcesSystem `json:\"system\" yaml:\"system\"`\n\n\tLoad ResourcesLoad `json:\"load\" yaml:\"load\"`\n\n\tSerial ResourcesSerial `json:\"serial\" yaml:\"serial\"`\n}"
+    },
+    "ResourcesCPU": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "architecture",
+          "type": "string"
+        },
+        {
+          "name": "sockets",
+          "type": "[]ResourcesCPUSocket"
+        },
+        {
+          "name": "total",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tArchitecture string `json:\"architecture\" yaml:\"architecture\"`\n\n\tSockets []ResourcesCPUSocket `json:\"sockets\" yaml:\"sockets\"`\n\n\tTotal uint64 `json:\"total\" yaml:\"total\"`\n}"
+    },
+    "ResourcesCPUAddressSizes": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "physical_bits",
+          "type": "uint64"
+        },
+        {
+          "name": "virtual_bits",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tPhysicalBits uint64 `json:\"physical_bits\" yaml:\"physical_bits\"`\n\tVirtualBits  uint64 `json:\"virtual_bits\" yaml:\"virtual_bits\"`\n}"
+    },
+    "ResourcesCPUCache": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "level",
+          "type": "uint64"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "size",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tLevel uint64 `json:\"level\" yaml:\"level\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tSize uint64 `json:\"size\" yaml:\"size\"`\n}"
+    },
+    "ResourcesCPUCore": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "core",
+          "type": "uint64"
+        },
+        {
+          "name": "die",
+          "type": "uint64"
+        },
+        {
+          "name": "threads",
+          "type": "[]ResourcesCPUThread"
+        },
+        {
+          "name": "frequency",
+          "type": "uint64"
+        },
+        {
+          "name": "flags",
+          "type": "[]string"
+        }
+      ],
+      "underlying": "struct {\n\tCore uint64 `json:\"core\" yaml:\"core\"`\n\n\tDie uint64 `json:\"die\" yaml:\"die\"`\n\n\tThreads []ResourcesCPUThread `json:\"threads\" yaml:\"threads\"`\n\n\tFrequency uint64 `json:\"frequency,omitempty\" yaml:\"frequency,omitempty\"`\n\n\tFlags []string `json:\"flags\" yaml:\"flags\"`\n}"
+    },
+    "ResourcesCPUSocket": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "vendor",
+          "type": "string"
+        },
+        {
+          "name": "socket",
+          "type": "uint64"
+        },
+        {
+          "name": "cache",
+          "type": "[]ResourcesCPUCache"
+        },
+        {
+          "name": "cores",
+          "type": "[]ResourcesCPUCore"
+        },
+        {
+          "name": "frequency",
+          "type": "uint64"
+        },
+        {
+          "name": "frequency_minimum",
+          "type": "uint64"
+        },
+        {
+          "name": "frequency_turbo",
+          "type": "uint64"
+        },
+        {
+          "name": "address_sizes",
+          "type": "*ResourcesCPUAddressSizes"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name,omitempty\" yaml:\"name,omitempty\"`\n\n\tVendor string `json:\"vendor,omitempty\" yaml:\"vendor,omitempty\"`\n\n\tSocket uint64 `json:\"socket\" yaml:\"socket\"`\n\n\tCache []ResourcesCPUCache `json:\"cache,omitempty\" yaml:\"cache,omitempty\"`\n\n\tCores []ResourcesCPUCore `json:\"cores\" yaml:\"cores\"`\n\n\tFrequency uint64 `json:\"frequency,omitempty\" yaml:\"frequency,omitempty\"`\n\n\tFrequencyMinimum uint64 `json:\"frequency_minimum,omitempty\" yaml:\"frequency_minimum,omitempty\"`\n\n\tFrequencyTurbo uint64 `json:\"frequency_turbo,omitempty\" yaml:\"frequency_turbo,omitempty\"`\n\n\tAddressSizes *ResourcesCPUAddressSizes `json:\"address_sizes,omitempty\" yaml:\"address_sizes,omitempty\"`\n}"
+    },
+    "ResourcesCPUThread": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64"
+        },
+        {
+          "name": "numa_node",
+          "type": "uint64"
+        },
+        {
+          "name": "thread",
+          "type": "uint64"
+        },
+        {
+          "name": "online",
+          "type": "bool"
+        },
+        {
+          "name": "isolated",
+          "type": "bool"
+        }
+      ],
+      "underlying": "struct {\n\tID int64 `json:\"id\" yaml:\"id\"`\n\n\tNUMANode uint64 `json:\"numa_node\" yaml:\"numa_node\"`\n\n\tThread uint64 `json:\"thread\" yaml:\"thread\"`\n\n\tOnline bool `json:\"online\" yaml:\"online\"`\n\n\tIsolated bool `json:\"isolated\" yaml:\"isolated\"`\n}"
+    },
+    "ResourcesGPU": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "cards",
+          "type": "[]ResourcesGPUCard"
+        },
+        {
+          "name": "total",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tCards []ResourcesGPUCard `json:\"cards\" yaml:\"cards\"`\n\n\tTotal uint64 `json:\"total\" yaml:\"total\"`\n}"
+    },
+    "ResourcesGPUCard": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "driver",
+          "type": "string"
+        },
+        {
+          "name": "driver_version",
+          "type": "string"
+        },
+        {
+          "name": "drm",
+          "type": "*ResourcesGPUCardDRM"
+        },
+        {
+          "name": "sriov",
+          "type": "*ResourcesGPUCardSRIOV"
+        },
+        {
+          "name": "nvidia",
+          "type": "*ResourcesGPUCardNvidia"
+        },
+        {
+          "name": "mdev",
+          "type": "map[string]ResourcesGPUCardMdev"
+        },
+        {
+          "name": "numa_node",
+          "type": "uint64"
+        },
+        {
+          "name": "pci_address",
+          "type": "string"
+        },
+        {
+          "name": "vendor",
+          "type": "string"
+        },
+        {
+          "name": "vendor_id",
+          "type": "string"
+        },
+        {
+          "name": "product",
+          "type": "string"
+        },
+        {
+          "name": "product_id",
+          "type": "string"
+        },
+        {
+          "name": "usb_address",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tDriver string `json:\"driver,omitempty\" yaml:\"driver,omitempty\"`\n\n\tDriverVersion string `json:\"driver_version,omitempty\" yaml:\"driver_version,omitempty\"`\n\n\tDRM *ResourcesGPUCardDRM `json:\"drm,omitempty\" yaml:\"drm,omitempty\"`\n\n\tSRIOV *ResourcesGPUCardSRIOV `json:\"sriov,omitempty\" yaml:\"sriov,omitempty\"`\n\n\tNvidia *ResourcesGPUCardNvidia `json:\"nvidia,omitempty\" yaml:\"nvidia,omitempty\"`\n\n\tMdev map[string]ResourcesGPUCardMdev `json:\"mdev,omitempty\" yaml:\"mdev,omitempty\"`\n\n\tNUMANode uint64 `json:\"numa_node\" yaml:\"numa_node\"`\n\n\tPCIAddress string `json:\"pci_address,omitempty\" yaml:\"pci_address,omitempty\"`\n\n\tVendor string `json:\"vendor,omitempty\" yaml:\"vendor,omitempty\"`\n\n\tVendorID string `json:\"vendor_id,omitempty\" yaml:\"vendor_id,omitempty\"`\n\n\tProduct string `json:\"product,omitempty\" yaml:\"product,omitempty\"`\n\n\tProductID string `json:\"product_id,omitempty\" yaml:\"product_id,omitempty\"`\n\n\tUSBAddress string `json:\"usb_address,omitempty\" yaml:\"usb_address,omitempty\"`\n}"
+    },
+    "ResourcesGPUCardDRM": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "card_name",
+          "type": "string"
+        },
+        {
+          "name": "card_device",
+          "type": "string"
+        },
+        {
+          "name": "control_name",
+          "type": "string"
+        },
+        {
+          "name": "control_device",
+          "type": "string"
+        },
+        {
+          "name": "render_name",
+          "type": "string"
+        },
+        {
+          "name": "render_device",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tID uint64 `json:\"id\" yaml:\"id\"`\n\n\tCardName string `json:\"card_name\" yaml:\"card_name\"`\n\n\tCardDevice string `json:\"card_device\" yaml:\"card_device\"`\n\n\tControlName string `json:\"control_name,omitempty\" yaml:\"control_name,omitempty\"`\n\n\tControlDevice string `json:\"control_device,omitempty\" yaml:\"control_device,omitempty\"`\n\n\tRenderName string `json:\"render_name,omitempty\" yaml:\"render_name,omitempty\"`\n\n\tRenderDevice string `json:\"render_device,omitempty\" yaml:\"render_device,omitempty\"`\n}"
+    },
+    "ResourcesGPUCardMdev": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "api",
+          "type": "string"
+        },
+        {
+          "name": "available",
+          "type": "uint64"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "devices",
+          "type": "[]string"
+        }
+      ],
+      "underlying": "struct {\n\tAPI string `json:\"api\" yaml:\"api\"`\n\n\tAvailable uint64 `json:\"available\" yaml:\"available\"`\n\n\tName string `json:\"name,omitempty\" yaml:\"name,omitempty\"`\n\n\tDescription string `json:\"description,omitempty\" yaml:\"description,omitempty\"`\n\n\tDevices []string `json:\"devices\" yaml:\"devices\"`\n}"
+    },
+    "ResourcesGPUCardNvidia": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "cuda_version",
+          "type": "string"
+        },
+        {
+          "name": "nvrm_version",
+          "type": "string"
+        },
+        {
+          "name": "brand",
+          "type": "string"
+        },
+        {
+          "name": "model",
+          "type": "string"
+        },
+        {
+          "name": "uuid",
+          "type": "string"
+        },
+        {
+          "name": "architecture",
+          "type": "string"
+        },
+        {
+          "name": "card_name",
+          "type": "string"
+        },
+        {
+          "name": "card_device",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tCUDAVersion string `json:\"cuda_version,omitempty\" yaml:\"cuda_version,omitempty\"`\n\n\tNVRMVersion string `json:\"nvrm_version,omitempty\" yaml:\"nvrm_version,omitempty\"`\n\n\tBrand string `json:\"brand\" yaml:\"brand\"`\n\n\tModel string `json:\"model\" yaml:\"model\"`\n\n\tUUID string `json:\"uuid,omitempty\" yaml:\"uuid,omitempty\"`\n\n\tArchitecture string `json:\"architecture,omitempty\" yaml:\"architecture,omitempty\"`\n\n\tCardName string `json:\"card_name\" yaml:\"card_name\"`\n\n\tCardDevice string `json:\"card_device\" yaml:\"card_device\"`\n}"
+    },
+    "ResourcesGPUCardSRIOV": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "current_vfs",
+          "type": "uint64"
+        },
+        {
+          "name": "maximum_vfs",
+          "type": "uint64"
+        },
+        {
+          "name": "vfs",
+          "type": "[]ResourcesGPUCard"
+        }
+      ],
+      "underlying": "struct {\n\tCurrentVFs uint64 `json:\"current_vfs\" yaml:\"current_vfs\"`\n\n\tMaximumVFs uint64 `json:\"maximum_vfs\" yaml:\"maximum_vfs\"`\n\n\tVFs []ResourcesGPUCard `json:\"vfs\" yaml:\"vfs\"`\n}"
+    },
+    "ResourcesLoad": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "Average1Min",
+          "type": "float64"
+        },
+        {
+          "name": "Average5Min",
+          "type": "float64"
+        },
+        {
+          "name": "Average10Min",
+          "type": "float64"
+        },
+        {
+          "name": "Processes",
+          "type": "int"
+        }
+      ],
+      "underlying": "struct {\n\tAverage1Min float64\n\n\tAverage5Min float64\n\n\tAverage10Min float64\n\n\tProcesses int\n}"
+    },
+    "ResourcesMemory": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "nodes",
+          "type": "[]ResourcesMemoryNode"
+        },
+        {
+          "name": "hugepages_total",
+          "type": "uint64"
+        },
+        {
+          "name": "hugepages_used",
+          "type": "uint64"
+        },
+        {
+          "name": "hugepages_size",
+          "type": "uint64"
+        },
+        {
+          "name": "used",
+          "type": "uint64"
+        },
+        {
+          "name": "total",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tNodes []ResourcesMemoryNode `json:\"nodes,omitempty\" yaml:\"nodes,omitempty\"`\n\n\tHugepagesTotal uint64 `json:\"hugepages_total\" yaml:\"hugepages_total\"`\n\n\tHugepagesUsed uint64 `json:\"hugepages_used\" yaml:\"hugepages_used\"`\n\n\tHugepagesSize uint64 `json:\"hugepages_size\" yaml:\"hugepages_size\"`\n\n\tUsed uint64 `json:\"used\" yaml:\"used\"`\n\n\tTotal uint64 `json:\"total\" yaml:\"total\"`\n}"
+    },
+    "ResourcesMemoryNode": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "numa_node",
+          "type": "uint64"
+        },
+        {
+          "name": "hugepages_used",
+          "type": "uint64"
+        },
+        {
+          "name": "hugepages_total",
+          "type": "uint64"
+        },
+        {
+          "name": "used",
+          "type": "uint64"
+        },
+        {
+          "name": "total",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tNUMANode uint64 `json:\"numa_node\" yaml:\"numa_node\"`\n\n\tHugepagesUsed uint64 `json:\"hugepages_used\" yaml:\"hugepages_used\"`\n\n\tHugepagesTotal uint64 `json:\"hugepages_total\" yaml:\"hugepages_total\"`\n\n\tUsed uint64 `json:\"used\" yaml:\"used\"`\n\n\tTotal uint64 `json:\"total\" yaml:\"total\"`\n}"
+    },
+    "ResourcesNetwork": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "cards",
+          "type": "[]ResourcesNetworkCard"
+        },
+        {
+          "name": "total",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tCards []ResourcesNetworkCard `json:\"cards\" yaml:\"cards\"`\n\n\tTotal uint64 `json:\"total\" yaml:\"total\"`\n}"
+    },
+    "ResourcesNetworkCard": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "driver",
+          "type": "string"
+        },
+        {
+          "name": "driver_version",
+          "type": "string"
+        },
+        {
+          "name": "ports",
+          "type": "[]ResourcesNetworkCardPort"
+        },
+        {
+          "name": "sriov",
+          "type": "*ResourcesNetworkCardSRIOV"
+        },
+        {
+          "name": "vdpa",
+          "type": "*ResourcesNetworkCardVDPA"
+        },
+        {
+          "name": "numa_node",
+          "type": "uint64"
+        },
+        {
+          "name": "pci_address",
+          "type": "string"
+        },
+        {
+          "name": "vendor",
+          "type": "string"
+        },
+        {
+          "name": "vendor_id",
+          "type": "string"
+        },
+        {
+          "name": "product",
+          "type": "string"
+        },
+        {
+          "name": "product_id",
+          "type": "string"
+        },
+        {
+          "name": "firmware_version",
+          "type": "string"
+        },
+        {
+          "name": "usb_address",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tDriver string `json:\"driver,omitempty\" yaml:\"driver,omitempty\"`\n\n\tDriverVersion string `json:\"driver_version,omitempty\" yaml:\"driver_version,omitempty\"`\n\n\tPorts []ResourcesNetworkCardPort `json:\"ports,omitempty\" yaml:\"ports,omitempty\"`\n\n\tSRIOV *ResourcesNetworkCardSRIOV `json:\"sriov,omitempty\" yaml:\"sriov,omitempty\"`\n\n\tVDPA *ResourcesNetworkCardVDPA `json:\"vdpa,omitempty\" yaml:\"vdpa,omitempty\"`\n\n\tNUMANode uint64 `json:\"numa_node\" yaml:\"numa_node\"`\n\n\tPCIAddress string `json:\"pci_address,omitempty\" yaml:\"pci_address,omitempty\"`\n\n\tVendor string `json:\"vendor,omitempty\" yaml:\"vendor,omitempty\"`\n\n\tVendorID string `json:\"vendor_id,omitempty\" yaml:\"vendor_id,omitempty\"`\n\n\tProduct string `json:\"product,omitempty\" yaml:\"product,omitempty\"`\n\n\tProductID string `json:\"product_id,omitempty\" yaml:\"product_id,omitempty\"`\n\n\tFirmwareVersion string `json:\"firmware_version,omitempty\" yaml:\"firmware_version,omitempty\"`\n\n\tUSBAddress string `json:\"usb_address,omitempty\" yaml:\"usb_address,omitempty\"`\n}"
+    },
+    "ResourcesNetworkCardPort": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string"
+        },
+        {
+          "name": "address",
+          "type": "string"
+        },
+        {
+          "name": "port",
+          "type": "uint64"
+        },
+        {
+          "name": "protocol",
+          "type": "string"
+        },
+        {
+          "name": "supported_modes",
+          "type": "[]string"
+        },
+        {
+          "name": "supported_ports",
+          "type": "[]string"
+        },
+        {
+          "name": "port_type",
+          "type": "string"
+        },
+        {
+          "name": "transceiver_type",
+          "type": "string"
+        },
+        {
+          "name": "auto_negotiation",
+          "type": "bool"
+        },
+        {
+          "name": "link_detected",
+          "type": "bool"
+        },
+        {
+          "name": "link_speed",
+          "type": "uint64"
+        },
+        {
+          "name": "link_duplex",
+          "type": "string"
+        },
+        {
+          "name": "infiniband",
+          "type": "*ResourcesNetworkCardPortInfiniband"
+        }
+      ],
+      "underlying": "struct {\n\tID string `json:\"id\" yaml:\"id\"`\n\n\tAddress string `json:\"address,omitempty\" yaml:\"address,omitempty\"`\n\n\tPort uint64 `json:\"port\" yaml:\"port\"`\n\n\tProtocol string `json:\"protocol\" yaml:\"protocol\"`\n\n\tSupportedModes []string `json:\"supported_modes,omitempty\" yaml:\"supported_modes,omitempty\"`\n\n\tSupportedPorts []string `json:\"supported_ports,omitempty\" yaml:\"supported_ports,omitempty\"`\n\n\tPortType string `json:\"port_type,omitempty\" yaml:\"port_type,omitempty\"`\n\n\tTransceiverType string `json:\"transceiver_type,omitempty\" yaml:\"transceiver_type,omitempty\"`\n\n\tAutoNegotiation bool `json:\"auto_negotiation\" yaml:\"auto_negotiation\"`\n\n\tLinkDetected bool `json:\"link_detected\" yaml:\"link_detected\"`\n\n\tLinkSpeed uint64 `json:\"link_speed,omitempty\" yaml:\"link_speed,omitempty\"`\n\n\tLinkDuplex string `json:\"link_duplex,omitempty\" yaml:\"link_duplex,omitempty\"`\n\n\tInfiniband *ResourcesNetworkCardPortInfiniband `json:\"infiniband,omitempty\" yaml:\"infiniband,omitempty\"`\n}"
+    },
+    "ResourcesNetworkCardPortInfiniband": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "issm_name",
+          "type": "string"
+        },
+        {
+          "name": "issm_device",
+          "type": "string"
+        },
+        {
+          "name": "mad_name",
+          "type": "string"
+        },
+        {
+          "name": "mad_device",
+          "type": "string"
+        },
+        {
+          "name": "verb_name",
+          "type": "string"
+        },
+        {
+          "name": "verb_device",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tIsSMName string `json:\"issm_name,omitempty\" yaml:\"issm_name,omitempty\"`\n\n\tIsSMDevice string `json:\"issm_device,omitempty\" yaml:\"issm_device,omitempty\"`\n\n\tMADName string `json:\"mad_name,omitempty\" yaml:\"mad_name,omitempty\"`\n\n\tMADDevice string `json:\"mad_device,omitempty\" yaml:\"mad_device,omitempty\"`\n\n\tVerbName string `json:\"verb_name,omitempty\" yaml:\"verb_name,omitempty\"`\n\n\tVerbDevice string `json:\"verb_device,omitempty\" yaml:\"verb_device,omitempty\"`\n}"
+    },
+    "ResourcesNetworkCardSRIOV": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "current_vfs",
+          "type": "uint64"
+        },
+        {
+          "name": "maximum_vfs",
+          "type": "uint64"
+        },
+        {
+          "name": "vfs",
+          "type": "[]ResourcesNetworkCard"
+        }
+      ],
+      "underlying": "struct {\n\tCurrentVFs uint64 `json:\"current_vfs\" yaml:\"current_vfs\"`\n\n\tMaximumVFs uint64 `json:\"maximum_vfs\" yaml:\"maximum_vfs\"`\n\n\tVFs []ResourcesNetworkCard `json:\"vfs\" yaml:\"vfs\"`\n}"
+    },
+    "ResourcesNetworkCardVDPA": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "device",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tDevice string `json:\"device\" yaml:\"device\"`\n}"
+    },
+    "ResourcesPCI": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "devices",
+          "type": "[]ResourcesPCIDevice"
+        },
+        {
+          "name": "total",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tDevices []ResourcesPCIDevice `json:\"devices\" yaml:\"devices\"`\n\n\tTotal uint64 `json:\"total\" yaml:\"total\"`\n}"
+    },
+    "ResourcesPCIDevice": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "driver",
+          "type": "string"
+        },
+        {
+          "name": "driver_version",
+          "type": "string"
+        },
+        {
+          "name": "numa_node",
+          "type": "uint64"
+        },
+        {
+          "name": "pci_address",
+          "type": "string"
+        },
+        {
+          "name": "vendor",
+          "type": "string"
+        },
+        {
+          "name": "vendor_id",
+          "type": "string"
+        },
+        {
+          "name": "product",
+          "type": "string"
+        },
+        {
+          "name": "product_id",
+          "type": "string"
+        },
+        {
+          "name": "iommu_group",
+          "type": "uint64"
+        },
+        {
+          "name": "vpd",
+          "type": "ResourcesPCIVPD"
+        }
+      ],
+      "underlying": "struct {\n\tDriver string `json:\"driver\" yaml:\"driver\"`\n\n\tDriverVersion string `json:\"driver_version\" yaml:\"driver_version\"`\n\n\tNUMANode uint64 `json:\"numa_node\" yaml:\"numa_node\"`\n\n\tPCIAddress string `json:\"pci_address\" yaml:\"pci_address\"`\n\n\tVendor string `json:\"vendor\" yaml:\"vendor\"`\n\n\tVendorID string `json:\"vendor_id\" yaml:\"vendor_id\"`\n\n\tProduct string `json:\"product\" yaml:\"product\"`\n\n\tProductID string `json:\"product_id\" yaml:\"product_id\"`\n\n\tIOMMUGroup uint64 `json:\"iommu_group\" yaml:\"iommu_group\"`\n\n\tVPD ResourcesPCIVPD `json:\"vpd\" yaml:\"vpd\"`\n}"
+    },
+    "ResourcesPCIVPD": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "product_name",
+          "type": "string"
+        },
+        {
+          "name": "entries",
+          "type": "map[string]string"
+        }
+      ],
+      "underlying": "struct {\n\tProductName string `json:\"product_name,omitempty\" yaml:\"product_name,omitempty\"`\n\n\tEntries map[string]string `json:\"entries,omitempty\" yaml:\"entries,omitempty\"`\n}"
+    },
+    "ResourcesSerial": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "devices",
+          "type": "[]ResourcesSerialDevice"
+        },
+        {
+          "name": "total",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tDevices []ResourcesSerialDevice `json:\"devices\" yaml:\"devices\"`\n\n\tTotal uint64 `json:\"total\" yaml:\"total\"`\n}"
+    },
+    "ResourcesSerialDevice": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string"
+        },
+        {
+          "name": "device",
+          "type": "string"
+        },
+        {
+          "name": "device_id",
+          "type": "string"
+        },
+        {
+          "name": "device_path",
+          "type": "string"
+        },
+        {
+          "name": "driver",
+          "type": "string"
+        },
+        {
+          "name": "vendor",
+          "type": "string"
+        },
+        {
+          "name": "vendor_id",
+          "type": "string"
+        },
+        {
+          "name": "product",
+          "type": "string"
+        },
+        {
+          "name": "product_id",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tID string `json:\"id\" yaml:\"id\"`\n\n\tDevice string `json:\"device\" yaml:\"device\"`\n\n\tDeviceID string `json:\"device_id\" yaml:\"device_id\"`\n\n\tDevicePath string `json:\"device_path\" yaml:\"device_path\"`\n\n\tDriver string `json:\"driver\" yaml:\"driver\"`\n\n\tVendor string `json:\"vendor\" yaml:\"vendor\"`\n\n\tVendorID string `json:\"vendor_id\" yaml:\"vendor_id\"`\n\n\tProduct string `json:\"product\" yaml:\"product\"`\n\n\tProductID string `json:\"product_id\" yaml:\"product_id\"`\n}"
+    },
+    "ResourcesStorage": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "disks",
+          "type": "[]ResourcesStorageDisk"
+        },
+        {
+          "name": "total",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tDisks []ResourcesStorageDisk `json:\"disks\" yaml:\"disks\"`\n\n\tTotal uint64 `json:\"total\" yaml:\"total\"`\n}"
+    },
+    "ResourcesStorageDisk": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string"
+        },
+        {
+          "name": "device",
+          "type": "string"
+        },
+        {
+          "name": "model",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "read_only",
+          "type": "bool"
+        },
+        {
+          "name": "size",
+          "type": "uint64"
+        },
+        {
+          "name": "removable",
+          "type": "bool"
+        },
+        {
+          "name": "wwn",
+          "type": "string"
+        },
+        {
+          "name": "numa_node",
+          "type": "uint64"
+        },
+        {
+          "name": "device_path",
+          "type": "string"
+        },
+        {
+          "name": "block_size",
+          "type": "uint64"
+        },
+        {
+          "name": "firmware_version",
+          "type": "string"
+        },
+        {
+          "name": "rpm",
+          "type": "uint64"
+        },
+        {
+          "name": "serial",
+          "type": "string"
+        },
+        {
+          "name": "device_id",
+          "type": "string"
+        },
+        {
+          "name": "partitions",
+          "type": "[]ResourcesStorageDiskPartition"
+        },
+        {
+          "name": "pci_address",
+          "type": "string"
+        },
+        {
+          "name": "usb_address",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tID string `json:\"id\" yaml:\"id\"`\n\n\tDevice string `json:\"device\" yaml:\"device\"`\n\n\tModel string `json:\"model,omitempty\" yaml:\"model,omitempty\"`\n\n\tType string `json:\"type,omitempty\" yaml:\"type,omitempty\"`\n\n\tReadOnly bool `json:\"read_only\" yaml:\"read_only\"`\n\n\tSize uint64 `json:\"size\" yaml:\"size\"`\n\n\tRemovable bool `json:\"removable\" yaml:\"removable\"`\n\n\tWWN string `json:\"wwn,omitempty\" yaml:\"wwn,omitempty\"`\n\n\tNUMANode uint64 `json:\"numa_node\" yaml:\"numa_node\"`\n\n\tDevicePath string `json:\"device_path,omitempty\" yaml:\"device_path,omitempty\"`\n\n\tBlockSize uint64 `json:\"block_size\" yaml:\"block_size\"`\n\n\tFirmwareVersion string `json:\"firmware_version,omitempty\" yaml:\"firmware_version,omitempty\"`\n\n\tRPM uint64 `json:\"rpm\" yaml:\"rpm\"`\n\n\tSerial string `json:\"serial,omitempty\" yaml:\"serial,omitempty\"`\n\n\tDeviceID string `json:\"device_id\" yaml:\"device_id\"`\n\n\tPartitions []ResourcesStorageDiskPartition `json:\"partitions\" yaml:\"partitions\"`\n\n\tPCIAddress string `json:\"pci_address,omitempty\" yaml:\"pci_address,omitempty\"`\n\n\tUSBAddress string `json:\"usb_address,omitempty\" yaml:\"usb_address,omitempty\"`\n}"
+    },
+    "ResourcesStorageDiskPartition": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string"
+        },
+        {
+          "name": "device",
+          "type": "string"
+        },
+        {
+          "name": "read_only",
+          "type": "bool"
+        },
+        {
+          "name": "size",
+          "type": "uint64"
+        },
+        {
+          "name": "partition",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tID string `json:\"id\" yaml:\"id\"`\n\n\tDevice string `json:\"device\" yaml:\"device\"`\n\n\tReadOnly bool `json:\"read_only\" yaml:\"read_only\"`\n\n\tSize uint64 `json:\"size\" yaml:\"size\"`\n\n\tPartition uint64 `json:\"partition\" yaml:\"partition\"`\n}"
+    },
+    "ResourcesStoragePool": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "space",
+          "type": "ResourcesStoragePoolSpace"
+        },
+        {
+          "name": "inodes",
+          "type": "ResourcesStoragePoolInodes"
+        }
+      ],
+      "underlying": "struct {\n\tSpace ResourcesStoragePoolSpace `json:\"space\" yaml:\"space\"`\n\n\tInodes ResourcesStoragePoolInodes `json:\"inodes\" yaml:\"inodes\"`\n}"
+    },
+    "ResourcesStoragePoolInodes": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "used",
+          "type": "uint64"
+        },
+        {
+          "name": "total",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tUsed uint64 `json:\"used\" yaml:\"used\"`\n\n\tTotal uint64 `json:\"total\" yaml:\"total\"`\n}"
+    },
+    "ResourcesStoragePoolSpace": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "used",
+          "type": "uint64"
+        },
+        {
+          "name": "total",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tUsed uint64 `json:\"used,omitempty\" yaml:\"used,omitempty\"`\n\n\tTotal uint64 `json:\"total\" yaml:\"total\"`\n}"
+    },
+    "ResourcesSystem": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "uuid",
+          "type": "string"
+        },
+        {
+          "name": "vendor",
+          "type": "string"
+        },
+        {
+          "name": "product",
+          "type": "string"
+        },
+        {
+          "name": "family",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "type": "string"
+        },
+        {
+          "name": "sku",
+          "type": "string"
+        },
+        {
+          "name": "serial",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "firmware",
+          "type": "*ResourcesSystemFirmware"
+        },
+        {
+          "name": "chassis",
+          "type": "*ResourcesSystemChassis"
+        },
+        {
+          "name": "motherboard",
+          "type": "*ResourcesSystemMotherboard"
+        }
+      ],
+      "underlying": "struct {\n\tUUID string `json:\"uuid\" yaml:\"uuid\"`\n\n\tVendor string `json:\"vendor\" yaml:\"vendor\"`\n\n\tProduct string `json:\"product\" yaml:\"product\"`\n\n\tFamily string `json:\"family\" yaml:\"family\"`\n\n\tVersion string `json:\"version\" yaml:\"version\"`\n\n\tSku string `json:\"sku\" yaml:\"sku\"`\n\n\tSerial string `json:\"serial\" yaml:\"serial\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tFirmware *ResourcesSystemFirmware `json:\"firmware\" yaml:\"firmware\"`\n\n\tChassis *ResourcesSystemChassis `json:\"chassis\" yaml:\"chassis\"`\n\n\tMotherboard *ResourcesSystemMotherboard `json:\"motherboard\" yaml:\"motherboard\"`\n}"
+    },
+    "ResourcesSystemChassis": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "vendor",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "serial",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tVendor string `json:\"vendor\" yaml:\"vendor\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tSerial string `json:\"serial\" yaml:\"serial\"`\n\n\tVersion string `json:\"version\" yaml:\"version\"`\n}"
+    },
+    "ResourcesSystemFirmware": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "vendor",
+          "type": "string"
+        },
+        {
+          "name": "date",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tVendor string `json:\"vendor\" yaml:\"vendor\"`\n\n\tDate string `json:\"date\" yaml:\"date\"`\n\n\tVersion string `json:\"version\" yaml:\"version\"`\n}"
+    },
+    "ResourcesSystemMotherboard": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "vendor",
+          "type": "string"
+        },
+        {
+          "name": "product",
+          "type": "string"
+        },
+        {
+          "name": "serial",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tVendor string `json:\"vendor\" yaml:\"vendor\"`\n\n\tProduct string `json:\"product\" yaml:\"product\"`\n\n\tSerial string `json:\"serial\" yaml:\"serial\"`\n\n\tVersion string `json:\"version\" yaml:\"version\"`\n}"
+    },
+    "ResourcesUSB": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "devices",
+          "type": "[]ResourcesUSBDevice"
+        },
+        {
+          "name": "total",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tDevices []ResourcesUSBDevice `json:\"devices\" yaml:\"devices\"`\n\n\tTotal uint64 `json:\"total\" yaml:\"total\"`\n}"
+    },
+    "ResourcesUSBDevice": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "bus_address",
+          "type": "uint64"
+        },
+        {
+          "name": "device_address",
+          "type": "uint64"
+        },
+        {
+          "name": "serial",
+          "type": "string"
+        },
+        {
+          "name": "interfaces",
+          "type": "[]ResourcesUSBDeviceInterface"
+        },
+        {
+          "name": "vendor",
+          "type": "string"
+        },
+        {
+          "name": "vendor_id",
+          "type": "string"
+        },
+        {
+          "name": "product",
+          "type": "string"
+        },
+        {
+          "name": "product_id",
+          "type": "string"
+        },
+        {
+          "name": "speed",
+          "type": "float64"
+        }
+      ],
+      "underlying": "struct {\n\tBusAddress uint64 `json:\"bus_address\" yaml:\"bus_address\"`\n\n\tDeviceAddress uint64 `json:\"device_address\" yaml:\"device_address\"`\n\n\tSerial string `json:\"serial\" yaml:\"serial\"`\n\n\tInterfaces []ResourcesUSBDeviceInterface `json:\"interfaces\" yaml:\"interfaces\"`\n\n\tVendor string `json:\"vendor\" yaml:\"vendor\"`\n\n\tVendorID string `json:\"vendor_id\" yaml:\"vendor_id\"`\n\n\tProduct string `json:\"product\" yaml:\"product\"`\n\n\tProductID string `json:\"product_id\" yaml:\"product_id\"`\n\n\tSpeed float64 `json:\"speed\" yaml:\"speed\"`\n}"
+    },
+    "ResourcesUSBDeviceInterface": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "class",
+          "type": "string"
+        },
+        {
+          "name": "class_id",
+          "type": "uint64"
+        },
+        {
+          "name": "driver",
+          "type": "string"
+        },
+        {
+          "name": "driver_version",
+          "type": "string"
+        },
+        {
+          "name": "number",
+          "type": "uint64"
+        },
+        {
+          "name": "subclass",
+          "type": "string"
+        },
+        {
+          "name": "subclass_id",
+          "type": "uint64"
+        }
+      ],
+      "underlying": "struct {\n\tClass string `json:\"class\" yaml:\"class\"`\n\n\tClassID uint64 `json:\"class_id\" yaml:\"class_id\"`\n\n\tDriver string `json:\"driver\" yaml:\"driver\"`\n\n\tDriverVersion string `json:\"driver_version\" yaml:\"driver_version\"`\n\n\tNumber uint64 `json:\"number\" yaml:\"number\"`\n\n\tSubClass string `json:\"subclass\" yaml:\"subclass\"`\n\n\tSubClassID uint64 `json:\"subclass_id\" yaml:\"subclass_id\"`\n}"
+    },
+    "Response": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "type",
+          "type": "ResponseType"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "status_code",
+          "type": "int"
+        },
+        {
+          "name": "operation",
+          "type": "string"
+        },
+        {
+          "name": "error_code",
+          "type": "int"
+        },
+        {
+          "name": "error",
+          "type": "string"
+        },
+        {
+          "name": "metadata",
+          "type": "json.RawMessage"
+        }
+      ],
+      "underlying": "struct {\n\tType ResponseType `json:\"type\" yaml:\"type\"`\n\n\tStatus     string `json:\"status\" yaml:\"status\"`\n\tStatusCode int    `json:\"status_code\" yaml:\"status_code\"`\n\n\tOperation string `json:\"operation\" yaml:\"operation\"`\n\n\tCode  int    `json:\"error_code\" yaml:\"error_code\"`\n\tError string `json:\"error\" yaml:\"error\"`\n\n\tMetadata json.RawMessage `json:\"metadata\" yaml:\"metadata\"`\n}"
+    },
+    "ResponseRaw": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "type",
+          "type": "ResponseType"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "status_code",
+          "type": "int"
+        },
+        {
+          "name": "operation",
+          "type": "string"
+        },
+        {
+          "name": "error_code",
+          "type": "int"
+        },
+        {
+          "name": "error",
+          "type": "string"
+        },
+        {
+          "name": "metadata",
+          "type": "any"
+        }
+      ],
+      "underlying": "struct {\n\tType ResponseType `json:\"type\" yaml:\"type\"`\n\n\tStatus     string `json:\"status\" yaml:\"status\"`\n\tStatusCode int    `json:\"status_code\" yaml:\"status_code\"`\n\n\tOperation string `json:\"operation\" yaml:\"operation\"`\n\n\tCode  int    `json:\"error_code\" yaml:\"error_code\"`\n\tError string `json:\"error\" yaml:\"error\"`\n\n\tMetadata any `json:\"metadata\" yaml:\"metadata\"`\n}"
+    },
+    "ResponseType": {
+      "kind": "alias",
+      "fields": [],
+      "underlying": "string"
+    },
+    "Server": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "api_extensions",
+          "type": "[]string"
+        },
+        {
+          "name": "api_status",
+          "type": "string"
+        },
+        {
+          "name": "api_version",
+          "type": "string"
+        },
+        {
+          "name": "auth",
+          "type": "string"
+        },
+        {
+          "name": "public",
+          "type": "bool"
+        },
+        {
+          "name": "auth_methods",
+          "type": "[]string"
+        },
+        {
+          "name": "auth_user_name",
+          "type": "string"
+        },
+        {
+          "name": "auth_user_method",
+          "type": "string"
+        },
+        {
+          "name": "environment",
+          "type": "ServerEnvironment"
+        }
+      ],
+      "underlying": "struct {\n\tServerUntrusted `yaml:\",inline\"`\n\n\tAuthUserName string `json:\"auth_user_name\" yaml:\"auth_user_name\"`\n\n\tAuthUserMethod string `json:\"auth_user_method\" yaml:\"auth_user_method\"`\n\n\tEnvironment ServerEnvironment `json:\"environment\" yaml:\"environment\"`\n}"
+    },
+    "ServerEnvironment": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "addresses",
+          "type": "[]string"
+        },
+        {
+          "name": "architectures",
+          "type": "[]string"
+        },
+        {
+          "name": "certificate",
+          "type": "string"
+        },
+        {
+          "name": "certificate_fingerprint",
+          "type": "string"
+        },
+        {
+          "name": "driver",
+          "type": "string"
+        },
+        {
+          "name": "driver_version",
+          "type": "string"
+        },
+        {
+          "name": "firewall",
+          "type": "string"
+        },
+        {
+          "name": "kernel",
+          "type": "string"
+        },
+        {
+          "name": "kernel_architecture",
+          "type": "string"
+        },
+        {
+          "name": "kernel_features",
+          "type": "map[string]string"
+        },
+        {
+          "name": "kernel_version",
+          "type": "string"
+        },
+        {
+          "name": "lxc_features",
+          "type": "map[string]string"
+        },
+        {
+          "name": "os_name",
+          "type": "string"
+        },
+        {
+          "name": "os_version",
+          "type": "string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        },
+        {
+          "name": "server",
+          "type": "string"
+        },
+        {
+          "name": "server_clustered",
+          "type": "bool"
+        },
+        {
+          "name": "server_event_mode",
+          "type": "string"
+        },
+        {
+          "name": "server_name",
+          "type": "string"
+        },
+        {
+          "name": "server_pid",
+          "type": "int"
+        },
+        {
+          "name": "server_version",
+          "type": "string"
+        },
+        {
+          "name": "storage",
+          "type": "string"
+        },
+        {
+          "name": "storage_version",
+          "type": "string"
+        },
+        {
+          "name": "storage_supported_drivers",
+          "type": "[]ServerStorageDriverInfo"
+        }
+      ],
+      "underlying": "struct {\n\tAddresses []string `json:\"addresses\" yaml:\"addresses\"`\n\n\tArchitectures []string `json:\"architectures\" yaml:\"architectures\"`\n\n\tCertificate string `json:\"certificate\" yaml:\"certificate\"`\n\n\tCertificateFingerprint string `json:\"certificate_fingerprint\" yaml:\"certificate_fingerprint\"`\n\n\tDriver string `json:\"driver\" yaml:\"driver\"`\n\n\tDriverVersion string `json:\"driver_version\" yaml:\"driver_version\"`\n\n\tFirewall string `json:\"firewall\" yaml:\"firewall\"`\n\n\tKernel string `json:\"kernel\" yaml:\"kernel\"`\n\n\tKernelArchitecture string `json:\"kernel_architecture\" yaml:\"kernel_architecture\"`\n\n\tKernelFeatures map[string]string `json:\"kernel_features\" yaml:\"kernel_features\"`\n\n\tKernelVersion string `json:\"kernel_version\" yaml:\"kernel_version\"`\n\n\tLXCFeatures map[string]string `json:\"lxc_features\" yaml:\"lxc_features\"`\n\n\tOSName string `json:\"os_name\" yaml:\"os_name\"`\n\n\tOSVersion string `json:\"os_version\" yaml:\"os_version\"`\n\n\tProject string `json:\"project\" yaml:\"project\"`\n\n\tServer string `json:\"server\" yaml:\"server\"`\n\n\tServerClustered bool `json:\"server_clustered\" yaml:\"server_clustered\"`\n\n\tServerEventMode string `json:\"server_event_mode\" yaml:\"server_event_mode\"`\n\n\tServerName string `json:\"server_name\" yaml:\"server_name\"`\n\n\tServerPid int `json:\"server_pid\" yaml:\"server_pid\"`\n\n\tServerVersion string `json:\"server_version\" yaml:\"server_version\"`\n\n\tStorage string `json:\"storage\" yaml:\"storage\"`\n\n\tStorageVersion string `json:\"storage_version\" yaml:\"storage_version\"`\n\n\tStorageSupportedDrivers []ServerStorageDriverInfo `json:\"storage_supported_drivers\" yaml:\"storage_supported_drivers\"`\n}"
+    },
+    "ServerFiltered": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "api_extensions",
+          "type": "[]string"
+        },
+        {
+          "name": "api_status",
+          "type": "string"
+        },
+        {
+          "name": "api_version",
+          "type": "string"
+        },
+        {
+          "name": "auth",
+          "type": "string"
+        },
+        {
+          "name": "public",
+          "type": "bool"
+        },
+        {
+          "name": "auth_methods",
+          "type": "[]string"
+        },
+        {
+          "name": "auth_user_name",
+          "type": "string"
+        },
+        {
+          "name": "auth_user_method",
+          "type": "string"
+        },
+        {
+          "name": "environment",
+          "type": "ServerEnvironment"
+        },
+        {
+          "name": "api_extensions_count",
+          "type": "int"
+        }
+      ],
+      "underlying": "struct {\n\tServer `yaml:\",inline\"`\n\n\tAPIExtensionsCount int `json:\"api_extensions_count\"`\n}"
+    },
+    "ServerPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        }
+      ],
+      "underlying": "struct {\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n}"
+    },
+    "ServerStorageDriverInfo": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "Name",
+          "type": "string"
+        },
+        {
+          "name": "Version",
+          "type": "string"
+        },
+        {
+          "name": "Remote",
+          "type": "bool"
+        }
+      ],
+      "underlying": "struct {\n\tName string\n\n\tVersion string\n\n\tRemote bool\n}"
+    },
+    "ServerUntrusted": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "api_extensions",
+          "type": "[]string"
+        },
+        {
+          "name": "api_status",
+          "type": "string"
+        },
+        {
+          "name": "api_version",
+          "type": "string"
+        },
+        {
+          "name": "auth",
+          "type": "string"
+        },
+        {
+          "name": "public",
+          "type": "bool"
+        },
+        {
+          "name": "auth_methods",
+          "type": "[]string"
+        }
+      ],
+      "underlying": "struct {\n\tServerPut `yaml:\",inline\"`\n\n\tAPIExtensions []string `json:\"api_extensions\" yaml:\"api_extensions,omitempty\"`\n\n\tAPIStatus string `json:\"api_status\" yaml:\"api_status\"`\n\n\tAPIVersion string `json:\"api_version\" yaml:\"api_version\"`\n\n\tAuth string `json:\"auth\" yaml:\"auth\"`\n\n\tPublic bool `json:\"public\" yaml:\"public\"`\n\n\tAuthMethods []string `json:\"auth_methods\" yaml:\"auth_methods\"`\n}"
+    },
+    "StatusCode": {
+      "kind": "alias",
+      "fields": [],
+      "underlying": "int"
+    },
+    "StatusError": {
+      "kind": "struct",
+      "fields": [],
+      "underlying": "struct {\n\tstatus int\n\tmsg    string\n}"
+    },
+    "StorageBucket": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "s3_url",
+          "type": "string"
+        },
+        {
+          "name": "location",
+          "type": "string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tStorageBucketPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tS3URL string `json:\"s3_url\" yaml:\"s3_url\"`\n\n\tLocation string `json:\"location\" yaml:\"location\"`\n\n\tProject string `json:\"project\" yaml:\"project\"`\n}"
+    },
+    "StorageBucketBackup": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "expires_at",
+          "type": "time.Time"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tCreatedAt time.Time `json:\"created_at\" yaml:\"created_at\"`\n\n\tExpiresAt time.Time `json:\"expires_at\" yaml:\"expires_at\"`\n}"
+    },
+    "StorageBucketBackupPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "StorageBucketBackupsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "compression_algorithm",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tExpiresAt time.Time `json:\"expires_at\" yaml:\"expires_at\"`\n\n\tCompressionAlgorithm string `json:\"compression_algorithm\" yaml:\"compression_algorithm\"`\n}"
+    },
+    "StorageBucketFull": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "s3_url",
+          "type": "string"
+        },
+        {
+          "name": "location",
+          "type": "string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        },
+        {
+          "name": "backups",
+          "type": "[]StorageBucketBackup"
+        },
+        {
+          "name": "keys",
+          "type": "[]StorageBucketKey"
+        }
+      ],
+      "underlying": "struct {\n\tStorageBucket `yaml:\",inline\"`\n\n\tBackups []StorageBucketBackup `json:\"backups\" yaml:\"backups\"`\n\n\tKeys []StorageBucketKey `json:\"keys\" yaml:\"keys\"`\n}"
+    },
+    "StorageBucketKey": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "role",
+          "type": "string"
+        },
+        {
+          "name": "access-key",
+          "type": "string"
+        },
+        {
+          "name": "secret-key",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tStorageBucketKeyPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "StorageBucketKeyPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "role",
+          "type": "string"
+        },
+        {
+          "name": "access-key",
+          "type": "string"
+        },
+        {
+          "name": "secret-key",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tRole string `json:\"role\" yaml:\"role\"`\n\n\tAccessKey string `json:\"access-key\" yaml:\"access-key\"`\n\n\tSecretKey string `json:\"secret-key\" yaml:\"secret-key\"`\n}"
+    },
+    "StorageBucketKeysPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "role",
+          "type": "string"
+        },
+        {
+          "name": "access-key",
+          "type": "string"
+        },
+        {
+          "name": "secret-key",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tStorageBucketKeyPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "StorageBucketPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n}"
+    },
+    "StorageBucketsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tStorageBucketPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "StoragePool": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "driver",
+          "type": "string"
+        },
+        {
+          "name": "used_by",
+          "type": "[]string"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "locations",
+          "type": "[]string"
+        }
+      ],
+      "underlying": "struct {\n\tStoragePoolPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tDriver string `json:\"driver\" yaml:\"driver\"`\n\n\tUsedBy []string `json:\"used_by\" yaml:\"used_by\"`\n\n\tStatus string `json:\"status\" yaml:\"status\"`\n\n\tLocations []string `json:\"locations\" yaml:\"locations\"`\n}"
+    },
+    "StoragePoolPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n}"
+    },
+    "StoragePoolState": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "space",
+          "type": "ResourcesStoragePoolSpace"
+        },
+        {
+          "name": "inodes",
+          "type": "ResourcesStoragePoolInodes"
+        }
+      ],
+      "underlying": "struct {\n\tResourcesStoragePool `yaml:\",inline\"`\n}"
+    },
+    "StoragePoolsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "driver",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tStoragePoolPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tDriver string `json:\"driver\" yaml:\"driver\"`\n}"
+    },
+    "StorageVolume": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "restore",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "used_by",
+          "type": "[]string"
+        },
+        {
+          "name": "location",
+          "type": "string"
+        },
+        {
+          "name": "content_type",
+          "type": "string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "type": "time.Time"
+        }
+      ],
+      "underlying": "struct {\n\tStorageVolumePut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tUsedBy []string `json:\"used_by\" yaml:\"used_by\"`\n\n\tLocation string `json:\"location\" yaml:\"location\"`\n\n\tContentType string `json:\"content_type\" yaml:\"content_type\"`\n\n\tProject string `json:\"project\" yaml:\"project\"`\n\n\tCreatedAt time.Time `json:\"created_at\" yaml:\"created_at\"`\n}"
+    },
+    "StorageVolumeBackup": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "expires_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "volume_only",
+          "type": "bool"
+        },
+        {
+          "name": "optimized_storage",
+          "type": "bool"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tCreatedAt time.Time `json:\"created_at\" yaml:\"created_at\"`\n\n\tExpiresAt time.Time `json:\"expires_at\" yaml:\"expires_at\"`\n\n\tVolumeOnly bool `json:\"volume_only\" yaml:\"volume_only\"`\n\n\tOptimizedStorage bool `json:\"optimized_storage\" yaml:\"optimized_storage\"`\n}"
+    },
+    "StorageVolumeBackupPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n}"
+    },
+    "StorageVolumeBackupsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "volume_only",
+          "type": "bool"
+        },
+        {
+          "name": "optimized_storage",
+          "type": "bool"
+        },
+        {
+          "name": "compression_algorithm",
+          "type": "string"
+        },
+        {
+          "name": "target",
+          "type": "*BackupTarget"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tExpiresAt time.Time `json:\"expires_at\" yaml:\"expires_at\"`\n\n\tVolumeOnly bool `json:\"volume_only\" yaml:\"volume_only\"`\n\n\tOptimizedStorage bool `json:\"optimized_storage\" yaml:\"optimized_storage\"`\n\n\tCompressionAlgorithm string `json:\"compression_algorithm\" yaml:\"compression_algorithm\"`\n\n\tTarget *BackupTarget `json:\"target\" yaml:\"target\"`\n}"
+    },
+    "StorageVolumeBitmap": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "count",
+          "type": "int"
+        },
+        {
+          "name": "granularity",
+          "type": "int"
+        },
+        {
+          "name": "recording",
+          "type": "bool"
+        },
+        {
+          "name": "busy",
+          "type": "bool"
+        },
+        {
+          "name": "persistent",
+          "type": "bool"
+        },
+        {
+          "name": "inconsistent",
+          "type": "bool"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tCount int `json:\"count\" yaml:\"count\"`\n\n\tGranularity int `json:\"granularity\" yaml:\"granularity\"`\n\n\tRecording bool `json:\"recording\" yaml:\"recording\"`\n\n\tBusy bool `json:\"busy\" yaml:\"busy\"`\n\n\tPersistent bool `json:\"persistent\" yaml:\"persistent\"`\n\n\tInconsistent bool `json:\"inconsistent\" yaml:\"inconsistent\"`\n}"
+    },
+    "StorageVolumeBitmapsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "granularity",
+          "type": "int"
+        },
+        {
+          "name": "persistent",
+          "type": "bool"
+        },
+        {
+          "name": "disabled",
+          "type": "bool"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tGranularity int `json:\"granularity\" yaml:\"granularity\"`\n\n\tPersistent bool `json:\"persistent\" yaml:\"persistent\"`\n\n\tDisabled bool `json:\"disabled\" yaml:\"disabled\"`\n}"
+    },
+    "StorageVolumeFull": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "restore",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "used_by",
+          "type": "[]string"
+        },
+        {
+          "name": "location",
+          "type": "string"
+        },
+        {
+          "name": "content_type",
+          "type": "string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "backups",
+          "type": "[]StorageVolumeBackup"
+        },
+        {
+          "name": "snapshots",
+          "type": "[]StorageVolumeSnapshot"
+        },
+        {
+          "name": "state",
+          "type": "*StorageVolumeState"
+        }
+      ],
+      "underlying": "struct {\n\tStorageVolume `yaml:\",inline\"`\n\n\tBackups []StorageVolumeBackup `json:\"backups\" yaml:\"backups\"`\n\n\tSnapshots []StorageVolumeSnapshot `json:\"snapshots\" yaml:\"snapshots\"`\n\n\tState *StorageVolumeState `json:\"state\" yaml:\"state\"`\n}"
+    },
+    "StorageVolumePost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "pool",
+          "type": "string"
+        },
+        {
+          "name": "migration",
+          "type": "bool"
+        },
+        {
+          "name": "target",
+          "type": "*StorageVolumePostTarget"
+        },
+        {
+          "name": "volume_only",
+          "type": "bool"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        },
+        {
+          "name": "source",
+          "type": "StorageVolumeSource"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tPool string `json:\"pool,omitempty\" yaml:\"pool,omitempty\"`\n\n\tMigration bool `json:\"migration\" yaml:\"migration\"`\n\n\tTarget *StorageVolumePostTarget `json:\"target\" yaml:\"target\"`\n\n\tVolumeOnly bool `json:\"volume_only\" yaml:\"volume_only\"`\n\n\tProject string `json:\"project,omitempty\" yaml:\"project,omitempty\"`\n\n\tSource StorageVolumeSource `json:\"source\" yaml:\"source\"`\n}"
+    },
+    "StorageVolumePostTarget": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "certificate",
+          "type": "string"
+        },
+        {
+          "name": "operation",
+          "type": "string"
+        },
+        {
+          "name": "secrets",
+          "type": "map[string]string"
+        }
+      ],
+      "underlying": "struct {\n\tCertificate string `json:\"certificate\" yaml:\"certificate\"`\n\n\tOperation string `json:\"operation,omitempty\" yaml:\"operation,omitempty\"`\n\n\tWebsockets map[string]string `json:\"secrets,omitempty\" yaml:\"secrets,omitempty\"`\n}"
+    },
+    "StorageVolumePut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "restore",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tRestore string `json:\"restore,omitempty\" yaml:\"restore,omitempty\"`\n}"
+    },
+    "StorageVolumeRebuildPost": {
+      "kind": "struct",
+      "fields": [],
+      "underlying": "struct{}"
+    },
+    "StorageVolumeSnapshot": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "type": "*time.Time"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "content_type",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "type": "time.Time"
+        }
+      ],
+      "underlying": "struct {\n\tStorageVolumeSnapshotPut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tConfig ConfigMap `json:\"config\" yaml:\"config\"`\n\n\tContentType string `json:\"content_type\" yaml:\"content_type\"`\n\n\tCreatedAt time.Time `json:\"created_at\" yaml:\"created_at\"`\n}"
+    },
+    "StorageVolumeSnapshotPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "migration",
+          "type": "bool"
+        },
+        {
+          "name": "target",
+          "type": "*StorageVolumePostTarget"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tMigration bool `json:\"migration\" yaml:\"migration\"`\n\n\tTarget *StorageVolumePostTarget `json:\"target\" yaml:\"target\"`\n}"
+    },
+    "StorageVolumeSnapshotPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "type": "*time.Time"
+        }
+      ],
+      "underlying": "struct {\n\tDescription string `json:\"description\" yaml:\"description\"`\n\n\tExpiresAt *time.Time `json:\"expires_at\" yaml:\"expires_at\"`\n}"
+    },
+    "StorageVolumeSnapshotsPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "expires_at",
+          "type": "*time.Time"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tExpiresAt *time.Time `json:\"expires_at\" yaml:\"expires_at\"`\n}"
+    },
+    "StorageVolumeSource": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "pool",
+          "type": "string"
+        },
+        {
+          "name": "certificate",
+          "type": "string"
+        },
+        {
+          "name": "mode",
+          "type": "string"
+        },
+        {
+          "name": "operation",
+          "type": "string"
+        },
+        {
+          "name": "secrets",
+          "type": "map[string]string"
+        },
+        {
+          "name": "volume_only",
+          "type": "bool"
+        },
+        {
+          "name": "refresh",
+          "type": "bool"
+        },
+        {
+          "name": "refresh_exclude_older",
+          "type": "bool"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        },
+        {
+          "name": "location",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tPool string `json:\"pool\" yaml:\"pool\"`\n\n\tCertificate string `json:\"certificate\" yaml:\"certificate\"`\n\n\tMode string `json:\"mode,omitempty\" yaml:\"mode,omitempty\"`\n\n\tOperation string `json:\"operation,omitempty\" yaml:\"operation,omitempty\"`\n\n\tWebsockets map[string]string `json:\"secrets,omitempty\" yaml:\"secrets,omitempty\"`\n\n\tVolumeOnly bool `json:\"volume_only\" yaml:\"volume_only\"`\n\n\tRefresh bool `json:\"refresh\" yaml:\"refresh\"`\n\n\tRefreshExcludeOlder bool `json:\"refresh_exclude_older\" yaml:\"refresh_exclude_older\"`\n\n\tProject string `json:\"project,omitempty\" yaml:\"project,omitempty\"`\n\n\tLocation string `json:\"location\" yaml:\"location\"`\n}"
+    },
+    "StorageVolumeState": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "usage",
+          "type": "*StorageVolumeStateUsage"
+        }
+      ],
+      "underlying": "struct {\n\tUsage *StorageVolumeStateUsage `json:\"usage\" yaml:\"usage\"`\n}"
+    },
+    "StorageVolumeStateUsage": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "used",
+          "type": "uint64"
+        },
+        {
+          "name": "total",
+          "type": "int64"
+        }
+      ],
+      "underlying": "struct {\n\tUsed uint64 `json:\"used,omitempty\" yaml:\"used,omitempty\"`\n\n\tTotal int64 `json:\"total\" yaml:\"total\"`\n}"
+    },
+    "StorageVolumesPost": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "config",
+          "type": "ConfigMap"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "restore",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "source",
+          "type": "StorageVolumeSource"
+        },
+        {
+          "name": "content_type",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tStorageVolumePut `yaml:\",inline\"`\n\n\tName string `json:\"name\" yaml:\"name\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tSource StorageVolumeSource `json:\"source\" yaml:\"source\"`\n\n\tContentType string `json:\"content_type\" yaml:\"content_type\"`\n}"
+    },
+    "URL": {
+      "kind": "struct",
+      "fields": [],
+      "underlying": "struct {\n\turl.URL\n}"
+    },
+    "Warning": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "uuid",
+          "type": "string"
+        },
+        {
+          "name": "location",
+          "type": "string"
+        },
+        {
+          "name": "project",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        },
+        {
+          "name": "count",
+          "type": "int"
+        },
+        {
+          "name": "first_seen_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "last_seen_at",
+          "type": "time.Time"
+        },
+        {
+          "name": "last_message",
+          "type": "string"
+        },
+        {
+          "name": "severity",
+          "type": "string"
+        },
+        {
+          "name": "entity_url",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tWarningPut `yaml:\",inline\"`\n\n\tUUID string `json:\"uuid\" yaml:\"uuid\"`\n\n\tLocation string `json:\"location\" yaml:\"location\"`\n\n\tProject string `json:\"project\" yaml:\"project\"`\n\n\tType string `json:\"type\" yaml:\"type\"`\n\n\tCount int `json:\"count\" yaml:\"count\"`\n\n\tFirstSeenAt time.Time `json:\"first_seen_at\" yaml:\"first_seen_at\"`\n\n\tLastSeenAt time.Time `json:\"last_seen_at\" yaml:\"last_seen_at\"`\n\n\tLastMessage string `json:\"last_message\" yaml:\"last_message\"`\n\n\tSeverity string `json:\"severity\" yaml:\"severity\"`\n\n\tEntityURL string `json:\"entity_url\" yaml:\"entity_url\"`\n}"
+    },
+    "WarningPut": {
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "status",
+          "type": "string"
+        }
+      ],
+      "underlying": "struct {\n\tStatus string `json:\"status\" yaml:\"status\"`\n}"
+    }
+  },
+  "reference_revision": "13f3992766142d5087fff2e362cd2e1a75294fe8"
+}

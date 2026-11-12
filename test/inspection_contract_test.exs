@@ -1,0 +1,985 @@
+defmodule Opsmaru.Incus.InspectionContractTest.Contract do
+  @moduledoc false
+  # Contract fixtures and checks shared by the serial module and the async
+  # shards below. Each shard runs its share of the 310 checks in order.
+  import ExUnit.Assertions
+  import ExUnit.Callbacks, only: [on_exit: 1, start_supervised!: 2]
+
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Connection, Context, Error, RequestContext, Server}
+  alias Opsmaru.TestSupport.{HTTPFixture, ModelSamples, Timing, TLSIdentity, WireComparison}
+
+  @names ~w(GetProjects GetProject GetProfiles GetProfile GetNetworks GetNetwork GetStoragePools GetStoragePool GetStoragePoolVolumes GetStoragePoolVolume GetInstances GetInstance GetInstanceState GetInstanceSnapshots GetInstanceSnapshot GetImages GetImage GetOperations GetOperation)
+  # B02 PR 1: every other method mapped to the instance, image and operation rows.
+  @b02 ~w(GetImageFingerprints GetImagesWithFilter GetImagesAllProjects GetImagesAllProjectsWithFilter GetPrivateImage GetInstanceNames GetInstanceNamesAllProjects GetInstancesWithFilter GetInstancesAllProjects GetInstancesAllProjectsWithFilter GetInstancesFull GetInstancesFullWithFilter GetInstancesFullAllProjects GetInstancesFullAllProjectsWithFilter GetInstanceFull GetInstanceSnapshotNames GetOperationUUIDs GetOperationsAllProjects)
+  # B02 PR 2: every other method mapped to the project, profile, network and storage rows.
+  @b02_storage ~w(GetProjectNames GetProjectsWithFilter GetProfileNames GetProfilesWithFilter GetProfilesAllProjects GetProfilesAllProjectsWithFilter GetNetworkNames GetNetworksWithFilter GetNetworksAllProjects GetNetworksAllProjectsWithFilter GetStoragePoolNames GetStoragePoolsWithFilter GetStoragePoolVolumesWithFilter GetStoragePoolVolumesFull GetStoragePoolVolumesFullWithFilter GetStoragePoolVolumeNames GetStoragePoolVolumesAllProjects GetStoragePoolVolumesWithFilterAllProjects GetStoragePoolVolumesFullAllProjects GetStoragePoolVolumesFullWithFilterAllProjects GetStoragePoolVolumeNamesAllProjects GetStoragePoolVolumeFull)
+  # B09 PR 1: every read method mapped to the network rows.
+  @b09 ~w(GetNetworkACLNames GetNetworkACLs GetNetworkACLsAllProjects GetNetworkACL GetNetworkAddressSetNames GetNetworkAddressSets GetNetworkAddressSetsAllProjects GetNetworkAddressSet GetNetworkAllocations GetNetworkAllocationsAllProjects GetNetworkIntegrationNames GetNetworkIntegrations GetNetworkIntegration GetNetworkZoneNames GetNetworkZones GetNetworkZonesAllProjects GetNetworkZone GetNetworkZoneRecords GetNetworkZoneRecordNames GetNetworkZoneRecord GetNetworkForwards GetNetworkForwardAddresses GetNetworkForward GetNetworkLeases GetNetworkLoadBalancerAddresses GetNetworkLoadBalancers GetNetworkLoadBalancer GetNetworkLoadBalancerState GetNetworkPeers GetNetworkPeerNames GetNetworkPeer GetNetworkState)
+  # B10 PR 1: every read method mapped to the administrative rows.
+  @b10 ~w(GetCertificateFingerprints GetCertificates GetCertificatesWithFilter GetCertificate GetCluster GetClusterGroups GetClusterGroupNames GetClusterGroup GetClusterMemberNames GetClusterMembers GetClusterMembersWithFilter GetClusterMember GetClusterMemberState GetMetadataConfiguration GetProjectAccess GetProjectState GetServerResources GetWarningUUIDs GetWarnings GetWarning)
+  # B08 PR 1: every named read method mapped to the stream-free storage read rows.
+  @b08 ~w(GetStoragePoolBucketNames GetStoragePoolBuckets GetStoragePoolBucketsWithFilter GetStoragePoolBucketsAllProjects GetStoragePoolBucketsWithFilterAllProjects GetStoragePoolBucketsFull GetStoragePoolBucketsFullWithFilter GetStoragePoolBucketsFullAllProjects GetStoragePoolBucketsFullWithFilterAllProjects GetStoragePoolBucket GetStoragePoolBucketFull GetStoragePoolBucketKeyNames GetStoragePoolBucketKeys GetStoragePoolBucketKey GetStoragePoolResources GetStorageVolumeBitmaps GetStorageVolumeBitmapNames GetStoragePoolVolumeSnapshotNames GetStoragePoolVolumeSnapshots GetStoragePoolVolumeSnapshot GetStoragePoolVolumeState)
+  # B11: every read method mapped to the stream-free instance and image rows.
+  @b11 ~w(GetImageAliases GetImageAliasNames GetImageAlias GetInstanceAccess GetInstanceLogfiles GetInstanceMetadata)
+  # S06 PR 1: instance and custom volume backup reads.
+  @s06 ~w(GetInstanceBackupNames GetInstanceBackups GetInstanceBackup GetStorageVolumeBackupNames GetStorageVolumeBackups GetStorageVolumeBackup)
+  # S07: the metadata template names list.
+  @s07 ~w(GetInstanceTemplateFiles)
+  @catalogue Jason.decode!(File.read!("priv/incus/methods.json"))["methods"]
+  @methods Enum.filter(
+             @catalogue,
+             &(&1["name"] in (@names ++
+                                @b02 ++
+                                @b02_storage ++ @b09 ++ @b10 ++ @b08 ++ @b11 ++ @s07 ++ @s06))
+           )
+  # Models without a hand-written sample get a schema-driven one (ModelSamples).
+  @generated ~w(NetworkACL NetworkAddressSet NetworkAllocations NetworkForward NetworkIntegration NetworkLease NetworkLoadBalancer NetworkLoadBalancerState NetworkPeer NetworkState NetworkZone NetworkZoneRecord Access Certificate Cluster ClusterGroup ClusterMember ClusterMemberState MetadataConfiguration ProjectState Resources Warning StorageBucket StorageBucketFull StorageBucketKey ResourcesStoragePool StorageVolumeBitmap StorageVolumeSnapshot StorageVolumeState ImageAliasesEntry ImageMetadata InstanceBackup StorageVolumeBackup StorageBucketBackup)
+  # Discovery is a public helper, not a named Go GetServer DTO comparison.
+  @discovery %{"name" => "connect", "params" => [], "result" => "discovery", "model" => "Server"}
+  # Root API version discovery has no named Go method; it is compared through RawQuery.
+  @root Enum.find(@catalogue, &(&1["name"] == "GetAPIVersions"))
+  # Reads the pinned client lacks (B08 volumes of one type and one bitmap, B07 recorded
+  # exec output names), also compared through RawQuery.
+  @rest Enum.filter(
+          @catalogue,
+          &(&1["name"] in ~w(GetStoragePoolVolumeTypeNames GetStoragePoolVolumesByType GetStoragePoolVolumesByTypeFull GetStorageVolumeBitmap GetInstanceExecOutputNames GetStoragePoolBucketBackupNames GetStoragePoolBucketBackups GetStoragePoolBucketBackup))
+        )
+  @contracts @methods ++ [@discovery, @root] ++ @rest
+  # The volume type is a pass-through path argument, compared for every daemon type.
+  @volume_types ~w(custom container virtual-machine image)
+  @extensions ~w(projects network storage api_filtering container_full images_all_projects instance_all_projects instance_get_full operations_get_query_all_projects networks_all_projects profiles_all_projects storage_volume_full storage_volumes_all_projects network_acl network_acls_all_projects network_address_set network_allocations network_dns network_dns_records network_forward network_integrations network_leases network_load_balancer network_load_balancer_state network_peer network_state network_zones_all_projects cluster_member_state clustering clustering_groups metadata_configuration project_access project_usage resources warnings storage_buckets storage_buckets_all_projects storage_bucket_full storage_volume_nbd storage_api_volume_snapshots storage_volume_state instance_access container_edit_metadata container_exec_recording container_backup custom_volume_backup storage_bucket_backup)
+  @driver Path.expand("../.integration/inspection-driver", __DIR__)
+  @shards 8
+
+  def shards, do: @shards
+  def contracts, do: @contracts
+  def discovery, do: @discovery
+
+  @doc false
+  # Builds the driver once per run, however many shards ask at the same time.
+  def driver! do
+    :global.trans({{__MODULE__, :driver}, self()}, fn ->
+      if :persistent_term.get({__MODULE__, :driver}, false) == false do
+        {out, status} =
+          System.cmd("mise", ["exec", "--", "go", "build", "-o", @driver, "."],
+            cd: Path.expand("reference", __DIR__),
+            env: [{"GOTOOLCHAIN", "local"}],
+            stderr_to_stdout: true
+          )
+
+        assert status == 0, out
+        assert length(@methods) == 145 and length(@rest) == 8
+        :persistent_term.put({__MODULE__, :driver}, true)
+      end
+    end)
+
+    :ok
+  end
+
+  def tmp_root! do
+    root = Path.join(System.tmp_dir!(), "op-read-#{System.unique_integer([:positive])}")
+    File.mkdir!(root)
+    File.chmod!(root, 0o700)
+    on_exit(fn -> File.rm_rf!(root) end)
+    root
+  end
+
+  def check(root, method, transport) do
+    identity =
+      if transport == :https, do: TLSIdentity.generate(root, "read", "localhost")
+
+    for outcome <- [:populated, :empty, :corrupt, 403, 404],
+        do: compare(root, identity, method, outcome)
+
+    for type <- volume_types(method),
+        do: compare(root, identity, Map.put(method, "volume_type", type), :populated)
+
+    if method == @discovery do
+      for outcome <- [:missing, :version], do: compare(root, identity, method, outcome)
+    end
+
+    # The daemon groups operation URLs by status; a flat list stays accepted too.
+    if method["name"] == "GetOperationUUIDs", do: compare(root, identity, method, :flat)
+
+    if method["result"] == "names" do
+      malformed = if method["name"] == "GetOperationUUIDs", do: :nested, else: :grouped
+      compare(root, identity, method, malformed)
+    end
+
+    if method["model"] == "StorageVolumeFull",
+      do: compare(root, identity, method, :corrupt_backup)
+
+    bounds(root, identity, method)
+    for mode <- [:deadline, :cancel], do: lifetime(root, identity, method, mode)
+  end
+
+  def compare(root, identity, method, outcome) do
+    fixture = backend(root, identity, fn _ -> response(method, outcome) end, method)
+    client = client(fixture, identity)
+    values = Enum.map(method["params"], &args(method)[&1])
+
+    input =
+      Map.merge(native_connection(fixture, identity), %{
+        action: method["name"],
+        args: values,
+        project: "fixture scope",
+        target: "member/a"
+      })
+
+    input =
+      case method do
+        @discovery ->
+          input
+          |> Map.drop([:action, :args])
+          |> Map.merge(%{method: "GET", path: "/1.0?project=fixture+scope&target=member%2Fa"})
+
+        @root ->
+          input |> Map.drop([:action, :args]) |> Map.merge(%{method: "GET", path: "/"})
+
+        %{"reference_kind" => "rest"} ->
+          input
+          |> Map.drop([:action, :args])
+          |> Map.merge(%{method: "GET", path: rest_path(method)})
+
+        _ ->
+          input
+      end
+
+    file = Path.join(root, "oracle.json")
+    File.write!(file, Jason.encode!(input))
+    {out, status} = System.cmd(@driver, [file], stderr_to_stdout: true)
+    assert status == 0, out
+    expected = Jason.decode!(out)
+    actual = invoke(client, method)
+    requests = HTTPFixture.requests(fixture)
+    raw? = method == @discovery or method["reference_kind"] == "rest"
+    if not raw?, do: assert(length(requests) == 3)
+    assert [native, local] = if(raw?, do: requests, else: tl(requests))
+    assert local.method == "GET"
+    assert WireComparison.request(local) == WireComparison.request(native)
+
+    if method == @root do
+      # The unversioned root takes no project or target, as the daemon serves it.
+      assert local.target == "/"
+    else
+      query = URI.decode_query(URI.parse(local.target).query)
+      assert query["target"] == "member/a"
+
+      # all-projects suppresses the connection project, as in the pinned client.
+      if method["query"]["all-projects"],
+        do: assert(query["all-projects"] == "true" and not Map.has_key?(query, "project")),
+        else: assert(query["project"] == "fixture scope")
+    end
+
+    assert_result(actual, expected, client, method, outcome)
+  end
+
+  def assert_result(actual, expected, client, method, outcome) do
+    cond do
+      is_integer(outcome) ->
+        assert {:error,
+                %Error{
+                  kind: :native,
+                  http_status: ^outcome,
+                  error_code: ^outcome,
+                  response: reply,
+                  message: message
+                }} = actual
+
+        assert expected["error_status"] == outcome and expected["error"] == message
+        assert reply.connection == client.connection and reply.identity == :verified
+
+      method == @discovery ->
+        discovery_result(actual, expected, client, outcome)
+
+      method == @root ->
+        root_result(actual, expected, client, outcome)
+
+      method["reference_kind"] == "rest" ->
+        rest_result(actual, expected, client, method, outcome)
+
+      outcome in [:corrupt, :corrupt_backup, :grouped, :nested] ->
+        assert expected["error"]
+        assert {:error, %Error{kind: :invalid_model}} = actual
+
+      method["result"] in ["names", "project_names", "project_urls"] ->
+        names_result(actual, expected, client, method, outcome)
+
+      method["result"] == "strings" ->
+        assert {:ok, reply} = actual
+        assert reply.connection == client.connection and reply.identity == :verified
+        assert reply.metadata == metadata(method, outcome)
+        assert hd(expected["outputs"]) == reply.metadata
+
+      true ->
+        model_result(actual, expected, client, method, outcome)
+    end
+  end
+
+  def names_result(actual, expected, client, method, outcome) do
+    assert {:ok, reply} = actual
+    assert reply.connection == client.connection and reply.identity == :verified
+    assert reply.metadata == names(method, outcome)
+
+    # Approved difference: the pinned client cannot decode the daemon's grouped map.
+    if method["name"] == "GetOperationUUIDs" and outcome in [:populated, :empty],
+      do: assert(expected["error"]),
+      else: assert(hd(expected["outputs"]) == reply.metadata)
+  end
+
+  def model_result(actual, expected, client, method, outcome) do
+    refute expected["error"], inspect(expected)
+    assert {:ok, reply} = actual
+    assert reply.connection == client.connection and reply.identity == :verified
+    assert reply.etag == "\"read-etag\""
+    # Some pinned getters (network and load-balancer state) return no ETag to compare.
+    if method["result"] == "model" and length(expected["outputs"]) > 1,
+      do: assert(reply.etag == Enum.at(expected["outputs"], 1))
+
+    payload = flatten(method, metadata(method, outcome))
+    listed? = method["result"] in ["list", "grouped_list"]
+
+    decoded =
+      if listed?,
+        do: reply.metadata |> Enum.map(& &1.data) |> ordered(method),
+        else: reply.metadata.data
+
+    assert decoded == payload
+    # The native typed DTO drops unknown fields; lossless retention is independent evidence.
+    known = fn data -> if is_map(data), do: Map.delete(data, "future_field"), else: data end
+
+    if listed? do
+      native = ordered(hd(expected["outputs"]), method)
+
+      assert Enum.zip(native, payload)
+             |> Enum.all?(fn {native, data} -> sent?(native, known.(data)) end)
+
+      assert length(hd(expected["outputs"])) == length(payload)
+    else
+      assert sent?(hd(expected["outputs"]), known.(payload))
+    end
+  end
+
+  def bounds(root, identity, method) do
+    fixture = backend(root, identity, fn _ -> response(method, :populated) end, method)
+    client = client(fixture, identity)
+    limited = %{client | connection: %{client.connection | max_response_bytes: 32}}
+
+    assert {:error, %Error{kind: :response_limit}} =
+             invoke(limited, method)
+
+    for extension <- List.wrap(method["extension"]) do
+      missing = %{client | server: %Server{api_extensions: List.delete(@extensions, extension)}}
+
+      assert {:error, %Error{kind: :unsupported_extension}} =
+               Incus.call(missing, method["name"], args(method))
+    end
+
+    unready = %{
+      client
+      | context: Context.new!(owner: :fixture, identity: :verified, ready?: fn -> false end)
+    }
+
+    assert {:error, %Error{kind: :host_not_ready}} = invoke(unready, method)
+    assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+  end
+
+  def lifetime(root, identity, method, mode) do
+    parent = self()
+    tag = make_ref()
+
+    fixture =
+      backend(
+        root,
+        identity,
+        fn _ ->
+          %{
+            upgrade: fn transport, socket ->
+              send(parent, {tag, :entered})
+              send(parent, {tag, :closed, transport.recv(socket, 0, 30_000)})
+            end
+          }
+        end,
+        method
+      )
+
+    original = client(fixture, identity)
+
+    context =
+      RequestContext.new!(
+        timeout: if(mode == :deadline, do: Timing.expiring_deadline(), else: 30_000)
+      )
+
+    scoped = Incus.with_context(original, context)
+    task = Task.async(fn -> invoke(scoped, method) end)
+    assert_receive {^tag, :entered}, 10_000
+    if mode == :cancel, do: RequestContext.cancel(context)
+    kind = if mode == :deadline, do: :deadline, else: :canceled
+    assert {:error, %Error{kind: ^kind}} = Task.await(task, 10_000)
+    assert_receive {^tag, :closed, {:error, :closed}}, 10_000
+    assert original.connection.request_context == nil
+    assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+  end
+
+  def response(_method, code) when is_integer(code),
+    do: %{status: code, body: %{type: "error", error_code: code, error: "native read rejection"}}
+
+  def response(method, outcome),
+    do: %{
+      status: 200,
+      headers: %{"ETag" => "\"read-etag\""},
+      body: %{type: "sync", status_code: 200, metadata: metadata(method, outcome)}
+    }
+
+  def invoke(client, @discovery), do: Incus.connect(client.connection, client.context)
+  def invoke(client, method), do: Incus.call(client, method["name"], args(method))
+
+  def discovery_result(actual, native, client, outcome) do
+    refute native["error"]
+    assert native["response"]["metadata"] == metadata(@discovery, outcome)
+    assert native["etag"] == "\"read-etag\""
+
+    if outcome in [:corrupt, :missing, :version] do
+      kind = if outcome == :version, do: :unsupported_version, else: :invalid_server
+      assert {:error, %Error{kind: ^kind}} = actual
+    else
+      assert {:ok, connected} = actual
+      assert connected.connection == client.connection and connected.context == client.context
+      assert connected.server.raw == metadata(@discovery, outcome)
+      assert connected.server.api_version == "1.0"
+      assert connected.server.api_extensions == metadata(@discovery, outcome)["api_extensions"]
+    end
+  end
+
+  # Versions are bounded strings; RawQuery returns the raw list, the client validates it.
+  def root_result(actual, native, client, outcome) do
+    refute native["error"]
+    assert native["response"]["metadata"] == metadata(@root, outcome)
+
+    if outcome == :corrupt do
+      assert {:error, %Error{kind: :invalid_model}} = actual
+    else
+      assert {:ok, reply} = actual
+      assert reply.metadata == metadata(@root, outcome)
+      assert reply.connection == client.connection and reply.identity == :verified
+    end
+  end
+
+  # RawQuery returns the raw envelope; the client's decoded result matches the fixture.
+  def rest_result(actual, native, client, method, outcome) do
+    refute native["error"]
+    assert native["response"]["metadata"] == metadata(method, outcome)
+    assert native["etag"] == "\"read-etag\""
+
+    cond do
+      outcome in [:corrupt, :corrupt_backup, :grouped] ->
+        assert {:error, %Error{kind: :invalid_model}} = actual
+
+      method["result"] == "names" ->
+        assert {:ok, reply} = actual
+        assert reply.metadata == names(method, outcome)
+        assert reply.connection == client.connection and reply.identity == :verified
+
+      true ->
+        assert {:ok, reply} = actual
+        assert reply.connection == client.connection and reply.identity == :verified
+        assert reply.etag == "\"read-etag\""
+        data = metadata(method, outcome)
+
+        decoded =
+          if method["result"] == "list",
+            do: Enum.map(reply.metadata, & &1.data),
+            else: reply.metadata.data
+
+        assert decoded == data
+    end
+  end
+
+  # The native path and query, fixed per descriptor (not derived from it), so a wrong
+  # descriptor path or recursion value fails the wire comparison. Host routing too.
+  def rest_path(method) do
+    pool = "/1.0/storage-pools/fixture-pool/volumes/" <> Map.get(method, "volume_type", "custom")
+
+    {path, query} =
+      case method["name"] do
+        "GetStoragePoolVolumeTypeNames" ->
+          {pool, %{}}
+
+        "GetStoragePoolVolumesByType" ->
+          {pool, %{"recursion" => "1"}}
+
+        "GetStoragePoolVolumesByTypeFull" ->
+          {pool, %{"recursion" => "2"}}
+
+        "GetStorageVolumeBitmap" ->
+          {pool <> "/fixture-volumeName/bitmaps/fixture-bitmapName", %{}}
+
+        "GetInstanceExecOutputNames" ->
+          {"/1.0/instances/fixture-name/logs/exec-output", %{}}
+
+        "GetStoragePoolBucketBackupNames" ->
+          {"/1.0/storage-pools/fixture-poolName/buckets/fixture-bucketName/backups", %{}}
+
+        "GetStoragePoolBucketBackups" ->
+          {"/1.0/storage-pools/fixture-poolName/buckets/fixture-bucketName/backups",
+           %{"recursion" => "1"}}
+
+        "GetStoragePoolBucketBackup" ->
+          {"/1.0/storage-pools/fixture-poolName/buckets/fixture-bucketName/backups/fixture-name",
+           %{}}
+      end
+
+    query = Map.merge(query, %{"project" => "fixture scope", "target" => "member/a"})
+    path <> "?" <> URI.encode_query(query)
+  end
+
+  def volume_types(method) do
+    if Enum.any?(method["params"], &(&1 in ~w(volType volumeType))), do: @volume_types, else: []
+  end
+
+  # Template names are plain strings; a non-string entry is rejected.
+  def metadata(%{"name" => "GetInstanceTemplateFiles"}, :populated),
+    do: ["hostname.tpl", "hosts tpl"]
+
+  def metadata(%{"name" => "GetInstanceTemplateFiles"}, :corrupt), do: ["hostname.tpl", 1]
+
+  def metadata(@root, :populated), do: ["/1.0"]
+  def metadata(@root, :empty), do: []
+  def metadata(@root, :corrupt), do: ["/1.0", 1]
+  def metadata(@discovery, :missing), do: %{}
+  def metadata(@discovery, :empty), do: %{"api_version" => "1.0", "api_extensions" => []}
+  def metadata(@discovery, :version), do: %{sample("Server") | "api_version" => "2.0"}
+
+  # The daemon groups operation URLs by status, so its empty answer is an empty map.
+  def metadata(%{"name" => "GetOperationUUIDs"}, :empty), do: %{}
+
+  def metadata(%{"result" => result}, :empty)
+      when result in ~w(list names project_names project_urls strings),
+      do: []
+
+  # A list-shaped (alias) model's empty answer is an empty list.
+  def metadata(%{"model" => model}, :empty) when model in @generated,
+    do: if(is_list(ModelSamples.generate(model)), do: [], else: %{})
+
+  def metadata(_, :empty), do: %{}
+
+  def metadata(%{"result" => "names"} = method, outcome) do
+    values = args(method)
+
+    prefix =
+      String.replace(method["path"], ~r/\{[^}]+\}/, &values[String.slice(&1, 1..-2//1)])
+
+    prefix = URI.encode(prefix)
+
+    cond do
+      outcome == :corrupt ->
+        ["/1.0/unrelated/fixture"]
+
+      # Only operation UUIDs are grouped; other names reject a map or nested groups.
+      outcome == :grouped ->
+        %{"running" => [prefix <> "/fixture"]}
+
+      outcome == :nested ->
+        %{"running" => [[prefix <> "/running"]]}
+
+      method["name"] == "GetOperationUUIDs" and outcome == :populated ->
+        %{"running" => [prefix <> "/running"], "success" => [prefix <> "/finished"]}
+
+      method["name"] == "GetOperationUUIDs" ->
+        [prefix <> "/running", prefix <> "/finished"]
+
+      # Volume URLs carry their type; names keep the type/name path.
+      String.ends_with?(method["path"], "/volumes") ->
+        [prefix <> "/custom/fixture", prefix <> "/custom/second%20one"]
+
+      true ->
+        [prefix <> "/fixture", prefix <> "/second%20one"]
+    end
+  end
+
+  def metadata(%{"result" => "project_urls"}, :corrupt), do: ["/1.0/unrelated/fixture"]
+
+  # Volume URLs across projects: the project query names the group (default when absent).
+  def metadata(%{"result" => "project_urls"} = method, _) do
+    prefix = String.replace(method["path"], "{pool}", "fixture-pool")
+
+    [
+      prefix <> "/custom/fixture",
+      prefix <> "/custom/second?project=fixture%20scope",
+      prefix <> "/custom/third?project=fixture%20scope"
+    ]
+  end
+
+  def metadata(%{"result" => "project_names"}, :corrupt), do: [%{"name" => 1}]
+
+  def metadata(%{"result" => "project_names"}, _),
+    do: [
+      %{"name" => "fixture", "project" => "default"},
+      %{"name" => "second", "project" => "fixture scope"},
+      %{"name" => "third", "project" => "fixture scope"}
+    ]
+
+  def metadata(method, outcome) do
+    data =
+      case outcome do
+        :corrupt -> corrupt(method["model"])
+        :corrupt_backup -> corrupt(method["model"] <> " backup")
+        _ -> sample(method["model"])
+      end
+
+    case method["result"] do
+      "list" ->
+        [data]
+
+      "grouped_list" ->
+        %{
+          "running" => [data],
+          "success" => [%{data | "id" => "finished", "status" => "Success", "status_code" => 200}]
+        }
+
+      _ ->
+        data
+    end
+  end
+
+  # Decoded names for each fixture shape (grouped operation URLs flatten by status).
+  def names(%{"result" => result}, :empty) when result in ~w(project_names project_urls),
+    do: %{}
+
+  def names(_, :empty), do: []
+
+  def names(%{"result" => "project_names"}, _),
+    do: %{"default" => ["fixture"], "fixture scope" => ["second", "third"]}
+
+  def names(%{"result" => "project_urls"}, _),
+    do: %{"default" => ["custom/fixture"], "fixture scope" => ["custom/second", "custom/third"]}
+
+  def names(%{"name" => "GetOperationUUIDs"}, _), do: ["running", "finished"]
+
+  def names(%{"path" => path}, _) when binary_part(path, byte_size(path) - 8, 8) == "/volumes",
+    do: ["custom/fixture", "custom/second one"]
+
+  def names(_, _), do: ["fixture", "second one"]
+
+  # Every field the fixture sent survives in the native DTO at every depth; the
+  # DTO may add zero-valued fields the fixture omitted.
+  def sent?(native, sent) when is_map(sent),
+    do: is_map(native) and Enum.all?(sent, fn {key, value} -> sent?(native[key], value) end)
+
+  def sent?(native, sent) when is_list(sent),
+    do:
+      is_list(native) and length(native) == length(sent) and
+        Enum.all?(Enum.zip(native, sent), fn {n, v} -> sent?(n, v) end)
+
+  def sent?(native, sent), do: native == sent
+
+  def flatten(%{"result" => "grouped_list"} = method, groups),
+    do: groups |> Map.values() |> List.flatten() |> ordered(method)
+
+  def flatten(_, data), do: data
+
+  # The Go client flattens a map of groups; cross-group result ordering is not a contract.
+  def ordered(data, %{"result" => "grouped_list"}), do: Enum.sort_by(data, & &1["id"])
+  def ordered(data, _), do: data
+
+  def corrupt("Server"), do: %{"api_version" => "1.0", "api_extensions" => false}
+  def corrupt("InstanceState"), do: %{"pid" => "invalid"}
+  def corrupt("Image"), do: %{"public" => "invalid"}
+  def corrupt("Operation"), do: %{sample("Operation") | "status_code" => "invalid"}
+  # Full volumes prove each nested collection rejects a malformed item on its own.
+  def corrupt("StorageVolumeFull"),
+    do: %{sample("StorageVolumeFull") | "snapshots" => [%{"name" => 1}]}
+
+  def corrupt("StorageVolumeFull backup"),
+    do: %{sample("StorageVolumeFull") | "backups" => [%{"volume_only" => "yes"}]}
+
+  # A generated model breaks its first string field (or, without one, gives its first
+  # collection field a string), which the pinned DTO rejects.
+  def corrupt(model) when model in @generated do
+    fields = ModelSamples.fields(model)
+
+    case Enum.find(fields, &(&1["type"] == "string")) do
+      # An alias model (a list or map) is corrupted as a whole.
+      _ when fields == [] ->
+        "invalid"
+
+      %{"name" => name} ->
+        %{sample(model) | name => 7}
+
+      # Otherwise the first field (a collection, struct or alias) becomes a string.
+      nil ->
+        %{"name" => name} = hd(fields)
+        %{sample(model) | name => "invalid"}
+    end
+  end
+
+  def corrupt(_), do: %{"config" => []}
+
+  def sample("Server"),
+    do: %{
+      "api_version" => "1.0",
+      "api_extensions" => @extensions,
+      "api_status" => "stable",
+      "auth" => "trusted",
+      "environment" => %{},
+      "future_field" => %{}
+    }
+
+  def sample("InstanceState"),
+    do: %{
+      "status" => "Running",
+      "status_code" => 103,
+      "pid" => 42,
+      "processes" => 2,
+      "memory" => %{
+        "usage" => 32,
+        "usage_peak" => 0,
+        "total" => 0,
+        "swap_usage" => 0,
+        "swap_usage_peak" => 0
+      },
+      "future_field" => %{}
+    }
+
+  def sample("Image"),
+    do: %{
+      "fingerprint" => "fixture-fingerprint",
+      "public" => false,
+      "auto_update" => false,
+      "properties" => %{"description" => "fixture"},
+      "size" => 123,
+      "architecture" => "x86_64",
+      "future_field" => %{}
+    }
+
+  def sample("Operation"),
+    do: %{
+      "id" => "running",
+      "status" => "Running",
+      "status_code" => 103,
+      "err" => "",
+      "may_cancel" => true,
+      "metadata" => %{"fixture" => "retained"},
+      "future_field" => %{}
+    }
+
+  def sample("StorageVolumeFull"),
+    do:
+      Map.merge(sample("StorageVolume"), %{
+        "state" => %{"usage" => %{"used" => 42, "total" => 100}},
+        "snapshots" => [
+          %{
+            "name" => "snap0",
+            "description" => "nested",
+            "config" => %{"size" => "1GiB"},
+            "content_type" => "filesystem",
+            "created_at" => "2026-10-20T12:00:00Z",
+            "expires_at" => "2026-11-20T12:00:00Z"
+          }
+        ],
+        "backups" => [
+          %{
+            "name" => "backup0",
+            "created_at" => "2026-10-20T12:00:00Z",
+            "expires_at" => "2026-11-20T12:00:00Z",
+            "volume_only" => true,
+            "optimized_storage" => false
+          }
+        ]
+      })
+
+  def sample("InstanceFull"),
+    do:
+      Map.merge(sample("Instance"), %{
+        "state" => Map.delete(sample("InstanceState"), "future_field"),
+        "snapshots" => [Map.delete(sample("InstanceSnapshot"), "future_field")],
+        "backups" => []
+      })
+
+  def sample(model) when model in ["Instance", "InstanceSnapshot"] do
+    base = %{
+      "name" => "fixture",
+      "config" => %{"user.note" => "value"},
+      "devices" => %{"root" => %{"type" => "disk", "path" => "/", "pool" => "fixture"}},
+      "profiles" => ["default"],
+      "future_field" => %{}
+    }
+
+    if model == "Instance",
+      do: Map.merge(base, %{"type" => "container", "status" => "Running", "status_code" => 103}),
+      else: Map.put(base, "stateful", false)
+  end
+
+  def sample(model) when model in @generated do
+    data = ModelSamples.generate(model)
+    if is_map(data), do: Map.put(data, "future_field", %{}), else: data
+  end
+
+  def sample(model) do
+    base = %{
+      "name" => "fixture",
+      "description" => "inspection",
+      "config" => %{"user.note" => "value"},
+      "used_by" => [],
+      "future_field" => %{}
+    }
+
+    case model do
+      "Profile" ->
+        Map.put(base, "devices", %{
+          "root" => %{"type" => "disk", "path" => "/", "pool" => "fixture"}
+        })
+
+      "Network" ->
+        Map.merge(base, %{"type" => "bridge", "managed" => true, "locations" => ["member-a"]})
+
+      "StoragePool" ->
+        Map.merge(base, %{"driver" => "dir", "status" => "Created", "locations" => ["member-a"]})
+
+      "StorageVolume" ->
+        Map.merge(base, %{
+          "type" => "custom",
+          "content_type" => "filesystem",
+          "project" => "fixture scope",
+          "location" => "member-a"
+        })
+
+      "Project" ->
+        base
+    end
+  end
+
+  def args(method),
+    do:
+      Map.new(
+        method["params"],
+        &{&1,
+         case &1 do
+           type when type in ~w(volType volumeType) -> Map.get(method, "volume_type", "custom")
+           "instance_type" -> "container"
+           "filters" -> ["name=fixture", "status=Running"]
+           key -> "fixture-" <> key
+         end}
+      )
+
+  def backend(root, identity, handler, method) do
+    options =
+      if identity,
+        do: [
+          transport: :ssl,
+          certfile: identity.certfile,
+          keyfile: identity.keyfile,
+          peer_options: [
+            cacertfile: identity.cafile,
+            verify: :verify_peer,
+            fail_if_no_peer_cert: true
+          ]
+        ],
+        else: [
+          transport: :gen_tcp,
+          path: Path.join(root, "s#{System.unique_integer([:positive])}")
+        ]
+
+    start_supervised!(
+      {HTTPFixture,
+       options ++
+         [
+           handler: fn request ->
+             if method != @discovery and URI.parse(request.target).path == "/1.0",
+               do: %{
+                 status: 200,
+                 body: %{
+                   type: "sync",
+                   metadata: %{api_version: "1.0", api_extensions: @extensions, environment: %{}}
+                 }
+               },
+               else: handler.(request)
+           end
+         ]},
+      id: make_ref()
+    )
+  end
+
+  def client(fixture, identity) do
+    endpoint = HTTPFixture.endpoint(fixture)
+    options = [owner: :fixture, project: "fixture scope", member: "member/a", timeout: 30_000]
+
+    connection =
+      if identity,
+        do:
+          Connection.https!(
+            endpoint.url,
+            options ++
+              [
+                tls: [
+                  cacertfile: identity.cafile,
+                  certfile: identity.certfile,
+                  keyfile: identity.keyfile
+                ]
+              ]
+          ),
+        else: Connection.unix!(endpoint.socket, options)
+
+    %Incus{
+      connection: connection,
+      context: Context.new!(owner: :fixture, identity: :verified, ready?: fn -> true end),
+      server: %Server{api_extensions: @extensions}
+    }
+  end
+
+  def native_connection(fixture, nil), do: %{socket: HTTPFixture.endpoint(fixture).socket}
+
+  def native_connection(fixture, identity),
+    do: %{
+      url: HTTPFixture.endpoint(fixture).url,
+      tls_ca: File.read!(identity.cafile),
+      client_cert: File.read!(identity.certfile),
+      client_key: File.read!(identity.keyfile)
+    }
+end
+
+defmodule Opsmaru.Incus.InspectionContractTest do
+  # The receive-expiry tests set VM-wide trace patterns on Mint.HTTP.recv/3 and
+  # Transport.receive_response/5 under TraceLock. The contract checks run in the shards below.
+  use ExUnit.Case, async: true
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
+
+  import Opsmaru.Incus.InspectionContractTest.Contract,
+    only: [backend: 4, client: 2, discovery: 0, tmp_root!: 0]
+
+  alias Opsmaru.Incus
+  alias Opsmaru.Incus.{Error, RequestContext, Transport}
+  alias Opsmaru.TestSupport.{HTTPFixture, Timing, TLSIdentity, TraceLock}
+
+  @discovery discovery()
+
+  setup do
+    %{root: tmp_root!()}
+  end
+
+  for transport <- [:unix, :https] do
+    test "#{transport} socket receive expiry retains deadline despite delayed observation", %{
+      root: root
+    } do
+      # Before anything starts a clock: none may run while waiting for the lock.
+      TraceLock.acquire!()
+
+      identity =
+        if unquote(transport) == :https, do: TLSIdentity.generate(root, "expiry", "localhost")
+
+      for method <- ["GET", "HEAD", "POST"], do: receive_expiry(root, identity, method)
+    end
+  end
+
+  defp receive_expiry(root, identity, method) do
+    parent = self()
+    tag = make_ref()
+
+    fixture =
+      backend(
+        root,
+        identity,
+        fn request ->
+          %{
+            upgrade: fn transport, socket ->
+              if URI.parse(request.target).path == "/1.0/stalled" do
+                send(parent, {tag, :entered})
+                send(parent, {tag, :closed, transport.recv(socket, 0, 30_000)})
+              end
+            end
+          }
+        end,
+        @discovery
+      )
+
+    original = client(fixture, identity)
+    # The worker must still have budget left when it reaches recv, after a TLS
+    # handshake on a loaded VM, or it reports the deadline without reading.
+    timeout = if identity, do: 3 * Timing.expiring_deadline(), else: Timing.expiring_deadline()
+    context = RequestContext.new!(timeout: timeout)
+    scoped = Incus.with_context(original, context)
+
+    caller =
+      spawn(fn ->
+        receive do
+          :start -> send(parent, {tag, Incus.raw_query(scoped, method, "/1.0/stalled")})
+        end
+      end)
+
+    on_exit(fn -> if Process.alive?(caller), do: Process.exit(caller, :kill) end)
+    patterns = [{Mint.HTTP, :recv, 3}, {Transport, :receive_response, 5}]
+
+    for {module, _, _} = pattern <- patterns do
+      Code.ensure_loaded!(module)
+      assert :erlang.trace_pattern(pattern, [{:_, [], [{:return_trace}]}], [:local]) == 1
+    end
+
+    on_exit(fn ->
+      for pattern <- patterns, do: :erlang.trace_pattern(pattern, false, [:local])
+    end)
+
+    :erlang.trace(caller, true, [:call, :procs, :set_on_spawn])
+    send(caller, :start)
+    assert_receive {:trace, ^caller, :spawn, worker, _}, 10_000
+    assert_receive {:trace, ^worker, :spawn, guard, _}, 10_000
+
+    on_exit(fn ->
+      for pid <- [worker, guard], Process.alive?(pid), do: Process.exit(pid, :kill)
+    end)
+
+    for pid <- [caller, worker, guard], do: :erlang.trace(pid, false, [:procs, :set_on_spawn])
+    # Force the actual socket timeout to win; neither competing observer can end the worker.
+    assert :erlang.suspend_process(guard)
+    assert :erlang.suspend_process(caller)
+    monitor = monitor!(worker)
+    assert_receive {^tag, :entered}, 10_000
+    assert_receive {:DOWN, ^monitor, :process, ^worker, :normal}, 10_000
+    assert_receive {^tag, :closed, {:error, :closed}}, 10_000
+
+    assert_receive {:trace, ^worker, :return_from, {Mint.HTTP, :recv, 3},
+                    {:error, _, %Mint.TransportError{reason: :timeout}, []}},
+                   10_000
+
+    assert_receive {:trace, ^worker, :return_from, {Transport, :receive_response, 5}, classified},
+                   10_000
+
+    assert classified == {:error, :deadline}
+    assert :erlang.resume_process(caller)
+    expected = if method in ["GET", "HEAD"], do: :deadline, else: :uncertain
+    assert_receive {^tag, result}, 10_000
+    assert {:error, %Error{kind: ^expected}} = result
+    assert RequestContext.status(context) == :deadline
+    assert original.connection.request_context == nil
+
+    # No response was parsed before this peer EOF; it remains distinct from
+    # the actual socket timeout and delayed-observer deadline above.
+    eof_kind = if method in ["GET", "HEAD"], do: :response_closed, else: :uncertain
+    assert {:error, %Error{kind: ^eof_kind}} = Incus.raw_query(original, method, "/1.0/eof")
+    assert [%{method: ^method}, %{method: ^method}] = HTTPFixture.requests(fixture)
+  end
+end
+
+for shard <- 0..(Opsmaru.Incus.InspectionContractTest.Contract.shards() - 1) do
+  defmodule Module.concat(Opsmaru.Incus.InspectionContractTest, "Shard#{shard}") do
+    use ExUnit.Case, async: true
+    alias Opsmaru.Incus.InspectionContractTest.Contract
+
+    setup_all do
+      Contract.driver!()
+    end
+
+    setup do
+      %{root: Contract.tmp_root!()}
+    end
+
+    for {method, index} <- Enum.with_index(Contract.contracts()),
+        rem(index, Contract.shards()) == shard,
+        transport <- [:unix, :https] do
+      test "#{method["name"]} #{transport} scoped inspection matches native results, routing and errors",
+           %{root: root} do
+        Contract.check(root, unquote(Macro.escape(method)), unquote(transport))
+      end
+    end
+  end
+end

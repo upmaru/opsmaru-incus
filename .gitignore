@@ -1,0 +1,20 @@
+# Build and dependency outputs
+/_build/
+/deps/
+/doc/
+/cover/
+/.fetch
+erl_crash.dump
+*.ez
+opsmaru_incus-*.tar
+/tmp/
+
+# Isolated consumer fixture outputs
+/test/consumer/_build/
+/test/consumer/deps/
+
+# Local credentials and isolated acceptance/verifier state
+.env
+.env.*
+!.env.example
+.integration/
