@@ -145,8 +145,8 @@ by `check:reference`. The file MUST NOT be included in the Hex package.
 
 ### Requirement: Release cassette
 
-Each `v*` release SHALL publish a tama-dex cassette holding both operation
-documents' sources, as a GitHub Release asset named
+Each `v*` release SHALL publish a tama-dex cassette named `opsmaru_incus`,
+holding both operation documents' sources, as a GitHub Release asset named
 `opsmaru_incus-<version>.tama-cassette`, together with its SHA-256 and a build
 provenance attestation. It SHALL be built with tama_dex only as a dev/test
 dependency, after the Hex publish succeeds.
@@ -154,7 +154,7 @@ dependency, after the Hex publish succeeds.
 #### Scenario: Consumer imports the cassette
 
 - **WHEN** Macus imports a release cassette whose SHA-256 matches its pin
-- **THEN** both sources are searchable without building the index from the documents
+- **THEN** both sources are searchable under the `opsmaru_incus` cassette without building the index from the documents
 
 #### Scenario: Consumer without tama_dex at runtime
 
