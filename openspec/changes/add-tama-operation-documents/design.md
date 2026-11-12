@@ -246,6 +246,13 @@ install or `macus start` without indexing.
   notes come from the version's `CHANGELOG.md` section.
   - The job needs `contents: write`, `id-token: write` and
     `attestations: write`. All actions are pinned by commit SHA.
+- **Why a GitHub Release asset, not the Hex package (user decision,
+  2026-11-12):** Hex stays the only route for the package itself. The
+  cassette is derived data, built from the documents the package already
+  ships, and is published beside the package rather than inside it. Client-only
+  consumers therefore never carry it. A host that bundles it pins its own
+  SHA-256 and keeps that pin in step with its locked `opsmaru_incus` version.
+  Shipping it inside the package under `priv/` was considered and not chosen.
 - **Trust:** the cassette embeds the canonical documents and their digests, so
   an importer can verify it and fall back to the documents if its tama-dex
   index schema differs.
