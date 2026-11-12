@@ -14,7 +14,7 @@
   - Other `x-<prefix>-*` keys are kept as opaque metadata.
   - tama-dex adds no deadline around executors, and marks every error
     `dispatched: true|false`.
-- **Curated catalogue (0.1.0):** 32 exported operations.
+- **Composite catalogue (0.1.0):** 32 exported operations.
   - Scopes are `incus.read` (22), `incus.write` (5), `incus.exec` (1) and
     `incus.delete` (4).
   - Confirmation fields are already required string `confirm` properties, for
@@ -48,16 +48,17 @@
 - Two producer documents that pass `tama-operations/1` validation, built as
   pure data with no dependency on tama_dex.
 - The native API reachable through tama-dex search, but never as the default,
-  and never with weaker trust than the curated operations.
+  and never with weaker trust than the composite operations.
 - Native coverage that follows verified client methods exactly: the upstream
   YAML adds words, never operations or schemas.
 
 ## Non-goals
 
-- Changing `describe/1`, curated names or schemas, or `coverage.json`.
+- Changing the `describe/1` data, composite operation names or schemas, or
+  `coverage.json`. Only their module moves (Decision 1).
 - Interactive exec or console, file and image transfer, migration, copy or
   cluster join through the native document.
-- Waiting on native background operations. Callers use the curated
+- Waiting on native background operations. Callers use the composite
   `incus_operation_wait`/`get` tools, or `incus_native_get_operation`.
 
 ## Decisions
@@ -66,8 +67,8 @@
 
 | Source | Builder | Executor |
 |---|---|---|
-| `opsmaru_incus` | `Opsmaru.Incus.Operations.openapi/0` | `Operations.run/3` |
-| `opsmaru_incus_native` | `Opsmaru.Incus.NativeOperations.openapi/0` | `NativeOperations.run/3` |
+| `opsmaru_incus` | `Opsmaru.Incus.Operations.Composite.openapi/0` | `Operations.Composite.run/3` |
+| `opsmaru_incus_native` | `Opsmaru.Incus.Operations.Native.openapi/0` | `Operations.Native.run/3` |
 
 - Both builders are pure, returning the same JSON-safe map on every call, with
   `info.version` set to the package version.
@@ -75,9 +76,26 @@
   `priv/incus/native-operations.json` (`@external_resource`), so no YAML is
   parsed at runtime or compile time in consumers.
 - Separate sources let a host register different executors and grant native
-  scopes independently.
+  scopes independently. Source IDs stay `opsmaru_incus` and
+  `opsmaru_incus_native`.
+- **Module layout (user request, 2026-11-12):**
 
-### 2. Curated mapping
+  | Module | Holds |
+  |---|---|
+  | `Opsmaru.Incus.Operations.Composite` | `all/0`, `describe/1`, `run/3`, `unavailable/0`, `openapi/0` for the composite operations |
+  | `Opsmaru.Incus.Operations.Composite.*` | their implementations, moved from `Operations.Exec`, `Inspection`, `Instances`, `Mutation` and `OperationTools` |
+  | `Opsmaru.Incus.Operations.Native` | `openapi/0`, `unavailable/0`, `run/3` for the native operations |
+  | `Opsmaru.Incus.Operations.*` | shared infrastructure used by both: `Host`, `Descriptor`, `Schema`, `Fragments`, `Result`, `Evidence` |
+
+  - `Opsmaru.Incus.Operations` keeps the 0.1.0 functions `all/0`,
+    `describe/1`, `run/3` and `unavailable/0` as `@deprecated` delegates to
+    `Composite` through 0.2.x, so 0.1.0 callers such as Macus keep compiling
+    with a warning. They are removed in 0.3.0. It gains no `openapi/0`.
+  - The operations catalogue test and the consumer fixtures move to
+    `Composite`, and a test proves each deprecated delegate returns exactly
+    what `Composite` returns.
+
+### 2. Composite mapping
 
 | Descriptor | Profile |
 |---|---|
@@ -124,7 +142,7 @@ byte, and checks the `rest-api.yaml` SHA-256. The generator reads
 - **Input schema:** an object with `additionalProperties: false`, containing:
   - each `params` entry as a required string, or an integer or boolean where
     `arg_types` says so;
-  - optional `project` (the curated project pattern);
+  - optional `project` (the composite project pattern);
   - optional `etag` (a header-safe string) for methods that take one;
   - `body`, required when the method has a body model, converted from
     `models.json`;
@@ -145,11 +163,11 @@ byte, and checks the `rest-api.yaml` SHA-256. The generator reads
     string array for `names` and `strings`, and is absent for `empty_sync`;
   - `operation` results return immediately with `operation_id` and the native
     operation object, and declare `x-tama-identity: ["operation_id"]`.
-  - `default` is the shared curated error object.
+  - `default` is the shared composite error object.
 
 ### 4. Native scopes, destructive flags and confirmation
 
-- **Scopes** are separate from the curated ones and never implied by them:
+- **Scopes** are separate from the composite ones and never implied by them:
   - `incus.native.admin`: every method under `/1.0/certificates` and
     `/1.0/cluster`, plus `PUT`/`PATCH` of `/1.0`;
   - otherwise `incus.native.read` for `GET`, `incus.native.delete` for
@@ -165,7 +183,7 @@ byte, and checks the `rest-api.yaml` SHA-256. The generator reads
 
 ### 5. Native exclusions
 
-`NativeOperations.unavailable/0` lists every method that isn't exported, with
+`Operations.Native.unavailable/0` lists every method that isn't exported, with
 its reason. The rules are applied in order:
 
 1. **Interactive channel:** operations whose result opens websockets
@@ -179,7 +197,7 @@ its reason. The rules are applied in order:
    denylisted body fields from the remaining schemas (`source.server`,
    `source.secret`, `source.certificate`, `source.operation`,
    `source.websockets`, `source.url` and others listed in the policy). Native
-   input therefore cannot select a backend, as the curated rules require.
+   input therefore cannot select a backend, as the composite rules require.
 4. **No evidence:** methods without recorded evidence.
 
 Rules 2 and 3 come from reviewed lists in `native-policy.json`. The generator
@@ -187,8 +205,8 @@ fails if any method in `methods.json` is neither exported nor listed.
 
 ### 6. Native execution
 
-`NativeOperations.run(name, input, host:, caller:, scopes:)` runs in the
-caller's process and mirrors `Operations.run/3`. Each step stops at its first
+`Operations.Native.run(name, input, host:, caller:, scopes:)` runs in the
+caller's process and mirrors `Operations.Composite.run/3`. Each step stops at its first
 failure:
 
 1. The operation is exported, otherwise `unknown_operation`.
@@ -197,20 +215,20 @@ failure:
 4. For destructive methods, `confirm` equals the target value, otherwise
    `confirmation_mismatch`.
 5. Restricted-config rules: any `body.config` or `body.devices` (instances,
-   profiles, projects) goes through the curated restricted-config check
+   profiles, projects) goes through the composite restricted-config check
    (`raw.*`, `security.privileged`, host-path disks and the rest), with
    `allow_restricted?/3`.
 6. The host's `binding/2` and then `authorize(caller, operation_id, input)`.
 7. One `Incus.call(client, method, params, body:, etag:)`, with the optional
-   `project` applied the curated way.
+   `project` applied the composite way.
 8. Shaping: the result goes into the envelope, limited to `max_output_bytes`
    (262 144). Larger results fail with `output_limit` rather than being
    truncated.
 9. Lost responses after a request may have been accepted are reported as
-   `uncertain`, with any known operation identity, as in the curated
+   `uncertain`, with any known operation identity, as in the composite
    mutations. Nothing is retried.
 
-Errors use the curated error object, so the `default` schema holds.
+Errors use the composite error object, so the `default` schema holds.
 
 ### 7. Packaging and evidence
 
@@ -219,7 +237,7 @@ Errors use the curated error object, so the `default` schema holds.
   input only: the package `files` list names `priv/incus` entries explicitly,
   and `check:consumer` fails if the YAML is packaged.
 - **Coverage:** `coverage.json` is unchanged. Exporting a native method is a
-  projection of existing evidence, and success through `NativeOperations` is
+  projection of existing evidence, and success through `Operations.Native` is
   never recorded as client evidence.
 
 ### 8. Release cassette
@@ -235,8 +253,8 @@ install or `macus start` without indexing.
 - **Build:** the `v*` tag workflow builds the cassette after the Hex publish
   succeeds, with `mix tama.dex.cassette --name opsmaru_incus --version
   <version>`, from
-  `Opsmaru.Incus.Operations.openapi/0` and
-  `Opsmaru.Incus.NativeOperations.openapi/0`.
+  `Opsmaru.Incus.Operations.Composite.openapi/0` and
+  `Opsmaru.Incus.Operations.Native.openapi/0`.
   - `tama_dex` is a dev/test-only dependency (`runtime: false`), so consumers
     never fetch it.
   - The asset is named `opsmaru_incus-<version>.tama-cassette`, with a

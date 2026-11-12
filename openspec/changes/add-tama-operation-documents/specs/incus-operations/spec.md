@@ -2,9 +2,28 @@
 
 ## ADDED Requirements
 
-### Requirement: Curated operations document
+### Requirement: Operations module layout
 
-`Opsmaru.Incus.Operations.openapi/0` SHALL return the exported operations as a
+The composite operations SHALL live in `Opsmaru.Incus.Operations.Composite`
+and the native operations in `Opsmaru.Incus.Operations.Native`.
+
+- `Composite` SHALL provide `all/0`, `describe/1`, `run/3`, `unavailable/0`
+  and `openapi/0` with the same names, schemas and behaviour as the 0.1.0
+  `Opsmaru.Incus.Operations` functions.
+- Shared infrastructure, including the `Opsmaru.Incus.Operations.Host`
+  behaviour, SHALL stay under `Opsmaru.Incus.Operations`.
+- Throughout 0.2.x, `Opsmaru.Incus.Operations` SHALL keep `all/0`,
+  `describe/1`, `run/3` and `unavailable/0` as deprecated delegates that
+  return exactly what `Composite` returns.
+
+#### Scenario: 0.1.0 caller after upgrading
+
+- **WHEN** a host compiled against 0.1.0 calls `Opsmaru.Incus.Operations.run/3` on 0.2.0
+- **THEN** it compiles with a deprecation warning, and the call behaves exactly like `Opsmaru.Incus.Operations.Composite.run/3`
+
+### Requirement: Composite operations document
+
+`Opsmaru.Incus.Operations.Composite.openapi/0` SHALL return the exported operations as a
 `tama-operations/1` document with source `opsmaru_incus`.
 
 - It SHALL be pure: the same JSON-safe map on every call for a release.
@@ -29,7 +48,7 @@
 
 ### Requirement: Native operations document
 
-`Opsmaru.Incus.NativeOperations.openapi/0` SHALL return a `tama-operations/1`
+`Opsmaru.Incus.Operations.Native.openapi/0` SHALL return a `tama-operations/1`
 document with source `opsmaru_incus_native`. It SHALL be generated
 deterministically by `mix opsmaru.incus.native` into
 `priv/incus/native-operations.json`, and checked byte for byte by
@@ -65,7 +84,7 @@ deterministically by `mix opsmaru.incus.native` into
 
 Native operations SHALL use the scopes `incus.native.read`,
 `incus.native.write`, `incus.native.delete` and `incus.native.admin`, which
-are separate from and never implied by the curated scopes.
+are separate from and never implied by the composite scopes.
 
 - Methods under `/1.0/certificates` and `/1.0/cluster`, and `PUT`/`PATCH` of
   `/1.0`, SHALL require `incus.native.admin`.
@@ -74,14 +93,14 @@ are separate from and never implied by the curated scopes.
 - Overrides SHALL live only in the reviewed `priv/incus/native-policy.json`,
   each with a reason.
 
-#### Scenario: Curated scope does not grant native access
+#### Scenario: Composite scope does not grant native access
 
-- **WHEN** a caller holding every curated scope searches for or runs a native operation
-- **THEN** it is hidden by tama-dex, and `NativeOperations.run/3` denies it with a stable permission failure
+- **WHEN** a caller holding every composite scope searches for or runs a native operation
+- **THEN** it is hidden by tama-dex, and `Operations.Native.run/3` denies it with a stable permission failure
 
 ### Requirement: Native operation exclusions
 
-`NativeOperations.unavailable/0` SHALL list every `methods.json` method not
+`Operations.Native.unavailable/0` SHALL list every `methods.json` method not
 exported, with its reason.
 
 - Exclusion reasons are: interactive channels, binary transfers, selecting
@@ -94,7 +113,7 @@ exported, with its reason.
 #### Scenario: Exec through the native document
 
 - **WHEN** a host looks for `ExecInstance` in the native document
-- **THEN** it is absent and listed as unavailable for an interactive channel, and the curated `incus_instance_exec` remains the way to run commands
+- **THEN** it is absent and listed as unavailable for an interactive channel, and the composite `incus_instance_exec` remains the way to run commands
 
 #### Scenario: Remote image source
 
@@ -103,13 +122,13 @@ exported, with its reason.
 
 ### Requirement: Native operation execution
 
-`NativeOperations.run(name, input, host:, caller:, scopes:)` SHALL enforce the
-same trust model as `Operations.run/3`, stopping at the first failure:
+`Operations.Native.run(name, input, host:, caller:, scopes:)` SHALL enforce the
+same trust model as `Operations.Composite.run/3`, stopping at the first failure:
 1. the operation is exported;
 2. the caller holds its scope;
 3. the input validates;
 4. destructive confirmation matches its target;
-5. restricted `config`/`devices` input passes the curated restricted-config
+5. restricted `config`/`devices` input passes the composite restricted-config
    rules;
 6. the host's `binding/2` and `authorize/3` both succeed.
 
