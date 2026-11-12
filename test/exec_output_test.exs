@@ -977,8 +977,7 @@ defmodule Opsmaru.Incus.ExecOutputTest do
             [unknown: 1],
             [{:timeout, 1} | :bad],
             [stdin: ~c"chars"],
-            [stdin: "a", stdin: "b"],
-            [stdin: String.duplicate("a", client.connection.max_stream_bytes + 1)]
+            [stdin: "a", stdin: "b"]
           ] do
         assert {:error, %Error{kind: :invalid_exec_collection}} =
                  Session.collect(session, sink, sink, opts)
@@ -986,6 +985,12 @@ defmodule Opsmaru.Incus.ExecOutputTest do
 
       assert {:error, %Error{kind: :invalid_exec_collection}} =
                Session.collect(%{session | collectable?: false}, sink, sink)
+
+      # Stdin beyond the connection's stream budget rejects before any IO.
+      small = put_in(session.operation.client.connection.max_stream_bytes, 4)
+
+      assert {:error, %Error{kind: :invalid_exec_collection}} =
+               Session.collect(small, sink, sink, stdin: "abcde")
 
       assert Enum.all?(session.channels, fn {_, c} -> Process.alive?(c.pid) end)
       assert HTTPFixture.requests(fixture) == before
