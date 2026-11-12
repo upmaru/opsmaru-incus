@@ -453,8 +453,7 @@ defmodule Opsmaru.Incus.RawChannelTest do
 
       Process.sleep(600)
       assert :ok = Cleanup.assert_stopped(monitors)
-      barrier = :erlang.trace_delivered(:all)
-      assert_receive {:trace_delivered, :all, ^barrier}, 5_000
+      :ok = await_trace_delivered(channel.pid)
       timeouts = send_timeout_traces(channel.pid)
       assert timeouts != []
       assert Enum.all?(timeouts, &(&1 in 0..connection.stream_timeout))
@@ -467,6 +466,20 @@ defmodule Opsmaru.Incus.RawChannelTest do
 
     assert {:error, %Error{kind: :deadline}} =
              Upgrade.receive_response(nil, make_ref(), deadline, 128)
+  end
+
+  # Call-trace messages can sit in the tracee's trace output queue after it
+  # exits, so its DOWN does not prove they arrived; this barrier does. OTP
+  # answers it (for a pid or :all alike) only after every normal scheduler in
+  # the VM has run a queued aux-work item, so its latency follows the busiest
+  # scheduler on the runner, not this test. The reply is guaranteed: wait for
+  # it with no window of its own and let ExUnit's test timeout bound a stuck VM.
+  defp await_trace_delivered(tracee) do
+    barrier = :erlang.trace_delivered(tracee)
+
+    receive do
+      {:trace_delivered, ^tracee, ^barrier} -> :ok
+    end
   end
 
   defp send_timeout_traces(pid) do
