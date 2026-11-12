@@ -87,5 +87,5 @@ verified against the pinned Go client) as the authority. The Incus-published
   callbacks.
 - **No new runtime dependency:** opsmaru_incus doesn't depend on tama_dex.
   Conformance is tested structurally now, and through
-  `TamaDex.Profile.validate/1` as a test-only dependency once tama_dex is
+  `Tama.Dex.Profile.validate/1` as a test-only dependency once tama_dex is
   released.

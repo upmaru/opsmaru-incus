@@ -230,7 +230,7 @@ sources (`opsmaru_incus` and `opsmaru_incus_native`). Macus can import it at
 install or `macus start` without indexing.
 
 - **Build:** the `v*` tag workflow builds the cassette after the Hex publish
-  succeeds, with `mix tama_dex.cassette`, from
+  succeeds, with `mix tama.dex.cassette`, from
   `Opsmaru.Incus.Operations.openapi/0` and
   `Opsmaru.Incus.NativeOperations.openapi/0`.
   - `tama_dex` is a dev/test-only dependency (`runtime: false`), so consumers
@@ -263,7 +263,7 @@ profile rules:
 - every schema compiles with the library's JSON Schema validator.
 
 Once tama_dex is on Hex, a test-only dependency runs
-`TamaDex.Profile.validate/1` on both documents.
+`Tama.Dex.Profile.validate/1` on both documents.
 
 ## Risks
 
