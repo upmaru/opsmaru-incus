@@ -180,8 +180,27 @@ Each workload had 10 warm-up calls and 100 measured calls.
 | Discovery | 0.708 ms | 0.779 ms | 100 | 0 |
 | Shared instance inspection | 1.489 ms | 1.700 ms | 200 | 0 |
 
-Operation polling awaits an operation ID. Verified HTTPS, TLS resumption,
-and Incus CPU measurements are pending.
+### Paired Unix and verified HTTPS baseline on 2026-11-13
+
+The existing client at revision `e9433da` ran both transports against the
+same restricted project and Incus 7.0.1 daemon in one OTP 27 process. The
+temporary HTTPS listener bound only to the guest's private Macus NAT
+address. The runner verified the hostname and pinned the server certificate
+obtained over the supplied Unix socket. A short-lived client certificate
+could see only the benchmark project. The listener was removed and client
+trust revoked after the run.
+
+| Workload | Unix p50 | Unix p95 | HTTPS p50 | HTTPS p95 | HTTPS connect attempts |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Buffered instance list GET | 0.985 ms | 1.597 ms | 53.115 ms | 59.862 ms | 100 |
+| Discovery | 0.761 ms | 0.893 ms | 52.902 ms | 58.406 ms | 100 |
+| Shared instance inspection | 1.625 ms | 2.026 ms | 107.212 ms | 116.385 ms | 200 |
+
+Each transport completed 100 samples per workload after 10 warm-up calls,
+with zero errors. Shared inspection made two HTTPS connections per sample.
+The difference includes the transport path and TLS setup. It supports
+measuring a pooled HTTPS prototype against the same workload. Operation
+polling, TLS resumption, and Incus CPU were unmeasured.
 
 ## Separate gates
 
