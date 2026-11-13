@@ -206,6 +206,24 @@ The difference includes the transport path and TLS setup. It supports
 measuring a pooled HTTPS prototype against the same workload. Operation
 polling, TLS resumption, and Incus CPU were unmeasured.
 
+### HTTPS pool comparison on 2026-11-13
+
+Revision `5318e34` ran the same read-only workloads on the same Incus 7.0.1
+project with the pool off and on in one OTP 27 process. The pooled leg used
+one slot. Each mode completed 100 timed samples per workload after 10
+warm-up calls, with zero errors.
+
+| Workload | Pool off p50 | Pool off p95 | Pool on p50 | Pool on p95 | TLS connects off / on |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Buffered instance list GET | 48.774 ms | 56.071 ms | 1.114 ms | 1.786 ms | 100 / 0 |
+| Discovery | 47.542 ms | 52.219 ms | 1.104 ms | 1.622 ms | 100 / 0 |
+| Shared instance inspection | 94.183 ms | 101.768 ms | 2.030 ms | 3.156 ms | 200 / 0 |
+
+TLS connect counts exclude preflight and warm-up. The temporary HTTPS
+listener was removed and the project-restricted certificate revoked.
+Operation polling, observed session resumption, Incus CPU and server-side
+idle close remain outside this live run.
+
 ## Separate gates
 
 - [x] Foundation 4.3: direct native inspection, mutation, operation and stream

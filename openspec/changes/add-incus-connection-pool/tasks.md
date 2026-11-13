@@ -12,11 +12,16 @@ slice. Operation polling, observed TLS resumption and Incus CPU remain open.
 
 ## 2. Verified HTTPS buffered reads
 
-- [ ] 2.1 Add `{:nimble_pool, "~> 1.1", optional: true, runtime: false}` and a host-started child spec with validated binding, slot, idle and age limits. Verify passive startup with NimblePool installed and absent. Add the passive `pool:` option, verify it survives context and selection updates, and document host opt-in in `docs/incus-client.md`.
+- [x] 2.1 Add `{:nimble_pool, "~> 1.1", optional: true, runtime: false}` and a host-started child spec with validated binding, slot, idle and age limits. Verify passive startup with NimblePool installed and absent. Add the passive `pool:` option, verify it survives context and selection updates, and document host opt-in in `docs/incus-client.md`.
 - [x] 2.2 Take a bounded credential and trust snapshot after authorization. Derive the digest and in-memory handshake options from it. Verify owner, address, `require_authenticated`, client chain/key, CA and pin isolation, rotated credentials as observed by the peer, failure on an invalid snapshot, and redacted diagnostics. Prove unready and mismatched hosts perform no checkout or backend I/O.
 - [ ] 2.3 Implement synchronous admission and handoff in the buffered Mint worker. Assert saturated calls never enter NimblePool's resource queue, stopped or blocked pools and exhausted binding limits fall back before dispatch, and late replies cannot transfer an untracked socket. Cap acquisition by one shared budget. Test worker death, cancellation, owner loss and `WorkScope` shutdown at both handoffs, including death after transfer and before check-in.
 - [ ] 2.4 Verify GET and HEAD reuse over verified HTTPS by counting accepted sockets. Use the final Mint state for check-in. Cover server close, half-close, stray data, response limits, incomplete responses, upgrades and the current send and receive deadline. Assert a close after dispatch is reported once with the existing error kind and no replay.
 - [ ] 2.5 Verify idle, age and empty-binding eviction with fixture barriers, including repeated reads across the age cap and stale expiry after a binding restarts. Stop the pool with one idle and one checked-out socket. Verify idle close, completion of the in-flight read within its existing deadline, close on completion and a fresh next request. Document shutdown and eviction behavior.
+
+The HTTPS implementation and focused fixtures cover saturation, blocked
+bindings, owner loss, request cancellation, work scope termination, an
+abandoned return, stale sockets, response limits, age and idle eviction.
+The unchecked tasks retain their remaining verification scenarios.
 
 ## 3. Remaining buffered call sites and mutations
 
@@ -29,3 +34,7 @@ slice. Operation polling, observed TLS resumption and Incus CPU remain open.
 - [ ] 4.1 When PR #69's executors are available, verify a pooled host binding through both `Operations.Composite.run/3` and `Operations.Native.run/3`. Prove denied calls never touch the pool or backend, allowed reads reuse, and mutations use fresh sockets. The pool can be delivered before that combined check, which belongs on the first revision containing both changes.
 - [ ] 4.2 Run `mise run check`, `mise run check:reference` and `mise run check:consumer` from a clean immutable feature revision. Verify the full extracted Hex consumer starts the pool explicitly and the client-only consumer compiles without NimblePool. Preserve the coverage ledger.
 - [ ] 4.3 Repeat the task 1.1 measurements with pooling against the same isolated real backend, including server-side idle close. Record benefit, errors and handshake count separately from fixture, consumer and Macus hardware acceptance.
+
+The [HTTPS pool comparison](../../../docs/real-incus-acceptance.md#https-pool-comparison-on-2026-11-13)
+records steady-state pool-off and pool-on latency, errors and connection counts
+against the isolated Incus project. The server-side idle-close live scenario is pending.

@@ -255,6 +255,27 @@ defmodule Opsmaru.Incus.ConnectionPoolTest do
     refute peer() == first
   end
 
+  test "discards idle sockets with unsolicited data before sending the next request", env do
+    {connection, context, _fixture} = start_pool(env, size: 1)
+    assert {:ok, _} = query(connection, context, "GET", "/1.0/stray")
+    first = peer()
+    send(first, :stray)
+    assert_receive {:stray_sent, ^first}, @timeout
+    assert {:ok, _} = query(connection, context)
+    refute peer() == first
+  end
+
+  test "a reused socket honors the current request deadline", env do
+    {connection, context, _fixture} = start_pool(env, size: 1)
+    assert {:ok, _} = query(connection, context)
+    first = peer()
+    task = Task.async(fn -> query(%{connection | timeout: 200}, context, "GET", "/1.0/hold") end)
+    assert_receive {:request, ^first, "GET", "/1.0/hold"}, @timeout
+    assert {:error, %Error{kind: :deadline}} = Task.await(task)
+    send(first, :check_closed)
+    assert_receive {:closed, ^first}, @timeout
+  end
+
   defp start_pool(env, opts \\ [], extra_cas \\ []) do
     %{identity: identity, root: root} = env
     pool = start_supervised!({ConnectionPool, opts})
@@ -295,7 +316,21 @@ defmodule Opsmaru.Incus.ConnectionPoolTest do
       "/1.0/drop" -> %{upgrade: fn _, _ -> :ok end}
       "/1.0/close" -> %{raw: wire(request.method, "Connection: close\r\n")}
       "/1.0/hold" -> %{keep_alive: true, exchange: fn socket -> hold(parent, socket) end}
+      "/1.0/stray" -> %{keep_alive: true, exchange: fn socket -> stray(parent, socket) end}
       _ -> %{keep_alive: true, exchange: fn socket -> normal(parent, socket, request.method) end}
+    end
+  end
+
+  defp stray(parent, socket) do
+    :ok = :ssl.send(socket, wire("GET"))
+
+    receive do
+      :stray ->
+        :ok = :ssl.send(socket, "stray")
+        send(parent, {:stray_sent, self()})
+        :ok
+    after
+      @timeout -> {:error, :timeout}
     end
   end
 
