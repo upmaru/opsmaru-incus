@@ -429,28 +429,42 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
 
   test "startup expiration survives a delayed session process", %{root: root} do
     fixture = backend(root, :gen_tcp, nil)
+    client = client(fixture, nil, timeout: 100)
     parent = self()
     ref = make_ref()
 
     owner =
       spawn(fn ->
-        receive do
-          ^ref -> send(parent, {ref, open(client(fixture, nil, timeout: 100), :instance)})
+        caller = self()
+
+        ready? = fn ->
+          if self() != caller do
+            send(parent, {ref, :startup, self()})
+
+            receive do
+              {^ref, :release} -> :ok
+            end
+          end
+
+          true
         end
+
+        client = %{client | context: %{client.context | ready?: ready?}}
+        send(parent, {ref, open(client, :instance)})
       end)
 
     on_exit(fn -> Process.exit(owner, :kill) end)
-    :erlang.trace(owner, true, [:procs])
-    send(owner, ref)
-    assert_receive {:trace, ^owner, :spawn, session, _}, 1_000
-    assert :erlang.suspend_process(session)
+    assert_receive {^ref, :startup, session}, 1_000
+    monitor = Process.monitor(session)
 
     try do
-      # OTP's GenServer startup timeout can win if the session is descheduled.
-      # The caller must still report its own expired initialization deadline.
+      # Hold startup before the raw channel opens so the caller's
+      # GenServer.start timeout decides the result.
       assert_receive {^ref, {:error, %Error{kind: :deadline}}}, 2_000
+      assert_receive {:DOWN, ^monitor, :process, ^session, _}, 1_000
+      assert HTTPFixture.requests(fixture) == []
     after
-      if Process.alive?(session), do: :erlang.resume_process(session)
+      send(session, {ref, :release})
     end
   end
 
