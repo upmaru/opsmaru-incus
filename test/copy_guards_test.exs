@@ -85,14 +85,18 @@ defmodule Opsmaru.Incus.CopyGuardsTest do
              })
            )["accepted"] == true
 
-    expected = HTTPFixture.requests(fixture) |> List.last()
+    # The pinned helper POSTs before CopyInstance returns, but its background
+    # goroutine may or may not send the operation wait GET before the driver
+    # exits, and that GET can be recorded after the Elixir call too. Compare
+    # the create requests themselves, not whichever request came last.
+    [expected] = posts(fixture)
 
     assert {:ok, %{mode: :local}} =
              Copy.instance(target, source, %{"name" => "fixture", "type" => "container"},
                allow_inconsistent: true
              )
 
-    request = HTTPFixture.requests(fixture) |> List.last()
+    assert [^expected, request] = posts(fixture)
     assert request.target == expected.target
     assert Jason.decode!(expected.body)["source"]["allow_inconsistent"] == true
     assert Jason.decode!(request.body)["source"]["allow_inconsistent"] == true
@@ -172,6 +176,8 @@ defmodule Opsmaru.Incus.CopyGuardsTest do
 
     assert HTTPFixture.requests(fixture) == []
   end
+
+  defp posts(fixture), do: Enum.filter(HTTPFixture.requests(fixture), &(&1.method == "POST"))
 
   defp official(input) do
     # Feed the unchanged helper through a shell-free fixture process.

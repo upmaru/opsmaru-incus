@@ -1,0 +1,43 @@
+name: Publish
+# Publishes the Hex package and its docs when a release tag is pushed. Pushing
+# a v* tag is the publish decision; it needs user authorization (AGENTS.md).
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  hex:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # Holds HEX_API_KEY; add required reviewers to this environment to gate publishing.
+    environment: hex
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - name: Tag matches the package version and is on main
+        run: |
+          version=$(sed -nE 's/^  @version "([^"]+)"$/\1/p' mix.exs)
+          if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match mix.exs version ${version}" >&2
+            exit 1
+          fi
+          git merge-base --is-ancestor "${GITHUB_SHA}" origin/main || {
+            echo "Tag ${GITHUB_REF_NAME} is not on main" >&2
+            exit 1
+          }
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
+        with:
+          version: 2026.6.11
+          install: false
+      - run: mise trust && mise install
+      - run: mise exec -- mix local.hex --force && mise exec -- mix local.rebar --force && mise exec -- mix deps.get
+      - run: mise exec -- mix hex.build
+      - name: Publish package and docs
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+        run: mise exec -- mix hex.publish --yes

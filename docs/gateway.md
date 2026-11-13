@@ -1,10 +1,11 @@
-# Native Incus gateway (G1–G5: native protocols and migration)
+# Native Incus gateway
 
 `Opsmaru.Incus.Gateway` lets a host relay native Incus HTTP through its own
-endpoint under its own policy. This page documents slices G1–G5 of
-`add-embeddable-incus-gateway`, including native WebSockets and SFTP/NBD on
-the host listener, plus operation-scoped migration peer admission. Independent
-consumer/CLI and real-backend acceptance remain separate G6 evidence.
+endpoint under its own policy. This page documents the gateway delivered by
+`add-embeddable-incus-gateway` (slices G1–G5): native HTTP, WebSockets and
+SFTP/NBD on the host listener, plus operation-scoped migration peer admission.
+The capability's requirements are in `openspec/specs/incus-gateway/spec.md`.
+Acceptance evidence (G6) is recorded separately; see "Evidence status" below.
 
 ## Dependencies
 
@@ -152,7 +153,7 @@ extensions are filtered out when the corresponding optional adapter is absent.
 The host must approve only protocols it actually mounts and a verified backend
 supports; raw extensions require the same-listener Cowboy companion. Merely
 installing an adapter does not authorize a protocol. Restricted-certificate
-and token issuance gaps remain explicit below.
+and token issuance gaps are listed under "Not provided by the library".
 
 `file_delete` covers the native HTTP file DELETE route. Its advertisement still
 requires both verified backend support and host approval. The pinned native
@@ -276,14 +277,32 @@ request.
 Long waits such as `/1.0/operations/{id}/wait?timeout=-1` are bounded by
 `idle_timeout`; raise it for hosts that need longer waits.
 
-## Not yet in this revision
+## Evidence status
 
-- Production trust persistence/issuer and host-specific authorization policy.
-- Restricted-certificate semantics and asynchronous certificate-token issuance;
-  unsupported claims are refused rather than advertised.
-- Immutable consumer, CLI conformance and real-Incus gateway acceptance (G6).
+Each evidence class is recorded separately, and none substitutes for another:
+
+- **Fixtures and pinned-client conformance:** the portable suites described on
+  this page, plus the unchanged pinned v7.0.1 CLI matrix (18 successful cases
+  and six accepted snapshot-move limitations). See `docs/gateway-acceptance.md`.
+- **Package consumer:** `mise run check:consumer` builds the Hex package and
+  compiles it in a fresh Phoenix consumer on Linux and macOS. See
+  `docs/gateway-acceptance.md`.
+- **Real Incus:** the explicit isolated gate passed 28 of 35 cases on
+  2026-11-09, including every copy mode in both gateway orientations. Snapshot
+  move is the accepted pinned-native limitation, and NBD stays `unrun` under an
+  accepted limitation that is planned for a later revisit. See
+  `docs/gateway-real-incus-acceptance.md`.
+- **Installed host and Macus hardware:** unrun here. These belong to the
+  consumer that mounts the gateway.
 
 Gateway evidence never changes `priv/incus/coverage.json`.
+
+## Not provided by the library
+
+- Production trust persistence/issuer and host-specific authorization policy.
+  The embedding host owns these.
+- Restricted-certificate semantics and asynchronous certificate-token issuance;
+  unsupported claims are refused rather than advertised.
 
 
 ## Native WebSockets (G3)
@@ -367,8 +386,8 @@ silent deadlines, TLS separation, ownership and redaction evidence.
 v7.0.1 Go exec, console, events and operation-WebSocket drivers through a
 mutual-TLS gateway. Exec output/exit metadata and static/dynamic console results
 are compared directly with their backend-fixture baselines. This is fixture
-conformance; immutable consumer, real-Incus and installed Macus/hardware
-acceptance remain separate. The typed-client coverage ledger is unchanged.
+conformance; package consumer, real-Incus and installed Macus/hardware
+evidence are recorded separately (see "Evidence status"). The typed-client coverage ledger is unchanged.
 
 ## Native SFTP/NBD on the host listener (G4)
 
@@ -513,9 +532,9 @@ fixtures isolate one frontend exchange from client-owned orchestration and
 prove at most one backend POST with no gateway DELETE after frontend loss or
 an uncertain reply. The pinned client itself owns its multi-public-address
 attempts and explicit cancellations; those are distinct incoming requests,
-not gateway retries. Actual unmodified CLI copy/move and immutable consumer
-results belong to G6; real-Incus and installed Macus/hardware evidence remain
-separate gates.
+not gateway retries. Unmodified CLI copy/move, package consumer and
+real-Incus results are recorded separately (see "Evidence status"); installed
+Macus/hardware evidence belongs to the consumer.
 
 The G5 matrix verifies default copy behavior. Live migration, CRIU/stateful
 snapshots and optional flags such as instance-only/refresh are not gateway

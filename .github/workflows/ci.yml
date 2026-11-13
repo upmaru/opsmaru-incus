@@ -52,12 +52,9 @@ jobs:
         run: mise exec -- go build ./...
       - run: mise run check
       - run: mise run check:reference
-      - name: Isolated immutable Git consumer
+      - name: Isolated Hex package consumer
         env:
           OPSMARU_INCUS_GATEWAY_REPORT: ${{ runner.temp }}/gateway-consumer-${{ runner.os }}.json
-          # PR github.sha is a synthetic merge commit, absent from normal Git fetches.
-          OPSMARU_INCUS_FIXTURE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
-          OPSMARU_INCUS_FIXTURE_REPOSITORY: ${{ github.event.pull_request.head.repo.clone_url || format('{0}/{1}.git', github.server_url, github.repository) }}
         run: python3 scripts/check-consumer.py
       - name: Gateway consumer evidence
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

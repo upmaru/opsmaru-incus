@@ -205,5 +205,5 @@ removed on 2026-11-04 by user decision, before any consumer pinned it.
 | --- | --- | --- |
 | Fixtures | `test/operations_*_test.exs` over fake Unix and mutual HTTPS Incus | run by `mise run check` |
 | Isolated consumers | `test/consumer` (Macus-compatible host running an operation through its binding) and `test/consumer/client_only` (no `tama_mcp`, Plug, Cowboy or Phoenix) | run by `mise run check:consumer` at a pushed revision |
-| Real Incus | explicit isolated opt-in (task 4.2) | recorded separately in [real-incus-acceptance.md](real-incus-acceptance.md) |
+| Real Incus | explicit isolated opt-in (task 4.2) | recorded separately in [real-incus-acceptance.md](https://github.com/upmaru/opsmaru-incus/blob/main/docs/real-incus-acceptance.md) |
 | Macus composition and hardware | Macus `add-elixir-server` | consumer-owned |

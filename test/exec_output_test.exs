@@ -521,6 +521,56 @@ defmodule Opsmaru.Incus.ExecOutputTest do
     end
   end
 
+  for transport <- [:gen_tcp, :ssl] do
+    test "collect with stdin drains both outputs while stdin is blocked over #{transport}", %{
+      root: root
+    } do
+      {client, fixture, _} = fixture(root, unquote(transport), input_gate: true)
+      client = %{client | connection: %{client.connection | max_chunk_bytes: 4096}}
+      parent = self()
+      stdin = :binary.copy(<<0, 255>>, 2_097_152)
+
+      collector =
+        Task.async(fn ->
+          {:ok, session} = Session.exec(client, "fixture", @body)
+
+          Session.collect(
+            session,
+            &send_chunk(parent, :stdout, &1),
+            &send_chunk(parent, :stderr, &1),
+            stdin: stdin,
+            max_output_bytes: 7,
+            timeout: 15_000
+          )
+        end)
+
+      assert_receive {:input_gate, peer}, 5_000
+      assert_receive {:stdout, @stdout}, 5_000
+      assert_receive {:stderr, @stderr}, 5_000
+
+      refute Enum.any?(
+               HTTPFixture.requests(fixture),
+               &(&1.method == "GET" and not String.contains?(&1.target, "websocket"))
+             )
+
+      send(peer, :release_input)
+
+      assert {:ok, %{stdout_bytes: 4, stderr_bytes: 3, exit_status: 7}} =
+               Task.await(collector, 20_000)
+
+      received =
+        for _ <- 1..1024 do
+          assert_receive {:stdin, chunk}, 5_000
+          assert byte_size(chunk) == 4096
+          chunk
+        end
+
+      assert IO.iodata_to_binary(received) == stdin
+      assert_receive {:barrier, "0"}, 5_000
+      for name <- ["0", "1", "2"], do: assert_receive({:peer_closed, ^name}, 5_000)
+    end
+  end
+
   for mode <- [:deadline, :cancellation], transport <- [:gen_tcp, :ssl] do
     test "run #{mode} interrupts a confirmed blocked stdin write over #{transport}", %{root: root} do
       # Before anything starts a clock: none may run while waiting for the lock.
@@ -925,7 +975,9 @@ defmodule Opsmaru.Incus.ExecOutputTest do
             [timeout: 10, timeout: 20],
             [max_output_bytes: 0],
             [unknown: 1],
-            [{:timeout, 1} | :bad]
+            [{:timeout, 1} | :bad],
+            [stdin: ~c"chars"],
+            [stdin: "a", stdin: "b"]
           ] do
         assert {:error, %Error{kind: :invalid_exec_collection}} =
                  Session.collect(session, sink, sink, opts)
@@ -933,6 +985,12 @@ defmodule Opsmaru.Incus.ExecOutputTest do
 
       assert {:error, %Error{kind: :invalid_exec_collection}} =
                Session.collect(%{session | collectable?: false}, sink, sink)
+
+      # Stdin beyond the connection's stream budget rejects before any IO.
+      small = put_in(session.operation.client.connection.max_stream_bytes, 4)
+
+      assert {:error, %Error{kind: :invalid_exec_collection}} =
+               Session.collect(small, sink, sink, stdin: "abcde")
 
       assert Enum.all?(session.channels, fn {_, c} -> Process.alive?(c.pid) end)
       assert HTTPFixture.requests(fixture) == before

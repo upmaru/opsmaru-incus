@@ -64,25 +64,25 @@ provider credentials, listener or real backend is involved.
 generated constants check. Fixture evidence does not establish installed Macus
 or real Incus acceptance.
 
-## Immutable consumer dependency
+## Hex dependency
 
-Pin an implemented immutable revision of this repository:
+`:opsmaru_incus` is published to [Hex](https://hex.pm/packages/opsmaru_incus).
+Depend on a released version and let the consumer's `mix.lock` record the
+resolved package and its checksum:
 
 ```elixir
-{:opsmaru_incus, git: "https://github.com/upmaru/opsmaru-incus.git",
- ref: "6091297622729018f7e796ab66ed25cbf748a3f6"}
+{:opsmaru_incus, "~> 0.1.0"}
 ```
 
-`test/consumer/revision.txt` records the independently verified revision; its
-`mix.lock` records the resolved Macus-compatible dependency set. Run
-`mise run check:consumer` (or `python3 scripts/check-consumer.py`) to fetch it
-in a fresh directory. An explicit `OPSMARU_INCUS_FIXTURE_REVISION` permits
-verifying a newer pushed revision; no local path dependency is used. The
-fixture's private Unix server is an independent fake backend, never an
-installed Macus socket. Installation, bundled ERTS and real Macus hardware
-acceptance remain owned by the consumer.
+Hex is the only supported distribution route; consumers do not pin Git
+revisions or sibling path dependencies. `mise run check:consumer` (or
+`python3 scripts/check-consumer.py`) builds the package from this checkout and
+compiles it in fresh consumers; `test/consumer/mix.lock` records the
+Macus-compatible dependency set. The fixture's private Unix server is an
+independent fake backend, never an installed Macus socket. Installation,
+bundled ERTS and real Macus hardware acceptance remain owned by the consumer.
 
 Revisions before the extraction were published from
 [upmaru/opsmaru](https://github.com/upmaru/opsmaru) as the `:opsmaru`
-application; those pins remain valid history but new consumers use this
-repository.
+application; those pins remain valid history but new consumers use the Hex
+package.

@@ -9,9 +9,13 @@ defmodule Opsmaru.Incus.GatewayFixtureClientTest do
     response = socket |> tls_until_closed("") |> RawHTTP.parse()
     assert response.status == 403
     assert response.complete
-    # The old helper's redundant empty-body write fails even though a complete
-    # denial response has already arrived. No policy or TLS deadline expired.
-    assert {:error, :closed} = :ssl.send(socket, "")
+    # The old helper's redundant empty-body write races local TLS teardown even
+    # though a complete denial response has already arrived and no policy or
+    # TLS deadline expired: OTP returns :ok before teardown, {:error, :einval}
+    # once the TCP port is gone but the TLS sender is alive, and
+    # {:error, :closed} once the sender has exited. The helper below must
+    # therefore never issue that write; the traced writes prove it does not.
+    assert :ssl.send(socket, "") in [:ok, {:error, :closed}, {:error, :einval}]
 
     for body <- ["", []] do
       {response, writes} = traced_request(port, "GET", body, tls)

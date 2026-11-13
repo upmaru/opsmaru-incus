@@ -51,7 +51,7 @@ successful MCP tool would establish complete declaration coverage.
 | `OCI.new!/5`, `resolve/3`, `image/2`, `image_file/3`, `unsupported/2` | S11 certified: explicit host-owned OCI adapter; passive construction with an explicit registry certificate, bounded immutable cache, pinned alias/image/unsupported projections, Go's `metadata.yaml` bytes and acknowledged binary output; no bundled host runner or installed conversion acceptance |
 | `OCI.connection_info/1`, `http_client/1`, `http_request/4` | Native passive CA-configured metadata and bounded raw HTTP on an explicit verified HTTPS origin; no adapter/config origin inference, redirects or mutation replay |
 | `Session.exec/3`, `console/3`, `input/2`, `output/3`, `control/2`, `resize/3`, `signal/2`, `exit_status/1`, `close/1` | Native operation channels and control messages; local closure does not cancel Incus |
-| `Session.collect/4` | Creator-owned live noninteractive stdout/stderr sinks, aggregate output bounds, absolute collection deadline and authoritative operation/exit result; closes local channels without cancellation |
+| `Session.collect/4` | Creator-owned live noninteractive stdout/stderr sinks, optional concurrent finite stdin, aggregate output bounds, absolute collection deadline and authoritative operation/exit result; closes local channels without cancellation |
 | `DynamicConsole.open/4`, `attach/1`, `detach/2`, `control/2`, `resize/3`, `close/1` | One accepted console operation/control connection, repeated owner-bound data attachments; bounded capacity/lifetime and no POST replay |
 | `Copy.instance/4`, `snapshot/5`, `volume/6`, `move_volume/5` | Native writable configuration and explicit migration preparation; volume moves use one backend with destination `name`/`project`; accepted handles |
 | `Migration.negotiate/5`, `relay/2`, `target/1`, `wait_target/2`, `cancel_target/1` | Explicit requests/origin and both accepted handles; bounded relay; explicit target completion/cancellation with source identity retained |
@@ -330,7 +330,7 @@ source, but the actual `CopyInstance` receiver checks the target. Dependent
 instance migration devices use the native capitalized `Devices` key. Internal
 volume copy source location falls back to the discovered server name; local
 snapshot copies send the native empty type rather than the remote parent type.
-The current [task 3.9 behavioral checklist](task-3-9-closure.md#current-behavioral-checklist--audited-2026-10-15)
+The current [task 3.9 behavioral checklist](https://github.com/upmaru/opsmaru-incus/blob/main/docs/task-3-9-closure.md#current-behavioral-checklist--audited-2026-10-15)
 separates implemented bounded contracts from missing endpoint methods, evidence,
 approved restrictions and separate acceptance gates. The Go declaration counts
 are not endpoint completion counts. The checklist audits 247 documented verb/path
@@ -425,8 +425,7 @@ The host supplies architecture explicitly; pin-equivalent platform selection use
 the oracle's native architecture (including its Darwin x86_64 fallback). Catalog
 requests share one deadline and aggregate response byte limit; `queue_limit`
 bounds image/alias expansion. Sinks acknowledge binary chunks with `:ok`. As
-natively, each part is checked against its SHA-256 only ("Hash mismatch for
-<url>: ..."), and the delivered metadata then rootfs bytes must hash to the
+natively, each part is checked against its SHA-256 only (`"Hash mismatch for <url>: ..."`), and the delivered metadata then rootfs bytes must hash to the
 image fingerprint ("Image fingerprint doesn't match. Got ... expected ...").
 Requesting only one part of a split image therefore fails, as in Go. A failure
 can leave partial host output, which the host must discard or reconcile.
@@ -750,16 +749,19 @@ SFTP acceptance and Go client options the Incus helpers never set.
 
 `Session.collect/4` consumes a creator-owned `Session.exec/3` session with
 `wait-for-websocket=true`, no interactive terminal and no recorded output.
-The caller sends stdin before collecting, then supplies both stdout/stderr
-binary sinks returning `:ok`; collection sends the native stdin write barrier.
+The caller supplies both stdout/stderr binary sinks returning `:ok`;
+collection sends the native stdin write barrier. Finite binary stdin goes in
+the `:stdin` option (at most `max_stream_bytes`), which writes it in chunks
+while both outputs drain, as `Session.run/7` does. Input sent with
+`Session.input/2` before collecting is written before any output is read, so a
+command that echoes its input can fill the output frame queues first.
 
 ```elixir
 {:ok, session} = Session.exec(client, instance, %{
   "command" => argv, "wait-for-websocket" => true, "interactive" => false
 })
-:ok = Session.input(session, stdin_bytes)
 {:ok, result} = Session.collect(session, stdout_sink, stderr_sink,
-  timeout: 10_000, max_output_bytes: 1_048_576)
+  stdin: stdin_bytes, timeout: 10_000, max_output_bytes: 1_048_576)
 # result.operation, result.exit_status, result.stdout_bytes, result.stderr_bytes
 ```
 

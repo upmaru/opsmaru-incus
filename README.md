@@ -14,21 +14,27 @@ used by [Macus](https://github.com/upmaru/macus) and central
 - **Native semantics.** Native routes, queries, ETags, error envelopes,
   operation identities and streaming/upgrade protocols are preserved. Possibly
   accepted mutations are never replayed automatically.
+- **Embeddable gateway.** `Opsmaru.Incus.Gateway` relays native Incus HTTP,
+  WebSockets and SFTP/NBD through a host's own Plug/Cowboy listener under host
+  policy; `plug` and `cowboy` are optional. See [docs/gateway.md](docs/gateway.md).
 - **Traceable coverage.** `priv/incus/coverage.json` maps every declaration of
   the pinned Incus v7.0.1 Go client to implementation and test evidence. This is
   **not yet a complete client port** (`complete_port=false`); see
-  [docs/task-3-9-closure.md](docs/task-3-9-closure.md).
+  [docs/task-3-9-closure.md](https://github.com/upmaru/opsmaru-incus/blob/main/docs/task-3-9-closure.md).
 
 ## Usage
 
 ```elixir
-{:opsmaru_incus, git: "https://github.com/upmaru/opsmaru-incus.git", ref: "<immutable revision>"}
+{:opsmaru_incus, "~> 0.1.0"}
 ```
+
+Published on [Hex](https://hex.pm/packages/opsmaru_incus); releases are listed in
+[CHANGELOG.md](CHANGELOG.md).
 
 See [docs/embedding.md](docs/embedding.md) for host context and connection
 setup, [docs/incus-client.md](docs/incus-client.md) for the public API and
 [docs/incus-operations.md](docs/incus-operations.md) for the shared agent
-operations.
+operations and [docs/gateway.md](docs/gateway.md) for mounting the gateway.
 
 ## Development
 
@@ -37,17 +43,17 @@ mise trust && mise install
 mix deps.get
 mise run check            # format, compile, strict Credo, fixtures, OpenSpec
 mise run check:reference  # Go inventory/schema verifier and constants
-mise run check:consumer   # isolated consumer build of a pushed revision
+mise run check:consumer   # build the Hex package and verify it in fresh consumers
 ```
 
 Real Incus acceptance is an explicit opt-in against an isolated backend; see
-[docs/real-incus-acceptance.md](docs/real-incus-acceptance.md).
+[docs/real-incus-acceptance.md](https://github.com/upmaru/opsmaru-incus/blob/main/docs/real-incus-acceptance.md).
 
-Planning lives in [openspec/](openspec/). Incus reference material is
-Apache-2.0; see [priv/notices](priv/notices).
+Planning lives in [openspec/](https://github.com/upmaru/opsmaru-incus/tree/main/openspec). Incus reference material is
+Apache-2.0; see [priv/notices](https://github.com/upmaru/opsmaru-incus/tree/main/priv/notices).
 
 ## History
 
 The client was developed inside `upmaru/opsmaru` and extracted with its history
 on 2026-10-13 (source revision `a00805d`). Earlier evidence and CI runs are
-recorded in [docs/foundation-validation.md](docs/foundation-validation.md).
+recorded in [docs/foundation-validation.md](https://github.com/upmaru/opsmaru-incus/blob/main/docs/foundation-validation.md).

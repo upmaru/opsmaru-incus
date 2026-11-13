@@ -2,7 +2,9 @@ defmodule Opsmaru.Incus.Operations.Exec do
   @moduledoc false
   # Bounded, noninteractive guest exec through the public Session API.
   #
-  # Stdin is sent before collection. Each sink keeps the first 64 KiB of its
+  # Stdin is written while output is collected (`Session.collect/4` with
+  # `:stdin`), so a command that echoes its input cannot fill the bounded
+  # output queues before collection starts. Each sink keeps the first 64 KiB of its
   # stream and counts the rest. When the duration expires, or total output
   # passes 64 MiB, a short-lived process linked to this call sends SIGKILL once
   # over the control channel; collection then has a 5 s grace to observe the
@@ -152,12 +154,11 @@ defmodule Opsmaru.Incus.Operations.Exec do
 
     try do
       result =
-        with :ok <- send_stdin(session, Map.get(input, "stdin", ""), connection.max_chunk_bytes) do
-          Session.collect(session, sink(table, "1", cap, killer), sink(table, "2", cap, killer),
-            timeout: duration + @grace,
-            max_output_bytes: connection.max_stream_bytes
-          )
-        end
+        Session.collect(session, sink(table, "1", cap, killer), sink(table, "2", cap, killer),
+          timeout: duration + @grace,
+          max_output_bytes: connection.max_stream_bytes,
+          stdin: Map.get(input, "stdin", "")
+        )
 
       outcome(result, session, table, duration)
     after
@@ -166,15 +167,6 @@ defmodule Opsmaru.Incus.Operations.Exec do
       Session.close(session)
       :ets.delete(table)
     end
-  end
-
-  defp send_stdin(_session, "", _chunk), do: :ok
-
-  defp send_stdin(session, bytes, chunk) do
-    size = min(byte_size(bytes), chunk)
-    <<head::binary-size(size), rest::binary>> = bytes
-
-    with :ok <- Session.input(session, head), do: send_stdin(session, rest, chunk)
   end
 
   # Sinks run in the client's collection process; state lives in the table.

@@ -30,10 +30,12 @@ defmodule Opsmaru.Incus.Session do
 
   @doc """
   Collect creator-owned live noninteractive exec output through two binary sinks
-  returning `:ok`. Send stdin with `input/2` first; collection sends its write
-  barrier, closes local channels after collection starts and never cancels Incus.
+  returning `:ok`. Pass finite binary `:stdin` to write it while both outputs
+  drain, or send it with `input/2` first; collection sends the write barrier,
+  closes local channels after collection starts and never cancels Incus.
   `:timeout` covers collection, callbacks and final operation wait (at most the
-  connection's stream timeout); `:max_output_bytes` bounds stdout + stderr.
+  connection's stream timeout); `:max_output_bytes` bounds stdout + stderr and
+  `:stdin` is bounded by the connection's `max_stream_bytes`.
   Returns final `:operation`, native `:exit_status` and per-stream byte counts.
   A limit fails visibly rather than truncating. Recorded/interactive sessions
   and foreign creators reject before IO. See `docs/incus-client.md` for scope.
