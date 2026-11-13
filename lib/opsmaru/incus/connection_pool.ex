@@ -11,7 +11,7 @@ if Code.ensure_loaded?(NimblePool) do
     use GenServer
     alias Opsmaru.Incus.ConnectionPool.Binding
 
-    @acquisition_ms 5
+    @acquisition_ms Application.compile_env(:opsmaru_incus, :pool_acquisition_ms, 5)
     @limits %{
       max_bindings: {64, 1..256},
       size: {4, 1..32},
