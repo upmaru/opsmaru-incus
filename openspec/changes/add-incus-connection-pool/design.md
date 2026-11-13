@@ -24,18 +24,19 @@ Only three callers use `Transport.request/5`: `Incus.raw_query/5` (and through i
 
 ```elixir
 {Opsmaru.Incus.ConnectionPool,
- name: MyHost.IncusPool, max_bindings: 64, size: 4, idle_timeout: 15_000}
+ name: MyHost.IncusPool, max_bindings: 64, size: 4, idle_timeout: 15_000,
+ max_connection_age: 60_000}
 ```
 
-It starts a supervisor containing a `Registry` and a `DynamicSupervisor` for per-binding NimblePool instances, plus a small manager that admits and stops bindings. Every limit is a validated bounded integer. Nothing starts until the host starts it, and stopping it closes only pooled local sockets. It never cancels or contacts Incus work.
+It starts a supervisor containing a `Registry` and a `DynamicSupervisor` for per-binding NimblePool instances, plus a manager that admits and stops bindings. Every limit is a validated bounded integer. Use 60 seconds as the initial default maximum connection age. Record establishment time on connect and retire over-age sockets on checkout and on return, including under sustained use. Idle eviction uses time since the last return.
 
-Each binding's NimblePool is `lazy: true`, with `worker_idle_timeout` equal to `idle_timeout`. `handle_ping/2` removes connections idle past `idle_timeout`. NimblePool 1.1 documents that `handle_ping/2` cannot terminate an empty lazy pool, so the manager stops a binding's pool once it has had no workers and no checkouts for `idle_timeout`. `max_bindings` bounds total pool processes.
+Each binding's NimblePool is `lazy: true` with synchronous empty slots. Periodic idle checks remove expired sockets. The manager stops an empty binding after `idle_timeout` once admission and checkout accounting confirm that no lease is active. Associate expiry with the specific binding process so a late expiry cannot stop its replacement. Document the maximum eviction delay from the sweep interval.
 
 ### 2. The binding key
 
 A pool's key is a SHA-256 digest of the connection `owner`, the transport, the normalized address (socket path, or scheme, host and port), `require_authenticated`, and for HTTPS the bytes of the client certificate, the private key and the CA bundle when present, together with any pinned fingerprint. This follows `EventListener.backend_binding/1`, which already treats owner, transport, address and TLS as the backend binding, but digests file contents instead of paths, because paths can be rotated in place. Including `owner` keeps socket sharing inside the boundary `Context.authorize/2` enforces, even when two owners use identical credentials.
 
-`:ssl` may serve `certfile`/`keyfile` from its own PEM cache, so a handshake could present older bytes than the digest describes. For pooled connections, the worker reads the certificate and key once per request, digests them, and passes the same decoded bytes to the handshake as `cert`/`key`, as `tls_options/1` already does for the CA bundle. The binding therefore always matches the identity presented. Unpooled connections keep today's options byte for byte. Rotated material produces a new key without host action, and old bindings idle out.
+`:ssl` may serve `certfile`/`keyfile` from its PEM cache. After authorization, the request worker takes a bounded snapshot of the certificate chain, key and optional CA bundle. Derive the binding and the in-memory handshake options from that snapshot, preserving OTP's chain handling and the existing hostname, CA and pin checks. A fresh connection eligible for return uses those same options. An invalid or mismatched snapshot fails as a connection error before dispatch. Connections without `pool:` retain the existing TLS options. Rotating material creates a new binding, and old sockets age out. Keep snapshots in the request worker and use redacted errors.
 
 Project, member, request context, timeouts, budgets and `Context` identity are not in the key. They do not affect the TLS session or the socket. They are applied per request exactly as today, and `Context.authorize/2`, including the host's `ready?` check, still runs before any checkout. The digest and key never appear in `Inspect`, errors, telemetry or the `Registry` name. Registry entries use an opaque reference that maps to the digest inside the manager.
 
@@ -48,35 +49,45 @@ The method decides the checkout:
 | GET, HEAD | Reuse, after validation | Open fresh |
 | Any other | Never reused; open fresh | Open fresh |
 
-After any request whose response completed cleanly, the connection is offered back to its binding's pool if all of these hold: the response did not carry `connection: close`, the status was not 101, `Mint.HTTP.open?/1` is true, and the pool is below `size`. Otherwise it is closed. `HTTP.request/4` already keeps `connection` a transport-owned request header, so callers cannot ask the server to close. A fresh connection opened for a mutation can therefore later serve a read, but a mutation never travels over a socket that has sat idle.
+Return a socket only after a complete, non-upgraded response with no close directive, an open Mint connection, no outstanding request, and a slot available. The receive loop hands back the final Mint state on success. Any I/O, framing, budget or cancellation failure discards the socket. An eligible fresh mutation socket may later serve a read. Mutations acquire a slot only when offering a completed connection.
 
 This keeps failure classification unchanged. A mutation's connect failure is still `:connection`, and a failure after the connection opened is still `:uncertain`. Reusing pooled sockets for mutations would turn a server's idle close, racing with our write, into a spurious `:uncertain` with no way to tell it from a real lost response. Reads stay safe to classify: a stale-socket failure on a reused GET is reported with its existing kind, normally `:response_closed`, and is never retried by the library. The caller sees one failed read, as it can today, and host code that already treats `:response_closed` reads as recoverable, such as the gateway acceptance host's bounded metadata-read recovery, keeps that choice.
 
 ### 4. Reuse validation
 
-Before handing out an idle connection, the pool checks that `Mint.HTTP.open?/1` is true. It then performs a non-blocking `Mint.HTTP.recv(conn, 0, 0)`. A `:timeout` transport error means the socket is idle and healthy. A closed socket, any received bytes or response events, or any other error discards the connection, and the next idle one is tried. When none passes, the request opens a fresh connection. Idle passive sockets have no reader, so this probe is how a server-side close or stray data is detected before reuse.
+After checkout, the request worker checks connection age and `Mint.HTTP.open?/1`, then runs `Mint.HTTP.recv(conn, 0, 0)`. An empty timeout on an open connection permits reuse. Close, received bytes or events, and other errors discard the connection. Try another idle socket only within the same acquisition budget. On a miss, open a fresh connection before any request has been sent.
 
 A reused socket still carries the `send_timeout` set when it was opened. Before writing, the worker resets `send_timeout` on the underlying socket to the current request's remaining deadline. If that fails, the connection is discarded and the request opens a fresh one. Receive deadlines are already passed per `recv/3` call.
 
 ### 5. No queueing, no I/O in the pool
 
-The pool never performs a handshake. NimblePool's `init_worker/1` returns an empty slot and never connects. Fresh connections are opened by the request's bounded worker, outside the pool, and offered back at check-in. Checkout uses a short fixed bound (single-digit milliseconds, set in implementation and documented). If no idle connection is available within it, the worker proceeds with a fresh connection. A slow pool or a dead binding therefore degrades to today's behavior and never blocks a request or adds a failure.
+The bounded request worker performs handshakes, probes, writes and reads. Pool callbacks manage state, ownership transfers and teardown. NimblePool queues on saturation by default. Reject saturation in the binding's `handle_enqueue/2` before entering its queue. Use a per-binding count of slots reserved for checkouts, including handoffs. Release each reservation once on check-in, cancellation or checkout failure. Ensure a stale or rejected socket leaves an available empty slot or ends the checkout, so it cannot cause a reserved checkout to queue.
 
-When `max_bindings` is reached, new bindings are not admitted and their requests run unpooled. The pool never evicts an active binding.
+Use one short acquisition budget capped by the current request deadline across lookup, admission, checkout and pre-send validation. A missing, blocked or saturated pool yields a miss before dispatch. Binding startup may proceed asynchronously under the host supervisor while the current request uses a fresh connection. Cap binding count and never evict an active binding. After dispatch, the result depends only on the request, including when a return fails.
 
 ### 6. Ownership and kills
 
-Checkout transfers the socket to the bounded worker with `Mint.HTTP.controlling_process/2`. Check-in transfers it back. If the guard or a `WorkScope` kills the worker mid-request, NimblePool sees the client go down and removes that worker, closing the socket in `terminate_worker/3`. A partially read response is never returned to the pool. A worker killed after check-in has nothing to lose. Pool processes trap no caller exits and hold no caller references beyond NimblePool's own monitors. This depends only on the worker being killed, so it holds whether guards poll or, under `add-event-driven-cancellation`, react to events.
+The binding process owns idle sockets. Checkout transfers a passive socket to the bounded request worker using `Mint.HTTP.controlling_process/2`. The worker owns it during all request I/O, so a guard or `WorkScope` kill closes it. Before transferring a finished socket back, register it as a pending return under the checkout reference. The pool acknowledges registration before transfer. Only a matching successful check-in makes the socket available. If the worker dies during the handoff, the pool discards the registered socket if ownership transferred. The worker closes it on failed transfer while it still owns it. Keep every handoff bound by the request deadline.
+
+Stopping the pool closes idle sockets and releases pending returns. A read already owned by its request worker can finish under its original deadline. Its socket closes on completion if the pool has stopped. Local shutdown sends no backend cancellation and never replays the request. Verify each transition with fixture barriers and socket close observations.
 
 ### 7. Dependency
 
-`{:nimble_pool, "~> 1.1", optional: true}` is small, depends only on Elixir, and starts no application processes. The gateway already compiles its Plug and Cowboy modules only when those optional dependencies are present, and the isolated consumer check builds a client-only consumer without them. `ConnectionPool` follows the same pattern. `Transport` reaches NimblePool only through `ConnectionPool`, and only when a connection carries `pool:`. Requesting `pool:` when `ConnectionPool` is not compiled raises `ArgumentError` at construction, which is a code check, not I/O.
+`{:nimble_pool, "~> 1.1", optional: true, runtime: false}` keeps its OTP application out of automatic startup. NimblePool's application callback starts a task supervisor, which synchronous slots do not need. The full consumer opts in with the same runtime setting and starts only the host pool child. Compile `ConnectionPool` only when NimblePool is available. Requesting `pool:` when the module is unavailable raises `ArgumentError` at passive construction.
 
 ### 8. Surfaces that stay unpooled
 
 - **Gateway relays.** `HTTPRelay`, `WebSocketRelay` and `RawRelay` open their backend through `Transport.open/2`, stream in active-once mode, relay caller-chosen methods, and close their backend socket when a lease expiry, revocation or owner loss interrupts the exchange. The documented gateway contract is one new backend connection per exchange, never pooled, retried or redirected. Pooling there would mix relay ownership with pool ownership and gain little, because each exchange already holds its socket for its whole life. Relays ignore `pool:`.
 - **Streams and channels.** `Transfer`, SimpleStreams downloads, `ExecRun`, `ExecOutput`, `WebSocket`, `RawChannel`, SFTP, NBD, `EventListener` and `DynamicConsole` keep their own connection for the stream's life. Upgrades take over their socket.
 - **Host adapters.** OCI registry access and SimpleStreams delta conversion run in host adapters and are outside the library's transport.
+
+### 9. Baseline and adoption
+
+Use operator-supplied bindings for one isolated project on the same Incus daemon. Verify the intended project and server identity before sampling. Use a bounded sequential workload with matching request counts, warm-up and timeouts across transports. Time discovery and a shared inspection from their public entry points. For polling, use a pre-existing operation in that project and measure individual GETs so changes in operation execution time do not dominate the comparison. Record the Incus and OTP versions, request counts, p50/p95 latency and error counts by workload. Count TLS connections and observed resumptions separately. Sample Incus CPU over the same workload windows when the host can provide it.
+
+Compare the complete client cost, including credential-file handling. A Unix-only run can establish that leg of the baseline. The decision to implement depends on measured verified HTTPS behavior, which is the target workload. Repeat against the same isolated backend after pooling and include idle-close errors in the comparison.
+
+Both PR #69 executors receive their connection from the host. Verify pooled behavior through the executors after their existing authorization checks. The generated documents and the release cassette have no connection or pool settings.
 
 ## Alternatives Considered
 
@@ -94,14 +105,14 @@ Using NimblePool directly keeps the existing transport, framing and failure code
 
 ### TLS session resumption without a pool
 
-OTP `:ssl` can resume TLS 1.3 sessions with client session tickets. This skips certificate verification on reconnect but still costs a TCP round trip and part of a handshake, and resumption state lives in OTP's shared session cache, against the per-connection trust handling in `tls_options/1`. It is measured as a baseline in task 1.1, not adopted.
+OTP `:ssl` can resume TLS 1.3 sessions with client session tickets. Benchmark this in a separate run with verified HTTPS and measure whether handshakes actually resume. Record unsupported or unobserved resumption explicitly. The benchmark does not change application TLS defaults.
 
 ## Risks / Trade-offs
 
 - **Server idle close.** An Incus server may close idle keep-alive connections sooner than `idle_timeout`. The probe in decision 4 catches most cases. The remaining race only affects reads, which fail visibly as `:response_closed` without retry. Hosts may see that kind more often than today.
-- **Stale trust.** A connection verified against an old CA or pinned fingerprint keeps serving its binding until it idles out. Rotation creates a new binding immediately. Hosts that must revoke trust instantly can stop and restart the pool.
+- **Stale trust.** Trust and credential rotation change the binding before checkout. Idle expiry and the absolute age cap retire sockets when files are unchanged. Hosts can remove admission immediately and stop the pool to release its idle sockets.
 - **More open sockets.** Up to `max_bindings * size` idle sockets per node. All are bounded and closed on idle or pool stop. On a relayed Unix socket, such as Macus's guest relay, idle sockets also hold relay resources.
-- **Per-request digest.** Hashing certificate, key and CA bytes costs microseconds, small next to the file reads already done per request.
+- **Per-request snapshot.** Reading and hashing client credentials may offset some handshake savings. Include this cost in the pooled comparison.
 
 ## Open Questions
 

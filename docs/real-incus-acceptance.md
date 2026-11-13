@@ -131,6 +131,43 @@ OPSMARU_OPERATIONS_ACCEPTANCE_CONFIG=/absolute/private/run/config.json \
 This is separate from fixture, consumer, Macus composition and hardware
 evidence, and tool success never counts as client coverage.
 
+## Connection pool baseline
+
+Use a pre-created isolated test project and an explicitly approved Incus
+binding. The baseline runner makes buffered reads against the supplied project.
+Save this configuration to a private file outside the repository.
+
+```json
+{
+  "isolated_benchmark": true,
+  "project": "opsmaru-pool-benchmark",
+  "socket": "/absolute/private/incus.sock",
+  "https": "https://verified-incus-host:8443",
+  "tls": {
+    "cacertfile": "/absolute/private/ca.pem",
+    "certfile": "/absolute/private/client.pem",
+    "keyfile": "/absolute/private/client.key"
+  },
+  "samples": 100,
+  "warmup": 10
+}
+```
+
+Use `tls.fingerprint` with the host-verified SHA-256 server certificate pin
+if the listener uses a pinned certificate. Supply `operation` with an existing
+operation ID in the test project to measure polling. Omit both `https` and
+`tls` for the Unix leg alone.
+
+```sh
+OPSMARU_POOL_BASELINE_CONFIG=/absolute/private/pool-baseline.json \
+  mise exec -- mix run --no-start scripts/benchmark-incus-connection-pool.exs
+```
+
+The output reports p50 and p95 over successful requests, error counts, and
+Mint and TLS connect attempts. Capture Incus CPU and observed full or resumed
+handshakes separately over the same workload windows. The benchmark gate
+requires the verified HTTPS comparison.
+
 ## Separate gates
 
 - [x] Foundation 4.3: direct native inspection, mutation, operation and stream

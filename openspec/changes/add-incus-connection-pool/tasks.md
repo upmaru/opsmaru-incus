@@ -2,33 +2,26 @@
 
 Planning only. All tasks remain unchecked until implementation and their specified verification pass. Pool evidence never changes a `priv/incus/coverage.json` entry, completion record or acceptance gate.
 
-## 1. Baseline and passive component
+## 1. Measure the existing transport
 
-- [ ] 1.1 Measure per-request latency and backend CPU for buffered GETs, `Incus.connect/2` discovery, `Operation.wait/2` polls and a shared-operations inspection call over Unix and verified HTTPS, without pooling and with OTP TLS 1.3 session resumption, against an explicitly opted-in isolated Incus project; record the baseline and whether pooling's expected gain justifies continuing.
-- [ ] 1.2 Add `{:nimble_pool, "~> 1.1", optional: true}` and the conditionally compiled `Opsmaru.Incus.ConnectionPool` child spec with validated bounded options; verify that loading and starting `:opsmaru_incus` starts no pool, registry, table or socket, that invalid options raise before start, and that stopping the pool closes only pooled sockets.
-- [ ] 1.3 Add the passive `pool:` option to `Connection.unix!/2` and `Connection.https!/2`, kept by `with_context/2`, `project/2` and `member/2`; verify construction performs no I/O, `Inspect` stays redacted, `pool:` raises when `ConnectionPool` is not compiled, and connections without it take today's code path byte for byte.
+- [ ] 1.1 Against an explicitly opted-in isolated Incus project, measure a buffered GET, `Incus.connect/2` discovery, repeated polls against an operator-supplied operation, and a shared inspection with a host binding that supplies a connection and context. Compare Unix, verified HTTPS with full handshakes, and verified HTTPS with observed TLS 1.3 resumption when supported. Use the same endpoints, workloads, warm-up and sample counts across runs. Record p50/p95 latency, connection and handshake counts, errors and Incus CPU if the isolated host supplies it. Record unavailable measurements and the decision on proceeding. Use supplied bindings and existing project data for the timed requests. Keep the gate open until there is a verified HTTPS baseline.
 
-## 2. Binding isolation
+## 2. Verified HTTPS buffered reads
 
-- [ ] 2.1 Implement the binding digest, pooled `cert`/`key` handshake bytes and opaque registry naming; verify that connections differing only in owner, client certificate, key, CA bundle, pinned fingerprint, address or `require_authenticated` never share a socket, that rotated files produce a new binding whose handshake presents the new certificate, and that the digest appears in no `Inspect`, error, registry name or log.
-- [ ] 2.2 Verify that project, member, request context, timeouts and `Context` identity do not split pools, and that `Context.authorize/2`, including an unready host, still rejects a call before any checkout or connect.
+- [ ] 2.1 Add `{:nimble_pool, "~> 1.1", optional: true, runtime: false}` and a host-started child spec with validated binding, slot, idle and age limits. Verify passive startup with NimblePool installed and absent. Add the passive `pool:` option, verify it survives context and selection updates, and document host opt-in in `docs/incus-client.md`.
+- [ ] 2.2 Take a bounded credential and trust snapshot after authorization. Derive the digest and in-memory handshake options from it. Verify owner, address, `require_authenticated`, client chain/key, CA and pin isolation, rotated credentials as observed by the peer, failure on an invalid snapshot, and redacted diagnostics. Prove unready and mismatched hosts perform no checkout or backend I/O.
+- [ ] 2.3 Implement synchronous admission and handoff in the buffered Mint worker. Assert saturated calls never enter NimblePool's resource queue, stopped or blocked pools and exhausted binding limits fall back before dispatch, and late replies cannot transfer an untracked socket. Cap acquisition by one shared budget. Test worker death, cancellation, owner loss and `WorkScope` shutdown at both handoffs, including death after transfer and before check-in.
+- [ ] 2.4 Verify GET and HEAD reuse over verified HTTPS by counting accepted sockets. Use the final Mint state for check-in. Cover server close, half-close, stray data, response limits, incomplete responses, upgrades and the current send and receive deadline. Assert a close after dispatch is reported once with the existing error kind and no replay.
+- [ ] 2.5 Verify idle, age and empty-binding eviction with fixture barriers, including repeated reads across the age cap and stale expiry after a binding restarts. Stop the pool with one idle and one checked-out socket. Verify idle close, completion of the in-flight read within its existing deadline, close on completion and a fresh next request. Document shutdown and eviction behavior.
 
-## 3. Checkout, reuse and check-in
+## 3. Remaining buffered call sites and mutations
 
-- [ ] 3.1 Implement method-based checkout and clean-response check-in in `Transport.request/5`; verify GET and HEAD reuse idle connections, every other method opens a fresh connection that may be returned afterwards, and 101, `connection: close`, errored, oversized or partially read responses are never returned.
-- [ ] 3.2 Implement the open-and-probe reuse validation and per-request `send_timeout` reset; verify that server-closed, half-closed and stray-byte sockets are discarded before use, that a reused socket honors the current request's deadline rather than the one it was opened under, and that the request then succeeds on a fresh connection.
-- [ ] 3.3 Implement the non-queueing checkout bound, empty `init_worker/1` and `max_bindings` admission; verify that a saturated binding, a blocked or killed pool process, and an exhausted binding limit each degrade to an unpooled request with today's result and no added failure kind.
-- [ ] 3.4 Verify that every `Transport.open/2` caller (transfers, SimpleStreams downloads, exec, WebSocket, raw, SFTP, NBD, event listener, dynamic console and the gateway HTTP, WebSocket and raw relays) opens one fresh connection per stream or exchange when its connection carries `pool:`, and that pooled SimpleStreams catalog, `HTTP.request/4` and shared-operations reads reuse sockets while their mutations do not.
+- [ ] 3.1 Add Unix buffered reuse with the same admission and ownership rules. Verify reuse through the existing shared inspection executor, HTTP and OCI passive handles, and SimpleStreams catalog requests. Verify project/member selection, request context and response budgets apply per request and preserve native queries, ETags, results and operation identities.
+- [ ] 3.2 Keep every non-GET/HEAD request on a fresh connection. Return eligible completed sockets for later reads. Verify fresh-connect failure remains `:connection`, lost mutation responses remain `:uncertain`, and each dispatched mutation appears once under cancellation, deadline and response loss. A failed pool return must preserve the completed result.
+- [ ] 3.3 Verify gateway HTTP, WebSocket and raw relays, transfers, SimpleStreams downloads, exec, events, consoles, and raw/SFTP/NBD channels open their own sockets even when their binding carries `pool:`. Confirm the per-exchange rule in `docs/gateway.md`.
 
-## 4. Failure semantics and lifecycle
+## 4. Integration and acceptance
 
-- [ ] 4.1 Verify that mutations keep today's classification: `:connection` before the request is written, `:uncertain` after, a single request on the wire, and no retry under deadline, cancellation, owner loss, `WorkScope` termination or response loss.
-- [ ] 4.2 Verify that a guard-killed or scope-killed worker removes its checked-out connection, that no partially read socket re-enters the pool, and that a stale-socket failure on a reused GET is reported once with its existing kind (`:response_closed` for a close before any parsed response) and not retried.
-- [ ] 4.3 Implement idle removal through `handle_ping/2` and manager-driven termination of empty lazy binding pools; verify that sockets and binding pools close within the documented bound after `idle_timeout`.
-
-## 5. Documentation and acceptance
-
-- [ ] 5.1 Document the pool, its options, the reads-only reuse rule and the unpooled surfaces in `docs/incus-client.md`, and confirm `docs/gateway.md` still states that relays never pool.
-- [ ] 5.2 Repeat the 1.1 measurements with pooling against the same isolated real Incus project, including server-side idle close, and record a separate pool report without claiming Macus or hardware acceptance.
-- [ ] 5.3 Extend the isolated consumer check so the full consumer starts the pool in its host tree and the client-only consumer compiles without NimblePool and never starts it; verify both from a pushed immutable revision with `mise run check:consumer`.
-- [ ] 5.4 Run `mise run check` and `mise run check:reference`.
+- [ ] 4.1 When PR #69's executors are available, verify a pooled host binding through both `Operations.Composite.run/3` and `Operations.Native.run/3`. Prove denied calls never touch the pool or backend, allowed reads reuse, and mutations use fresh sockets. The pool can be delivered before that combined check, which belongs on the first revision containing both changes.
+- [ ] 4.2 Run `mise run check`, `mise run check:reference` and `mise run check:consumer` from a clean immutable feature revision. Verify the full extracted Hex consumer starts the pool explicitly and the client-only consumer compiles without NimblePool. Preserve the coverage ledger.
+- [ ] 4.3 Repeat the task 1.1 measurements with pooling against the same isolated real backend, including server-side idle close. Record benefit, errors and handshake count separately from fixture, consumer and Macus hardware acceptance.

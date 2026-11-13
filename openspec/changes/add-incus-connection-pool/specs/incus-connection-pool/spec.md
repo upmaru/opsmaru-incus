@@ -8,17 +8,23 @@ Provides optional, host-started reuse of idle native HTTP/1.1 connections for bu
 
 ### Requirement: Host-started passive pool
 
-The connection pool SHALL exist only when a host explicitly starts it in its own supervision tree with bounded options. Loading or starting the library, constructing a `Connection` or making calls without a `pool:` option MUST NOT start pool processes, open sockets or change request behavior. The pool's dependency SHALL be optional, so client-only consumers compile without it.
+The connection pool SHALL exist only when a host explicitly starts it in its own supervision tree with bounded options. Loading or starting the library and constructing a connection MUST NOT start pool processes, start the pool dependency's OTP application, or open sockets. Client-only consumers SHALL compile without the optional pool dependency.
 
 #### Scenario: Library without a pool
 
 - **WHEN** a host loads and starts `:opsmaru_incus` and makes requests on connections without a `pool:` option
 - **THEN** no pool process exists and every request opens and closes its own connection as before
 
+#### Scenario: Dependency installed before opt-in
+
+- **WHEN** a host with the optional dependency installed starts the library without a pool child
+- **THEN** the dependency's OTP application and task supervisor remain stopped
+
 #### Scenario: Pool stopped
 
 - **WHEN** the host stops a running pool
-- **THEN** only pooled local sockets close, no Incus request or operation is sent or cancelled, and later requests run unpooled
+- **THEN** idle sockets close, workers already performing I/O can finish under their existing deadline and close their sockets, and later requests run unpooled
+- **AND** shutdown sends no native cancellation or repeated request
 
 ### Requirement: Binding isolation
 
@@ -46,7 +52,7 @@ Pooled connections SHALL be shared only between requests with an identical bindi
 
 ### Requirement: Reads-only reuse
 
-Only buffered GET and HEAD requests SHALL reuse an idle pooled connection, and only after it passes open-socket validation. All other methods MUST use a fresh connection. A connection MUST be returned to the pool only after a complete, non-upgraded response without `connection: close`. Streamed transfers, channels, upgrades and gateway relays MUST NOT use the pool, even when their connection carries a `pool:` option.
+Only buffered GET and HEAD requests SHALL reuse a validated idle connection within the configured age limit. All other methods MUST use a fresh connection. A socket can return to the pool only after a complete non-upgraded response that permits reuse. Streamed transfers, channels, upgrades and gateway relays MUST bypass the pool.
 
 #### Scenario: Mutation with idle connections available
 
@@ -63,6 +69,11 @@ Only buffered GET and HEAD requests SHALL reuse an idle pooled connection, and o
 - **WHEN** a gateway whose fixed connection carries a `pool:` option relays an exchange
 - **THEN** the relay opens one new backend connection for that exchange and never takes it from or returns it to the pool
 
+#### Scenario: Connection ages out during continuous reads
+
+- **WHEN** an idle socket reaches its maximum connection age despite frequent use
+- **THEN** the next read opens a fresh connection or uses another validated socket within its age limit
+
 ### Requirement: Unchanged failure semantics
 
 Pooling MUST NOT change error kinds, deadlines, cancellation or wire requests. Mutations SHALL keep reporting `:connection` when no request bytes could have left and `:uncertain` afterwards. A reused connection MUST be bounded by the current request's deadline. The library MUST NOT retry any request, including a read that fails on a reused connection.
@@ -77,9 +88,14 @@ Pooling MUST NOT change error kinds, deadlines, cancellation or wire requests. M
 - **WHEN** a reused GET passes validation but the server closes the socket before any response is parsed
 - **THEN** the caller receives one `:response_closed` error and the library sends no second request
 
-### Requirement: No queueing and no pool I/O
+#### Scenario: Request worker dies during return
 
-Pool processes MUST NOT perform network I/O or TLS handshakes. A request that cannot obtain a validated idle connection within a short documented bound, or whose binding cannot be admitted under `max_bindings`, SHALL proceed on a fresh unpooled connection rather than wait or fail.
+- **WHEN** the worker dies after transferring a completed socket back to the pool and before check-in is accepted
+- **THEN** the pool closes the socket and releases the slot
+
+### Requirement: Bounded acquisition without queueing
+
+The pool SHALL reject saturation without waiting for a slot. One acquisition budget, capped by the remaining request deadline, MUST cover binding admission and checkout validation. A miss SHALL use a fresh connection while the request is active. Request workers SHALL perform TLS handshakes and request and response I/O.
 
 #### Scenario: Saturated binding
 
