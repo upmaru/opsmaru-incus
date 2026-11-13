@@ -255,12 +255,21 @@ defmodule Opsmaru.Incus.ConnectionPoolTest do
     refute peer() == first
   end
 
-  test "discards idle sockets with unsolicited data before sending the next request", env do
-    {connection, context, _fixture} = start_pool(env, size: 1)
+  test "discards a socket with unsolicited data without replaying a dispatched read", env do
+    {connection, context, fixture} = start_pool(env, size: 1)
     assert {:ok, _} = query(connection, context, "GET", "/1.0/stray")
     first = peer()
     send(first, :stray)
     assert_receive {:stray_sent, ^first}, @timeout
+    # The peer's send can finish before the bytes reach the client's passive
+    # TLS socket. The probe may discard it, or the response parser may reject
+    # the bytes after dispatch. Neither outcome may send a second request.
+    case query(connection, context) do
+      {:ok, _} -> refute peer() == first
+      {:error, %Error{kind: :response}} -> assert peer() == first
+    end
+
+    assert Enum.count(HTTPFixture.requests(fixture), &(&1.target == "/1.0/probe")) == 1
     assert {:ok, _} = query(connection, context)
     refute peer() == first
   end
