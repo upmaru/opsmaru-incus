@@ -28,7 +28,7 @@ Only three callers use `Transport.request/5`: `Incus.raw_query/5` (and through i
  max_connection_age: 60_000}
 ```
 
-It starts a supervisor containing a `Registry` and a `DynamicSupervisor` for per-binding NimblePool instances, plus a manager that admits and stops bindings. Every limit is a validated bounded integer. Use 60 seconds as the initial default maximum connection age. Record establishment time on connect and retire over-age sockets on checkout and on return, including under sustained use. Idle eviction uses time since the last return.
+It starts a manager that admits and owns linked per-binding NimblePool processes. The manager owns the private digest-to-PID map and shuts down its children when it stops. Every limit is a validated bounded integer. The initial default maximum connection age is 60 seconds. Record establishment time on connect and retire over-age sockets on checkout and on return, including under sustained use. Idle eviction uses time since the last return.
 
 Each binding's NimblePool is `lazy: true` with synchronous empty slots. Periodic idle checks remove expired sockets. The manager stops an empty binding after `idle_timeout` once admission and checkout accounting confirm that no lease is active. Associate expiry with the specific binding process so a late expiry cannot stop its replacement. Document the maximum eviction delay from the sweep interval.
 
@@ -38,7 +38,7 @@ A pool's key is a SHA-256 digest of the connection `owner`, the transport, the n
 
 `:ssl` may serve `certfile`/`keyfile` from its PEM cache. After authorization, the request worker takes a bounded snapshot of the certificate chain, key and optional CA bundle. Derive the binding and the in-memory handshake options from that snapshot, preserving OTP's chain handling and the existing hostname, CA and pin checks. A fresh connection eligible for return uses those same options. An invalid or mismatched snapshot fails as a connection error before dispatch. Connections without `pool:` retain the existing TLS options. Rotating material creates a new binding, and old sockets age out. Keep snapshots in the request worker and use redacted errors.
 
-Project, member, request context, timeouts, budgets and `Context` identity are not in the key. They do not affect the TLS session or the socket. They are applied per request exactly as today, and `Context.authorize/2`, including the host's `ready?` check, still runs before any checkout. The digest and key never appear in `Inspect`, errors, telemetry or the `Registry` name. Registry entries use an opaque reference that maps to the digest inside the manager.
+Project, member, request context, timeouts, budgets and `Context` identity apply per request. `Context.authorize/2`, including the host's `ready?` check, still runs before any checkout. Binding processes are addressed by PID. The manager redacts its status and keeps the digest out of diagnostics.
 
 ### 3. Reads reuse, mutations do not
 
@@ -63,7 +63,7 @@ A reused socket still carries the `send_timeout` set when it was opened. Before 
 
 The bounded request worker performs handshakes, probes, writes and reads. Pool callbacks manage state, ownership transfers and teardown. NimblePool queues on saturation by default. Reject saturation in the binding's `handle_enqueue/2` before entering its queue. Use a per-binding count of slots reserved for checkouts, including handoffs. Release each reservation once on check-in, cancellation or checkout failure. Ensure a stale or rejected socket leaves an available empty slot or ends the checkout, so it cannot cause a reserved checkout to queue.
 
-Use one short acquisition budget capped by the current request deadline across lookup, admission, checkout and pre-send validation. A missing, blocked or saturated pool yields a miss before dispatch. Binding startup may proceed asynchronously under the host supervisor while the current request uses a fresh connection. Cap binding count and never evict an active binding. After dispatch, the result depends only on the request, including when a return fails.
+Use a five-millisecond acquisition budget capped by the current request deadline across lookup, admission, checkout and pre-send validation. A missing, blocked or saturated pool yields a miss before dispatch. Binding startup only initializes local state and is subject to that caller budget. Cap binding count and never evict an active binding. After dispatch, the result depends only on the request, including when a return fails.
 
 ### 6. Ownership and kills
 

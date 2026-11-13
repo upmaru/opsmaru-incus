@@ -13,8 +13,11 @@ defmodule Opsmaru.EmbeddingTest do
     registered = MapSet.new(Process.registered())
 
     assert Application.spec(:opsmaru_incus, :mod) == []
+    assert Code.ensure_loaded?(NimblePool)
+    refute :nimble_pool in Application.spec(:opsmaru_incus, :applications)
     Application.stop(:opsmaru_incus)
     {:ok, _} = Application.ensure_all_started(:opsmaru_incus)
+    refute Process.whereis(NimblePool.TaskSupervisor)
 
     assert MapSet.subset?(MapSet.new(Port.list()), ports)
     assert MapSet.subset?(MapSet.new(Process.registered()), registered)

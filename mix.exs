@@ -65,6 +65,7 @@ defmodule OpsmaruIncus.MixProject do
   defp deps do
     [
       {:mint, "~> 1.11"},
+      {:nimble_pool, "~> 1.1", optional: true, runtime: false},
       {:mint_web_socket, "~> 1.0"},
       {:jason, "~> 1.4"},
       # Native multipart/content-type parsing and the strict YAML subset decoder.

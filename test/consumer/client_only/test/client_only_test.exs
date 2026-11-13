@@ -1,7 +1,7 @@
 defmodule ClientOnlyConsumer.Test do
   use ExUnit.Case
+  alias Opsmaru.Incus.{Connection, Operations}
   alias Opsmaru.Incus.Gateway.Identity
-  alias Opsmaru.Incus.Operations
 
   test "the client and operation descriptors work without Plug or an MCP stack" do
     refute Code.ensure_loaded?(TamaMCP.Tool)
@@ -15,6 +15,16 @@ defmodule ClientOnlyConsumer.Test do
              )
 
     assert Application.spec(:opsmaru_incus, :mod) == []
+    refute Code.ensure_loaded?(NimblePool)
+    refute Code.ensure_loaded?(Opsmaru.Incus.ConnectionPool)
+    refute Process.whereis(NimblePool.TaskSupervisor)
+
+    assert_raise ArgumentError, ~r/optional connection pool/, fn ->
+      Connection.unix!("/private/consumer-fixture.sock",
+        owner: :consumer,
+        pool: :missing
+      )
+    end
   end
 
   test "gateway configuration is available but its web adapters are not compiled" do

@@ -158,6 +158,10 @@ if the listener uses a pinned certificate. Supply `operation` with an existing
 operation ID in the test project to measure polling. Omit both `https` and
 `tls` for the Unix leg alone.
 
+Set `"compare_pool": true` to run both HTTPS modes in the same invocation.
+The pooled leg starts a one-slot host pool and uses the same endpoint and
+credentials. Warm-up and preflight are outside the connection counters.
+
 ```sh
 OPSMARU_POOL_BASELINE_CONFIG=/absolute/private/pool-baseline.json \
   mise exec -- mix run --no-start scripts/benchmark-incus-connection-pool.exs

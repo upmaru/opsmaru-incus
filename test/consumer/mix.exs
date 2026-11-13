@@ -22,6 +22,7 @@ defmodule FoundationConsumer.MixProject do
       {:opsmaru_incus, path: package},
       {:phoenix, "1.8.15"},
       {:mint, "1.11.0"},
+      {:nimble_pool, "~> 1.1", runtime: false},
       {:plug_cowboy, "2.9.0"},
       {:cowboy, "2.19.0"},
       {:tama_mcp, "0.1.1"},

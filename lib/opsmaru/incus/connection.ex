@@ -19,6 +19,7 @@ defmodule Opsmaru.Incus.Connection do
     :project,
     :member,
     :request_context,
+    :pool,
     require_authenticated: false,
     timeout: 5_000,
     max_response_bytes: 8_388_608,
@@ -91,18 +92,20 @@ defmodule Opsmaru.Incus.Connection do
   def member(connection, member), do: %{connection | member: selection!(member)}
 
   @doc false
-  def tls_options(%__MODULE__{tls: tls, address: uri}) do
-    options = [
-      verify: :verify_peer,
-      versions: [:"tlsv1.3", :"tlsv1.2"],
+  def tls_options(%__MODULE__{tls: tls} = connection) do
+    credentials = [
       certfile: String.to_charlist(tls[:certfile]),
       keyfile: String.to_charlist(tls[:keyfile])
     ]
 
+    cas = if tls[:cacertfile], do: ca_certificates(tls[:cacertfile]), else: []
+    tls_options(connection, credentials, cas)
+  end
+
+  @doc false
+  def tls_options(%__MODULE__{tls: tls, address: uri}, credentials, cas) do
     options =
-      if tls[:cacertfile],
-        do: Keyword.put(options, :cacerts, ca_certificates(tls[:cacertfile])),
-        else: Keyword.put(options, :cacerts, [])
+      [verify: :verify_peer, versions: [:"tlsv1.3", :"tlsv1.2"], cacerts: cas] ++ credentials
 
     if tls[:fingerprint] do
       Keyword.put(
@@ -129,6 +132,11 @@ defmodule Opsmaru.Incus.Connection do
     bytes = File.read!(path)
     if byte_size(bytes) > 1_048_576, do: raise(ArgumentError, "CA bundle exceeds its byte limit")
 
+    decode_certificates!(bytes)
+  end
+
+  @doc false
+  def decode_certificates!(bytes) do
     certificates =
       for {:Certificate, der, :not_encrypted} <- :public_key.pem_decode(bytes), do: der
 
@@ -142,6 +150,7 @@ defmodule Opsmaru.Incus.Connection do
 
     if is_nil(connection.owner), do: raise(ArgumentError, "connection owner is required")
     if connection.request_context, do: RequestContext.validate!(connection.request_context)
+    validate_pool!(connection.pool)
 
     unless is_boolean(connection.require_authenticated),
       do: raise(ArgumentError, "require_authenticated must be a boolean")
@@ -178,6 +187,15 @@ defmodule Opsmaru.Incus.Connection do
 
   defp selection!(_),
     do: raise(ArgumentError, "selection must be nil or a nonempty bounded string")
+
+  defp validate_pool!(nil), do: :ok
+
+  defp validate_pool!(pool) do
+    unless (is_atom(pool) or (is_pid(pool) and node(pool) == node())) and
+             Code.ensure_loaded?(Opsmaru.Incus.ConnectionPool) do
+      raise ArgumentError, "pool requires the optional connection pool and a local name or PID"
+    end
+  end
 end
 
 defimpl Inspect, for: Opsmaru.Incus.Connection do

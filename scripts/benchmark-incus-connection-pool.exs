@@ -2,7 +2,7 @@
 # project. This runner uses only buffered reads and the existing client.
 defmodule Opsmaru.Incus.PoolBaseline do
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Connection, Context, Error, Operations}
+  alias Opsmaru.Incus.{Connection, ConnectionPool, Context, Error, Operations}
 
   defmodule Host do
     @behaviour Operations.Host
@@ -36,10 +36,30 @@ defmodule Opsmaru.Incus.PoolBaseline do
     {:module, :ssl} = Code.ensure_loaded(:ssl)
 
     bindings = [
-      {"unix", Connection.unix!(Map.fetch!(config, "socket"), opts)}
-      | https(config, opts)
+      {"unix", Connection.unix!(Map.fetch!(config, "socket"), opts)} | https(config, opts)
     ]
 
+    pool = start_pool(config, bindings)
+
+    try do
+      run_bindings(bindings, pool, context, project, operation, samples, warmup)
+    after
+      if pool, do: GenServer.stop(pool)
+    end
+  end
+
+  defp start_pool(%{"compare_pool" => true}, [_, {"verified_https", _}]) do
+    {:ok, pool} = ConnectionPool.start_link(size: 1)
+    pool
+  end
+
+  defp start_pool(%{"compare_pool" => true}, _),
+    do: raise(ArgumentError, "pool comparison requires verified HTTPS")
+
+  defp start_pool(_, _), do: nil
+
+  defp run_bindings(bindings, pool, context, project, operation, samples, warmup) do
+    bindings = if pool, do: bindings ++ pooled_binding(bindings, pool), else: bindings
     verified = Enum.map(bindings, &verify(&1, context, project, operation))
 
     identities =
@@ -72,6 +92,9 @@ defmodule Opsmaru.Incus.PoolBaseline do
       results: results
     }
   end
+
+  defp pooled_binding([_, {"verified_https", connection}], pool),
+    do: [{"pooled_https", %{connection | pool: pool}}]
 
   defp https(%{"https" => https, "tls" => tls}, opts) do
     tls =

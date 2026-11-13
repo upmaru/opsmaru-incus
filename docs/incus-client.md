@@ -247,6 +247,33 @@ empty rootfs part. A missing, invalid or failed rootfs source returns
 `:missing_relay_adapter` before the target upload; it never substitutes a
 metadata-only image. Staging remains host-owned and is not deleted on failure.
 
+## Optional HTTPS connection pool
+
+Add `{:nimble_pool, "~> 1.1", runtime: false}` to the host's dependencies and
+start the pool in the host supervision tree.
+
+```elixir
+{Opsmaru.Incus.ConnectionPool, name: MyHost.IncusPool,
+ max_bindings: 64, size: 4, idle_timeout: 15_000, max_connection_age: 60_000}
+```
+
+Pass `pool: MyHost.IncusPool` to `Connection.https!/2` alongside the host's
+existing owner and TLS options. Each authorized buffered GET or HEAD can
+reuse a verified socket for the same owner, origin, credentials, trust and
+authentication requirement. Project and cluster-member selection still
+apply to each request. Credential rotation selects a new binding.
+
+The defaults above cap retained bindings, sockets per binding, idle time,
+and connection age. Acquisition has a five-millisecond budget capped by the
+request deadline. When no slot is available, the request can open a fresh
+connection. Idle and age checks run on checkout and periodically. Idle
+binding reclamation runs on the idle interval, plus a bounded sweep across
+the configured bindings. Host shutdown closes idle sockets and lets
+requests already using a socket finish within their original deadlines.
+
+This slice pools only verified HTTPS buffered reads. Mutations, Unix
+requests, gateway relays, streams and upgrades use fresh connections.
+
 ## Coverage limitations
 
 `Opsmaru.Incus.Preseed.apply(client, native_config, timeout: 30_000)` explicitly

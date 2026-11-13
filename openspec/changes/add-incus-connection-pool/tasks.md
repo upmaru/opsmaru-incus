@@ -1,15 +1,19 @@
 # Tasks
 
-Planning only. All tasks remain unchecked until implementation and their specified verification pass. Pool evidence never changes a `priv/incus/coverage.json` entry, completion record or acceptance gate.
+Pool evidence never changes a `priv/incus/coverage.json` entry, completion record or acceptance gate. The first implementation slice covers verified HTTPS buffered reads.
 
 ## 1. Measure the existing transport
 
 - [ ] 1.1 Against an explicitly opted-in isolated Incus project, measure a buffered GET, `Incus.connect/2` discovery, repeated polls against an operator-supplied operation, and a shared inspection with a host binding that supplies a connection and context. Compare Unix, verified HTTPS with full handshakes, and verified HTTPS with observed TLS 1.3 resumption when supported. Use the same endpoints, workloads, warm-up and sample counts across runs. Record p50/p95 latency, connection and handshake counts, errors and Incus CPU if the isolated host supplies it. Record unavailable measurements and the decision on proceeding. Use supplied bindings and existing project data for the timed requests. Keep the gate open until there is a verified HTTPS baseline.
 
+The paired baseline in [real Incus acceptance](../../../docs/real-incus-acceptance.md)
+establishes the verified HTTPS gate and supports proceeding with the HTTPS
+slice. Operation polling, observed TLS resumption and Incus CPU remain open.
+
 ## 2. Verified HTTPS buffered reads
 
 - [ ] 2.1 Add `{:nimble_pool, "~> 1.1", optional: true, runtime: false}` and a host-started child spec with validated binding, slot, idle and age limits. Verify passive startup with NimblePool installed and absent. Add the passive `pool:` option, verify it survives context and selection updates, and document host opt-in in `docs/incus-client.md`.
-- [ ] 2.2 Take a bounded credential and trust snapshot after authorization. Derive the digest and in-memory handshake options from it. Verify owner, address, `require_authenticated`, client chain/key, CA and pin isolation, rotated credentials as observed by the peer, failure on an invalid snapshot, and redacted diagnostics. Prove unready and mismatched hosts perform no checkout or backend I/O.
+- [x] 2.2 Take a bounded credential and trust snapshot after authorization. Derive the digest and in-memory handshake options from it. Verify owner, address, `require_authenticated`, client chain/key, CA and pin isolation, rotated credentials as observed by the peer, failure on an invalid snapshot, and redacted diagnostics. Prove unready and mismatched hosts perform no checkout or backend I/O.
 - [ ] 2.3 Implement synchronous admission and handoff in the buffered Mint worker. Assert saturated calls never enter NimblePool's resource queue, stopped or blocked pools and exhausted binding limits fall back before dispatch, and late replies cannot transfer an untracked socket. Cap acquisition by one shared budget. Test worker death, cancellation, owner loss and `WorkScope` shutdown at both handoffs, including death after transfer and before check-in.
 - [ ] 2.4 Verify GET and HEAD reuse over verified HTTPS by counting accepted sockets. Use the final Mint state for check-in. Cover server close, half-close, stray data, response limits, incomplete responses, upgrades and the current send and receive deadline. Assert a close after dispatch is reported once with the existing error kind and no replay.
 - [ ] 2.5 Verify idle, age and empty-binding eviction with fixture barriers, including repeated reads across the age cap and stale expiry after a binding restarts. Stop the pool with one idle and one checked-out socket. Verify idle close, completion of the in-flight read within its existing deadline, close on completion and a fresh next request. Document shutdown and eviction behavior.
