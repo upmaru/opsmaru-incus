@@ -33,6 +33,7 @@ defmodule Opsmaru.Incus.PoolBaseline do
     opts = [owner: :pool_baseline, project: project]
     context = Context.new!(owner: :pool_baseline, identity: :operator, ready?: fn -> true end)
     {:ok, _} = Application.ensure_all_started(:ssl)
+    {:module, :ssl} = Code.ensure_loaded(:ssl)
 
     bindings = [
       {"unix", Connection.unix!(Map.fetch!(config, "socket"), opts)}

@@ -168,6 +168,21 @@ Mint and TLS connect attempts. Capture Incus CPU and observed full or resumed
 handshakes separately over the same workload windows. The benchmark gate
 requires the verified HTTPS comparison.
 
+### Unix baseline on 2026-11-13
+
+The existing client at revision `f5f73ea` ran against a new restricted
+project on Incus 7.0.1 through the Macus Unix relay, using OTP 27.
+Each workload had 10 warm-up calls and 100 measured calls.
+
+| Workload | p50 | p95 | Connection attempts | Errors |
+| --- | ---: | ---: | ---: | ---: |
+| Buffered instance list GET | 0.874 ms | 1.711 ms | 100 | 0 |
+| Discovery | 0.708 ms | 0.779 ms | 100 | 0 |
+| Shared instance inspection | 1.489 ms | 1.700 ms | 200 | 0 |
+
+Operation polling awaits an operation ID. Verified HTTPS, TLS resumption,
+and Incus CPU measurements are pending.
+
 ## Separate gates
 
 - [x] Foundation 4.3: direct native inspection, mutation, operation and stream
