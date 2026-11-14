@@ -455,7 +455,13 @@ defmodule Opsmaru.Incus.RequestContextTest do
     assert Enum.all?(WebSocketFixture.requests(fixture), &(&1.method == "GET"))
   end
 
-  test "raw native upgrade channels obey the local context without backend DELETE", %{root: root} do
+  for trigger <- [:cancel, :owner_exit, :deadline] do
+    test "raw channel closes without a backend DELETE on context #{trigger}", %{root: root} do
+      raw_channel_close(root, unquote(trigger))
+    end
+  end
+
+  defp raw_channel_close(root, trigger) do
     parent = self()
 
     fixture =
@@ -469,18 +475,28 @@ defmodule Opsmaru.Incus.RequestContextTest do
                   <<0, 255, 128>>
               )
 
-            send(parent, {:closed, transport.recv(socket, 0, 1_000)})
+            send(parent, {:closed, transport.recv(socket, 0, 5_000)})
           end
         }
       end)
 
-    scope = RequestContext.new!(timeout: 3_000)
+    owner = spawn(fn -> receive do: (:stop -> :ok) end)
+    on_exit(fn -> Process.exit(owner, :kill) end)
+    timeout = if trigger == :deadline, do: 1_000, else: 30_000
+    scope = RequestContext.new!(timeout: timeout, owner: owner)
     {:ok, channel} = Incus.sftp(Incus.with_context(client(fixture), scope), "fixture")
     assert {:ok, <<0, 255, 128>>} = RawChannel.recv(channel)
     monitor = monitor!(channel.pid)
-    RequestContext.cancel(scope)
-    assert_receive {:DOWN, ^monitor, :process, _, :killed}, 500
-    assert_receive {:closed, {:error, :closed}}, 1_000
+
+    case trigger do
+      :cancel -> RequestContext.cancel(scope)
+      :owner_exit -> send(owner, :stop)
+      :deadline -> :ok
+    end
+
+    assert_receive {:DOWN, ^monitor, :process, _, :killed}, 5_000
+    assert {:error, %Error{kind: :channel_closed}} = RawChannel.recv(channel)
+    assert_receive {:closed, {:error, :closed}}, 5_000
     assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
   end
 

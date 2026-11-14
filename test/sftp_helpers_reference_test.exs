@@ -479,6 +479,34 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
     packets()
   end
 
+  for {trigger, kind} <- [cancel: :canceled, owner_exit: :canceled, deadline: :deadline] do
+    test "an idle SFTP session reports #{kind} on context #{trigger}", %{root: root} do
+      assert_context_close(root, unquote(trigger), unquote(kind))
+    end
+  end
+
+  defp assert_context_close(root, trigger, expected) do
+    fixture = backend(root, :gen_tcp, nil)
+    owner = spawn(fn -> receive do: (:stop -> :ok) end)
+    on_exit(fn -> Process.exit(owner, :kill) end)
+    timeout = if trigger == :deadline, do: 1_000, else: 30_000
+    scope = RequestContext.new!(timeout: timeout, owner: owner)
+    assert {:ok, session} = open(client(fixture, nil, request_context: scope), :instance)
+    raw = :sys.get_state(session.pid).raw.pid
+
+    case trigger do
+      :cancel -> RequestContext.cancel(scope)
+      :owner_exit -> send(owner, :stop)
+      :deadline -> :ok
+    end
+
+    assert_receive :sftp_peer_closed, 5_000
+    eventually_dead(session.pid)
+    eventually_dead(raw)
+    assert {:error, %Error{kind: ^expected}} = SFTP.extensions(session)
+    assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+  end
+
   test "local stream expiry does not cancel a shared context or another session", %{root: root} do
     fixture = backend(root, :gen_tcp, nil)
     scope = RequestContext.new!(timeout: 2_000)

@@ -99,20 +99,40 @@ defmodule Opsmaru.Incus.Transport do
     owner_monitor = Process.monitor(owner)
     worker_monitor = Process.monitor(worker)
 
-    guard_until(owner_monitor, worker_monitor, worker, deadline, context)
+    wait = fn subscription ->
+      guard_until(owner_monitor, worker_monitor, worker, deadline, subscription)
+    end
+
+    if wait_with_context(context, wait) == :context_ended, do: Process.exit(worker, :kill)
   end
 
-  defp guard_until(owner_monitor, worker_monitor, worker, deadline, context) do
-    if RequestContext.status(context) != :active or remaining(deadline) == 0 do
-      Process.exit(worker, :kill)
-    else
-      receive do
-        {:DOWN, ^owner_monitor, :process, _, _} -> Process.exit(worker, :kill)
-        {:DOWN, ^worker_monitor, :process, _, _} -> :ok
-      after
-        tick(context, remaining(deadline)) ->
-          guard_until(owner_monitor, worker_monitor, worker, deadline, context)
-      end
+  defp wait_with_context(nil, wait), do: wait.({nil, nil})
+
+  defp wait_with_context(context, wait) do
+    case RequestContext.subscribe(context) do
+      {:ok, subscription} ->
+        outcome =
+          try do
+            wait.(subscription)
+          after
+            RequestContext.unsubscribe(subscription)
+          end
+
+        if outcome == :context_changed, do: wait_with_context(context, wait)
+
+      {:error, _kind} ->
+        :context_ended
+    end
+  end
+
+  defp guard_until(owner_monitor, worker_monitor, worker, deadline, {notifier, notification}) do
+    receive do
+      {:DOWN, ^owner_monitor, :process, _, _} -> Process.exit(worker, :kill)
+      {:DOWN, ^worker_monitor, :process, _, _} -> :ok
+      {:request_context_terminal, ^notification} -> :context_changed
+      {:DOWN, ^notification, :process, ^notifier, _} -> :context_changed
+    after
+      remaining(deadline) -> Process.exit(worker, :kill)
     end
   end
 
@@ -124,35 +144,41 @@ defmodule Opsmaru.Incus.Transport do
       owner_monitor = Process.monitor(owner)
       worker_monitor = Process.monitor(worker)
 
-      watch_until(owner_monitor, worker_monitor, worker, context)
+      wait = fn subscription ->
+        timeout = if context, do: remaining(context.deadline), else: :infinity
+        watch_until(owner_monitor, worker_monitor, worker, {subscription, timeout})
+      end
+
+      if wait_with_context(context, wait) == :context_ended do
+        # The notifier and the direct monitor can report the same owner's
+        # death in either order. Give the channel its grace period either way.
+        if context.owner == owner and not Process.alive?(owner),
+          do: close_after_grace(worker_monitor, worker),
+          else: Process.exit(worker, :kill)
+      end
     end)
   end
 
-  defp watch_until(owner_monitor, worker_monitor, worker, context) do
-    if RequestContext.status(context) != :active do
-      Process.exit(worker, :kill)
-    else
-      receive do
-        {:DOWN, ^worker_monitor, :process, _, _} ->
-          :ok
-
-        {:DOWN, ^owner_monitor, :process, _, _} ->
-          # Allow normal OTP termination, but never depend on the actor reading
-          # its mailbox while negotiation or a socket write is blocked.
-          receive do
-            {:DOWN, ^worker_monitor, :process, _, _} -> :ok
-          after
-            100 -> Process.exit(worker, :kill)
-          end
-      after
-        tick(context, :infinity) -> watch_until(owner_monitor, worker_monitor, worker, context)
-      end
+  defp watch_until(owner_monitor, worker_monitor, worker, {{notifier, notification}, timeout}) do
+    receive do
+      {:DOWN, ^worker_monitor, :process, _, _} -> :ok
+      {:DOWN, ^owner_monitor, :process, _, _} -> close_after_grace(worker_monitor, worker)
+      {:request_context_terminal, ^notification} -> :context_changed
+      {:DOWN, ^notification, :process, ^notifier, _} -> :context_changed
+    after
+      timeout -> :context_changed
     end
   end
 
-  defp tick(nil, timeout), do: timeout
-  defp tick(_, :infinity), do: 20
-  defp tick(_, timeout), do: min(timeout, 20)
+  defp close_after_grace(worker_monitor, worker) do
+    # Allow normal OTP termination even if the channel is unable to read its
+    # mailbox during negotiation or a socket write.
+    receive do
+      {:DOWN, ^worker_monitor, :process, _, _} -> :ok
+    after
+      100 -> Process.exit(worker, :kill)
+    end
+  end
 
   defp do_request(%Connection{transport: :https, pool: pool} = connection, request, deadline)
        when not is_nil(pool) and elem(request, 0) in ["GET", "HEAD"] do

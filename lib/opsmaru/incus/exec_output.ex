@@ -84,14 +84,21 @@ defmodule Opsmaru.Incus.ExecOutput do
   end
 
   defp drain(session, sinks, deadline, limit, stdin) do
-    with :ok <- if(is_nil(stdin), do: Session.close_input(session), else: :ok) do
-      requests =
-        Enum.reduce(["1", "2"], :gen_server.reqids_new(), fn name, requests ->
-          read(session, name, deadline, requests)
-        end)
+    case if(is_nil(stdin), do: Session.close_input(session), else: :ok) do
+      :ok ->
+        requests =
+          Enum.reduce(["1", "2"], :gen_server.reqids_new(), fn name, requests ->
+            read(session, name, deadline, requests)
+          end)
 
-      requests = if is_nil(stdin), do: requests, else: write(session, stdin, requests)
-      receive_outputs(session, sinks, deadline, limit, requests, %{"1" => 0, "2" => 0})
+        requests = if is_nil(stdin), do: requests, else: write(session, stdin, requests)
+        receive_outputs(session, sinks, deadline, limit, requests, %{"1" => 0, "2" => 0})
+
+      {:error, %Error{kind: :channel_closed} = error} ->
+        channel_down(session, error)
+
+      error ->
+        error
     end
   end
 
@@ -137,10 +144,10 @@ defmodule Opsmaru.Incus.ExecOutput do
 
   # The request context's watcher stops channels when that context ends; report
   # its deadline or cancellation rather than a protocol failure.
-  defp channel_down(session) do
+  defp channel_down(session, fallback \\ %Error{kind: :exec_output_protocol}) do
     case RequestContext.status(session.operation.client.connection.request_context) do
       kind when kind in [:deadline, :canceled] -> {:error, %Error{kind: kind}}
-      _ -> {:error, %Error{kind: :exec_output_protocol}}
+      _ -> {:error, fallback}
     end
   end
 

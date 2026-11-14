@@ -1,6 +1,8 @@
 defmodule Opsmaru.Incus.ConnectionPoolTest do
   use ExUnit.Case, async: false
 
+  import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
+
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, ConnectionPool, Context, Error, RequestContext, WorkScope}
   alias Opsmaru.Incus.ConnectionPool.TLS
@@ -134,35 +136,100 @@ defmodule Opsmaru.Incus.ConnectionPoolTest do
     assert length(HTTPFixture.requests(fixture)) == 4
   end
 
-  test "closes a pending return if its worker dies after transfer", env do
-    {connection, context, _fixture} = start_pool(env, size: 1)
+  test "cancelling a queued checkout never dispatches and the binding stays usable", env do
+    {connection, context, fixture} = start_pool(env, size: 1)
+    assert {:ok, _} = query(connection, context)
+    peer()
+    [binding] = Map.values(:sys.get_state(connection.pool).bindings)
+    parent = self()
+    gate = make_ref()
+
+    :ok =
+      :sys.install(binding, {fn state, event, _ ->
+         case event do
+           {:in, {:"$gen_call", {worker, _}, {:checkout, _, _}}} ->
+             # Freeze the caller of checkout before its acquisition timer can
+             # send it down the fallback path. The pool has not leased a socket.
+             true = :erlang.suspend_process(worker)
+             send(parent, {gate, worker})
+             receive do: ({^gate, :continue} -> :done)
+
+           _ ->
+             state
+         end
+       end, nil})
+
+    on_exit(fn -> send(binding, {gate, :continue}) end)
+    scope = RequestContext.new!(timeout: @timeout)
+    scoped = Connection.with_context(connection, scope)
+    task = Task.async(fn -> query(scoped, context, "GET", "/1.0/queued") end)
+
+    assert_receive {^gate, worker}, @timeout
+    monitor = monitor!(worker)
+    assert :ok = RequestContext.cancel(scope)
+    assert_receive {:DOWN, ^monitor, :process, ^worker, :killed}, @timeout
+    assert {:error, %Error{kind: :canceled}} = Task.await(task)
+    send(binding, {gate, :continue})
+
+    assert {:ok, _} = query(connection, context)
+    next_peer = peer()
+    assert {:ok, _} = query(connection, context)
+    assert peer() == next_peer
+    assert [^binding] = Map.values(:sys.get_state(connection.pool).bindings)
+    assert Enum.map(HTTPFixture.requests(fixture), & &1.target) == List.duplicate("/1.0/probe", 3)
+  end
+
+  test "cancellation closes a pending return after socket ownership has transferred", env do
+    {connection, context, fixture} = start_pool(env, size: 1)
     {:ok, key, _} = TLS.snapshot(connection)
     parent = self()
-    deadline = System.monotonic_time(:millisecond) + @timeout
+    scope = RequestContext.new!(timeout: @timeout)
 
-    {worker, worker_monitor} =
-      spawn_monitor(fn ->
-        ConnectionPool.checkout(connection.pool, key, deadline, fn from, _, _, _ ->
-          {:ok, socket} = Transport.open(connection, deadline)
-          {:ok, socket, _} = Mint.HTTP.request(socket, "GET", "/1.0/hold", [], nil)
-          opened = System.monotonic_time(:millisecond)
-          assert {^socket, ^opened, _} = ConnectionPool.checkin(from, socket, opened, deadline)
-          send(parent, {:return_pending, self()})
+    task =
+      Task.async(fn ->
+        Transport.bounded(
+          @timeout,
+          "GET",
+          fn ->
+            deadline = scope.deadline
 
-          receive do
-            :never -> :ok
-          end
-        end)
+            ConnectionPool.checkout(connection.pool, key, deadline, fn from, _, _, _ ->
+              {:ok, socket} = Transport.open(connection, deadline)
+              opened = System.monotonic_time(:millisecond)
+              {:ok, socket, ref} = Mint.HTTP.request(socket, "GET", "/1.0/return", [], nil)
+              socket = drain_response(socket, ref)
+              assert Mint.HTTP.open_request_count(socket) == 0
+
+              assert {^socket, ^opened, _} =
+                       ConnectionPool.checkin(from, socket, opened, deadline)
+
+              send(parent, {:return_pending, self()})
+
+              # Hold the real NimblePool callback open after TLS ownership
+              # transfer. NimblePool has not received the final checkin.
+              receive do
+                :never -> :ok
+              end
+            end)
+          end,
+          scope
+        )
       end)
 
-    assert_receive {:request, held, "GET", "/1.0/hold"}, @timeout
-    assert_receive {:return_pending, ^worker}, @timeout
-    Process.exit(worker, :kill)
+    assert_receive {:request, held, "GET", "/1.0/return"}, @timeout
+    assert_receive {:return_pending, worker}, @timeout
+    worker_monitor = monitor!(worker)
+    assert :ok = RequestContext.cancel(scope)
     assert_receive {:DOWN, ^worker_monitor, :process, ^worker, :killed}, @timeout
+    assert {:error, %Error{kind: :canceled}} = Task.await(task)
     send(held, :check_closed)
     assert_receive {:closed, ^held}, @timeout
     assert {:ok, _} = query(connection, context)
-    assert_receive {:request, _, "GET", "/1.0/probe"}, @timeout
+    replacement = peer()
+    refute replacement == held
+    assert {:ok, _} = query(connection, context)
+    assert peer() == replacement
+    assert Enum.count(HTTPFixture.requests(fixture), &(&1.target == "/1.0/return")) == 1
   end
 
   test "cancellation and work scope termination discard a leased socket", env do
@@ -188,11 +255,47 @@ defmodule Opsmaru.Incus.ConnectionPoolTest do
       assert kind == if(lifetime == :context, do: :canceled, else: :request)
       send(first, :check_closed)
       assert_receive {:closed, ^first}, @timeout
+      assert {:ok, _} = query(connection, context)
+      replacement = peer()
+      refute replacement == first
+      assert {:ok, _} = query(connection, context)
+      assert peer() == replacement
     end
   end
 
   defp stop_request(:context, context, _), do: RequestContext.cancel(context)
   defp stop_request(:scope, _, scope), do: WorkScope.stop(scope)
+
+  test "HTTPS cancellation preserves unpooled read results and dispatched mutation uncertainty",
+       env do
+    {connection, context, fixture} = start_pool(env, size: 1)
+
+    for {method, client, kind} <- [
+          {"GET", %{connection | pool: nil}, :canceled},
+          {"POST", connection, :uncertain}
+        ] do
+      scope = RequestContext.new!(timeout: @timeout)
+      scoped = Connection.with_context(client, scope)
+      task = Task.async(fn -> query(scoped, context, method, "/1.0/hold") end)
+
+      assert_receive {:request, held, ^method, "/1.0/hold"}, @timeout
+      assert :ok = RequestContext.cancel(scope)
+      assert {:error, %Error{kind: ^kind}} = Task.await(task)
+      send(held, :check_closed)
+      assert_receive {:closed, ^held}, @timeout
+    end
+
+    assert Enum.map(HTTPFixture.requests(fixture), &{&1.method, &1.target}) == [
+             {"GET", "/1.0/hold"},
+             {"POST", "/1.0/hold"}
+           ]
+
+    assert :sys.get_state(connection.pool).bindings == %{}
+    assert {:ok, _} = query(connection, context)
+    replacement = peer()
+    assert {:ok, _} = query(connection, context)
+    assert peer() == replacement
+  end
 
   test "drops close responses, closes on owner loss and does not replay after dispatch", env do
     {connection, context, fixture} = start_pool(env, size: 1)
@@ -322,11 +425,23 @@ defmodule Opsmaru.Incus.ConnectionPoolTest do
     send(parent, {:request, self(), request.method, request.target})
 
     case request.target do
-      "/1.0/drop" -> %{upgrade: fn _, _ -> :ok end}
-      "/1.0/close" -> %{raw: wire(request.method, "Connection: close\r\n")}
-      "/1.0/hold" -> %{keep_alive: true, exchange: fn socket -> hold(parent, socket) end}
-      "/1.0/stray" -> %{keep_alive: true, exchange: fn socket -> stray(parent, socket) end}
-      _ -> %{keep_alive: true, exchange: fn socket -> normal(parent, socket, request.method) end}
+      "/1.0/drop" ->
+        %{upgrade: fn _, _ -> :ok end}
+
+      "/1.0/close" ->
+        %{raw: wire(request.method, "Connection: close\r\n")}
+
+      "/1.0/hold" ->
+        %{keep_alive: true, exchange: fn socket -> hold(parent, socket) end}
+
+      "/1.0/return" ->
+        %{keep_alive: true, exchange: fn socket -> response_then_hold(parent, socket) end}
+
+      "/1.0/stray" ->
+        %{keep_alive: true, exchange: fn socket -> stray(parent, socket) end}
+
+      _ ->
+        %{keep_alive: true, exchange: fn socket -> normal(parent, socket, request.method) end}
     end
   end
 
@@ -341,6 +456,16 @@ defmodule Opsmaru.Incus.ConnectionPoolTest do
     after
       @timeout -> {:error, :timeout}
     end
+  end
+
+  defp drain_response(socket, ref) do
+    {:ok, socket, parts} = Mint.HTTP.recv(socket, 0, @timeout)
+    if {:done, ref} in parts, do: socket, else: drain_response(socket, ref)
+  end
+
+  defp response_then_hold(parent, socket) do
+    :ok = :ssl.send(socket, wire("GET"))
+    hold(parent, socket)
   end
 
   defp hold(parent, socket) do
