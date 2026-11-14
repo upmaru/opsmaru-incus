@@ -1,6 +1,9 @@
 defmodule Opsmaru.Incus.Transport do
   @moduledoc false
-  alias Opsmaru.Incus.{Connection, Error, RequestContext, WorkScope}
+  alias Opsmaru.Incus.{Connection, ConnectionPool, Error, RequestContext, WorkScope}
+  alias Opsmaru.Incus.ConnectionPool.{Binding, TLS}
+  @compile {:no_warn_undefined, ConnectionPool}
+  @compile {:no_warn_undefined, Binding}
 
   @doc false
   def request_headers(%Connection{require_authenticated: true}, headers),
@@ -8,13 +11,18 @@ defmodule Opsmaru.Incus.Transport do
 
   def request_headers(%Connection{require_authenticated: false}, headers), do: headers
 
-  # One passive connection per request. No pool/global remote/reconnect/retry.
   def request(connection, method, path, headers, body) do
+    deadline = RequestContext.deadline(connection.request_context, now() + connection.timeout)
+
     bounded(
       connection.timeout,
       method,
       fn ->
-        do_request(connection, method, path, headers, body)
+        do_request(
+          connection,
+          {method, path, request_headers(connection, headers), body},
+          deadline
+        )
       end,
       connection.request_context
     )
@@ -146,36 +154,135 @@ defmodule Opsmaru.Incus.Transport do
   defp tick(_, :infinity), do: 20
   defp tick(_, timeout), do: min(timeout, 20)
 
-  defp do_request(connection, method, path, headers, body) do
-    deadline = RequestContext.deadline(connection.request_context, now() + connection.timeout)
-
-    case open(connection, deadline) do
-      {:ok, socket} ->
-        try do
-          case Mint.HTTP.request(socket, method, path, request_headers(connection, headers), body) do
-            {:ok, socket, ref} ->
-              receive_response(socket, ref, deadline, connection.max_response_bytes, %{
-                status: nil,
-                headers: %{},
-                raw_headers: nil,
-                trailers: [],
-                header_bytes: 0,
-                body: [],
-                bytes: 0
-              })
-
-            {:error, _, _} ->
-              failed(method, :request)
-          end
-        rescue
-          _ -> failed(method, :request)
-        after
-          Mint.HTTP.close(socket)
-        end
-
-      {:error, _} ->
-        {:error, %Error{kind: :connection}}
+  defp do_request(%Connection{transport: :https, pool: pool} = connection, request, deadline)
+       when not is_nil(pool) and elem(request, 0) in ["GET", "HEAD"] do
+    case TLS.snapshot(connection) do
+      {:ok, key, snapshot} -> checkout(connection, pool, key, snapshot, request, deadline)
+      {:error, kind} -> {:error, %Error{kind: kind}}
     end
+  end
+
+  defp do_request(connection, request, deadline) do
+    fresh_request(open(connection, deadline), request, connection, deadline)
+  end
+
+  defp checkout(connection, pool, key, snapshot, request, deadline) do
+    case ConnectionPool.checkout(pool, key, deadline, fn from, idle, age, acquisition ->
+           pooled_request(connection, request, deadline, snapshot, from, idle, age, acquisition)
+         end) do
+      :miss ->
+        fresh_request(
+          open_snapshot(connection, deadline, snapshot),
+          request,
+          connection,
+          deadline
+        )
+
+      result ->
+        result
+    end
+  end
+
+  defp fresh_request({:ok, socket}, request, connection, deadline) do
+    case exchange(socket, request, connection, deadline) do
+      {:ok, _socket, response} -> {:ok, response}
+      error -> error
+    end
+  after
+    Mint.HTTP.close(socket)
+  end
+
+  defp fresh_request({:error, reason}, _request, _connection, _deadline),
+    do: {:error, %Error{kind: connect_error(reason)}}
+
+  defp pooled_request(connection, request, deadline, snapshot, from, idle, age, acquisition) do
+    case reusable(idle, age, acquisition, deadline) do
+      {:ok, socket, opened} ->
+        pooled_exchange(socket, opened, request, connection, deadline, from)
+
+      :miss ->
+        pooled_fresh(
+          open_snapshot(connection, deadline, snapshot),
+          request,
+          connection,
+          deadline,
+          from
+        )
+    end
+  end
+
+  defp pooled_fresh({:ok, socket}, request, connection, deadline, from),
+    do: pooled_exchange(socket, now(), request, connection, deadline, from)
+
+  defp pooled_fresh({:error, reason}, _request, _connection, _deadline, _from),
+    do: {{:error, %Error{kind: connect_error(reason)}}, nil}
+
+  defp pooled_exchange(socket, opened, request, connection, deadline, from) do
+    case exchange(socket, request, connection, deadline) do
+      {:ok, socket, response} ->
+        idle = return_socket(socket, response, opened, deadline, from)
+        {{:ok, response}, idle}
+
+      error ->
+        Binding.close(socket)
+        {error, nil}
+    end
+  end
+
+  defp return_socket(socket, response, opened, deadline, from) do
+    if response.status != 101 and Mint.HTTP.open?(socket) and
+         Mint.HTTP.open_request_count(socket) == 0 do
+      ConnectionPool.checkin(from, socket, opened, deadline)
+    else
+      Binding.close(socket)
+      nil
+    end
+  end
+
+  defp reusable(nil, _age, _acquisition, _deadline), do: :miss
+
+  defp reusable({socket, opened}, age, acquisition, deadline) do
+    with true <- now() - opened < age and now() < acquisition and Mint.HTTP.open?(socket),
+         {:error, socket, %Mint.TransportError{reason: :timeout}, []} <-
+           Mint.HTTP.recv(socket, 0, 0),
+         true <- now() < acquisition and remaining(deadline) > 0,
+         :ok <- :ssl.setopts(Mint.HTTP.get_socket(socket), send_timeout: remaining(deadline)) do
+      {:ok, socket, opened}
+    else
+      _ ->
+        Binding.close(socket)
+        :miss
+    end
+  end
+
+  defp connect_error(kind) when kind in [:deadline, :canceled], do: kind
+  defp connect_error(_), do: :connection
+
+  defp exchange(socket, {method, path, headers, body}, connection, deadline) do
+    with :ok <- before_send(connection.request_context, deadline),
+         {:ok, socket, ref} <- Mint.HTTP.request(socket, method, path, headers, body) do
+      case receive_response(socket, ref, deadline, connection.max_response_bytes, %{
+             status: nil,
+             headers: %{},
+             raw_headers: nil,
+             trailers: [],
+             header_bytes: 0,
+             body: [],
+             bytes: 0
+           }) do
+        {:error, kind} -> failed(method, kind)
+        success -> success
+      end
+    else
+      {:error, kind} -> failed(method, kind)
+      {:error, _, _} -> failed(method, :request)
+    end
+  rescue
+    _ -> failed(method, :request)
+  end
+
+  defp before_send(context, deadline) do
+    if remaining(deadline) == 0, do: {:error, :deadline}, else: RequestContext.check(context)
   end
 
   @doc false
@@ -196,14 +303,29 @@ defmodule Opsmaru.Incus.Transport do
     _ -> {:error, :connection}
   end
 
-  def open(%Connection{transport: :https, address: uri} = connection, deadline) do
+  def open(%Connection{transport: :https} = connection, deadline) do
+    open_https(connection.address, Connection.tls_options(connection), deadline)
+  rescue
+    _ -> {:error, :connection}
+  end
+
+  defp open_snapshot(connection, deadline, snapshot) do
+    case before_send(connection.request_context, deadline) do
+      :ok -> open_https(connection.address, TLS.options(connection, snapshot), deadline)
+      error -> error
+    end
+  rescue
+    _ -> {:error, :connection}
+  end
+
+  defp open_https(uri, options, deadline) do
     Mint.HTTP.connect(:https, uri.host, uri.port,
       protocols: [:http1],
       mode: :passive,
       log: false,
       max_header_list_size: 65_536,
       transport_opts:
-        Connection.tls_options(connection) ++
+        options ++
           [
             timeout: remaining(deadline),
             send_timeout: remaining(deadline),
@@ -221,9 +343,14 @@ defmodule Opsmaru.Incus.Transport do
       case Mint.HTTP.recv(socket, 0, remaining(deadline)) do
         {:ok, socket, responses} ->
           case collect(responses, ref, maximum, acc) do
-            {:done, acc} -> {:ok, %{acc | body: IO.iodata_to_binary(Enum.reverse(acc.body))}}
-            {:more, acc} -> receive_response(socket, ref, deadline, maximum, acc)
-            {:error, reason} -> {:error, reason}
+            {:done, acc} ->
+              {:ok, socket, %{acc | body: IO.iodata_to_binary(Enum.reverse(acc.body))}}
+
+            {:more, acc} ->
+              receive_response(socket, ref, deadline, maximum, acc)
+
+            {:error, reason} ->
+              {:error, reason}
           end
 
         {:error, _, error, responses} ->

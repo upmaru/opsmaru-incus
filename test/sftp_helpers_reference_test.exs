@@ -427,6 +427,47 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
     packets()
   end
 
+  test "startup expiration survives a delayed session process", %{root: root} do
+    fixture = backend(root, :gen_tcp, nil)
+    client = client(fixture, nil, timeout: 100)
+    parent = self()
+    ref = make_ref()
+
+    owner =
+      spawn(fn ->
+        caller = self()
+
+        ready? = fn ->
+          if self() != caller do
+            send(parent, {ref, :startup, self()})
+
+            receive do
+              {^ref, :release} -> :ok
+            end
+          end
+
+          true
+        end
+
+        client = %{client | context: %{client.context | ready?: ready?}}
+        send(parent, {ref, open(client, :instance)})
+      end)
+
+    on_exit(fn -> Process.exit(owner, :kill) end)
+    assert_receive {^ref, :startup, session}, 1_000
+    monitor = Process.monitor(session)
+
+    try do
+      # Hold startup before the raw channel opens so the caller's
+      # GenServer.start timeout decides the result.
+      assert_receive {^ref, {:error, %Error{kind: :deadline}}}, 2_000
+      assert_receive {:DOWN, ^monitor, :process, ^session, _}, 1_000
+      assert HTTPFixture.requests(fixture) == []
+    after
+      send(session, {ref, :release})
+    end
+  end
+
   test "remote EOF closes an idle typed session and its raw channel", %{root: root} do
     fixture = backend(root, :gen_tcp, nil, idle_eof: true)
     assert {:ok, session} = open(client(fixture, nil), :instance)

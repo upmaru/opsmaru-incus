@@ -572,8 +572,9 @@ defmodule Opsmaru.Incus.SFTP do
       :ok ->
         ref = make_ref()
         lifetime = lifetime(client.connection)
+        deadline = request_deadline(client.connection, lifetime)
 
-        case GenServer.start(__MODULE__, {client, target, self(), ref, lifetime},
+        case GenServer.start(__MODULE__, {client, target, self(), ref, lifetime, deadline},
                timeout: client.connection.timeout + 200
              ) do
           {:ok, pid} ->
@@ -593,13 +594,18 @@ defmodule Opsmaru.Incus.SFTP do
 
           {:error, _} ->
             kind = closed_kind(lifetime, client.connection.request_context)
-            error(if(kind == :channel_closed, do: :sftp_protocol, else: kind))
+            error(start_error_kind(kind, deadline))
         end
 
       {:error, kind} ->
         error(kind)
     end
   end
+
+  defp start_error_kind(:channel_closed, deadline),
+    do: if(now() >= deadline, do: :deadline, else: :sftp_protocol)
+
+  defp start_error_kind(kind, _deadline), do: kind
 
   defp lifetime(connection) do
     # Never shorten a shared context while retaining its cancellation cell:
@@ -666,13 +672,11 @@ defmodule Opsmaru.Incus.SFTP do
   end
 
   @impl true
-  def init({client, target, owner, ref, lifetime}) do
+  def init({client, target, owner, ref, lifetime, deadline}) do
     Transport.watch_owner(owner, lifetime)
 
     if client.connection.request_context,
       do: Transport.watch_owner(owner, client.connection.request_context)
-
-    deadline = request_deadline(client.connection, lifetime)
 
     case raw(client, target) do
       {:ok, raw} ->

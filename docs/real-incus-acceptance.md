@@ -131,6 +131,99 @@ OPSMARU_OPERATIONS_ACCEPTANCE_CONFIG=/absolute/private/run/config.json \
 This is separate from fixture, consumer, Macus composition and hardware
 evidence, and tool success never counts as client coverage.
 
+## Connection pool baseline
+
+Use a pre-created isolated test project and an explicitly approved Incus
+binding. The baseline runner makes buffered reads against the supplied project.
+Save this configuration to a private file outside the repository.
+
+```json
+{
+  "isolated_benchmark": true,
+  "project": "opsmaru-pool-benchmark",
+  "socket": "/absolute/private/incus.sock",
+  "https": "https://verified-incus-host:8443",
+  "tls": {
+    "cacertfile": "/absolute/private/ca.pem",
+    "certfile": "/absolute/private/client.pem",
+    "keyfile": "/absolute/private/client.key"
+  },
+  "samples": 100,
+  "warmup": 10
+}
+```
+
+Use `tls.fingerprint` with the host-verified SHA-256 server certificate pin
+if the listener uses a pinned certificate. Supply `operation` with an existing
+operation ID in the test project to measure polling. Omit both `https` and
+`tls` for the Unix leg alone.
+
+Set `"compare_pool": true` to run both HTTPS modes in the same invocation.
+The pooled leg starts a one-slot host pool and uses the same endpoint and
+credentials. Warm-up and preflight are outside the connection counters.
+
+```sh
+OPSMARU_POOL_BASELINE_CONFIG=/absolute/private/pool-baseline.json \
+  mise exec -- mix run --no-start scripts/benchmark-incus-connection-pool.exs
+```
+
+The output reports p50 and p95 over successful requests, error counts, and
+Mint and TLS connect attempts. Capture Incus CPU and observed full or resumed
+handshakes separately over the same workload windows. The benchmark gate
+requires the verified HTTPS comparison.
+
+### Unix baseline on 2026-11-13
+
+The existing client at revision `f5f73ea` ran against a new restricted
+project on Incus 7.0.1 through the Macus Unix relay, using OTP 27.
+Each workload had 10 warm-up calls and 100 measured calls.
+
+| Workload | p50 | p95 | Connection attempts | Errors |
+| --- | ---: | ---: | ---: | ---: |
+| Buffered instance list GET | 0.874 ms | 1.711 ms | 100 | 0 |
+| Discovery | 0.708 ms | 0.779 ms | 100 | 0 |
+| Shared instance inspection | 1.489 ms | 1.700 ms | 200 | 0 |
+
+### Paired Unix and verified HTTPS baseline on 2026-11-13
+
+The existing client at revision `e9433da` ran both transports against the
+same restricted project and Incus 7.0.1 daemon in one OTP 27 process. The
+temporary HTTPS listener bound only to the guest's private Macus NAT
+address. The runner verified the hostname and pinned the server certificate
+obtained over the supplied Unix socket. A short-lived client certificate
+could see only the benchmark project. The listener was removed and client
+trust revoked after the run.
+
+| Workload | Unix p50 | Unix p95 | HTTPS p50 | HTTPS p95 | HTTPS connect attempts |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Buffered instance list GET | 0.985 ms | 1.597 ms | 53.115 ms | 59.862 ms | 100 |
+| Discovery | 0.761 ms | 0.893 ms | 52.902 ms | 58.406 ms | 100 |
+| Shared instance inspection | 1.625 ms | 2.026 ms | 107.212 ms | 116.385 ms | 200 |
+
+Each transport completed 100 samples per workload after 10 warm-up calls,
+with zero errors. Shared inspection made two HTTPS connections per sample.
+The difference includes the transport path and TLS setup. It supports
+measuring a pooled HTTPS prototype against the same workload. Operation
+polling, TLS resumption, and Incus CPU were unmeasured.
+
+### HTTPS pool comparison on 2026-11-13
+
+Revision `5318e34` ran the same read-only workloads on the same Incus 7.0.1
+project with the pool off and on in one OTP 27 process. The pooled leg used
+one slot. Each mode completed 100 timed samples per workload after 10
+warm-up calls, with zero errors.
+
+| Workload | Pool off p50 | Pool off p95 | Pool on p50 | Pool on p95 | TLS connects off / on |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Buffered instance list GET | 48.774 ms | 56.071 ms | 1.114 ms | 1.786 ms | 100 / 0 |
+| Discovery | 47.542 ms | 52.219 ms | 1.104 ms | 1.622 ms | 100 / 0 |
+| Shared instance inspection | 94.183 ms | 101.768 ms | 2.030 ms | 3.156 ms | 200 / 0 |
+
+TLS connect counts exclude preflight and warm-up. The temporary HTTPS
+listener was removed and the project-restricted certificate revoked.
+Operation polling, observed session resumption, Incus CPU and server-side
+idle close remain outside this live run.
+
 ## Separate gates
 
 - [x] Foundation 4.3: direct native inspection, mutation, operation and stream

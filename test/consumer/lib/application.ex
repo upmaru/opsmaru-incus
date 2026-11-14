@@ -9,6 +9,7 @@ defmodule FoundationConsumer.Application do
           id: :host_runtime,
           start: {Agent, :start_link, [fn -> false end, [name: FoundationConsumer.Runtime]]}
         },
+        {Opsmaru.Incus.ConnectionPool, name: FoundationConsumer.IncusPool},
         FoundationConsumer.Endpoint
       ],
       strategy: :one_for_one,
