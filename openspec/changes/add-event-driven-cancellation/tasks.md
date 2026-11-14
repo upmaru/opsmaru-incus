@@ -15,7 +15,7 @@ The fixture baseline is complete. Remaining items require implementation and ver
 ## 3. Event-driven waiters
 
 - [x] 3.1 Convert `Transport.guard_until/5`. Verify worker termination and existing results on explicit cancellation, context-owner exit, caller exit and deadline. Add fixture barriers for #29's HTTPS pool at queued checkout, active socket use and ownership return. Verify the next request can still use the pool, preserve unpooled results and prevent replay of possibly accepted mutations.
-- [ ] 3.2 Convert `Transport.watch_until/4` and remove `tick/2`. Verify closure kinds for each channel type, the 100 ms caller-exit grace and idle behavior. Preserve the monitor-only path for a context-free watcher such as the gateway WebSocket writer's.
+- [x] 3.2 Convert `Transport.watch_until/4` and remove `tick/2`. Verify closure kinds for each channel type, the 100 ms caller-exit grace and idle behavior. Preserve the monitor-only path for a context-free watcher such as the gateway WebSocket writer's.
 - [ ] 3.3 Convert `Operation.sleep_until/2`. Verify native refresh cadence, cancellation and deadline results, no backend `DELETE`, and mailbox cleanup when cancellation races a refresh, timeout or return.
 - [ ] 3.4 Convert `OCI.AdapterCall.await_result/6` for OCI and SimpleStreams delta calls. Verify completion races, existing outcomes for cancel, deadline and owner loss, prompt worker termination, and exactly-once per-call cleanup.
 

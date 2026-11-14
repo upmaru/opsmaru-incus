@@ -750,8 +750,8 @@ defmodule Opsmaru.Incus.ExecOutputTest do
     end
   end
 
-  for transport <- [:gen_tcp, :ssl] do
-    test "collection reports a request context that stopped its channels first over #{transport}",
+  for transport <- [:gen_tcp, :ssl], phase <- [:stdin, :output] do
+    test "collection reports a request context that stopped its channels first during #{phase} over #{transport}",
          %{root: root} do
       {client, fixture, _} = fixture(root, unquote(transport), gate_stdout: true)
       context = RequestContext.new!(timeout: 30_000)
@@ -772,6 +772,7 @@ defmodule Opsmaru.Incus.ExecOutputTest do
       on_exit(fn -> if Process.alive?(caller), do: Process.exit(caller, :kill) end)
       assert_receive {:session, session}, 5_000
       assert_receive {:stdout_gate, peer}, 5_000
+      hold_stdin(unquote(phase), session)
       :erlang.trace(caller, true, [:procs, :set_on_spawn])
       send(caller, :collect)
       assert_receive {:trace, ^caller, :spawn, worker, _}, 5_000
@@ -793,6 +794,9 @@ defmodule Opsmaru.Incus.ExecOutputTest do
       refute Enum.any?(requests, &(&1.method == "DELETE"))
     end
   end
+
+  defp hold_stdin(:stdin, session), do: assert(:ok = :sys.suspend(session.channels["0"].pid))
+  defp hold_stdin(:output, _session), do: :ok
 
   for transport <- [:gen_tcp, :ssl] do
     test "run local timeout and host cancellation kill stalled sinks and retain a reusable handle over #{transport}",
