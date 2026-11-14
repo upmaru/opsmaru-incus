@@ -8,9 +8,9 @@ The fixture baseline is complete. Remaining items require implementation and ver
 
 ## 2. Subscription protocol
 
-- [ ] 2.1 Prototype and prove registration and delivery with deterministic barriers. Cover cancellation before, during and after registration, concurrent cancels, explicit cancellation racing owner exit and deadline, and notifier exit immediately after the terminal transition or during delivery. Pending waits must observe one terminal outcome without periodic checks or another cancel call.
-- [ ] 2.2 Prove resource reclamation for both creator and context-owner exit orders, including when the creator stays alive and the context never receives a subscriber. Cover completed, cancelled and expired waits, as well as a deadline-tightened private context copy. Verify that construction creates no process, socket or file.
-- [ ] 2.3 Verify teardown when a notification is in flight or already queued. Deactivate the subscription, drain its messages, release its monitors and preserve unrelated mailbox traffic. Confirm status and terminal precedence match the existing implementation. Record the verified protocol, then update context validation, lifecycle docs and redacted inspection as needed.
+- [x] 2.1 Prototype and prove registration and delivery with deterministic barriers. Cover cancellation before, during and after registration, concurrent cancels, explicit cancellation racing owner exit and deadline, and notifier exit immediately after the terminal transition or during delivery. Pending waits must observe one terminal outcome without periodic checks or another cancel call.
+- [x] 2.2 Prove resource reclamation for both creator and context-owner exit orders, including when the creator stays alive and the context never receives a subscriber. Cover completed, cancelled and expired waits, as well as a deadline-tightened private context copy. Verify that construction creates no process, socket or file.
+- [x] 2.3 Verify teardown when a notification is in flight or already queued. Deactivate the subscription, drain its messages, release its monitors and preserve unrelated mailbox traffic. Confirm status and terminal precedence match the existing implementation. Record the verified protocol, then update context validation, lifecycle docs and redacted inspection as needed.
 
 ## 3. Event-driven waiters
 
