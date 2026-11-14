@@ -99,20 +99,40 @@ defmodule Opsmaru.Incus.Transport do
     owner_monitor = Process.monitor(owner)
     worker_monitor = Process.monitor(worker)
 
-    guard_until(owner_monitor, worker_monitor, worker, deadline, context)
+    guard_context(owner_monitor, worker_monitor, worker, deadline, context)
   end
 
-  defp guard_until(owner_monitor, worker_monitor, worker, deadline, context) do
-    if RequestContext.status(context) != :active or remaining(deadline) == 0 do
-      Process.exit(worker, :kill)
-    else
-      receive do
-        {:DOWN, ^owner_monitor, :process, _, _} -> Process.exit(worker, :kill)
-        {:DOWN, ^worker_monitor, :process, _, _} -> :ok
-      after
-        tick(context, remaining(deadline)) ->
-          guard_until(owner_monitor, worker_monitor, worker, deadline, context)
-      end
+  defp guard_context(owner_monitor, worker_monitor, worker, deadline, nil) do
+    guard_until(owner_monitor, worker_monitor, worker, deadline, {nil, nil})
+  end
+
+  defp guard_context(owner_monitor, worker_monitor, worker, deadline, context) do
+    case RequestContext.subscribe(context) do
+      {:ok, subscription} ->
+        outcome =
+          try do
+            guard_until(owner_monitor, worker_monitor, worker, deadline, subscription)
+          after
+            RequestContext.unsubscribe(subscription)
+          end
+
+        if outcome == :context_changed do
+          guard_context(owner_monitor, worker_monitor, worker, deadline, context)
+        end
+
+      {:error, _kind} ->
+        Process.exit(worker, :kill)
+    end
+  end
+
+  defp guard_until(owner_monitor, worker_monitor, worker, deadline, {notifier, notification}) do
+    receive do
+      {:DOWN, ^owner_monitor, :process, _, _} -> Process.exit(worker, :kill)
+      {:DOWN, ^worker_monitor, :process, _, _} -> :ok
+      {:request_context_terminal, ^notification} -> :context_changed
+      {:DOWN, ^notification, :process, ^notifier, _} -> :context_changed
+    after
+      remaining(deadline) -> Process.exit(worker, :kill)
     end
   end
 
