@@ -1,11 +1,15 @@
 # Changelog
 
-## 0.2.0 — unreleased
+## 0.2.0 — 2026-11-15
 
 opsmaru_incus now publishes its operations as `tama-operations/1` documents,
 the profile [tama-dex](https://hexdocs.pm/tama_dex) indexes, and offers the
 native client API beside the composite operations. See
 `docs/incus-operations.md`.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.0"}
+```
 
 ### Added
 

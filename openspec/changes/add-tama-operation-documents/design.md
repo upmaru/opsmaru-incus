@@ -346,6 +346,6 @@ Details settled while implementing, where the decisions above left room:
   destructive; `UpdateInstances` confirms the literal `instances`.
 - **Shared checks:** the trust checks common to both executors live in
   `Opsmaru.Incus.Operations.Runner`.
-- **Version:** `mix.exs` stays at 0.1.0 on this branch. The 0.2.0 bump and
-  the dated `CHANGELOG.md` heading belong to the release branch; the publish
-  workflow refuses a version whose changelog section is still unreleased.
+- **Version:** `mix.exs` is 0.2.0 and the `CHANGELOG.md` section is dated
+  2026-11-15 (user request, 2026-11-15). The publish workflow refuses a
+  version whose changelog section is still marked unreleased.
