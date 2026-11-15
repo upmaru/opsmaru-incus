@@ -305,3 +305,36 @@ Once tama_dex is on Hex, a test-only dependency runs
   `incus.native.*` see none of it.
 - **Model conversion gaps:** the generator fails on unknown Go types, and the
   regenerated JSON is reviewed in every `check:reference`.
+
+## Implementation notes
+
+Details settled while implementing, where the decisions above left room:
+
+- **Generated file:** `native-operations.json` holds `{schema, document,
+  unavailable}`. The document carries no `info.version`; `Native.openapi/0`
+  adds the package version at compile time, so a version bump needs no
+  regeneration.
+- **Components:** native models are shared through `components.schemas`.
+  `<Model>` is the result form and allows unknown fields. `<Model>.Input` is
+  the body form, which allows none. The shared error object is the `Error`
+  component. `Opsmaru.Incus.Operations.Schema` resolves `$ref` for this.
+- **Null:** pointers, slices and maps allow `null` in both forms, because Go
+  encodes their zero value as `null` and the client's model check accepts it.
+- **Denylist:** the policy names removed body fields by model and field
+  (`InstanceSource.server`), which covers every body that embeds the model.
+- **Upstream join:** a method with a `recursion` query prefers the upstream
+  `?recursion=N` entry for its path, then the plain path.
+- **Uncertain outcomes:** a lost response is the error `uncertain` (the
+  shared error object, with `operation_id` when known), not a success result.
+- **Confirmation failure:** native uses `confirmation_mismatch`; the composite
+  operations keep `confirmation_required`.
+- **Policy choices recorded with reasons in `native-policy.json`:** instance
+  file, template, log and exec-output methods are excluded as binary
+  transfers; storage bucket key methods are excluded as credentials; project
+  create, update, rename and delete need `incus.native.admin`; rebuilds are
+  destructive; `UpdateInstances` confirms the literal `instances`.
+- **Shared checks:** the trust checks common to both executors live in
+  `Opsmaru.Incus.Operations.Runner`.
+- **Version:** `mix.exs` stays at 0.1.0 on this branch. The 0.2.0 bump and
+  the dated `CHANGELOG.md` heading belong to the release branch; the publish
+  workflow refuses a version whose changelog section is still unreleased.
