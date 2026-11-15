@@ -30,6 +30,7 @@ defmodule Opsmaru.Incus.Operations.Composite do
   alias Opsmaru.Incus.Operations.{Descriptor, Evidence, Fragments, Result, Schema}
 
   @scopes ~w(incus.read incus.write incus.exec incus.delete)
+  @version Mix.Project.config()[:version]
 
   @unavailable [
     %{
@@ -113,6 +114,65 @@ defmodule Opsmaru.Incus.Operations.Composite do
   def output_schema(%Descriptor{output_schema: success}) do
     %{"type" => "object", "oneOf" => [success, Fragments.error_schema()]}
   end
+
+  @doc """
+  The exported operations as a `tama-operations/1` document (an OpenAPI 3.1
+  document with `x-tama-*` extensions), source `opsmaru_incus`.
+
+  Plain JSON-safe data, the same on every call for a release, with operations
+  in name order. Each operation maps field for field from its descriptor; its
+  `200` response is the success result and `default` is the shared error
+  object, `{"error": {"kind", "message", ...}}`. `run/3` is the executor: a
+  host returns its `{:ok, result}` as the `200` result and wraps the map of
+  its `{:error, error}` as `{"error": error}`. Unavailable operations are not
+  listed.
+  """
+  def openapi do
+    %{
+      "openapi" => "3.1.1",
+      "jsonSchemaDialect" => "https://spec.openapis.org/oas/3.1/dialect/base",
+      "info" => %{"title" => "opsmaru_incus operations", "version" => @version},
+      "x-tama-profile" => "tama-operations/1",
+      "x-tama-source" => "opsmaru_incus",
+      "paths" => Map.new(all(), &{"/operations/" <> &1.name, %{"post" => operation(&1)}})
+    }
+  end
+
+  defp operation(%Descriptor{} = descriptor) do
+    %{
+      "operationId" => descriptor.name,
+      "summary" => descriptor.title,
+      "description" => descriptor.description,
+      "tags" => [resource(descriptor.name)],
+      "x-tama-scopes" => [descriptor.scope],
+      "x-tama-destructive" => descriptor.destructive,
+      "x-tama-bounds" => descriptor.bounds,
+      "x-opsmaru-requires" => descriptor.requires,
+      "requestBody" => %{"required" => true, "content" => json(descriptor.input_schema)},
+      "responses" => %{
+        "200" => %{"description" => "Result", "content" => json(descriptor.output_schema)},
+        "default" => %{"description" => "Error", "content" => json(Fragments.error_schema())}
+      }
+    }
+    |> confirmation(descriptor.confirmation)
+    |> identity(descriptor.output_schema)
+  end
+
+  defp json(schema), do: %{"application/json" => %{"schema" => schema}}
+
+  # The resource in `incus_<resource>_<verb>`.
+  defp resource("incus_" <> rest),
+    do: rest |> String.split("_") |> Enum.drop(-1) |> Enum.join("_")
+
+  defp confirmation(operation, %{"field" => field, "value" => value}),
+    do: Map.put(operation, "x-tama-confirmation", %{"field" => field, "description" => value})
+
+  defp confirmation(operation, _), do: operation
+
+  defp identity(operation, %{"properties" => %{"operation_id" => _, "status" => _}}),
+    do: Map.put(operation, "x-tama-identity", ["operation_id", "status"])
+
+  defp identity(operation, _), do: operation
 
   @doc """
   Run an exported operation. Options (all host-supplied, never tool input):

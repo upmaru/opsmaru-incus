@@ -3,7 +3,7 @@
 ## 1. Composite document
 
 - [x] 1.0 Move the 0.1.0 operations into `Opsmaru.Incus.Operations.Composite` (Decision 1 module layout): `all/0`, `describe/1`, `run/3` and `unavailable/0`, with `Exec`, `Inspection`, `Instances`, `Mutation` and `OperationTools` under `Composite.*`. Keep `Host`, `Descriptor`, `Schema`, `Fragments`, `Result` and `Evidence` under `Opsmaru.Incus.Operations`. Leave `@deprecated` delegates for the four 0.1.0 functions on `Opsmaru.Incus.Operations`, and test that each returns exactly what `Composite` returns. Update the tests, consumer fixtures, `docs/incus-operations.md`, `docs/real-incus-acceptance.md` and the `CHANGELOG.md` entry.
-- [ ] 1.1 Implement `Opsmaru.Incus.Operations.Composite.openapi/0` with the Decision 2 mapping: `jsonSchemaDialect`, `x-tama-profile`, source `opsmaru_incus` and `info.version` from the package version. Order operations by name. Keep it pure, with no new runtime dependency.
+- [x] 1.1 Implement `Opsmaru.Incus.Operations.Composite.openapi/0` with the Decision 2 mapping: `jsonSchemaDialect`, `x-tama-profile`, source `opsmaru_incus` and `info.version` from the package version. Order operations by name. Keep it pure, with no new runtime dependency.
 - [ ] 1.2 Test it: every exported operation appears exactly once and unavailable ones never do. Check the mappings for confirmation (`incus_instance_delete`, snapshot delete and restore, image delete), bounds, `x-opsmaru-requires`, `x-tama-identity` on all 12 mutations, and `200`/`default` equal to the success and error branches. Add the structural profile checks from Decision 9.
 
 ## 2. Native generation
