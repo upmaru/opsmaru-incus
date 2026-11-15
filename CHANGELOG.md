@@ -2,6 +2,41 @@
 
 ## 0.2.0 — unreleased
 
+opsmaru_incus now publishes its operations as `tama-operations/1` documents,
+the profile [tama-dex](https://hexdocs.pm/tama_dex) indexes, and offers the
+native client API beside the composite operations. See
+`docs/incus-operations.md`.
+
+### Added
+
+- **Composite document.** `Opsmaru.Incus.Operations.Composite.openapi/0`
+  returns the 32 composite operations as a `tama-operations/1` document
+  (source `opsmaru_incus`), mapped field for field from the descriptors.
+- **Native operations.** `Opsmaru.Incus.Operations.Native.openapi/0` returns
+  274 native client methods as a second document (source
+  `opsmaru_incus_native`), with operation IDs `incus_native_<snake_method>`.
+  It is generated from the verified `methods.json` and `models.json` by
+  `mix opsmaru.incus.native`; the pinned upstream `rest-api.yaml` supplies
+  descriptions only and is not shipped.
+  - Scopes are separate and never implied by the composite ones:
+    `incus.native.read`, `incus.native.write`, `incus.native.delete` and
+    `incus.native.admin`.
+  - Every `DELETE` and `PUT` is destructive and requires `confirm` to repeat
+    its target.
+  - `Native.unavailable/0` lists the 33 methods that are not exported:
+    interactive channels, binary transfers, and calls that select another
+    backend or carry credentials. Body fields that could do so are removed
+    from every exported schema.
+- **Native execution.** `Operations.Native.run/3` applies the composite trust
+  model (scope, schema, confirmation, restricted config, host `binding/2` and
+  `authorize/3`) and then makes one native call. Background operations return
+  their identity without waiting, a lost response is reported as `uncertain`
+  and nothing is retried. Native success is never client evidence.
+- **Release cassette.** Each release also publishes a tama-dex cassette,
+  `opsmaru_incus-<version>.tama-cassette`, holding both documents, as a GitHub
+  Release asset with its SHA-256 and a build provenance attestation. It is
+  not part of the Hex package, and tama_dex is only a development dependency.
+
 ### Changed
 
 - **Operations module layout.** The 32 composite operations move from
@@ -12,6 +47,12 @@
   operations. Shared infrastructure (`Operations.Host`, descriptors, schemas,
   results and evidence) stays under `Opsmaru.Incus.Operations`. Operation
   names, schemas, the `describe/1` data and `coverage.json` are unchanged.
+
+- **Package contents.** The `priv/incus` files are listed one by one. The
+  package gains `native-operations.json` and `native-policy.json` and never
+  contains `rest-api.yaml`.
+- `Opsmaru.Incus.Operations.Schema` resolves `$ref` into shared components and
+  accepts the `number` type.
 
 ### Deprecated
 

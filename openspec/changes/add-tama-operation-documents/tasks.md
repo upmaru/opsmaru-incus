@@ -20,8 +20,8 @@
 
 ## 4. Packaging and docs
 
-- [ ] 4.1 List the `priv/incus` package files explicitly so that `rest-api.yaml` is not shipped and `native-operations.json` and `native-policy.json` are. Extend `check:consumer` to fail if the YAML is packaged, and to call both `openapi/0` builders from the client-only consumer.
-- [ ] 4.2 Document both documents, the native scopes, the exclusions and the executors in `docs/incus-operations.md`, with a Macus-style host example. Add the 0.2.0 `CHANGELOG.md` entry.
+- [x] 4.1 List the `priv/incus` package files explicitly so that `rest-api.yaml` is not shipped and `native-operations.json` and `native-policy.json` are. Extend `check:consumer` to fail if the YAML is packaged, and to call both `openapi/0` builders from the client-only consumer.
+- [x] 4.2 Document both documents, the native scopes, the exclusions and the executors in `docs/incus-operations.md`, with a Macus-style host example. Add the 0.2.0 `CHANGELOG.md` entry.
 
 ## 5. Release cassette (after tama_dex with the `cassette` capability is on Hex)
 
