@@ -586,11 +586,11 @@ defmodule Opsmaru.Incus.RequestContextTest do
 
   defp pausing?(pid, budget) do
     paused =
-      case Process.info(pid, :current_stacktrace) do
-        {:current_stacktrace, stack} ->
-          Enum.any?(stack, &match?({Operation, :sleep_until, _, _}, &1))
+      case Process.info(pid, [:status, :current_function]) do
+        [status: :waiting, current_function: {Operation, :wait_for_context, 2}] ->
+          true
 
-        nil ->
+        _ ->
           false
       end
 
