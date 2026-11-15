@@ -16,7 +16,7 @@
 ## 3. Native module and execution
 
 - [x] 3.1 Implement `Opsmaru.Incus.Operations.Native` with `openapi/0` (compile-time read of the generated JSON, `@external_resource`), `unavailable/0` and `run/3` (Decision 6). Run checks the operation, scope, schema, confirmation equality, restricted config through the composite rules, then host `binding/2` and `authorize/3`. It makes one `Incus.call/4` with `project`/`etag`, shapes the envelope within the output limit, returns background operations unwaited, maps uncertain outcomes and never retries.
-- [ ] 3.2 Test every native scenario in the spec delta against the HTTP fixture. Prove denied calls never reach the backend. Prove that composite scopes don't grant native access. Prove a lost response is reported uncertain and sent once.
+- [x] 3.2 Test every native scenario in the spec delta against the HTTP fixture. Prove denied calls never reach the backend. Prove that composite scopes don't grant native access. Prove a lost response is reported uncertain and sent once.
 
 ## 4. Packaging and docs
 
