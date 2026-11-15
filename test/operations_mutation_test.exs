@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.OperationsMutationTest do
   use ExUnit.Case, async: true
-  alias Opsmaru.Incus.Operations
+  alias Opsmaru.Incus.Operations.Composite
   alias Opsmaru.Incus.Operations.Schema
   alias Opsmaru.TestSupport.{OperationsFixture, OperationsHost}
 
@@ -47,18 +47,18 @@ defmodule Opsmaru.Incus.OperationsMutationTest do
 
   defp run(name, input, caller),
     do:
-      Operations.run(name, input,
+      Composite.run(name, input,
         host: OperationsHost,
         caller: caller,
-        scopes: Operations.scopes()
+        scopes: Composite.scopes()
       )
 
   defp mutations(fixture),
     do: Enum.reject(OperationsFixture.requests(fixture), &(&1.method in ["GET", "HEAD"]))
 
   defp valid!(name, result) do
-    {:ok, descriptor} = Operations.fetch(name)
-    assert :ok = Schema.validate(Operations.output_schema(descriptor), result)
+    {:ok, descriptor} = Composite.fetch(name)
+    assert :ok = Schema.validate(Composite.output_schema(descriptor), result)
     result
   end
 

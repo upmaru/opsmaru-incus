@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.0 — unreleased
+
+### Changed
+
+- **Operations module layout.** The 32 composite operations move from
+  `Opsmaru.Incus.Operations` to `Opsmaru.Incus.Operations.Composite` (`all/0`,
+  `describe/1`, `run/3`, `unavailable/0`, `scopes/0`, `fetch/1` and
+  `output_schema/1`), with their implementations under `Composite.*`.
+  `Opsmaru.Incus.Operations.Native` is the namespace for the native client
+  operations. Shared infrastructure (`Operations.Host`, descriptors, schemas,
+  results and evidence) stays under `Opsmaru.Incus.Operations`. Operation
+  names, schemas, the `describe/1` data and `coverage.json` are unchanged.
+
+### Deprecated
+
+- The 0.1.0 functions on `Opsmaru.Incus.Operations` are deprecated delegates
+  to `Opsmaru.Incus.Operations.Composite`. They return exactly what
+  `Composite` returns, warn at compile time and are removed in 0.3.0.
+
 ## 0.1.0 — 2026-11-11
 
 First release of `:opsmaru_incus`, the portable native Incus library used by

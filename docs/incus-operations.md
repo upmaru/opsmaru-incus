@@ -1,13 +1,22 @@
 # Shared Incus operations
 
-`Opsmaru.Incus.Operations` defines each agent-facing Incus operation once: a
-canonical `incus_<resource>_<verb>` name, input/output JSON schemas, a required
+`Opsmaru.Incus.Operations.Composite` defines each agent-facing Incus operation
+once: a canonical `incus_<resource>_<verb>` name, input/output JSON schemas, a required
 scope, a destructive-confirmation rule and bounds. Macus and central Opsmaru
 expose the same descriptors, so names and schemas are public contract from the
 first consumer pin. The library defines and runs them; how a host exposes
 them to agents (MCP tools, a search/execute index, a REST surface) is the
 host's choice. Nothing here starts a process, endpoint, task store or
 connection.
+
+Since 0.2.0 the composite operations live in
+`Opsmaru.Incus.Operations.Composite`; `Opsmaru.Incus.Operations.Native` is the
+namespace for the native client operations. Shared infrastructure, including
+the `Opsmaru.Incus.Operations.Host` behaviour, stays under
+`Opsmaru.Incus.Operations`. The 0.1.0 entry points on `Opsmaru.Incus.Operations`
+(`all/0`, `describe/1`, `run/3`, `unavailable/0`, and `scopes/0`, `fetch/1`,
+`output_schema/1`) remain through 0.2.x as deprecated delegates that return
+exactly what `Composite` returns, and are removed in 0.3.0.
 
 Every operation runs synchronously through the public `Opsmaru.Incus` client.
 Tool success is not client coverage: `priv/incus/coverage.json` and the
@@ -54,9 +63,9 @@ endpoint ledgers are unchanged by tools.
 
 The full schemas, titles, descriptions and bounds are pinned in
 [test/fixtures/incus/operations-catalogue.json](../test/fixtures/incus/operations-catalogue.json);
-`Operations.describe/1` returns the same data at runtime.
+`Composite.describe/1` returns the same data at runtime.
 
-Not exported (`Operations.unavailable/0`): `incus_instance_copy`,
+Not exported (`Composite.unavailable/0`): `incus_instance_copy`,
 `incus_instance_rename` and `incus_instance_move`, deferred by scope
 (user decision 2026-11-04), not for missing evidence. Events, console
 attachment and file or image binary transfer are excluded because they need
@@ -141,7 +150,7 @@ defmodule MyHost.IncusOperations do
   def allow_restricted?(_caller, _operation, _items), do: false
 end
 
-Opsmaru.Incus.Operations.run("incus_instance_list", %{"project" => "default"},
+Opsmaru.Incus.Operations.Composite.run("incus_instance_list", %{"project" => "default"},
   host: MyHost.IncusOperations,
   caller: verified_caller,
   scopes: verified_scopes
@@ -191,8 +200,8 @@ and match each tool's output schema.
 
 ## Exposing operations
 
-The library ships no protocol binding. A host builds its own over `all/0`,
-`fetch/1`, `describe/1` and `run/3`, for example one tool per operation, or a
+The library ships no protocol binding. A host builds its own over
+`Composite.all/0`, `fetch/1`, `describe/1` and `run/3`, for example one tool per operation, or a
 `search` tool over `describe/1` plus an `execute` tool that calls `run/3`.
 If one tool fronts many operations, pass the caller's verified scopes to
 `run/3`: it enforces each operation's own scope, so access to the fronting

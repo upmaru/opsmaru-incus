@@ -1,15 +1,16 @@
 defmodule ClientOnlyConsumer.Test do
   use ExUnit.Case
-  alias Opsmaru.Incus.{Connection, Operations}
+  alias Opsmaru.Incus.Connection
   alias Opsmaru.Incus.Gateway.Identity
+  alias Opsmaru.Incus.Operations.Composite
 
   test "the client and operation descriptors work without Plug or an MCP stack" do
     refute Code.ensure_loaded?(TamaMCP.Tool)
     refute Code.ensure_loaded?(Plug.Conn)
-    assert Operations.all() != []
+    assert Composite.all() != []
 
     assert {:error, %{"kind" => "host_binding_failed"}} =
-             Operations.run("incus_server_get", %{},
+             Composite.run("incus_server_get", %{},
                host: nil,
                scopes: ["incus.read"]
              )

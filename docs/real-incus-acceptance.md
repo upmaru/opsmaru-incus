@@ -111,7 +111,7 @@ v2. As with the foundation runs, its failure state was kept; the empty project
 was deleted afterwards at the user's request (2026-11-04).
 
 `scripts/accept-incus-operations.exs` exercises the
-shared operations through `Opsmaru.Incus.Operations.run/3` with a fixed
+shared operations through `Opsmaru.Incus.Operations.Composite.run/3` with a fixed
 acceptance host binding, over Unix and, when `https` is given, verified HTTPS:
 server/project/instance inspection, a project denial that never reaches the
 backend, instance create and start with native operation polling by ID, bounded

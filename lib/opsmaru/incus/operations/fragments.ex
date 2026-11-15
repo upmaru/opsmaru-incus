@@ -141,4 +141,30 @@ defmodule Opsmaru.Incus.Operations.Fragments do
       ["status", "operation_id", "operation", "waited_seconds"]
     )
   end
+
+  @doc "The error object every operation, composite or native, returns on failure."
+  def error_schema do
+    %{
+      "type" => "object",
+      "required" => ["error"],
+      "properties" => %{
+        "error" => %{
+          "type" => "object",
+          "required" => ["kind", "message"],
+          "properties" => %{
+            "kind" => %{"type" => "string"},
+            "message" => %{"type" => "string"},
+            "http_status" => %{"type" => "integer"},
+            "error_code" => %{"type" => "integer"},
+            "operation_id" => %{"type" => "string"},
+            "required_scope" => %{"type" => "string"},
+            "path" => %{"type" => "string"},
+            "items" => %{"type" => "array", "items" => %{"type" => "string"}}
+          },
+          "additionalProperties" => false
+        }
+      },
+      "additionalProperties" => false
+    }
+  end
 end

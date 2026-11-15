@@ -1,4 +1,4 @@
-defmodule Opsmaru.Incus.Operations.Exec do
+defmodule Opsmaru.Incus.Operations.Composite.Exec do
   @moduledoc false
   # Bounded, noninteractive guest exec through the public Session API.
   #
@@ -10,7 +10,8 @@ defmodule Opsmaru.Incus.Operations.Exec do
   # over the control channel; collection then has a 5 s grace to observe the
   # exit. Closing local channels never cancels the Incus operation.
   alias Opsmaru.Incus.{Error, Operation, Session}
-  alias Opsmaru.Incus.Operations.{Descriptor, Mutation, Result}
+  alias Opsmaru.Incus.Operations.Composite.Mutation
+  alias Opsmaru.Incus.Operations.{Descriptor, Result}
   import Opsmaru.Incus.Operations.Fragments
 
   @capture 65_536

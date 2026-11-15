@@ -1,11 +1,12 @@
 defmodule Opsmaru.Incus.OperationsHostTest do
   use ExUnit.Case, async: true
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Context, Operations}
+  alias Opsmaru.Incus.Context
+  alias Opsmaru.Incus.Operations.Composite
   alias Opsmaru.TestSupport.{OperationsFixture, OperationsHost}
   import OperationsFixture, only: [sync: 1]
 
-  @all Operations.scopes()
+  @all Composite.scopes()
 
   setup do
     root = OperationsFixture.root()
@@ -27,7 +28,7 @@ defmodule Opsmaru.Incus.OperationsHostTest do
   end
 
   defp run(name, input, caller, scopes \\ @all),
-    do: Operations.run(name, input, host: OperationsHost, caller: caller, scopes: scopes)
+    do: Composite.run(name, input, host: OperationsHost, caller: caller, scopes: scopes)
 
   defp refute_backend(fixture), do: assert(OperationsFixture.requests(fixture) == [])
 
@@ -35,7 +36,7 @@ defmodule Opsmaru.Incus.OperationsHostTest do
     test "a missing host or callback denies before any backend request", %{fixture: fixture} do
       for host <- [nil, String, :not_a_module] do
         assert {:error, %{"kind" => "host_binding_failed"}} =
-                 Operations.run("incus_instance_list", %{}, host: host, caller: %{}, scopes: @all)
+                 Composite.run("incus_instance_list", %{}, host: host, caller: %{}, scopes: @all)
       end
 
       refute_backend(fixture)
@@ -181,7 +182,7 @@ defmodule Opsmaru.Incus.OperationsHostTest do
 
   describe "scope and confirmation" do
     test "a read-only caller cannot reach any mutation", %{fixture: fixture, caller: caller} do
-      for descriptor <- Operations.all(), descriptor.scope != "incus.read" do
+      for descriptor <- Composite.all(), descriptor.scope != "incus.read" do
         assert {:error, %{"kind" => "permission_denied", "required_scope" => scope}} =
                  run(descriptor.name, %{}, caller, ["incus.read"])
 
@@ -315,7 +316,7 @@ defmodule Opsmaru.Incus.OperationsHostTest do
         }
       }
 
-      assert Operations.Instances.restricted(input) == []
+      assert Composite.Instances.restricted(input) == []
     end
 
     test "the host may allow restricted input explicitly", %{caller: caller} do
