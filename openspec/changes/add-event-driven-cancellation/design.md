@@ -115,7 +115,7 @@ For #29's pool, test cancellation at three points using deterministic fixture ba
 
 Replace SFTP's private lifetime context with an absolute deadline and a session timer. Carry #29’s startup deadline across the upgrade and version handshake. The raw channel also takes the session deadline as its write bound. Its existing watcher observes the SFTP opener so a stalled raw operation releases the socket on opener exit. Preserve stream expiry, lock waits, owner loss, error classification and dispatched mutation uncertainty. Expiring the local SFTP session leaves a longer-lived host context active. Only the host context uses a context watcher.
 
-Verify `ExecRun` releases the resources associated with its private context on return, including its deadline-tightened copy. Preserve exec output limits, native results and uncertainty reporting.
+Unix and verified HTTPS fixtures trace `ExecRun` from construction through cleanup. Preflight rejection allocates no private context. For dispatched runs and a work-scope rejection before dispatch, the cell reaches its terminal state and the notifier releases its records. Cleanup uses the tightened deadline on the same cell, leaving a still-active host context usable. Killing the caller during output delivery frees the subscriptions, stops the sink and closes the peers. The fixtures check native operation and error results, the exact aggregate output limit and overflow, and uncertainty after a dispatched POST without an acceptance response. They also check that no POST is replayed and no backend DELETE is sent.
 
 ## Risks and trade-offs
 

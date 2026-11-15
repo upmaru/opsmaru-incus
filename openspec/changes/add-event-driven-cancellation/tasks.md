@@ -22,7 +22,7 @@ The fixture baseline is complete. Remaining items require implementation and ver
 ## 4. Internal contexts
 
 - [x] 4.1 Replace the SFTP lifetime context with an absolute deadline and session timer. Verify #29's startup deadline across upgrade and version exchange, plus lifetime expiry, owner loss, lock waits and dispatched mutation uncertainty. Verify local expiry leaves the shared host context active and that SFTP without a host context has no context watcher.
-- [ ] 4.2 Verify `ExecRun` releases its private context on all exit paths, including for the deadline-tightened copy. Preserve native results, output limits and uncertainty reporting.
+- [x] 4.2 Verify `ExecRun` releases its private context on all exit paths, including for the deadline-tightened copy. Preserve native results, output limits and uncertainty reporting.
 
 ## 5. Verification
 
