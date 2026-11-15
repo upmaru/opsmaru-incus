@@ -721,6 +721,32 @@ defmodule Opsmaru.Incus.OperationsNativeGeneratorTest do
     assert reason =~ "parameter project is reserved"
   end
 
+  test "text over the profile's limits fails the generator instead of being cut" do
+    policy = %{@policy | "exclusions" => %{}, "overrides" => []}
+    long = String.duplicate("x", 121)
+
+    cases = [
+      {[method("GetThing", "GET", "/1.0/things")],
+       %{"paths" => %{"/1.0/things" => %{"get" => %{"summary" => long}}}}, "summary length"},
+      {[method("GetThing", "GET", "/1.0/things")],
+       %{
+         "paths" => %{
+           "/1.0/things" => %{"get" => %{"description" => String.duplicate("d", 4096)}}
+         }
+       }, "description length"},
+      {[method("DeleteThing", "DELETE", "/1.0/things/{#{String.duplicate("n", 250)}}")], %{},
+       "confirmation description length"},
+      {[method("GetThing", "GET", "/1.0/#{String.duplicate("t", 65)}")], %{}, "tag length"}
+    ]
+
+    for {methods, upstream, expected} <- cases do
+      assert {:error, reasons} =
+               Generator.build(inputs(%{methods: methods, policy: policy, upstream: upstream}))
+
+      assert Enum.any?(reasons, &(&1 =~ expected)), expected
+    end
+  end
+
   test "the output is deterministic with sorted keys" do
     first = Generator.encode(build!())
     assert first == Generator.encode(build!(%{methods: Enum.reverse(@methods)}))

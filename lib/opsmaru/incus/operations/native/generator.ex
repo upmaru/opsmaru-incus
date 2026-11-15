@@ -317,6 +317,15 @@ defmodule Opsmaru.Incus.Operations.Native.Generator do
       if(String.length(operation["description"]) in 1..4096,
         do: [],
         else: "#{id}: description length"
+      ),
+      if(
+        String.length(get_in(operation, ["x-tama-confirmation", "description"]) || "x") in 1..256,
+        do: [],
+        else: "#{id}: confirmation description length"
+      ),
+      if(Enum.all?(operation["tags"], &(String.length(&1) in 1..64)),
+        do: [],
+        else: "#{id}: tag length"
       )
     ])
   end

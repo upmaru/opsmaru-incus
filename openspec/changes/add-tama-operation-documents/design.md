@@ -318,6 +318,17 @@ Details settled while implementing, where the decisions above left room:
   `<Model>` is the result form and allows unknown fields. `<Model>.Input` is
   the body form, which allows none. The shared error object is the `Error`
   component. `Opsmaru.Incus.Operations.Schema` resolves `$ref` for this.
+- **Profile limits:** sharing models as components keeps the native document
+  at about 0.7 MiB (limit 4 MiB, 274 operations of at most 1024) and the
+  largest schema with its components at about 24 KiB (limit 256 KiB). The
+  generator fails, rather than cutting text, when a summary exceeds 120
+  characters, a description 4096, a confirmation description 256 or a tag 64.
+- **Conformance (Decision 9):** tama_dex 0.1.0 was on Hex before
+  implementation finished, so `Tama.Dex.Profile.validate/1` checks both
+  documents in `test/operations_tama_dex_test.exs`. The structural checks in
+  `test/support/profile_checks.ex` stay: they also prove every schema uses
+  only keywords the library's own validator implements, which tama-dex does
+  not check.
 - **Null:** pointers, slices and maps allow `null` in both forms, because Go
   encodes their zero value as `null` and the client's model check accepts it.
 - **Denylist:** the policy names removed body fields by model and field
