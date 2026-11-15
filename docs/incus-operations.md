@@ -400,6 +400,7 @@ user decision, before any consumer pinned it.
 | --- | --- | --- |
 | Fixtures | `test/operations_*_test.exs` over fake Unix and mutual HTTPS Incus | run by `mise run check` |
 | Documents | `test/operations_composite_openapi_test.exs`, `test/operations_native_test.exs` and `test/operations_native_generator_test.exs` against the profile rules; the generated native document is compared byte for byte | run by `mise run check` and `mise run check:reference` |
+| Release cassette | `.github/scripts/build-cassette.sh` builds it from both `openapi/0` builders and `scripts/verify-cassette.exs` imports it into a fresh index, pinned to its `.sha256` | run locally on 2026-11-15 at version 0.1.0 (two builds were byte-identical; both sources searchable); the publish workflow itself first runs on the `v0.2.0` tag |
 | Isolated consumers | `test/consumer` (Macus-compatible host running an operation through its binding) and `test/consumer/client_only` (no `tama_mcp`, Plug, Cowboy or Phoenix) | run by `mise run check:consumer` at a pushed revision |
 | Real Incus | explicit isolated opt-in (task 4.2) | recorded separately in [real-incus-acceptance.md](https://github.com/upmaru/opsmaru-incus/blob/main/docs/real-incus-acceptance.md) |
 | Macus composition and hardware | Macus `add-elixir-server` | consumer-owned |
