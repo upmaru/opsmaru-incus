@@ -24,7 +24,14 @@ defmodule Opsmaru.Incus.OperationsNativeTest do
   end
 
   defp start(root, routes \\ fn _ -> :next end, opts \\ []) do
-    fixture = OperationsFixture.start(root, Keyword.get(opts, :transport, :gen_tcp), routes)
+    fixture =
+      OperationsFixture.start(
+        root,
+        Keyword.get(opts, :transport, :gen_tcp),
+        routes,
+        Keyword.take(opts, [:extensions])
+      )
+
     {fixture, %{binding: {fixture.connection, fixture.context}, test_pid: self()}}
   end
 
@@ -215,6 +222,12 @@ defmodule Opsmaru.Incus.OperationsNativeTest do
       for {name, schema} <- @components, String.ends_with?(name, ".Input") do
         assert schema["additionalProperties"] == false, name
       end
+
+      # No exported body can ask for a migration, whose pull mode returns
+      # websocket secrets, whether or not the client method guards the field.
+      for {name, schema} <- @components, String.ends_with?(name, ".Input") do
+        refute Map.has_key?(schema["properties"], "migration"), name
+      end
     end
 
     test "operation results declare their native operation identity" do
@@ -312,6 +325,47 @@ defmodule Opsmaru.Incus.OperationsNativeTest do
         assert {:error, %{"kind" => "invalid_input", "path" => ^path}} =
                  run("incus_native_create_instance", %{"body" => body}, caller)
       end
+
+      refute_received {:host, _}
+      refute_backend(fixture)
+    end
+
+    test "a rename cannot start a migration", %{root: root} do
+      {fixture, caller} = start(root)
+
+      for {name, input} <- [
+            {"incus_native_rename_storage_pool_volume",
+             %{"pool" => "default", "volType" => "custom", "name" => "v"}},
+            {"incus_native_rename_storage_pool_volume_snapshot",
+             %{
+               "pool" => "default",
+               "volumeType" => "custom",
+               "volumeName" => "v",
+               "snapshotName" => "s"
+             }},
+            {"incus_native_rename_instance", %{"name" => "web"}},
+            {"incus_native_rename_instance_snapshot", %{"instance_name" => "web", "name" => "s"}}
+          ],
+          {field, value} <- [{"migration", true}, {"migration", false}, {"target", %{}}] do
+        body = %{"name" => "renamed", field => value}
+        path = "/body/" <> field
+
+        assert {:error, %{"kind" => "invalid_input", "path" => ^path}} =
+                 run(name, Map.put(input, "body", body), caller),
+               name
+      end
+
+      assert {:error, %{"kind" => "invalid_input", "path" => "/body/source"}} =
+               run(
+                 "incus_native_rename_storage_pool_volume",
+                 %{
+                   "pool" => "default",
+                   "volType" => "custom",
+                   "name" => "v",
+                   "body" => %{"name" => "renamed", "source" => %{"type" => "migration"}}
+                 },
+                 caller
+               )
 
       refute_received {:host, _}
       refute_backend(fixture)
@@ -561,6 +615,40 @@ defmodule Opsmaru.Incus.OperationsNativeTest do
 
         assert Jason.decode!(sent) == body
       end
+    end
+
+    test "a plain rename is sent once with only the new name", %{root: root} do
+      {fixture, caller} =
+        start(
+          root,
+          fn request ->
+            case {request.method, OperationsFixture.path(request)} do
+              {"POST", "/1.0/instances/web"} -> accepted(@uuid)
+              {"POST", "/1.0/storage-pools/default/volumes/custom/v"} -> sync(nil)
+              _ -> :next
+            end
+          end,
+          extensions: ["storage", "storage_api_volume_rename"]
+        )
+
+      body = %{"name" => "renamed"}
+
+      assert %{"kind" => "operation", "operation_id" => @uuid} =
+               valid!(
+                 "incus_native_rename_instance",
+                 run("incus_native_rename_instance", %{"name" => "web", "body" => body}, caller)
+               )
+
+      volume = %{"pool" => "default", "volType" => "custom", "name" => "v", "body" => body}
+
+      assert %{"kind" => "sync"} =
+               valid!(
+                 "incus_native_rename_storage_pool_volume",
+                 run("incus_native_rename_storage_pool_volume", volume, caller)
+               )
+
+      assert [%{method: "POST", body: first}, %{method: "POST", body: second}] = backend(fixture)
+      assert Jason.decode!(first) == body and Jason.decode!(second) == body
     end
 
     test "restricted input the host allows reaches the backend", %{root: root} do

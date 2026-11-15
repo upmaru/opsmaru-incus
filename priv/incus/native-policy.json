@@ -167,16 +167,18 @@
     {
       "model": "InstancePost",
       "fields": [
+        "migration",
         "target"
       ],
-      "reason": "a migration target carries another server's certificate, operation and websocket secrets"
+      "reason": "a rename body with migration set starts a migration, whose pull mode returns websocket secrets, and a migration target carries another server's certificate, operation and websocket secrets; native rename only renames"
     },
     {
       "model": "InstanceSnapshotPost",
       "fields": [
+        "migration",
         "target"
       ],
-      "reason": "a migration target carries another server's certificate, operation and websocket secrets"
+      "reason": "a rename body with migration set starts a migration, whose pull mode returns websocket secrets, and a migration target carries another server's certificate, operation and websocket secrets; native rename only renames"
     },
     {
       "model": "InstanceSource",
@@ -201,16 +203,19 @@
     {
       "model": "StorageVolumePost",
       "fields": [
+        "migration",
+        "source",
         "target"
       ],
-      "reason": "a migration target carries another server's certificate, operation and websocket secrets"
+      "reason": "a rename body with migration set starts a migration, whose pull mode returns websocket secrets, and a migration target carries another server's certificate, operation and websocket secrets; native rename only renames; a volume rename takes no source"
     },
     {
       "model": "StorageVolumeSnapshotPost",
       "fields": [
+        "migration",
         "target"
       ],
-      "reason": "a migration target carries another server's certificate, operation and websocket secrets"
+      "reason": "a rename body with migration set starts a migration, whose pull mode returns websocket secrets, and a migration target carries another server's certificate, operation and websocket secrets; native rename only renames"
     },
     {
       "model": "StorageVolumeSource",

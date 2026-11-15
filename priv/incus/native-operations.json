@@ -1505,10 +1505,6 @@
               "description": "Whether to perform a live migration (migration only)",
               "type": "boolean"
             },
-            "migration": {
-              "description": "Whether the instance is being migrated to another server",
-              "type": "boolean"
-            },
             "name": {
               "description": "New name for the instance",
               "type": "string"
@@ -1705,10 +1701,6 @@
           "properties": {
             "live": {
               "description": "Whether to perform a live migration (requires migration)",
-              "type": "boolean"
-            },
-            "migration": {
-              "description": "Whether this is a migration request",
               "type": "boolean"
             },
             "name": {
@@ -6102,10 +6094,6 @@
           "additionalProperties": false,
           "description": "StorageVolumePost represents the fields required to rename a storage pool volume",
           "properties": {
-            "migration": {
-              "description": "Initiate volume migration\n\nAPI extension: storage_api_remote_volume_handling",
-              "type": "boolean"
-            },
             "name": {
               "description": "New volume name",
               "type": "string"
@@ -6117,9 +6105,6 @@
             "project": {
               "description": "New project name\n\nAPI extension: storage_volume_project_move",
               "type": "string"
-            },
-            "source": {
-              "$ref": "#/components/schemas/StorageVolumeSource.Input"
             },
             "volume_only": {
               "description": "Whether snapshots should be discarded (migration only)\n\nAPI extension: storage_api_remote_volume_snapshots",
@@ -6200,10 +6185,6 @@
           "additionalProperties": false,
           "description": "StorageVolumeSnapshotPost represents the fields required to rename/move a storage volume snapshot",
           "properties": {
-            "migration": {
-              "description": "Initiate volume snapshot migration\n\nAPI extension: storage_api_remote_volume_snapshot_copy",
-              "type": "boolean"
-            },
             "name": {
               "description": "New snapshot name",
               "type": "string"

@@ -83,7 +83,7 @@ defmodule Opsmaru.Incus.Operations.Schema do
 
   defp pattern?(_, _), do: true
 
-  defp number(schema, value, path) when is_integer(value) do
+  defp number(schema, value, path) when is_integer(value) or is_float(value) do
     cond do
       value < Map.get(schema, "minimum", value) -> {:error, path, "is below its minimum"}
       value > Map.get(schema, "maximum", value) -> {:error, path, "is above its maximum"}

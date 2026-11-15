@@ -375,7 +375,9 @@ The exported schemas also drop every body field that could select another
 backend or carry its credentials: `source.server`, `source.secret`,
 `source.certificate`, `source.operation`, `source.secrets`, `source.protocol`
 and `source.mode` on instance and volume sources, the image source `url`,
-migration and backup `target` objects, and certificate tokens. Because body
+migration and backup `target` objects, the `migration` flag on every rename
+body (a rename can only rename; the volume methods have no client guard for
+it), and certificate tokens. Because body
 objects allow no unknown fields, native input cannot name a backend: creating
 an instance with `body.source.server` fails schema validation before the host
 is asked anything.
