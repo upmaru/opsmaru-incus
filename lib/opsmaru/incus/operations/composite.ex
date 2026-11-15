@@ -23,11 +23,8 @@ defmodule Opsmaru.Incus.Operations.Composite do
   Nothing here starts a process, opens a connection or stores state; see
   `Opsmaru.Incus.Operations.Host` for the host contract.
   """
-  alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Connection, Context}
-
   alias Opsmaru.Incus.Operations.Composite.{Exec, Inspection, Instances, OperationTools}
-  alias Opsmaru.Incus.Operations.{Descriptor, Evidence, Fragments, Result, Schema}
+  alias Opsmaru.Incus.Operations.{Descriptor, Evidence, Fragments, Result, Runner}
 
   @scopes ~w(incus.read incus.write incus.exec incus.delete)
   @version Mix.Project.config()[:version]
@@ -194,16 +191,18 @@ defmodule Opsmaru.Incus.Operations.Composite do
   def execute(%Descriptor{} = descriptor, input, opts) do
     host = Keyword.get(opts, :host)
     caller = Keyword.get(opts, :caller)
+    name = descriptor.name
+    max_input = descriptor.bounds["max_input_bytes"] || 65_536
 
-    with :ok <- scope(descriptor, Keyword.get(opts, :scopes)),
-         :ok <- validate(descriptor, input),
+    with :ok <- Runner.scope(descriptor.scope, Keyword.get(opts, :scopes)),
+         :ok <- Runner.validate(descriptor.input_schema, input, max_input, %{}, descriptor.check),
          :ok <- confirm(descriptor, input),
-         :ok <- restricted(descriptor, host, caller, input),
-         {:ok, binding} <- binding(host, caller, descriptor),
-         :ok <- authorize(host, caller, descriptor, input),
+         :ok <- Runner.restricted(restricted(descriptor, input), host, caller, name),
+         {:ok, binding} <- Runner.binding(host, caller, name),
+         :ok <- Runner.authorize(host, caller, name, input),
          {:ok, input} <- resolve(descriptor, host, caller, input),
-         {:ok, client} <- client(binding),
-         {:ok, client} <- project(client, input) do
+         {:ok, client} <- Runner.client(binding),
+         {:ok, client} <- Runner.project(client, input) do
       env = %{host: host, caller: caller, descriptor: descriptor}
 
       case descriptor.run.(client, input, env) do
@@ -213,39 +212,6 @@ defmodule Opsmaru.Incus.Operations.Composite do
       end
     end
   end
-
-  defp scope(descriptor, scopes) do
-    if is_list(scopes) and descriptor.scope in scopes,
-      do: :ok,
-      else:
-        Result.error("permission_denied", "the caller lacks the required scope", %{
-          "required_scope" => descriptor.scope
-        })
-  end
-
-  defp validate(descriptor, input) do
-    max = descriptor.bounds["max_input_bytes"] || 65_536
-
-    with true <- is_map(input) or :not_object,
-         {:ok, json} <- Jason.encode(input),
-         true <- byte_size(json) <= max or :too_large,
-         :ok <- Schema.validate(descriptor.input_schema, input),
-         :ok <- if(descriptor.check, do: descriptor.check.(input), else: :ok) do
-      :ok
-    else
-      :too_large ->
-        Result.error("invalid_input", "the input exceeds #{max} bytes")
-
-      {:error, path, reason} ->
-        Result.error("invalid_input", "#{display(path)} #{reason}", %{"path" => path})
-
-      _ ->
-        Result.error("invalid_input", "the input must be a JSON object")
-    end
-  end
-
-  defp display(""), do: "input"
-  defp display(path), do: String.trim_leading(path, "/")
 
   defp confirm(%Descriptor{confirm: nil}, _), do: :ok
 
@@ -261,77 +227,12 @@ defmodule Opsmaru.Incus.Operations.Composite do
         )
   end
 
-  defp restricted(%Descriptor{restricted: nil}, _, _, _), do: :ok
-
-  defp restricted(descriptor, host, caller, input) do
-    case descriptor.restricted.(input) do
-      [] ->
-        :ok
-
-      items ->
-        if callback(host, :allow_restricted?, [caller, descriptor.name, items]) == {:ok, true},
-          do: :ok,
-          else:
-            Result.error("restricted_input", "the host does not allow this restricted input", %{
-              "items" => Enum.map(items, fn {kind, name} -> "#{kind}:#{name}" end)
-            })
-    end
-  end
-
-  defp binding(host, caller, descriptor) do
-    case callback(host, :binding, [caller, descriptor.name]) do
-      {:ok, {:ok, %Incus{} = client}} ->
-        {:ok, client}
-
-      {:ok, {:ok, %Connection{} = connection, %Context{} = context}} ->
-        {:ok, {connection, context}}
-
-      _ ->
-        Result.error("host_binding_failed", "the host supplied no backend for this caller")
-    end
-  end
-
-  defp authorize(host, caller, descriptor, input) do
-    case callback(host, :authorize, [caller, descriptor.name, input]) do
-      {:ok, :ok} -> :ok
-      _ -> Result.error("unauthorized", "the host did not authorize this operation")
-    end
-  end
+  defp restricted(%Descriptor{restricted: nil}, _), do: []
+  defp restricted(descriptor, input), do: descriptor.restricted.(input)
 
   defp resolve(%Descriptor{resolve: nil}, _, _, input), do: {:ok, input}
 
-  defp resolve(descriptor, host, caller, input),
-    do: descriptor.resolve.(input, fn name, args -> callback(host, name, [caller | args]) end)
-
-  defp client(%Incus{} = client), do: {:ok, client}
-
-  defp client({connection, context}) do
-    case Incus.connect(connection, context) do
-      {:ok, client} -> {:ok, client}
-      {:error, error} -> Result.client_error(error)
-    end
-  end
-
-  # `Opsmaru.Incus.project/2` raises on an invalid selection; the schema already
-  # bounds `project`, so this guard only keeps a raise from escaping.
-  defp project(client, %{"project" => project})
-       when is_binary(project) and byte_size(project) in 1..1024,
-       do: {:ok, Incus.project(client, project)}
-
-  defp project(_client, %{"project" => _}),
-    do: Result.error("invalid_input", "project is invalid", %{"path" => "/project"})
-
-  defp project(client, _), do: {:ok, client}
-
-  # A missing, raising or exiting host callback never reaches the backend.
-  defp callback(host, name, args) do
-    if is_atom(host) and Code.ensure_loaded?(host) and
-         function_exported?(host, name, length(args)),
-       do: {:ok, apply(host, name, args)},
-       else: :missing
-  rescue
-    _ -> :failed
-  catch
-    _, _ -> :failed
+  defp resolve(descriptor, host, caller, input) do
+    descriptor.resolve.(input, fn name, args -> Runner.callback(host, name, [caller | args]) end)
   end
 end

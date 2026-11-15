@@ -16,7 +16,9 @@ defmodule Opsmaru.Incus.OperationsCatalogueTest do
     Composite.Instances,
     Composite.Mutation,
     Composite.OperationTools,
-    Operations.Result
+    Operations.Native,
+    Operations.Result,
+    Operations.Runner
   ]
 
   test "canonical names follow incus_<resource>_<verb> and are unique" do
