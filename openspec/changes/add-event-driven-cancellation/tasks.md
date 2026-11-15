@@ -26,5 +26,5 @@ The fixture baseline is complete. Remaining items require implementation and ver
 
 ## 5. Verification
 
-- [ ] 5.1 Repeat the baseline on both platforms and record the results side by side. Verify zero periodic context-waiter scheduler entries in the idle windows, including SFTP without a host context. Confirm native refreshes and independent I/O timers still run. Compare process CPU and cancellation latency distributions within each platform.
+- [x] 5.1 Repeat the baseline on both platforms and record the results side by side. Verify zero periodic context-waiter scheduler entries in the idle windows, including SFTP without a host context. Confirm native refreshes and independent I/O timers still run. Compare process CPU and cancellation latency distributions within each platform.
 - [ ] 5.2 Run `mise run check`, `mise run check:reference`, `mise run check:consumer`, and strict OpenSpec validation against the immutable pushed draft revision. When draft #69's executors are ready, run their focused binding and cancellation fixtures against the combined revisions.

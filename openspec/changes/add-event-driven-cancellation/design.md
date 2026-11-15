@@ -35,51 +35,51 @@ After 140 ms of settling, sample BEAM process CPU and normal-scheduler active wa
 
 After a seeded 1–45 ms delay, measure from the start of `RequestContext.cancel/1` until the caller observes each channel exit or wait result. The channel measurement includes observations in the caller's mailbox. Every scoped case checked its cancellation result, and adapter cases checked cleanup. Each row shows medians across three trials for the idle metrics. Cancellation percentiles pool all observations for that row. The operation and adapter rows each have three cancellation samples per platform.
 
+The event-driven rerun used commit `83f398c59fca0efcc05762b0dca0d0b6447d6692` on the same macOS version and offline Linux container kernel. It reused the harness, pinned runtimes, resource limits, workload order and seeded cancellation delays. The readiness check for a scoped operation was updated to recognize its new event-driven receive. Each measurement reads **baseline → rerun**. Cancellation percentiles pool observations, including three samples per platform for the operation and adapter.
+
 #### macOS
 
 | Fixture | Count | Host context | Waiter entries/s | One core % | Active scheduler ms/s | Cancel p50 / p95 / max (ms) |
-|---|---:|---|---:|---:|---:|---:|
-| control | 0 | no | 0 | 0.003 | 1.08 | — |
-| event | 1 | no | 0 | 0.007 | 2.16 | — |
-| event | 1 | yes | 98 | 0.015 | 1.34 | 18.00/19.14/19.14 |
-| event | 100 | no | 0 | 0.036 | 6.39 | — |
-| event | 100 | yes | 10,916 | 0.141 | 19.69 | 13.05/20.95/20.99 |
-| event | 1000 | no | 0 | 0.232 | 46.86 | — |
-| event | 1000 | yes | 114,702 | 1.081 | 222.39 | 10.13/19.39/21.18 |
-| sftp | 1 | no | 49 | 0.006 | 0.93 | — |
-| sftp | 1 | yes | 147 | 0.012 | 1.25 | 15.45/18.02/18.02 |
-| sftp | 100 | no | 5,270 | 0.097 | 5.83 | — |
-| sftp | 100 | yes | 16,518 | 0.099 | 14.60 | 8.00/19.82/20.88 |
-| sftp | 1000 | no | 58,576 | 0.290 | 54.07 | — |
-| sftp | 1000 | yes | 179,423 | 0.809 | 153.86 | 12.11/20.26/20.99 |
-| operation | 1 | no | 0 | 0.003 | 0.84 | — |
-| operation | 1 | yes | 49 | 0.007 | 1.07 | 16.04/19.00/19.00 |
-| adapter | 1 | no | 0 | 0.003 | 1.02 | — |
-| adapter | 1 | yes | 49 | 0.007 | 1.25 | 16.11/18.02/18.02 |
+| --- | ---: | --- | ---: | ---: | ---: | ---: |
+| control | 0 | no | 0 → 0 | 0.003 → 0.003 | 1.08 → 1.63 | — |
+| event | 1 | no | 0 → 0 | 0.007 → 0.010 | 2.16 → 2.71 | — |
+| event | 1 | yes | 98 → 0 | 0.015 → 0.006 | 1.34 → 1.93 | 18.00/19.14/19.14 → 0.18/0.22/0.22 |
+| event | 100 | no | 0 → 0 | 0.036 → 0.076 | 6.39 → 13.66 | — |
+| event | 100 | yes | 10,916 → 0 | 0.141 → 0.093 | 19.69 → 15.20 | 13.05/20.95/20.99 → 2.55/3.73/4.09 |
+| event | 1000 | no | 0 → 0 | 0.232 → 0.414 | 46.86 → 119.29 | — |
+| event | 1000 | yes | 114,702 → 0 | 1.081 → 0.653 | 222.39 → 122.74 | 10.13/19.39/21.18 → 10.89/18.99/20.88 |
+| sftp | 1 | no | 49 → 0 | 0.006 → 0.005 | 0.93 → 1.79 | — |
+| sftp | 1 | yes | 147 → 0 | 0.012 → 0.011 | 1.25 → 3.66 | 15.45/18.02/18.02 → 0.20/0.26/0.26 |
+| sftp | 100 | no | 5,270 → 0 | 0.097 → 0.007 | 5.83 → 3.30 | — |
+| sftp | 100 | yes | 16,518 → 0 | 0.099 → 0.005 | 14.60 → 1.96 | 8.00/19.82/20.88 → 2.25/4.25/4.47 |
+| sftp | 1000 | no | 58,576 → 0 | 0.290 → 0.005 | 54.07 → 1.50 | — |
+| sftp | 1000 | yes | 179,423 → 0 | 0.809 → 0.005 | 153.86 → 1.73 | 12.11/20.26/20.99 → 11.84/23.16/30.68 |
+| operation | 1 | no | 0 → 0 | 0.003 → 0.007 | 0.84 → 2.22 | — |
+| operation | 1 | yes | 49 → 0 | 0.007 → 0.014 | 1.07 → 5.28 | 16.04/19.00/19.00 → 0.21/0.22/0.22 |
+| adapter | 1 | no | 0 → 0 | 0.003 → 0.005 | 1.02 → 1.86 | — |
+| adapter | 1 | yes | 49 → 0 | 0.007 → 0.006 | 1.25 → 2.09 | 16.11/18.02/18.02 → 0.36/0.36/0.36 |
 
 #### Linux
 
 | Fixture | Count | Host context | Waiter entries/s | One core % | Active scheduler ms/s | Cancel p50 / p95 / max (ms) |
-|---|---:|---|---:|---:|---:|---:|
-| control | 0 | no | 0 | 0.097 | 1.07 | — |
-| event | 1 | no | 0 | 0.240 | 1.81 | — |
-| event | 1 | yes | 87 | 0.554 | 3.69 | 14.36/23.18/23.18 |
-| event | 100 | no | 0 | 1.437 | 7.67 | — |
-| event | 100 | yes | 10,059 | 4.749 | 17.48 | 8.19/16.57/20.80 |
-| event | 1000 | no | 0 | 12.307 | 79.64 | — |
-| event | 1000 | yes | 106,150 | 29.078 | 212.70 | 19.31/28.70/32.92 |
-| sftp | 1 | no | 43 | 0.420 | 1.47 | — |
-| sftp | 1 | yes | 130 | 0.389 | 1.69 | 1.58/13.64/13.64 |
-| sftp | 100 | no | 4,856 | 3.738 | 9.08 | — |
-| sftp | 100 | yes | 15,321 | 5.038 | 17.23 | 12.42/18.25/23.31 |
-| sftp | 1000 | no | 53,256 | 11.910 | 58.14 | — |
-| sftp | 1000 | yes | 168,123 | 30.807 | 261.20 | 18.77/33.23/34.56 |
-| operation | 1 | no | 0 | 0.102 | 0.94 | — |
-| operation | 1 | yes | 42 | 0.441 | 1.39 | 5.87/17.27/17.27 |
-| adapter | 1 | no | 0 | 0.144 | 1.71 | — |
-| adapter | 1 | yes | 43 | 0.446 | 1.92 | 16.39/18.33/18.33 |
-
-At 100 channels with a host context, the waiters account for roughly 10,000–16,500 entries per second. At 1,000 channels, the rate exceeds 100,000 per second with a host context, and SFTP's internal context also drives polling without one. These fixture results and the measured cancellation latency satisfy the baseline gate. The same workload and measurements will be used after implementation. They provide fixture evidence only.
+| --- | ---: | --- | ---: | ---: | ---: | ---: |
+| control | 0 | no | 0 → 0 | 0.097 → 0.269 | 1.07 → 3.93 | — |
+| event | 1 | no | 0 → 0 | 0.240 → 0.377 | 1.81 → 2.69 | — |
+| event | 1 | yes | 87 → 0 | 0.554 → 0.342 | 3.69 → 3.15 | 14.36/23.18/23.18 → 0.27/0.27/0.27 |
+| event | 100 | no | 0 → 0 | 1.437 → 3.145 | 7.67 → 19.81 | — |
+| event | 100 | yes | 10,059 → 0 | 4.749 → 3.059 | 17.48 → 16.95 | 8.19/16.57/20.80 → 2.44/3.73/4.18 |
+| event | 1000 | no | 0 → 0 | 12.307 → 25.019 | 79.64 → 171.00 | — |
+| event | 1000 | yes | 106,150 → 0 | 29.078 → 23.172 | 212.70 → 158.83 | 19.31/28.70/32.92 → 18.90/42.47/51.77 |
+| sftp | 1 | no | 43 → 0 | 0.420 → 0.216 | 1.47 → 2.01 | — |
+| sftp | 1 | yes | 130 → 0 | 0.389 → 0.203 | 1.69 → 2.06 | 1.58/13.64/13.64 → 0.25/0.26/0.26 |
+| sftp | 100 | no | 4,856 → 0 | 3.738 → 0.203 | 9.08 → 2.08 | — |
+| sftp | 100 | yes | 15,321 → 0 | 5.038 → 0.251 | 17.23 → 2.49 | 12.42/18.25/23.31 → 2.98/4.66/5.53 |
+| sftp | 1000 | no | 53,256 → 0 | 11.910 → 0.188 | 58.14 → 1.70 | — |
+| sftp | 1000 | yes | 168,123 → 0 | 30.807 → 0.180 | 261.20 → 1.77 | 18.77/33.23/34.56 → 19.38/37.05/49.46 |
+| operation | 1 | no | 0 → 0 | 0.102 → 0.199 | 0.94 → 1.91 | — |
+| operation | 1 | yes | 42 → 0 | 0.441 → 0.248 | 1.39 → 3.12 | 5.87/17.27/17.27 → 0.31/0.41/0.41 |
+| adapter | 1 | no | 0 → 0 | 0.144 → 0.240 | 1.71 → 2.66 | — |
+| adapter | 1 | yes | 43 → 0 | 0.446 → 0.265 | 1.92 → 3.68 | 16.39/18.33/18.33 → 0.43/0.47/0.47 |
 
 ### 2. Subscription and delivery protocol
 
@@ -91,7 +91,7 @@ The notifier replies to a cancellation once it commits the atomic, then sends th
 
 On teardown, demonitoring with `:flush` deactivates the alias and removes its `:DOWN`. The waiter selectively drains any notification already in its mailbox, then removes its subscription from the notifier. Waiter death also removes the subscription. An already-queued notification and a late delivery attempt are covered by deterministic barriers, along with both creator/owner exit orders and the notifier's loss immediately after committing and partway through fanout.
 
-The notifier runs no host callbacks. Registration and subscribed terminal transitions serialize through its mailbox. A follow-up benchmark will measure the cost of registration, teardown and cancellation fanout. See the [process alias delivery semantics](https://www.erlang.org/doc/system/ref_man_processes.html#process-aliases).
+The notifier runs no host callbacks. Registration and subscribed terminal transitions serialize through its mailbox. The idle benchmark measures after registration and before teardown, with cancellation fanout timed separately. Registration and teardown costs remain unmeasured. See the [process alias delivery semantics](https://www.erlang.org/doc/system/ref_man_processes.html#process-aliases).
 
 ### 3. Owner exit and deadline without polling
 
@@ -117,8 +117,18 @@ Replace SFTP's private lifetime context with an absolute deadline and a session 
 
 Unix and verified HTTPS fixtures trace `ExecRun` from construction through cleanup. Preflight rejection allocates no private context. For dispatched runs and a work-scope rejection before dispatch, the cell reaches its terminal state and the notifier releases its records. Cleanup uses the tightened deadline on the same cell, leaving a still-active host context usable. Killing the caller during output delivery frees the subscriptions, stops the sink and closes the peers. The fixtures check native operation and error results, the exact aggregate output limit and overflow, and uncertainty after a dispatched POST without an acceptance response. They also check that no POST is replayed and no backend DELETE is sent.
 
+
+### 7. Idle trace and timer verification
+
+Each platform completed 51 trials. There were 45 windows per platform with at least one traced waiter, covering 23,130 waiter observations per platform over windows of 550–558 ms. Every individual window recorded zero schedule-ins. The harness verified the expected number of trace targets in every trial. Each idle event listener had two watchers. A scoped SFTP session had two watchers and an unscoped session had only its raw channel's owner watcher. The scoped operation was parked between native refreshes and the OCI adapter controller was waiting on a blocked callback. A separate pending GET traced the request guard both with and without a context and the shared notifier in the scoped case. These traces also recorded zero idle schedule-ins on both platforms.
+
+At 1,000 scoped workloads, measured process CPU fell from 1.081% to 0.653% for macOS listeners and from 29.078% to 23.172% for Linux listeners. It fell from 0.809% to 0.005% for macOS SFTP and from 30.807% to 0.180% for Linux SFTP. At 1,000 SFTP sessions without a host context, CPU fell from 0.290% to 0.005% on macOS and from 11.910% to 0.188% on Linux. Unscoped event listeners used more CPU in the rerun, and the Linux no-workload control also rose. The runs were on different days. CPU and scheduler wall time include fixture work and independent I/O, so the waiter-specific trace is the direct evidence for removal of periodic checks.
+
+Cancellation p95 fell to 3.73–4.66 ms across the 100-channel scoped trials and to 0.22–0.47 ms for the single operation and adapter. At 1,000 scoped channels, macOS listener p95 was nearly flat at 19.39 → 18.99 ms. SFTP p95 rose from 20.26 to 23.16 ms on macOS and from 33.23 to 37.05 ms on Linux. Linux listener p95 rose from 28.70 to 42.47 ms. Large fanout still includes peer closure and delivery of each `:DOWN` to the caller.
+
+The operation, raw channel and SFTP session fixture suites passed all 46 tests on each platform. They verified native GET refresh cadence, raw upgrade and lifetime deadlines, and independent SFTP session and request deadlines. These measurements and timer checks used disposable fixtures.
+
 ## Risks and trade-offs
 
 - A notification substrate can add per-context memory or per-waiter work. Measure construction and cleanup and document the lifetime of contexts with and without waiters before converting call sites.
 - Cancellation may now race with a normal result sooner. Verify both observations using barriers, while preserving the existing terminal outcomes and no-replay rules.
-- The follow-up benchmark should show zero periodic context-waiter entries during the idle window, including SFTP with no host context. Compare CPU and latency distributions within each platform and keep native operation refreshes and independent I/O timers covered.
