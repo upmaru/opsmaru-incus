@@ -326,6 +326,10 @@ defmodule Opsmaru.Incus.Operations.Native.Generator do
   defp operation(method, context) do
     override = Map.get(context.overrides, method["name"], %{})
     destructive = Map.get(override, "destructive", method["verb"] in ["DELETE", "PUT"])
+
+    if Map.has_key?(override, "confirm") and not destructive,
+      do: throw({:generator, "#{method["name"]}: confirm override on a non-destructive method"})
+
     confirm = if destructive, do: confirm_target(method, override)
     text = upstream_text(method, context.text)
     etag = etag(method)
