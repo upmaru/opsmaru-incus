@@ -340,20 +340,22 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
           end
         )
 
-      scope = RequestContext.new!(timeout: 2_000)
+      scope = RequestContext.new!(timeout: 30_000)
+      timeout = if cancel?, do: 5_000, else: 100
       parent = self()
 
       owner =
         spawn(fn ->
           assert {:ok, session} =
-                   open(client(fixture, nil, timeout: 100, request_context: scope), :instance)
+                   open(client(fixture, nil, timeout: timeout, request_context: scope), :instance)
 
           assert {:ok, handle} = open_mode(session, "native", :read)
           send(parent, {:sftp_owned, session, :sys.get_state(session.pid).raw.pid})
           send(parent, {:sftp_result, SFTP.File.write_at(handle, 0, @write)})
-          send(parent, {:sftp_alive, Process.alive?(session.pid)})
+          receive do: (:done -> :ok)
         end)
 
+      on_exit(fn -> Process.exit(owner, :kill) end)
       assert_receive {:sftp_owned, session, raw}, 1_000
       assert_receive {:sftp_packet, <<1, _::binary>>}
       assert_receive {:sftp_packet, <<3, _::binary>>}
@@ -367,13 +369,20 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
       assert error.response.connection == session.connection
       assert error.response.identity == :verified
       assert error.response.session == session.ref
-      # A local deadline fails only its request; cancellation ends the session.
-      assert_receive {:sftp_alive, alive}, 1_000
-      assert alive == not cancel?
 
+      if cancel? do
+        assert %Error{kind: :canceled} = error.response.error
+      else
+        assert %Error{kind: :deadline} = error.response.error
+        assert {:ok, _} = SFTP.extensions(session)
+        send(owner, :done)
+      end
+
+      # The peer can observe the socket close while the session is terminating.
       assert_receive :sftp_peer_closed, 1_000
-      refute Process.alive?(session.pid)
+      eventually_dead(session.pid)
       eventually_dead(raw)
+      if cancel?, do: send(owner, :done)
       eventually_dead(owner)
       assert packets() == []
     end
