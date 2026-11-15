@@ -30,13 +30,24 @@ defmodule OpsmaruIncus.MixProject do
     [extra_applications: [:logger, :ssl, :public_key, :crypto]]
   end
 
-  # Hex is the only distribution route. priv/incus is read at compile time, and
-  # priv/notices carries the upstream licence notices.
+  # priv/incus files the package ships: data read at compile time, plus the
+  # reviewed policy behind the native operations document. Named one by one so
+  # that generator-only input (rest-api.yaml) is never packaged;
+  # `mise run check:consumer` fails if it is.
+  @priv_incus ~w(README.md constants.json coverage.json endpoint-evidence.json
+                 endpoint-inventory.json gateway-transfer.json inventory.json methods.json
+                 models.json native-operations.json native-policy.json reference.json
+                 transfer.json)
+
+  # Hex is the only distribution route. priv/notices carries the upstream
+  # licence notices.
   defp package do
     [
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => @source_url, "Changelog" => "#{@source_url}/blob/main/CHANGELOG.md"},
-      files: ~w(lib priv/incus priv/notices mix.exs README.md CHANGELOG.md LICENSE NOTICE)
+      files:
+        ~w(lib priv/notices mix.exs README.md CHANGELOG.md LICENSE NOTICE) ++
+          Enum.map(@priv_incus, &"priv/incus/#{&1}")
     ]
   end
 
