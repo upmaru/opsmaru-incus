@@ -7,7 +7,11 @@ defmodule Opsmaru.Incus.RequestContext do
   context. Cancellation closes local resources; it never sends an Incus DELETE,
   retries a mutation or proves backend cancellation. Values are shareable with
   explicitly selected callers; clients without this context remain independent.
+  An internal notifier runs only while waiters subscribe and releases each
+  subscription on teardown, waiter exit or context termination.
   """
+  alias __MODULE__.Notifier
+
   @enforce_keys [:owner, :deadline, :cancelled]
   defstruct [:owner, :deadline, :cancelled]
 
@@ -31,8 +35,7 @@ defmodule Opsmaru.Incus.RequestContext do
   def cancel(%__MODULE__{} = context) do
     validate!(context)
     kind = if now() >= context.deadline, do: 2, else: 1
-    :atomics.compare_exchange(context.cancelled, 1, 0, kind)
-    :ok
+    Notifier.transition(context.cancelled, kind)
   end
 
   @doc false
@@ -40,7 +43,7 @@ defmodule Opsmaru.Incus.RequestContext do
     unless is_pid(context.owner) and node(context.owner) == node() and
              is_integer(context.deadline) and context.deadline <= now() + 3_600_000 and
              :atomics.info(context.cancelled).size == 1 and
-             :atomics.get(context.cancelled, 1) in [0, 1, 2],
+             :atomics.get(context.cancelled, 1) in [0, 1, 2, 3],
            do: raise(ArgumentError, "invalid request context")
 
     context
@@ -50,6 +53,15 @@ defmodule Opsmaru.Incus.RequestContext do
 
   def validate!(_), do: raise(ArgumentError, "invalid request context")
 
+  @doc false
+  # Watch for {:request_context_terminal, ref} or {:DOWN, ref, :process, pid, _}.
+  # Recheck status on either signal. On notifier loss with an active context,
+  # unsubscribe and register again using the same absolute wait deadline.
+  def subscribe(%__MODULE__{} = context), do: Notifier.subscribe(context)
+
+  @doc false
+  def unsubscribe(subscription), do: Notifier.unsubscribe(subscription)
+
   @doc "Inspect the local lifetime, without querying or cancelling Incus."
   def status(nil), do: :active
 
@@ -57,18 +69,18 @@ defmodule Opsmaru.Incus.RequestContext do
     case :atomics.get(context.cancelled, 1) do
       1 -> :canceled
       2 -> :deadline
-      0 -> terminal_status(context)
+      state when state in [0, 3] -> terminal_status(context)
     end
   end
 
   defp terminal_status(context) do
     cond do
       now() >= context.deadline ->
-        :atomics.compare_exchange(context.cancelled, 1, 0, 2)
+        Notifier.transition(context.cancelled, 2)
         status(context)
 
       not Process.alive?(context.owner) ->
-        :atomics.compare_exchange(context.cancelled, 1, 0, 1)
+        Notifier.transition(context.cancelled, 1)
         status(context)
 
       true ->

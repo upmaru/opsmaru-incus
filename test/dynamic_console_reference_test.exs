@@ -2,7 +2,16 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
   use ExUnit.Case, async: true
   import Opsmaru.TestSupport.Monitor, only: [monitor!: 1]
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Connection, Context, DynamicConsole, Error, Server, WebSocket}
+
+  alias Opsmaru.Incus.{
+    Connection,
+    Context,
+    DynamicConsole,
+    Error,
+    RequestContext,
+    Server,
+    WebSocket
+  }
 
   alias Opsmaru.TestSupport.{
     CleanupAssertions,
@@ -659,6 +668,43 @@ defmodule Opsmaru.Incus.DynamicConsoleReferenceTest do
       assert Enum.count(WebSocketFixture.requests(fixture), &(&1.method == "POST")) == 1
       refute Enum.any?(WebSocketFixture.requests(fixture), &(&1.method == "DELETE"))
     end
+  end
+
+  for trigger <- [:cancel, :owner_exit, :deadline] do
+    test "context #{trigger} closes the console and its channels without replay", env do
+      assert_context_close(env, unquote(trigger))
+    end
+  end
+
+  defp assert_context_close(env, trigger) do
+    {fixture, client} = served_backend(:unix, env.root, env.context)
+    owner = spawn(fn -> receive do: (:stop -> :ok) end)
+    on_exit(fn -> Process.exit(owner, :kill) end)
+    timeout = if trigger == :deadline, do: 1_000, else: 30_000
+    scope = RequestContext.new!(timeout: timeout, owner: owner)
+
+    assert {:ok, console} =
+             DynamicConsole.open(Incus.with_context(client, scope), "fixture", %{})
+
+    assert {:ok, channel} = DynamicConsole.attach(console)
+    control = :sys.get_state(console.pid).control
+    monitors = CleanupAssertions.monitor([console.pid, channel.pid, control.pid])
+
+    case trigger do
+      :cancel -> RequestContext.cancel(scope)
+      :owner_exit -> send(owner, :stop)
+      :deadline -> :ok
+    end
+
+    assert :ok = CleanupAssertions.assert_stopped(monitors, 5_000)
+
+    assert {:error, %Error{kind: :channel_closed, operation: "/1.0/operations/console-id"}} =
+             DynamicConsole.attach(console)
+
+    assert Enum.frequencies_by(WebSocketFixture.requests(fixture), & &1.method) == %{
+             "POST" => 1,
+             "GET" => 2
+           }
   end
 
   test "malformed accepted metadata and failed attachments never replay the mutation", %{

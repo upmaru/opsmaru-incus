@@ -12,7 +12,8 @@ defmodule Opsmaru.Incus.EventListenerTest do
     Events,
     Model,
     RequestContext,
-    Server
+    Server,
+    WebSocket
   }
 
   alias Opsmaru.TestSupport.{CleanupAssertions, HTTPFixture, TLSIdentity, WebSocketFixture}
@@ -474,27 +475,11 @@ defmodule Opsmaru.Incus.EventListenerTest do
       assert_peer_closed()
     end
 
-    test "#{transport} cancellation is reported whichever context watcher ends the stream first",
-         %{root: root} do
-      scope = RequestContext.new!(timeout: 30_000)
-      {client, _} = fixture(unquote(transport), root)
-      {:ok, listener} = EventListener.open(Incus.with_context(client, scope))
-      channel = :sys.get_state(listener.pid).channel
-
-      # Stop the listener's own watcher (the one monitoring this owner), so only
-      # the channel's watcher reacts and the listener sees a failed read.
-      {:monitored_by, watchers} = Process.info(listener.pid, :monitored_by)
-
-      for pid <- watchers,
-          pid != channel.pid,
-          {:monitors, monitors} = Process.info(pid, :monitors),
-          {:process, self()} in monitors,
-          do: Process.exit(pid, :kill)
-
-      RequestContext.cancel(scope)
-      assert {:error, %Error{kind: :canceled}} = EventListener.wait(listener)
-      refute Process.alive?(channel.pid)
-      assert_peer_closed()
+    for {trigger, kind} <- [cancel: :canceled, owner_exit: :canceled, deadline: :deadline] do
+      test "#{transport} listener reports #{kind} on #{trigger} when its WebSocket closes first",
+           %{root: root} do
+        assert_context_close(unquote(transport), root, unquote(trigger), unquote(kind))
+      end
     end
 
     test "#{transport} a slow channel delays reads without false closure, late replies or lost frames",
@@ -612,6 +597,43 @@ defmodule Opsmaru.Incus.EventListenerTest do
       refute EventListener.active?(listener)
       assert_peer_closed()
     end
+  end
+
+  defp assert_context_close(transport, root, trigger, expected) do
+    parent = self()
+
+    {client, _} =
+      fixture(transport, root, [],
+        on_upgrade: fn socket_transport, socket ->
+          send(parent, {:context_peer, socket_transport.recv(socket, 0, 5_000)})
+        end
+      )
+
+    owner = spawn(fn -> receive do: (:stop -> :ok) end)
+    on_exit(fn -> Process.exit(owner, :kill) end)
+    timeout = if trigger == :deadline, do: 1_000, else: 30_000
+    scope = RequestContext.new!(timeout: timeout, owner: owner)
+    {:ok, listener} = EventListener.open(Incus.with_context(client, scope))
+    channel = :sys.get_state(listener.pid).channel
+
+    # Keep the listener alive to observe the read error from its WebSocket.
+    {:monitored_by, watchers} = Process.info(listener.pid, :monitored_by)
+
+    for pid <- watchers,
+        pid != channel.pid,
+        {:monitors, monitors} <- [Process.info(pid, :monitors)],
+        {:process, self()} in monitors and {:process, listener.pid} in monitors,
+        do: Process.exit(pid, :kill)
+
+    case trigger do
+      :cancel -> RequestContext.cancel(scope)
+      :owner_exit -> send(owner, :stop)
+      :deadline -> :ok
+    end
+
+    assert {:error, %Error{kind: ^expected}} = EventListener.wait(listener)
+    assert {:error, %Error{kind: :channel_closed}} = WebSocket.recv(channel)
+    assert_receive {:context_peer, {:error, :closed}}, 5_000
   end
 
   # Every fixture reports how the client ended the stream to the test process.
