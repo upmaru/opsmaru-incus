@@ -545,14 +545,27 @@ defmodule Opsmaru.Incus.OCITest do
   end
 
   test "request context cancellation stops adapter work before per-call cleanup" do
-    scope = RequestContext.new!(timeout: 3_000)
-    parent = self()
+    assert_scoped_inspection(:cancel, :adapter_canceled, :canceled)
+  end
+
+  test "request context owner loss stops adapter work while the OCI caller survives" do
+    assert_scoped_inspection(:owner_exit, :adapter_canceled, :canceled)
+  end
+
+  test "request context deadline stops OCI inspection with its native adapter deadline" do
+    assert_scoped_inspection(:deadline, :adapter_deadline, :deadline)
+  end
+
+  defp assert_scoped_inspection(trigger, kind, outcome) do
+    owner = spawn(fn -> receive do: (:stop -> :ok) end)
+    on_exit(fn -> Process.exit(owner, :kill) end)
+    timeout = if trigger == :deadline, do: 750, else: 5_000
+    scope = RequestContext.new!(timeout: timeout, owner: owner)
 
     original =
       client(
         inspect: fn _ ->
           Process.flag(:trap_exit, true)
-          send(parent, {:blocked_adapter, self()})
 
           receive do
             :never -> :ok
@@ -562,12 +575,19 @@ defmodule Opsmaru.Incus.OCITest do
 
     scoped = %{original | connection: Connection.with_context(original.connection, scope)}
     task = Task.async(fn -> OCI.resolve(scoped, "alpine") end)
-    assert_receive {:blocked_adapter, pid}, 500
+    assert_receive {:inspect, pid, %{call_id: id}}, 2_000
     monitor = monitor!(pid)
-    RequestContext.cancel(scope)
-    assert {:error, %Error{kind: :adapter_canceled}} = Task.await(task, 500)
-    assert_receive {:DOWN, ^monitor, :process, ^pid, :killed}, 500
-    assert_receive {:cleanup, _, :canceled}, 500
+
+    case trigger do
+      :cancel -> RequestContext.cancel(scope)
+      :owner_exit -> send(owner, :stop)
+      :deadline -> :ok
+    end
+
+    assert {:error, %Error{kind: ^kind}} = Task.await(task, 2_000)
+    assert_receive {:DOWN, ^monitor, :process, ^pid, :killed}, 2_000
+    assert_receive {:cleanup, ^id, ^outcome}, 2_000
+    refute_received {:cleanup, ^id, _}
     assert original.connection.request_context == nil
   end
 

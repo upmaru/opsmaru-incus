@@ -51,7 +51,7 @@ defmodule Opsmaru.Incus.OCI.AdapterCall do
 
     result =
       await(
-        owner_monitor,
+        {owner, owner_monitor},
         worker,
         monitor,
         id,
@@ -77,30 +77,50 @@ defmodule Opsmaru.Incus.OCI.AdapterCall do
     end
   end
 
-  defp await(owner_monitor, worker, monitor, id, deadline, context) do
-    case RequestContext.status(context) do
-      :canceled -> error(:adapter_canceled)
-      :deadline -> error(:adapter_deadline)
-      :active -> await_result(owner_monitor, worker, monitor, id, deadline, context)
+  defp await(caller, worker, monitor, id, deadline, nil) do
+    await_result(caller, worker, monitor, id, deadline, {nil, nil})
+  end
+
+  defp await({owner, _} = caller, worker, monitor, id, deadline, context) do
+    case RequestContext.subscribe(context) do
+      {:ok, subscription} ->
+        case await_context(caller, worker, monitor, id, deadline, subscription) do
+          :context_changed -> await(caller, worker, monitor, id, deadline, context)
+          result -> result
+        end
+
+      {:error, :canceled} ->
+        # The notifier and caller monitor can observe the same exit in either
+        # order. Keep caller-loss cleanup when the context belongs to that caller.
+        if context.owner == owner and not Process.alive?(owner),
+          do: caller_down(deadline),
+          else: error(:adapter_canceled)
+
+      {:error, :deadline} ->
+        error(:adapter_deadline)
     end
   end
 
-  defp await_result(owner_monitor, worker, monitor, id, deadline, context) do
+  defp await_context(caller, worker, monitor, id, deadline, subscription) do
+    await_result(caller, worker, monitor, id, deadline, subscription)
+  after
+    RequestContext.unsubscribe(subscription)
+  end
+
+  defp await_result({owner, owner_monitor}, worker, monitor, id, deadline, {notifier, notice}) do
     receive do
-      {^id, result} ->
-        result
-
-      {:DOWN, ^owner_monitor, :process, _, _} ->
-        if now() >= deadline, do: error(:adapter_deadline), else: :owner_lost
-
-      {:DOWN, ^monitor, :process, ^worker, _} ->
-        error(:adapter_failed)
+      {^id, result} -> result
+      {:DOWN, ^owner_monitor, :process, ^owner, _} -> caller_down(deadline)
+      {:DOWN, ^monitor, :process, ^worker, _} -> error(:adapter_failed)
+      {:request_context_terminal, ^notice} -> :context_changed
+      {:DOWN, ^notice, :process, ^notifier, _} -> :context_changed
     after
-      min(max(0, deadline - now()), if(context, do: 20, else: :infinity)) ->
-        if now() >= deadline,
-          do: error(:adapter_deadline),
-          else: await(owner_monitor, worker, monitor, id, deadline, context)
+      max(0, deadline - now()) -> error(:adapter_deadline)
     end
+  end
+
+  defp caller_down(deadline) do
+    if now() >= deadline, do: error(:adapter_deadline), else: :owner_lost
   end
 
   defp clean(client, id, outcome, timeout) do
