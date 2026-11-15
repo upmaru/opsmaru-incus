@@ -468,6 +468,75 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
     end
   end
 
+  test "startup shares one deadline across upgrade and the SFTP version exchange", %{root: root} do
+    fixture = backend(root, :gen_tcp, nil, upgrade_delay: 400, stall_version: true)
+    scope = RequestContext.new!(timeout: 5_000)
+    client = client(fixture, nil, timeout: 1_000, request_context: scope)
+    started = System.monotonic_time(:millisecond)
+
+    assert {:error, %Error{kind: :deadline}} = open(client, :instance)
+    elapsed = System.monotonic_time(:millisecond) - started
+    assert elapsed >= 1_000
+    assert elapsed < 1_350
+    assert_receive {:sftp_packet, <<1, 3::32>>}, 1_000
+    assert_receive :sftp_peer_closed, 1_000
+    assert RequestContext.status(scope) == :active
+    assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+  end
+
+  test "a short SFTP lifetime bounds a stalled raw upgrade without ending the host context",
+       %{root: root} do
+    parent = self()
+
+    fixture =
+      start_supervised!(
+        {HTTPFixture,
+         transport: :gen_tcp,
+         path: Path.join(root, "hold-upgrade"),
+         handler: fn _ ->
+           %{upgrade: fn transport, socket -> wait_peer_close(transport, socket, parent) end}
+         end}
+      )
+
+    scope = RequestContext.new!(timeout: 5_000)
+    client = client(fixture, nil, timeout: 2_000, stream_timeout: 300, request_context: scope)
+    started = System.monotonic_time(:millisecond)
+
+    assert {:error, %Error{kind: :deadline}} = open(client, :instance)
+    assert System.monotonic_time(:millisecond) - started < 1_000
+    assert_receive :sftp_peer_closed, 1_000
+    assert RequestContext.status(scope) == :active
+    assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+  end
+
+  test "opener loss closes an unscoped SFTP session blocked in its raw upgrade", %{root: root} do
+    parent = self()
+
+    fixture =
+      start_supervised!(
+        {HTTPFixture,
+         transport: :gen_tcp,
+         path: Path.join(root, "owner-upgrade"),
+         handler: fn _ ->
+           %{
+             upgrade: fn transport, socket ->
+               send(parent, :upgrade_pending)
+               wait_peer_close(transport, socket, parent)
+             end
+           }
+         end}
+      )
+
+    client = client(fixture, nil, timeout: 5_000, stream_timeout: 5_000)
+    owner = spawn(fn -> open(client, :instance) end)
+    on_exit(fn -> Process.exit(owner, :kill) end)
+
+    assert_receive :upgrade_pending, 1_000
+    Process.exit(owner, :kill)
+    assert_receive :sftp_peer_closed, 1_000
+    assert [%{method: "GET"}] = HTTPFixture.requests(fixture)
+  end
+
   test "remote EOF closes an idle typed session and its raw channel", %{root: root} do
     fixture = backend(root, :gen_tcp, nil, idle_eof: true)
     assert {:ok, session} = open(client(fixture, nil), :instance)
@@ -664,7 +733,8 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
       pid: unrelated,
       ref: make_ref(),
       timeout: 1,
-      lifetime: RequestContext.new!(timeout: 1_000)
+      owner: self(),
+      deadline: System.monotonic_time(:millisecond) + 1_000
     }
 
     assert {:error, %Error{}} = SFTP.extensions(fake)
@@ -734,6 +804,7 @@ defmodule Opsmaru.Incus.SFTPHelpersReferenceTest do
     version = Keyword.get(opts, :version, version())
     response = frame(version)
     upgrade = "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: sftp\r\n\r\n"
+    if delay = opts[:upgrade_delay], do: Process.sleep(delay)
     transport.send(socket, upgrade <> if(opts[:coalesced], do: response, else: ""))
     init = receive_packet(transport, socket)
     send(parent, {:sftp_packet, init})

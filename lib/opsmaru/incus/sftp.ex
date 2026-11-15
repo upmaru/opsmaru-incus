@@ -35,7 +35,7 @@ defmodule Opsmaru.Incus.SFTP do
   alias Opsmaru.Incus.SFTP
   alias Opsmaru.Incus.SFTP.{Packet, Stat, StatVFS}
   alias Opsmaru.Incus.SFTP.Path, as: SPath
-  defstruct [:pid, :ref, :timeout, :lifetime, :request_context, :connection, :identity]
+  defstruct [:pid, :ref, :owner, :timeout, :deadline, :request_context, :connection, :identity]
   # Go's os flag bits as toPflags reads them.
   @open_flags %{
     read_only: 0,
@@ -571,19 +571,21 @@ defmodule Opsmaru.Incus.SFTP do
     case Context.authorize(client.context, client.connection) do
       :ok ->
         ref = make_ref()
-        lifetime = lifetime(client.connection)
-        deadline = request_deadline(client.connection, lifetime)
+        owner = self()
+        deadline = now() + client.connection.stream_timeout
+        startup = request_deadline(client.connection, deadline)
 
-        case GenServer.start(__MODULE__, {client, target, self(), ref, lifetime, deadline},
-               timeout: client.connection.timeout + 200
+        case GenServer.start(__MODULE__, {client, target, owner, ref, deadline, startup},
+               timeout: max(0, startup - now()) + 200
              ) do
           {:ok, pid} ->
             {:ok,
              %__MODULE__{
                pid: pid,
                ref: ref,
+               owner: owner,
                timeout: client.connection.timeout,
-               lifetime: lifetime,
+               deadline: deadline,
                request_context: client.connection.request_context,
                connection: client.connection,
                identity: client.context.identity
@@ -593,8 +595,8 @@ defmodule Opsmaru.Incus.SFTP do
             {:error, reason}
 
           {:error, _} ->
-            kind = closed_kind(lifetime, client.connection.request_context)
-            error(start_error_kind(kind, deadline))
+            kind = closed_kind(owner, deadline, client.connection.request_context)
+            error(start_error_kind(kind, startup))
         end
 
       {:error, kind} ->
@@ -606,12 +608,6 @@ defmodule Opsmaru.Incus.SFTP do
     do: if(now() >= deadline, do: :deadline, else: :sftp_protocol)
 
   defp start_error_kind(kind, _deadline), do: kind
-
-  defp lifetime(connection) do
-    # Never shorten a shared context while retaining its cancellation cell:
-    # expiry of the local stream must not cancel unrelated host requests.
-    RequestContext.new!(timeout: connection.stream_timeout)
-  end
 
   defp call(%__MODULE__{pid: pid, ref: ref} = session, request) when is_pid(pid) do
     tag = make_ref()
@@ -627,7 +623,7 @@ defmodule Opsmaru.Incus.SFTP do
     catch
       :exit, _ ->
         id = request_id(tag)
-        reason = closed_kind(session.lifetime, session.request_context)
+        reason = closed_kind(session.owner, session.deadline, session.request_context)
 
         if request == :close or match?({:unlock, _, _}, request),
           do: :ok,
@@ -658,27 +654,27 @@ defmodule Opsmaru.Incus.SFTP do
 
   defp expiring(request, _), do: request
 
-  defp closed_kind(lifetime, request_context) do
-    status =
-      case RequestContext.status(request_context) do
-        :active -> RequestContext.status(lifetime)
-        kind -> kind
-      end
-
-    case status do
-      :active -> :channel_closed
+  defp closed_kind(owner, deadline, request_context) do
+    case RequestContext.status(request_context) do
+      :active -> session_closed_kind(owner, deadline)
       kind -> kind
     end
   end
 
-  @impl true
-  def init({client, target, owner, ref, lifetime, deadline}) do
-    Transport.watch_owner(owner, lifetime)
+  defp session_closed_kind(owner, deadline) do
+    cond do
+      now() >= deadline -> :deadline
+      is_pid(owner) and not Process.alive?(owner) -> :canceled
+      true -> :channel_closed
+    end
+  end
 
+  @impl true
+  def init({client, target, owner, ref, deadline, startup}) do
     if client.connection.request_context,
       do: Transport.watch_owner(owner, client.connection.request_context)
 
-    case raw(client, target) do
+    case raw(client, target, {startup, deadline, owner}) do
       {:ok, raw} ->
         state = %{
           raw: raw,
@@ -686,7 +682,7 @@ defmodule Opsmaru.Incus.SFTP do
           owner: owner,
           owner_monitor: Process.monitor(owner),
           ref: ref,
-          lifetime: lifetime,
+          deadline: deadline,
           buffer: <<>>,
           id: 0,
           pending: %{},
@@ -696,15 +692,17 @@ defmodule Opsmaru.Incus.SFTP do
           lock_monitors: %{},
           extensions: %{},
           reader: nil,
+          timer: nil,
           raw_monitor: Process.monitor(raw.pid)
         }
 
-        with :ok <- send_packet(state, Packet.init(), deadline),
-             {:ok, body, state} <- handshake(state, deadline),
+        with :ok <- send_packet(state, Packet.init(), startup),
+             {:ok, body, state} <- handshake(state, startup),
              {:ok, extensions} <- Packet.version(body) do
           session = self()
           reader = spawn_link(fn -> read_loop(raw, session, ref) end)
-          {:ok, %{state | extensions: extensions, reader: reader}}
+          timer = Process.send_after(session, :sftp_lifetime, deadline, abs: true)
+          {:ok, %{state | extensions: extensions, reader: reader, timer: timer}}
         else
           {:error, reason} ->
             RawChannel.close(raw)
@@ -716,14 +714,16 @@ defmodule Opsmaru.Incus.SFTP do
     end
   end
 
-  defp raw(client, {:instance, name}), do: Incus.sftp(client, name)
-  defp raw(client, {:volume, pool, type, name}), do: Incus.volume_sftp(client, pool, type, name)
+  defp raw(client, {:instance, name}, deadlines), do: Incus.sftp(client, name, deadlines)
 
-  defp request_deadline(connection, lifetime),
+  defp raw(client, {:volume, pool, type, name}, deadlines),
+    do: Incus.volume_sftp(client, pool, type, name, deadlines)
+
+  defp request_deadline(connection, deadline),
     do:
       RequestContext.deadline(
         connection.request_context,
-        min(lifetime.deadline, now() + connection.timeout)
+        min(deadline, now() + connection.timeout)
       )
 
   # The reader forwards one chunk at a time and waits for the session to take it,
@@ -819,6 +819,7 @@ defmodule Opsmaru.Incus.SFTP do
 
     with :ok <- unexpired(expires),
          :ok <- authorize(state),
+         :ok <- unexpired(state.deadline),
          {:ok, wire} <- resolve(state, op, args),
          true <- map_size(state.pending) + MapSet.size(state.abandoned) < connection.queue_limit,
          true <- state.id < @uint32,
@@ -827,7 +828,7 @@ defmodule Opsmaru.Incus.SFTP do
       id = state.id + 1
       state = invalidate(%{state | id: id}, op, args)
       on_id.(id)
-      deadline = min(request_deadline(connection, state.lifetime), expires)
+      deadline = min(request_deadline(connection, state.deadline), expires)
 
       case send_packet(state, body, deadline) do
         :ok ->
@@ -887,6 +888,10 @@ defmodule Opsmaru.Incus.SFTP do
   # Go's sync.RWMutex per file: waiters are served in order, a run of shared
   # waiters together, and a waiting exclusive call holds back later shared ones.
   defp grant(state, id) do
+    if now() < state.deadline, do: grant_open(state, id), else: state
+  end
+
+  defp grant_open(state, id) do
     file = state.files[id]
 
     case :queue.peek(file.queue) do
@@ -974,7 +979,10 @@ defmodule Opsmaru.Incus.SFTP do
     end
   end
 
-  def handle_info({:sftp_closed, ref}, %{ref: ref} = state), do: fatal(state, :channel_closed)
+  def handle_info({:sftp_closed, ref}, %{ref: ref} = state),
+    do: fatal(state, closed_kind(state))
+
+  def handle_info(:sftp_lifetime, state), do: fatal(state, deadline_kind(state))
 
   def handle_info({:sftp_deadline, id}, state) do
     case Map.pop(state.pending, id) do
@@ -991,7 +999,7 @@ defmodule Opsmaru.Incus.SFTP do
     do: fatal(state, :channel_closed)
 
   def handle_info({:DOWN, monitor, :process, _, _}, %{raw_monitor: monitor} = state),
-    do: fatal(state, :channel_closed)
+    do: fatal(state, closed_kind(state))
 
   # A process that exits while holding or waiting for a file lock releases it.
   def handle_info({:DOWN, monitor, :process, _, _}, %{lock_monitors: monitors} = state)
@@ -1000,8 +1008,11 @@ defmodule Opsmaru.Incus.SFTP do
 
   def handle_info(_, state), do: {:noreply, state}
 
+  defp closed_kind(state),
+    do: closed_kind(state.owner, state.deadline, state.client.connection.request_context)
+
   defp deadline_kind(state) do
-    case closed_kind(state.lifetime, state.client.connection.request_context) do
+    case closed_kind(state) do
       :channel_closed -> :deadline
       kind -> kind
     end
@@ -1169,11 +1180,17 @@ defmodule Opsmaru.Incus.SFTP do
 
   @impl true
   def terminate(_, state) do
+    Process.cancel_timer(state.timer)
+
     for {id, entry} <- state.pending,
         do: answer(entry, id, {:error, failure(state, id, :channel_closed)})
 
     # The reader may be waiting for an acknowledgement that a failed session never sends.
-    if state.reader, do: Process.exit(state.reader, :kill)
+    if state.reader do
+      Process.unlink(state.reader)
+      Process.exit(state.reader, :kill)
+    end
+
     RawChannel.close(state.raw)
   end
 

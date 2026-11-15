@@ -14,13 +14,19 @@ defmodule Opsmaru.Incus.RawChannel do
   alias Opsmaru.Incus.{Context, Error, Redaction, Response, Transport, Upgrade}
   defstruct [:pid, :ref]
 
-  def open(client, path, protocol) when protocol in ["sftp", "nbd"] do
+  def open(client, path, protocol, {startup, _, _} = deadlines \\ {:infinity, :infinity, nil})
+      when protocol in ["sftp", "nbd"] do
     with :ok <- Context.authorize(client.context, client.connection),
          {:ok, path} <- Incus.request_path(client.connection, path) do
       ref = make_ref()
 
-      case GenServer.start(__MODULE__, {client.connection, path, protocol, self(), ref},
-             timeout: client.connection.timeout + 100
+      started = now()
+      timeout = max(0, min(startup, started + client.connection.timeout) - started)
+
+      case GenServer.start(
+             __MODULE__,
+             {client.connection, path, protocol, self(), ref, deadlines},
+             timeout: timeout + 100
            ) do
         {:ok, pid} ->
           {:ok, %__MODULE__{pid: pid, ref: ref}}
@@ -64,11 +70,13 @@ defmodule Opsmaru.Incus.RawChannel do
   end
 
   @impl true
-  def init({connection, path, protocol, owner, ref}) do
-    Transport.watch_owner(owner, connection.request_context)
-    deadline = now() + connection.timeout
+  def init({connection, path, protocol, owner, ref, {startup, lifetime, opener}}) do
+    Transport.watch_owner(owner, connection.request_context, opener)
+    deadline = min(now() + connection.timeout, startup)
 
-    case Transport.open(connection, deadline) do
+    opened = if now() < deadline, do: Transport.open(connection, deadline)
+
+    case opened do
       {:ok, conn} ->
         socket = Mint.HTTP.get_socket(conn)
         transport = if connection.transport == :unix, do: :gen_tcp, else: :ssl
@@ -84,7 +92,8 @@ defmodule Opsmaru.Incus.RawChannel do
         case result do
           {:ok, initial} ->
             monitor = Process.monitor(owner)
-            timer = Process.send_after(self(), :lifetime, connection.stream_timeout)
+            deadline = min(now() + connection.stream_timeout, lifetime)
+            timer = Process.send_after(self(), :lifetime, deadline, abs: true)
 
             state = %{
               connection: connection,
@@ -94,7 +103,7 @@ defmodule Opsmaru.Incus.RawChannel do
               ref: ref,
               monitor: monitor,
               timer: timer,
-              deadline: now() + connection.stream_timeout,
+              deadline: deadline,
               queue: :queue.new(),
               queued: 0,
               received: 0,

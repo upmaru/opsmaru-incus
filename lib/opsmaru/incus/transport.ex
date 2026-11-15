@@ -137,34 +137,53 @@ defmodule Opsmaru.Incus.Transport do
   end
 
   @doc false
-  def watch_owner(owner, context \\ nil) do
+  def watch_owner(owner, context \\ nil, opener \\ nil) do
     worker = self()
 
     spawn(fn ->
       owner_monitor = Process.monitor(owner)
+      opener_monitor = if opener, do: Process.monitor(opener)
       worker_monitor = Process.monitor(worker)
 
       wait = fn subscription ->
         timeout = if context, do: remaining(context.deadline), else: :infinity
-        watch_until(owner_monitor, worker_monitor, worker, {subscription, timeout})
+
+        watch_until(
+          {owner_monitor, opener_monitor},
+          worker_monitor,
+          worker,
+          {subscription, timeout}
+        )
       end
 
       if wait_with_context(context, wait) == :context_ended do
         # The notifier and the direct monitor can report the same owner's
         # death in either order. Give the channel its grace period either way.
-        if context.owner == owner and not Process.alive?(owner),
+        if context.owner in [owner, opener] and not Process.alive?(context.owner),
           do: close_after_grace(worker_monitor, worker),
           else: Process.exit(worker, :kill)
       end
     end)
   end
 
-  defp watch_until(owner_monitor, worker_monitor, worker, {{notifier, notification}, timeout}) do
+  defp watch_until(
+         {owner_monitor, opener_monitor},
+         worker_monitor,
+         worker,
+         {{notifier, notification}, timeout}
+       ) do
     receive do
-      {:DOWN, ^worker_monitor, :process, _, _} -> :ok
-      {:DOWN, ^owner_monitor, :process, _, _} -> close_after_grace(worker_monitor, worker)
-      {:request_context_terminal, ^notification} -> :context_changed
-      {:DOWN, ^notification, :process, ^notifier, _} -> :context_changed
+      {:DOWN, ^worker_monitor, :process, _, _} ->
+        :ok
+
+      {:DOWN, monitor, :process, _, _} when monitor in [owner_monitor, opener_monitor] ->
+        close_after_grace(worker_monitor, worker)
+
+      {:request_context_terminal, ^notification} ->
+        :context_changed
+
+      {:DOWN, ^notification, :process, ^notifier, _} ->
+        :context_changed
     after
       timeout -> :context_changed
     end

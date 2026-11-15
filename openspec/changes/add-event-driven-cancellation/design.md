@@ -113,7 +113,7 @@ For #29's pool, test cancellation at three points using deterministic fixture ba
 
 ### 6. Internal contexts
 
-Replace SFTP's private lifetime context with an absolute deadline and a session timer. Carry #29's startup deadline across the upgrade and version handshake. Preserve stream expiry, lock waits, owner loss, error classification and dispatched mutation uncertainty. Expiring the local SFTP session leaves a longer-lived host context active. Only the host context uses a context watcher.
+Replace SFTP's private lifetime context with an absolute deadline and a session timer. Carry #29’s startup deadline across the upgrade and version handshake. The raw channel also takes the session deadline as its write bound. Its existing watcher observes the SFTP opener so a stalled raw operation releases the socket on opener exit. Preserve stream expiry, lock waits, owner loss, error classification and dispatched mutation uncertainty. Expiring the local SFTP session leaves a longer-lived host context active. Only the host context uses a context watcher.
 
 Verify `ExecRun` releases the resources associated with its private context on return, including its deadline-tightened copy. Preserve exec output limits, native results and uncertainty reporting.
 
