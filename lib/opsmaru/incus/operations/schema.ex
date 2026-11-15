@@ -7,26 +7,40 @@ defmodule Opsmaru.Incus.Operations.Schema do
   `keywords/0` are supported, so a schema cannot claim a constraint this
   validator ignores. Lengths count characters as JSON Schema does; byte bounds
   are enforced separately by each descriptor.
+
+  `$ref` resolves only `#/components/schemas/<name>` against the components
+  passed to `validate/3`; a reference that does not resolve fails validation.
   """
 
   @keywords ~w(type title description properties required additionalProperties
                minLength maxLength pattern enum minimum maximum items minItems
-               maxItems maxProperties propertyNames oneOf default)
+               maxItems maxProperties propertyNames oneOf default $ref)
+  @ref "#/components/schemas/"
 
   @doc "JSON Schema keywords this validator implements."
   def keywords, do: @keywords
 
   @doc "Validate `value`; returns `:ok` or `{:error, path, reason}` with a JSON-pointer-like path."
-  def validate(schema, value), do: check(schema, value, "")
+  def validate(schema, value, components \\ %{}), do: check(schema, value, "", components)
 
-  defp check(schema, value, path) do
+  defp check(%{"$ref" => @ref <> name}, value, path, components) do
+    case components do
+      %{^name => schema} -> check(schema, value, path, components)
+      _ -> {:error, path, "refers to an unknown schema"}
+    end
+  end
+
+  defp check(%{"$ref" => _}, _value, path, _components),
+    do: {:error, path, "refers to an unknown schema"}
+
+  defp check(schema, value, path, components) do
     with :ok <- type(schema, value, path),
          :ok <- enum(schema, value, path),
          :ok <- string(schema, value, path),
          :ok <- number(schema, value, path),
-         :ok <- array(schema, value, path),
-         :ok <- object(schema, value, path) do
-      one_of(schema, value, path)
+         :ok <- array(schema, value, path, components),
+         :ok <- object(schema, value, path, components) do
+      one_of(schema, value, path, components)
     end
   end
 
@@ -42,6 +56,7 @@ defmodule Opsmaru.Incus.Operations.Schema do
   defp type?("array", value), do: is_list(value)
   defp type?("string", value), do: is_binary(value) and String.valid?(value)
   defp type?("integer", value), do: is_integer(value)
+  defp type?("number", value), do: is_integer(value) or is_float(value)
   defp type?("boolean", value), do: is_boolean(value)
   defp type?("null", value), do: is_nil(value)
 
@@ -78,7 +93,7 @@ defmodule Opsmaru.Incus.Operations.Schema do
 
   defp number(_, _, _), do: :ok
 
-  defp array(schema, value, path) when is_list(value) do
+  defp array(schema, value, path, components) when is_list(value) do
     count = length(value)
 
     cond do
@@ -91,16 +106,16 @@ defmodule Opsmaru.Incus.Operations.Schema do
       items = schema["items"] ->
         value
         |> Enum.with_index()
-        |> first_error(fn {item, index} -> check(items, item, "#{path}/#{index}") end)
+        |> first_error(fn {item, index} -> check(items, item, "#{path}/#{index}", components) end)
 
       true ->
         :ok
     end
   end
 
-  defp array(_, _, _), do: :ok
+  defp array(_, _, _, _), do: :ok
 
-  defp object(schema, value, path) when is_map(value) do
+  defp object(schema, value, path, components) when is_map(value) do
     properties = Map.get(schema, "properties", %{})
 
     cond do
@@ -112,41 +127,41 @@ defmodule Opsmaru.Incus.Operations.Schema do
 
       true ->
         first_error(value, fn {key, item} ->
-          property(schema, properties, key, item, "#{path}/#{key}")
+          property(schema, properties, key, item, "#{path}/#{key}", components)
         end)
     end
   end
 
-  defp object(_, _, _), do: :ok
+  defp object(_, _, _, _), do: :ok
 
-  defp property(schema, properties, key, item, path) do
-    with :ok <- property_name(schema, key, path) do
+  defp property(schema, properties, key, item, path, components) do
+    with :ok <- property_name(schema, key, path, components) do
       case {Map.fetch(properties, key), Map.get(schema, "additionalProperties", true)} do
-        {{:ok, property}, _} -> check(property, item, path)
+        {{:ok, property}, _} -> check(property, item, path, components)
         {:error, false} -> {:error, path, "is not allowed"}
         {:error, true} -> :ok
-        {:error, additional} -> check(additional, item, path)
+        {:error, additional} -> check(additional, item, path, components)
       end
     end
   end
 
-  defp property_name(%{"propertyNames" => names}, key, path) do
-    case check(names, key, path) do
+  defp property_name(%{"propertyNames" => names}, key, path, components) do
+    case check(names, key, path, components) do
       :ok -> :ok
       {:error, _, reason} -> {:error, path, "property name #{reason}"}
     end
   end
 
-  defp property_name(_, _, _), do: :ok
+  defp property_name(_, _, _, _), do: :ok
 
-  defp one_of(%{"oneOf" => schemas}, value, path) do
-    case Enum.count(schemas, &(check(&1, value, path) == :ok)) do
+  defp one_of(%{"oneOf" => schemas}, value, path, components) do
+    case Enum.count(schemas, &(check(&1, value, path, components) == :ok)) do
       1 -> :ok
       _ -> {:error, path, "must match exactly one schema"}
     end
   end
 
-  defp one_of(_, _, _), do: :ok
+  defp one_of(_, _, _, _), do: :ok
 
   defp first_error(enumerable, fun) do
     Enum.reduce_while(enumerable, :ok, fn item, :ok ->
