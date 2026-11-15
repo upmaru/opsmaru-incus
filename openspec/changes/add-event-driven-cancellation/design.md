@@ -128,6 +128,39 @@ Cancellation p95 fell to 3.73–4.66 ms across the 100-channel scoped trials and
 
 The operation, raw channel and SFTP session fixture suites passed all 46 tests on each platform. They verified native GET refresh cadence, raw upgrade and lifetime deadlines, and independent SFTP session and request deadlines. These measurements and timer checks used disposable fixtures.
 
+### 8. Verification of the pushed revision
+
+The canonical checks ran from a clean checkout of draft #30 at `44259fe87ff29d18dac7c06df3e29cf671ffb325` with the pinned toolchain.
+
+| Check | Result |
+| --- | --- |
+| `mise run check` | Format, warnings-as-errors compile, strict Credo and 2,476 tests with zero failures and one opt-in Macus source digest skip on macOS |
+| `mise run check:reference` | Go verifier, 188 native constants and coverage ledger checks passed |
+| `mise run check:consumer` | Isolated gateway consumer passed 9 tests and the client-only consumer passed 2. The clean-source report records the same revision and archive SHA-256 `90569f1319a2ed65dc6c817122760b40686cc61aca45554951f2282ebad00fc9`. |
+| `mise run spec:validate` | Six OpenSpec items passed strict validation |
+
+On the benchmark revision `99d00197a97e7648368874fecc9d6bb0187a7131`, macOS CI passed and Ubuntu initially exited with a segmentation fault during ExUnit. The Ubuntu retry exposed an SFTP fixture that sampled session liveness immediately after peer socket closure. The corrected fixture keeps the opener alive during cancellation, waits for session termination, and asserts the specific underlying cause of each uncertain write. It also verifies that a local request timeout leaves the session usable. The corrected fixture passed six focused runs, including both previous Ubuntu seeds. [Original GitHub CI run and retry](https://github.com/upmaru/opsmaru-incus/actions/runs/43703819426)
+
+A local full run at `44259fe` had code-loading and request timeouts while the combined Linux fixtures were building. The isolated replay at the same ExUnit seed and a subsequent canonical run both passed.
+
+The fixed revision passed the hosted library, reference and isolated consumer checks on Ubuntu 24.04 and macOS 15. [GitHub CI for the verified revision](https://github.com/upmaru/opsmaru-incus/actions/runs/43708888731)
+
+#### Combined executor fixtures
+
+Merging draft #69's published executor revision `54b0816bed088996aefffd90fb7fc2d4d9b6ea4a` into a detached checkout of the verified #30 revision produced tree `cd546365db185ab417a03ba940be5b8288ad1ac4`.
+
+The host, native, inspection, mutation, exec and Tama.Dex suites ran alongside the [combined cancellation fixtures](verification/executors_test.exs). All 96 tests passed on macOS and in the offline ARM64 Linux container. Run the set from the combined checkout with the pinned toolchain and the fixture path from the verification commit.
+
+```sh
+mise exec -- mix test --warnings-as-errors \
+  test/operations_host_test.exs test/operations_native_test.exs \
+  test/operations_inspection_test.exs test/operations_mutation_test.exs \
+  test/operations_exec_test.exs test/operations_tama_dex_test.exs \
+  /path/to/verification/executors_test.exs
+```
+
+Both executors preserved the authorized project and member over Unix and mutual TLS. Host denial and prior cancellation reached neither the backend nor the HTTPS pool. Cancelling an in-flight GET returned the executor's canceled result and closed the peer. Cancelling a DELETE after dispatch and before the reply preserved each executor's uncertainty result. The fixture saw one mutation, zero backend operation cancellations, and a successful follow-up read through the same connection binding. This is fixture and isolated consumer evidence.
+
 ## Risks and trade-offs
 
 - A notification substrate can add per-context memory or per-waiter work. Measure construction and cleanup and document the lifetime of contexts with and without waiters before converting call sites.
