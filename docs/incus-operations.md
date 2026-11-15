@@ -247,31 +247,43 @@ form, `{"error": error}`, so a host executor wraps the error map:
 
 ```elixir
 defmodule Macus.IncusExecutor do
+  @behaviour Tama.Dex.Executor
   alias Opsmaru.Incus.Operations.{Composite, Native}
 
-  # One executor per source; the host module and verified scopes are the same.
-  def composite(operation_id, input, caller),
-    do: reply(Composite.run(operation_id, input, options(caller)))
+  # One adapter serves both sources; the host module and the verified scopes
+  # are the same. tama-dex passes the scopes it checked and the host's caller.
+  @impl true
+  def execute(%Tama.Dex.Call{} = call, input) do
+    options = [host: Macus.IncusHost, caller: call.context, scopes: call.scopes]
 
-  def native(operation_id, input, caller),
-    do: reply(Native.run(operation_id, input, options(caller)))
+    case run(call.source).(call.operation_id, input, options) do
+      {:ok, result} -> {:ok, result}
+      {:error, error} -> {:error, %{"error" => error}}
+    end
+  end
 
-  defp options(caller),
-    do: [host: Macus.IncusHost, caller: caller, scopes: caller.verified_scopes]
-
-  defp reply({:ok, result}), do: {:ok, result}
-  defp reply({:error, error}), do: {:error, %{"error" => error}}
+  defp run("opsmaru_incus"), do: &Composite.run/3
+  defp run("opsmaru_incus_native"), do: &Native.run/3
 end
 
 # At start, or instead of importing the release cassette:
 {:ok, _} = Tama.Dex.load(index, Composite.openapi(), cassette: "opsmaru_incus")
 {:ok, _} = Tama.Dex.load(index, Native.openapi(), cassette: "opsmaru_incus")
+
+Tama.Dex.execute(index, "opsmaru_incus", "incus_native_get_instance", %{"name" => "web"},
+  scopes: verified_scopes,
+  context: verified_caller,
+  executors: %{
+    "opsmaru_incus" => Macus.IncusExecutor,
+    "opsmaru_incus_native" => Macus.IncusExecutor
+  }
+)
 ```
 
-The host registers `composite/3` under the source `opsmaru_incus` and
-`native/3` under `opsmaru_incus_native`. tama-dex checks scopes and schemas
-too, but the executors repeat every check themselves, so a host that calls
-`run/3` directly gets the same guarantees.
+tama-dex checks scopes and schemas too, but the executors repeat every check
+themselves, so a host that calls `run/3` directly gets the same guarantees.
+`test/operations_tama_dex_test.exs` runs this arrangement against the fixture
+backend, with tama_dex as a test-only dependency.
 
 Each release also publishes one tama-dex cassette named `opsmaru_incus`
 holding both sources, as a GitHub Release asset

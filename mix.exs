@@ -87,6 +87,10 @@ defmodule OpsmaruIncus.MixProject do
       {:plug, "~> 1.16", optional: true},
       {:cowboy, "~> 2.12", optional: true},
       {:plug_cowboy, "~> 2.7", only: :test},
+      # Validates the operation documents and builds the release cassette. Never a
+      # runtime dependency: the documents are plain data and consumers do not
+      # fetch it.
+      {:tama_dex, "~> 0.1", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false}
     ]

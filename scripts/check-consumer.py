@@ -63,6 +63,10 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
     if not match:
         raise SystemExit("Hex package metadata has no version")
     package_version = match.group(1)
+    # tama_dex validates the documents and builds the release cassette in
+    # development only; consumers must never be asked to fetch it.
+    if "tama_dex" in version or "exqlite" in version:
+        raise SystemExit("Hex package must not require tama_dex")
     package_digest = tree_digest(package)
     shutil.copytree(source / "test/consumer", root / "consumer")
     if not (root / "consumer/mix.lock").is_file():
