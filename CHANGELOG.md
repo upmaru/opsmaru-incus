@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 — 2026-11-15
+## 0.2.0 — 2026-11-16
 
 opsmaru_incus now publishes its operations as `tama-operations/1` documents,
 the profile [tama-dex](https://hexdocs.pm/tama_dex) indexes, and offers the
@@ -40,9 +40,23 @@ native client API beside the composite operations. See
   `opsmaru_incus-<version>.tama-cassette`, holding both documents, as a GitHub
   Release asset with its SHA-256 and a build provenance attestation. It is
   not part of the Hex package, and tama_dex is only a development dependency.
+- **Optional HTTPS connection pool.** A host can start
+  `Opsmaru.Incus.ConnectionPool` in its own supervision tree and pass
+  `pool:` to `Connection.https!/2`. Buffered GET and HEAD requests then reuse
+  verified sockets, keyed by owner, origin, credentials, trust and
+  authentication requirement. It needs `{:nimble_pool, "~> 1.1"}` in the host;
+  nothing starts unless the host starts it, and connections without `pool:`
+  behave as before. This first slice pools only verified HTTPS buffered
+  reads: mutations, Unix requests, gateway relays, streams and upgrades still
+  open fresh connections. See `docs/incus-client.md`.
 
 ### Changed
 
+- **Request-context cancellation is event-driven.** Request guards, channel
+  watchers, `Operation.wait/2`, host adapter calls and SFTP sessions are
+  notified of cancellation, owner exit and deadline instead of polling every
+  20 ms. `RequestContext.status/1` and `check/1` and the reported outcomes are
+  unchanged.
 - **Operations module layout.** The 32 composite operations move from
   `Opsmaru.Incus.Operations` to `Opsmaru.Incus.Operations.Composite` (`all/0`,
   `describe/1`, `run/3`, `unavailable/0`, `scopes/0`, `fetch/1` and
