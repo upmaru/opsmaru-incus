@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.OperationsExecTest do
   use ExUnit.Case, async: true
-  alias Opsmaru.Incus.Operations
+  alias Opsmaru.Incus.Operations.Composite
   alias Opsmaru.Incus.Operations.Schema
   alias Opsmaru.TestSupport.{OperationsFixture, OperationsHost, WebSocketFixture}
   import OperationsFixture, only: [sync: 1, accepted: 3, operation: 3]
@@ -131,15 +131,15 @@ defmodule Opsmaru.Incus.OperationsExecTest do
 
   defp run(input, caller),
     do:
-      Operations.run("incus_instance_exec", input,
+      Composite.run("incus_instance_exec", input,
         host: OperationsHost,
         caller: caller,
         scopes: ["incus.exec"]
       )
 
   defp valid!(result) do
-    {:ok, descriptor} = Operations.fetch("incus_instance_exec")
-    assert :ok = Schema.validate(Operations.output_schema(descriptor), result)
+    {:ok, descriptor} = Composite.fetch("incus_instance_exec")
+    assert :ok = Schema.validate(Composite.output_schema(descriptor), result)
     result
   end
 
@@ -320,7 +320,7 @@ defmodule Opsmaru.Incus.OperationsExecTest do
     assert_receive {:exec, _, _}, 5_000
 
     assert {:ok, %{"item" => %{"api_version" => "1.0"}}} =
-             Operations.run("incus_server_get", %{},
+             Composite.run("incus_server_get", %{},
                host: OperationsHost,
                caller: caller,
                scopes: ["incus.read"]

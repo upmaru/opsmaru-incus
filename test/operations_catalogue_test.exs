@@ -1,6 +1,7 @@
 defmodule Opsmaru.Incus.OperationsCatalogueTest do
   use ExUnit.Case, async: true
   alias Opsmaru.Incus.Operations
+  alias Opsmaru.Incus.Operations.Composite
   alias Opsmaru.Incus.Operations.{Descriptor, Evidence, Schema}
 
   # Public contract: names, schemas, scopes, confirmation rules and bounds.
@@ -9,17 +10,19 @@ defmodule Opsmaru.Incus.OperationsCatalogueTest do
 
   # Modules that make up the operations layer; calls between them are internal.
   @layer [
-    Operations,
-    Operations.Exec,
-    Operations.Inspection,
-    Operations.Instances,
-    Operations.Mutation,
-    Operations.OperationTools,
-    Operations.Result
+    Composite,
+    Composite.Exec,
+    Composite.Inspection,
+    Composite.Instances,
+    Composite.Mutation,
+    Composite.OperationTools,
+    Operations.Native,
+    Operations.Result,
+    Operations.Runner
   ]
 
   test "canonical names follow incus_<resource>_<verb> and are unique" do
-    names = Enum.map(Operations.all(), & &1.name)
+    names = Enum.map(Composite.all(), & &1.name)
     assert names == Enum.sort(Enum.uniq(names))
     assert length(names) == 32
 
@@ -35,8 +38,8 @@ defmodule Opsmaru.Incus.OperationsCatalogueTest do
 
   test "the catalogue matches its reviewed snapshot" do
     catalogue = %{
-      "operations" => Enum.map(Operations.all(), &Operations.describe/1),
-      "unavailable" => Operations.unavailable()
+      "operations" => Enum.map(Composite.all(), &Composite.describe/1),
+      "unavailable" => Composite.unavailable()
     }
 
     if System.get_env("UPDATE_OPERATIONS_CATALOGUE") == "1",
@@ -46,8 +49,8 @@ defmodule Opsmaru.Incus.OperationsCatalogueTest do
   end
 
   test "schemas use only validated keywords and reject unknown input" do
-    for descriptor <- Operations.all() do
-      for schema <- [descriptor.input_schema, Operations.output_schema(descriptor)] do
+    for descriptor <- Composite.all() do
+      for schema <- [descriptor.input_schema, Composite.output_schema(descriptor)] do
         assert unsupported(schema) == [], descriptor.name
       end
 
@@ -60,21 +63,21 @@ defmodule Opsmaru.Incus.OperationsCatalogueTest do
                |> Schema.validate(%{"socket" => "/var/lib/incus/unix.socket"})
 
       assert :ok =
-               Schema.validate(Operations.output_schema(descriptor), %{
+               Schema.validate(Composite.output_schema(descriptor), %{
                  "error" => %{"kind" => "k", "message" => "m"}
                })
     end
   end
 
   test "scopes, destructive flags and confirmation rules are consistent" do
-    for descriptor <- Operations.all() do
-      assert descriptor.scope in Operations.scopes()
+    for descriptor <- Composite.all() do
+      assert descriptor.scope in Composite.scopes()
       assert descriptor.destructive == (descriptor.scope == "incus.delete"), descriptor.name
       assert descriptor.destructive == not is_nil(descriptor.confirm), descriptor.name
       if descriptor.destructive, do: assert("confirm" in descriptor.input_schema["required"])
     end
 
-    by_scope = Enum.group_by(Operations.all(), & &1.scope, & &1.name)
+    by_scope = Enum.group_by(Composite.all(), & &1.scope, & &1.name)
     assert by_scope["incus.exec"] == ["incus_instance_exec"]
 
     assert Enum.sort(by_scope["incus.delete"]) ==
@@ -87,13 +90,13 @@ defmodule Opsmaru.Incus.OperationsCatalogueTest do
     forbidden =
       ~w(socket url server certificate secret password key token owner connection host path tls)
 
-    for descriptor <- Operations.all(), field <- fields(descriptor.input_schema) do
+    for descriptor <- Composite.all(), field <- fields(descriptor.input_schema) do
       refute field in forbidden, "#{descriptor.name} accepts #{field}"
     end
   end
 
   test "every exported operation has evidence for each client method it uses" do
-    for descriptor <- Operations.all() do
+    for descriptor <- Composite.all() do
       assert descriptor.requires != []
 
       for requirement <- descriptor.requires,
@@ -115,18 +118,18 @@ defmodule Opsmaru.Incus.OperationsCatalogueTest do
     }
 
     assert Evidence.missing(pending.requires) == ["CopyInstanceWithoutEvidence"]
-    assert Operations.exported([pending | Operations.candidates()]) == Operations.all()
+    assert Composite.exported([pending | Composite.candidates()]) == Composite.all()
     assert {:error, :no_method_evidence} = Evidence.lookup("CopyInstanceWithoutEvidence")
     assert {:error, :stream_not_certified} = Evidence.lookup("stream:S99")
     assert {:error, :no_helper_evidence} = Evidence.lookup("helper:missing")
 
     assert {:error, %{"kind" => "unknown_operation"}} =
-             Operations.run("incus_instance_copy", %{}, host: nil, scopes: Operations.scopes())
+             Composite.run("incus_instance_copy", %{}, host: nil, scopes: Composite.scopes())
 
-    assert Enum.map(Operations.unavailable(), & &1["name"]) ==
+    assert Enum.map(Composite.unavailable(), & &1["name"]) ==
              ~w(incus_instance_copy incus_instance_move incus_instance_rename)
 
-    assert Enum.all?(Operations.unavailable(), &(&1["reason"] =~ "deferred by scope"))
+    assert Enum.all?(Composite.unavailable(), &(&1["reason"] =~ "deferred by scope"))
   end
 
   test "operations call only public client functions" do
@@ -165,7 +168,7 @@ defmodule Opsmaru.Incus.OperationsCatalogueTest do
     [table, _] = String.split(table, "<!-- operations-catalogue:end -->")
 
     rows =
-      for descriptor <- Operations.all() do
+      for descriptor <- Composite.all() do
         confirm = if descriptor.confirmation, do: descriptor.confirmation["value"], else: "—"
         requires = Enum.map_join(descriptor.requires, ", ", &"`#{&1}`")
         "| `#{descriptor.name}` | `#{descriptor.scope}` | #{confirm} | #{requires} |"
@@ -174,9 +177,46 @@ defmodule Opsmaru.Incus.OperationsCatalogueTest do
     assert table |> String.split("\n", trim: true) |> Enum.drop(2) == rows
   end
 
+  # `apply/3` keeps the deliberate calls to deprecated functions out of the
+  # compiler's deprecation warnings.
+  test "the 0.1.0 entry points are deprecated delegates returning what Composite returns" do
+    descriptor = hd(Composite.all())
+    opts = [host: nil, caller: nil, scopes: Composite.scopes()]
+
+    calls = [
+      {:scopes, []},
+      {:all, []},
+      {:unavailable, []},
+      {:fetch, ["incus_instance_list"]},
+      {:fetch, ["incus_instance_copy"]},
+      {:describe, [descriptor]},
+      {:output_schema, [descriptor]},
+      {:run, ["incus_instance_copy", %{}, opts]},
+      {:run, ["incus_instance_list", %{}, opts]},
+      {:run, ["incus_instance_list", %{"socket" => "/x"}, opts]},
+      {:run, ["incus_instance_list", %{}, [host: nil, scopes: []]]}
+    ]
+
+    for {function, args} <- calls do
+      assert apply(Operations, function, args) == apply(Composite, function, args),
+             inspect(function)
+    end
+
+    deprecated = Operations.__info__(:deprecated)
+
+    for {function, arity} <- Operations.__info__(:functions) do
+      assert {{function, arity}, "Use Opsmaru.Incus.Operations.Composite.#{function}/#{arity}"} in deprecated
+    end
+
+    assert Enum.sort(Keyword.keys(Operations.__info__(:functions))) ==
+             ~w(all describe fetch output_schema run scopes unavailable)a
+
+    refute function_exported?(Operations, :openapi, 0)
+  end
+
   test "the library defines operations without starting anything" do
     assert Application.spec(:opsmaru_incus, :mod) in [nil, []]
-    assert Operations.all() == Operations.all()
+    assert Composite.all() == Composite.all()
   end
 
   defp unsupported(schema) when is_map(schema) do

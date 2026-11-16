@@ -43,16 +43,30 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
         version = outer.extractfile("metadata.config").read().decode()
     with tarfile.open(root / "outer/contents.tar.gz") as contents:
         contents.extractall(package, filter="data")
-    for required in ["mix.exs", "LICENSE", "NOTICE", "priv/incus/coverage.json", "priv/notices/INCUS-NOTICE.md"]:
+    for required in ["mix.exs", "LICENSE", "NOTICE", "priv/incus/coverage.json", "priv/notices/INCUS-NOTICE.md",
+                     "priv/incus/native-operations.json", "priv/incus/native-policy.json"]:
         if not (package / required).is_file():
             raise SystemExit(f"Hex package is missing {required}")
-    for forbidden in ["test", "scripts", "openspec", "docs", "mix.lock"]:
+    # rest-api.yaml is generator input only: the package ships the generated
+    # native operations document, never the upstream description.
+    for forbidden in ["test", "scripts", "openspec", "docs", "mix.lock", "priv/incus/rest-api.yaml"]:
         if (package / forbidden).exists():
             raise SystemExit(f"Hex package must not contain {forbidden}")
+    if list(package.rglob("*.yaml")) or list(package.rglob("*.tama-cassette")):
+        raise SystemExit("Hex package must not contain YAML or cassette files")
+    packaged = {path.name for path in (package / "priv/incus").iterdir()}
+    tracked = set(subprocess.check_output(["git", "ls-files", "priv/incus"], cwd=source, text=True).split())
+    unshipped = {Path(path).name for path in tracked} - packaged
+    if unshipped != {"rest-api.yaml"}:
+        raise SystemExit(f"priv/incus files missing from the Hex package: {sorted(unshipped - {'rest-api.yaml'})}")
     match = re.search(r'^\{<<"version">>,<<"([^"]+)">>\}\.$', version, re.MULTILINE)
     if not match:
         raise SystemExit("Hex package metadata has no version")
     package_version = match.group(1)
+    # tama_dex validates the documents and builds the release cassette in
+    # development only; consumers must never be asked to fetch it.
+    if "tama_dex" in version or "exqlite" in version:
+        raise SystemExit("Hex package must not require tama_dex")
     package_digest = tree_digest(package)
     shutil.copytree(source / "test/consumer", root / "consumer")
     if not (root / "consumer/mix.lock").is_file():
@@ -101,8 +115,9 @@ with tempfile.TemporaryDirectory(prefix="opsmaru-incus-consumer-") as directory:
     if case_keys != expected_cases or len(migration_cases) != 24:
         raise SystemExit("native CLI migration evidence must include every matrix case exactly once")
 
-    # A client-only consumer without tama_mcp, Plug, Cowboy or Phoenix: the
-    # library and its operation descriptors must compile without warnings.
+    # A client-only consumer without tama_mcp, tama_dex, Plug, Cowboy or Phoenix:
+    # the library, its operation descriptors and both operation documents must
+    # compile without warnings; its tests call both openapi/0 builders.
     shutil.copytree(source / "test/consumer/client_only", root / "client")
     shutil.copy(source / "mise.toml", root / "client/mise.toml")
     for args in [["mise", "trust"], ["mise", "exec", "--", "mix", "deps.get"],

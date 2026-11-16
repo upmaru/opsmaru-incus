@@ -1,6 +1,6 @@
 defmodule Opsmaru.Incus.OperationsInspectionTest do
   use ExUnit.Case, async: true
-  alias Opsmaru.Incus.Operations
+  alias Opsmaru.Incus.Operations.Composite
   alias Opsmaru.Incus.Operations.Schema
   alias Opsmaru.TestSupport.{OperationsFixture, OperationsHost}
   import OperationsFixture, only: [sync: 1, sync: 2, native_error: 2]
@@ -93,7 +93,7 @@ defmodule Opsmaru.Incus.OperationsInspectionTest do
   end
 
   defp run(name, input, caller),
-    do: Operations.run(name, input, host: OperationsHost, caller: caller, scopes: ["incus.read"])
+    do: Composite.run(name, input, host: OperationsHost, caller: caller, scopes: ["incus.read"])
 
   for transport <- [:gen_tcp, :ssl] do
     test "every inspection returns native data unchanged over #{transport}", %{root: root} do
@@ -109,7 +109,7 @@ defmodule Opsmaru.Incus.OperationsInspectionTest do
 
       for {name, input, target, metadata} <- @reads do
         assert {:ok, result} = run(name, input, caller), name
-        {:ok, descriptor} = Operations.fetch(name)
+        {:ok, descriptor} = Composite.fetch(name)
         assert :ok = Schema.validate(descriptor.output_schema, result), name
 
         case metadata do

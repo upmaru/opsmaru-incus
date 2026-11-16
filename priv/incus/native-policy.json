@@ -1,0 +1,280 @@
+{
+  "schema": 1,
+  "description": "Reviewed policy for the native operations document. mix opsmaru.incus.native applies it to methods.json; every entry carries a reason and is reviewed like a lock. Exclusion rules run in order: interactive channel (rule-based), binary transfer, remote backend or credential, no evidence (rule-based).",
+  "upstream": {
+    "file": "rest-api.yaml",
+    "revision": "13f3992766142d5087fff2e362cd2e1a75294fe8",
+    "sha256": "7b4e07375da92f30e7eadf766f1bbdf40bf9968ee305a16be1afe5998e72e91f"
+  },
+  "exclusions": {
+    "binary_transfer": [
+      {
+        "method": "DeleteInstanceConsoleLog",
+        "reason": "instance log and recorded exec output content is a binary transfer that native operations do not expose; listing or deleting it stays with that transfer surface"
+      },
+      {
+        "method": "DeleteInstanceExecOutput",
+        "reason": "instance log and recorded exec output content is a binary transfer that native operations do not expose; listing or deleting it stays with that transfer surface"
+      },
+      {
+        "method": "DeleteInstanceFile",
+        "reason": "instance file and template content is a binary transfer that native operations do not expose; listing or deleting it stays with that transfer surface"
+      },
+      {
+        "method": "DeleteInstanceLogfile",
+        "reason": "instance log and recorded exec output content is a binary transfer that native operations do not expose; listing or deleting it stays with that transfer surface"
+      },
+      {
+        "method": "DeleteInstanceTemplateFile",
+        "reason": "instance file and template content is a binary transfer that native operations do not expose; listing or deleting it stays with that transfer surface"
+      },
+      {
+        "method": "GetInstanceExecOutputNames",
+        "reason": "instance log and recorded exec output content is a binary transfer that native operations do not expose; listing or deleting it stays with that transfer surface"
+      },
+      {
+        "method": "GetInstanceLogfiles",
+        "reason": "instance log and recorded exec output content is a binary transfer that native operations do not expose; listing or deleting it stays with that transfer surface"
+      },
+      {
+        "method": "GetInstanceTemplateFiles",
+        "reason": "instance file and template content is a binary transfer that native operations do not expose; listing or deleting it stays with that transfer surface"
+      }
+    ],
+    "remote_backend_or_credential": [
+      {
+        "method": "CreateCertificateToken",
+        "reason": "issues a certificate add token, which is a credential"
+      },
+      {
+        "method": "CreateClusterMember",
+        "reason": "issues a cluster member join token, which is a credential"
+      },
+      {
+        "method": "CreateImageSecret",
+        "reason": "issues an image download secret, which is a credential"
+      },
+      {
+        "method": "CreateStoragePoolBucket",
+        "reason": "returns the new bucket's admin S3 credentials"
+      },
+      {
+        "method": "CreateStoragePoolBucketKey",
+        "reason": "carries storage bucket S3 credentials (access and secret keys) in the request or the result"
+      },
+      {
+        "method": "CreateStoragePoolVolumeFromMigration",
+        "reason": "migration between servers: the request names another backend and carries its certificate, operation and websocket secrets"
+      },
+      {
+        "method": "CreateStoragePoolVolumeInCollectionFromMigration",
+        "reason": "migration between servers: the request names another backend and carries its certificate, operation and websocket secrets"
+      },
+      {
+        "method": "ExportImage",
+        "reason": "pushes an image to another server named in the request, with that server's certificate and secret"
+      },
+      {
+        "method": "GetOperationWaitSecret",
+        "reason": "carries an operation secret"
+      },
+      {
+        "method": "GetPrivateImage",
+        "reason": "carries an image secret"
+      },
+      {
+        "method": "GetStoragePoolBucketFull",
+        "reason": "carries storage bucket S3 credentials (access and secret keys) in the request or the result"
+      },
+      {
+        "method": "GetStoragePoolBucketKey",
+        "reason": "carries storage bucket S3 credentials (access and secret keys) in the request or the result"
+      },
+      {
+        "method": "GetStoragePoolBucketKeys",
+        "reason": "carries storage bucket S3 credentials (access and secret keys) in the request or the result"
+      },
+      {
+        "method": "GetStoragePoolBucketsFull",
+        "reason": "carries storage bucket S3 credentials (access and secret keys) in the request or the result"
+      },
+      {
+        "method": "GetStoragePoolBucketsFullAllProjects",
+        "reason": "carries storage bucket S3 credentials (access and secret keys) in the request or the result"
+      },
+      {
+        "method": "GetStoragePoolBucketsFullWithFilter",
+        "reason": "carries storage bucket S3 credentials (access and secret keys) in the request or the result"
+      },
+      {
+        "method": "GetStoragePoolBucketsFullWithFilterAllProjects",
+        "reason": "carries storage bucket S3 credentials (access and secret keys) in the request or the result"
+      },
+      {
+        "method": "MigrateInstance",
+        "reason": "migration between servers: the request names another backend and carries its certificate, operation and websocket secrets"
+      },
+      {
+        "method": "MigrateInstanceSnapshot",
+        "reason": "migration between servers: the request names another backend and carries its certificate, operation and websocket secrets"
+      },
+      {
+        "method": "MigrateStoragePoolVolume",
+        "reason": "migration between servers: the request names another backend and carries its certificate, operation and websocket secrets"
+      },
+      {
+        "method": "UpdateCluster",
+        "reason": "cluster join: names another cluster address and carries its certificate and join token"
+      },
+      {
+        "method": "UpdateClusterCertificate",
+        "reason": "carries the cluster certificate's private key"
+      },
+      {
+        "method": "UpdateStoragePoolBucketKey",
+        "reason": "carries storage bucket S3 credentials (access and secret keys) in the request or the result"
+      }
+    ]
+  },
+  "body_field_denylist": [
+    {
+      "model": "CertificatesPost",
+      "fields": [
+        "token",
+        "trust_token"
+      ],
+      "reason": "certificate add tokens are credentials; a certificate is added only by its public certificate"
+    },
+    {
+      "model": "ImagesPostSource",
+      "fields": [
+        "certificate",
+        "mode",
+        "protocol",
+        "secret",
+        "server",
+        "url"
+      ],
+      "reason": "image download by URL or from a remote server selects another backend and may carry its secret; native image creation publishes local instances and snapshots only"
+    },
+    {
+      "model": "InstanceBackupsPost",
+      "fields": [
+        "target"
+      ],
+      "reason": "a backup target names a remote object store with its access and secret keys"
+    },
+    {
+      "model": "InstancePost",
+      "fields": [
+        "migration",
+        "target"
+      ],
+      "reason": "a rename body with migration set starts a migration, whose pull mode returns websocket secrets, and a migration target carries another server's certificate, operation and websocket secrets; native rename only renames"
+    },
+    {
+      "model": "InstanceSnapshotPost",
+      "fields": [
+        "migration",
+        "target"
+      ],
+      "reason": "a rename body with migration set starts a migration, whose pull mode returns websocket secrets, and a migration target carries another server's certificate, operation and websocket secrets; native rename only renames"
+    },
+    {
+      "model": "InstanceSource",
+      "fields": [
+        "certificate",
+        "mode",
+        "operation",
+        "protocol",
+        "secret",
+        "secrets",
+        "server"
+      ],
+      "reason": "a remote image or migration source selects another backend and carries its certificate, secret, operation and websocket secrets; native sources are local images and instances only"
+    },
+    {
+      "model": "StorageVolumeBackupsPost",
+      "fields": [
+        "target"
+      ],
+      "reason": "a backup target names a remote object store with its access and secret keys"
+    },
+    {
+      "model": "StorageVolumePost",
+      "fields": [
+        "migration",
+        "source",
+        "target"
+      ],
+      "reason": "a rename body with migration set starts a migration, whose pull mode returns websocket secrets, and a migration target carries another server's certificate, operation and websocket secrets; native rename only renames; a volume rename takes no source"
+    },
+    {
+      "model": "StorageVolumeSnapshotPost",
+      "fields": [
+        "migration",
+        "target"
+      ],
+      "reason": "a rename body with migration set starts a migration, whose pull mode returns websocket secrets, and a migration target carries another server's certificate, operation and websocket secrets; native rename only renames"
+    },
+    {
+      "model": "StorageVolumeSource",
+      "fields": [
+        "certificate",
+        "mode",
+        "operation",
+        "secrets"
+      ],
+      "reason": "a migration source carries another server's certificate, operation and websocket secrets; native volume sources are local copies only"
+    }
+  ],
+  "overrides": [
+    {
+      "method": "CreateProject",
+      "scope": "incus.native.admin",
+      "reason": "projects are the isolation boundary hosts authorize against; changing them is administration"
+    },
+    {
+      "method": "DeleteProject",
+      "scope": "incus.native.admin",
+      "reason": "projects are the isolation boundary hosts authorize against; changing them is administration"
+    },
+    {
+      "method": "DeleteProjectForce",
+      "scope": "incus.native.admin",
+      "reason": "projects are the isolation boundary hosts authorize against; changing them is administration"
+    },
+    {
+      "method": "PatchProject",
+      "scope": "incus.native.admin",
+      "reason": "projects are the isolation boundary hosts authorize against; project config holds the restricted.* limits"
+    },
+    {
+      "method": "RebuildInstance",
+      "destructive": true,
+      "reason": "rebuilding replaces the instance's root disk, like a full replacement"
+    },
+    {
+      "method": "RebuildStoragePoolVolume",
+      "destructive": true,
+      "reason": "rebuilding replaces the volume's content, like a full replacement"
+    },
+    {
+      "method": "RenameProject",
+      "scope": "incus.native.admin",
+      "reason": "projects are the isolation boundary hosts authorize against; changing them is administration"
+    },
+    {
+      "method": "UpdateInstances",
+      "confirm": {
+        "value": "instances"
+      },
+      "reason": "the bulk state change has no path parameter; it targets every instance in the project, not the server"
+    },
+    {
+      "method": "UpdateProject",
+      "scope": "incus.native.admin",
+      "reason": "projects are the isolation boundary hosts authorize against; project config holds the restricted.* limits"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-defmodule Opsmaru.Incus.Operations.Mutation do
+defmodule Opsmaru.Incus.Operations.Composite.Mutation do
   @moduledoc false
   # Submit one native mutation, then wait boundedly with the native
   # GetOperationWait. A submission is never resent; a response lost after

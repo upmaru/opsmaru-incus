@@ -3,6 +3,7 @@
 defmodule Opsmaru.Incus.PoolBaseline do
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, ConnectionPool, Context, Error, Operations}
+  alias Opsmaru.Incus.Operations.Composite
 
   defmodule Host do
     @behaviour Operations.Host
@@ -141,7 +142,7 @@ defmodule Opsmaru.Incus.PoolBaseline do
       {"discovery", fn -> Incus.connect(client.connection, client.context) end},
       {"shared_inspection",
        fn ->
-         Operations.run("incus_instance_list", %{"project" => project},
+         Composite.run("incus_instance_list", %{"project" => project},
            host: Host,
            caller: binding,
            scopes: ["incus.read"]

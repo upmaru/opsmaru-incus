@@ -1,7 +1,7 @@
 # Explicit opt-in only. This script never launches Macus/Incus or uses a default remote.
 # See docs/real-incus-acceptance.md ("Shared operations") before supplying
 # OPSMARU_OPERATIONS_ACCEPTANCE_CONFIG. It exercises the shared operations through
-# Opsmaru.Incus.Operations.run/3 with a fixed acceptance host binding.
+# Opsmaru.Incus.Operations.Composite.run/3 with a fixed acceptance host binding.
 defmodule OpsmaruOperationsAcceptance.Host do
   @behaviour Opsmaru.Incus.Operations.Host
 
@@ -16,7 +16,8 @@ end
 
 defmodule OpsmaruOperationsAcceptance do
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Connection, Context, Error, Operations}
+  alias Opsmaru.Incus.{Connection, Context, Error}
+  alias Opsmaru.Incus.Operations.Composite
 
   def run do
     config =
@@ -118,7 +119,7 @@ defmodule OpsmaruOperationsAcceptance do
     %{"items" => [], "count" => 0} = op.("incus_instance_list", %{})
 
     {:error, %{"kind" => "unauthorized"}} =
-      Operations.run("incus_instance_list", %{"project" => "default"},
+      Composite.run("incus_instance_list", %{"project" => "default"},
         host: OpsmaruOperationsAcceptance.Host,
         caller: caller,
         scopes: ["incus.read"]
@@ -169,12 +170,12 @@ defmodule OpsmaruOperationsAcceptance do
       op.("incus_instance_snapshot_create", %{"instance" => name, "name" => "s1"})
 
     {:error, %{"kind" => "confirmation_required"}} =
-      Operations.run(
+      Composite.run(
         "incus_instance_snapshot_restore",
         %{"project" => project, "instance" => name, "snapshot" => "s1", "confirm" => "yes"},
         host: OpsmaruOperationsAcceptance.Host,
         caller: caller,
-        scopes: Operations.scopes()
+        scopes: Composite.scopes()
       )
 
     %{"status" => "completed"} =
@@ -216,10 +217,10 @@ defmodule OpsmaruOperationsAcceptance do
     update(report, &Map.update!(&1, "steps", fn steps -> steps ++ [entry] end))
 
     result =
-      Operations.run(operation, input,
+      Composite.run(operation, input,
         host: OpsmaruOperationsAcceptance.Host,
         caller: caller,
-        scopes: Operations.scopes()
+        scopes: Composite.scopes()
       )
 
     summary =
