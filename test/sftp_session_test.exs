@@ -8,7 +8,7 @@ defmodule Opsmaru.Incus.SFTPSessionTest do
   use ExUnit.Case, async: false
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Error, Server, SFTP}
-  alias Opsmaru.TestSupport.HTTPFixture
+  alias Opsmaru.TestSupport.{HTTPFixture, Monitor, TraceLock}
 
   setup do
     root = Path.join(System.tmp_dir!(), "op-sftp-session-#{System.unique_integer([:positive])}")
@@ -82,6 +82,95 @@ defmodule Opsmaru.Incus.SFTPSessionTest do
     eventually_dead(session.pid)
     assert {:error, %Error{kind: kind}} = SFTP.stat(session, "x")
     assert kind in [:channel_closed, :canceled]
+  end
+
+  test "an unscoped session starts a deadline timer and no context watcher", %{root: root} do
+    TraceLock.acquire!()
+
+    patterns = [
+      {Opsmaru.Incus.RequestContext, :new!, 1},
+      {Opsmaru.Incus.Transport, :watch_owner, 3}
+    ]
+
+    for {module, _, _} = mfa <- patterns do
+      Code.ensure_loaded!(module)
+      assert :erlang.trace_pattern(mfa, true, [:local]) == 1
+    end
+
+    on_exit(fn ->
+      for mfa <- patterns, do: :erlang.trace_pattern(mfa, false, [:local])
+    end)
+
+    fixture = backend(root, &files/2, files_state())
+    parent = self()
+
+    opener =
+      spawn(fn ->
+        receive do
+          :start ->
+            send(parent, {:opened, open(fixture, stream_timeout: 600)})
+            receive do: (:stop -> :ok)
+        end
+      end)
+
+    on_exit(fn -> Process.exit(opener, :kill) end)
+    :erlang.trace(opener, true, [:call, :set_on_spawn])
+    send(opener, :start)
+    assert_receive {:opened, {:ok, session}}, 2_000
+    state = :sys.get_state(session.pid)
+    raw = state.raw.pid
+    session_pid = session.pid
+    assert state.deadline == session.deadline
+    assert is_reference(state.timer)
+
+    assert_receive {:trace, ^raw, :call,
+                    {Opsmaru.Incus.Transport, :watch_owner, [^session_pid, nil, ^opener]}}
+
+    delivered = :erlang.trace_delivered(:all)
+    assert_receive {:trace_delivered, :all, ^delivered}
+    refute_received {:trace, _, :call, {Opsmaru.Incus.RequestContext, :new!, _}}
+    refute_received {:trace, ^session_pid, :call, {Opsmaru.Incus.Transport, :watch_owner, _}}
+
+    session_monitor = Monitor.monitor!(session_pid)
+    raw_monitor = Monitor.monitor!(raw)
+    assert_receive {:DOWN, ^session_monitor, :process, ^session_pid, :normal}, 2_000
+    assert_receive {:DOWN, ^raw_monitor, :process, ^raw, :normal}, 2_000
+    assert {:error, %Error{kind: :deadline}} = SFTP.extensions(session)
+  end
+
+  test "session expiry ends a dispatched write and releases a queued file lock", %{root: root} do
+    fixture = backend(root, &files/2, %{files_state() | silent_write: 0})
+    assert {:ok, session} = open(fixture, stream_timeout: 600)
+    assert {:ok, file} = SFTP.open(session, "f")
+    requests()
+
+    # A cursor write holds the exclusive lock. The write reply stays on the peer.
+    write = Task.async(fn -> SFTP.File.write(file, "data") end)
+    assert <<6, id::32, _::binary>> = assert_request(6)
+    waiting = Task.async(fn -> SFTP.File.seek(file, 0, :current) end)
+    wait_for_lock(session.pid, file.id, System.monotonic_time(:millisecond) + 2_000)
+
+    assert {:error, %Error{kind: :uncertain, response: %{request_id: ^id, session: ref}}} =
+             Task.await(write, 2_000)
+
+    assert ref == session.ref
+
+    assert {:error, %Error{kind: :deadline, response: %{request_id: nil}}} =
+             Task.await(waiting, 2_000)
+
+    eventually_dead(session.pid)
+    assert HTTPFixture.requests(fixture) |> Enum.map(& &1.method) == ["GET"]
+    assert requests() == []
+  end
+
+  defp wait_for_lock(session, id, deadline) do
+    queued = :sys.get_state(session).files[id].queue
+
+    if :queue.is_empty(queued) do
+      assert System.monotonic_time(:millisecond) < deadline
+      Process.sleep(1)
+      wait_for_lock(session, id, deadline)
+    end
   end
 
   test "a request deadline fails only that request; a late reply is discarded", %{root: root} do

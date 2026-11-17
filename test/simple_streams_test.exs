@@ -1,6 +1,17 @@
 defmodule Opsmaru.Incus.SimpleStreamsTest do
   use ExUnit.Case, async: true
-  alias Opsmaru.Incus.{Connection, Context, Error, HTTP, Model, RequestContext, SimpleStreams}
+
+  alias Opsmaru.Incus.{
+    Connection,
+    Context,
+    Error,
+    HTTP,
+    Model,
+    RequestContext,
+    SimpleStreams,
+    WorkScope
+  }
+
   alias Opsmaru.TestSupport.{HTTPFixture, Monitor, TLSIdentity}
   @driver Path.expand("../.integration/simplestreams-driver", __DIR__)
   @http_driver Path.expand("../.integration/simplestreams-http-driver", __DIR__)
@@ -874,6 +885,85 @@ defmodule Opsmaru.Incus.SimpleStreamsTest do
 
       assert download_paths(fixture) == []
     end
+  end
+
+  for trigger <- [:cancel, :context_owner_exit] do
+    test "delta adapter handles #{trigger} while the download guard is held", %{
+      identity: identity
+    } do
+      assert_scoped_delta_stop(identity, unquote(trigger))
+    end
+  end
+
+  defp assert_scoped_delta_stop(identity, trigger) do
+    {client, fixture} = download_client(identity, "", "root", delta: "delta")
+    parent = self()
+    context_owner = spawn(fn -> receive do: (:stop -> :ok) end)
+    on_exit(fn -> Process.exit(context_owner, :kill) end)
+    scope = RequestContext.new!(timeout: 30_000, owner: context_owner)
+
+    client =
+      %{client | connection: Connection.with_context(client.connection, scope)}
+      |> with_delta(
+        delta_config(fn _, _ ->
+          Process.flag(:trap_exit, true)
+          {table, _} = WorkScope.current()
+          send(parent, {:delta_waiting, self(), :ets.info(table, :owner)})
+          receive do: (:never -> :ok)
+        end)
+      )
+
+    caller =
+      spawn(fn ->
+        receive do
+          :start ->
+            result =
+              SimpleStreams.image_file(
+                client,
+                fingerprint(client),
+                %{rootfs: fn _ -> flunk("unexpected output") end},
+                delta_source: &source(&1, :host_base)
+              )
+
+            send(parent, {:delta_result, result})
+        end
+      end)
+
+    on_exit(fn -> Process.exit(caller, :kill) end)
+    :erlang.trace(caller, true, [:procs, :set_on_spawn])
+    send(caller, :start)
+    assert_receive {:trace, ^caller, :spawn, downloader, _}, 5_000
+    assert_receive {:trace, ^downloader, :spawn, guard, _}, 5_000
+    on_exit(fn -> Process.exit(guard, :kill) end)
+
+    # Isolate the adapter's own outcome from the enclosing download guard.
+    assert :erlang.suspend_process(guard)
+    assert_receive {:delta_waiting, worker, controller}, 5_000
+    assert_receive {:delta_call, ^worker, %{call_id: id}}, 5_000
+    worker_monitor = Monitor.monitor!(worker)
+    controller_monitor = Monitor.monitor!(controller)
+
+    case trigger do
+      :cancel -> RequestContext.cancel(scope)
+      :context_owner_exit -> send(context_owner, :stop)
+    end
+
+    assert_receive {:DOWN, ^worker_monitor, :process, ^worker, :killed}, 2_000
+    assert_receive {:delta_cleanup, ^id, :canceled}, 2_000
+    assert_receive {:DOWN, ^controller_monitor, :process, ^controller, :normal}, 2_000
+    expected_fingerprint = fingerprint(client)
+
+    assert_receive {:delta_result,
+                    {:error,
+                     %Error{
+                       kind: :adapter_canceled,
+                       response: %{fingerprint: ^expected_fingerprint}
+                     }}},
+                   2_000
+
+    assert :erlang.resume_process(guard)
+    refute_received {:delta_cleanup, ^id, _}
+    assert download_paths(fixture) == []
   end
 
   test "delta cleanup failure preserves its primary result and image identity", %{

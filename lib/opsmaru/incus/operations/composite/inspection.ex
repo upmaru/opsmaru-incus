@@ -1,4 +1,4 @@
-defmodule Opsmaru.Incus.Operations.Inspection do
+defmodule Opsmaru.Incus.Operations.Composite.Inspection do
   @moduledoc false
   # Read-only operations (scope incus.read). Native data passes through
   # unchanged, including VM-shaped instances; lists keep native order.

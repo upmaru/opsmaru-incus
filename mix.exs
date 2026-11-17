@@ -1,7 +1,7 @@
 defmodule OpsmaruIncus.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.2.0"
   @source_url "https://github.com/upmaru/opsmaru-incus"
 
   def project do
@@ -30,13 +30,24 @@ defmodule OpsmaruIncus.MixProject do
     [extra_applications: [:logger, :ssl, :public_key, :crypto]]
   end
 
-  # Hex is the only distribution route. priv/incus is read at compile time, and
-  # priv/notices carries the upstream licence notices.
+  # priv/incus files the package ships: data read at compile time, plus the
+  # reviewed policy behind the native operations document. Named one by one so
+  # that generator-only input (rest-api.yaml) is never packaged;
+  # `mise run check:consumer` fails if it is.
+  @priv_incus ~w(README.md constants.json coverage.json endpoint-evidence.json
+                 endpoint-inventory.json gateway-transfer.json inventory.json methods.json
+                 models.json native-operations.json native-policy.json reference.json
+                 transfer.json)
+
+  # Hex is the only distribution route. priv/notices carries the upstream
+  # licence notices.
   defp package do
     [
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => @source_url, "Changelog" => "#{@source_url}/blob/main/CHANGELOG.md"},
-      files: ~w(lib priv/incus priv/notices mix.exs README.md CHANGELOG.md LICENSE NOTICE)
+      files:
+        ~w(lib priv/notices mix.exs README.md CHANGELOG.md LICENSE NOTICE) ++
+          Enum.map(@priv_incus, &"priv/incus/#{&1}")
     ]
   end
 
@@ -65,6 +76,7 @@ defmodule OpsmaruIncus.MixProject do
   defp deps do
     [
       {:mint, "~> 1.11"},
+      {:nimble_pool, "~> 1.1", optional: true, runtime: false},
       {:mint_web_socket, "~> 1.0"},
       {:jason, "~> 1.4"},
       # Native multipart/content-type parsing and the strict YAML subset decoder.
@@ -75,6 +87,10 @@ defmodule OpsmaruIncus.MixProject do
       {:plug, "~> 1.16", optional: true},
       {:cowboy, "~> 2.12", optional: true},
       {:plug_cowboy, "~> 2.7", only: :test},
+      # Validates the operation documents and builds the release cassette. Never a
+      # runtime dependency: the documents are plain data and consumers do not
+      # fetch it.
+      {:tama_dex, "~> 0.1", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false}
     ]

@@ -25,11 +25,13 @@ run = [
 ]
 
 [tasks."check:reference"]
-description = "Go inventory/schema verifier tests, generated constants and coverage ledger checks"
+description = "Go inventory/schema verifier tests, generated constants, coverage ledger and native operations document checks"
 run = [
   "GO111MODULE=off go test ./scripts ./scripts/incus-model-schema",
   "python3 scripts/check-incus-constants.py",
   "python3 scripts/update-incus-coverage.py --check",
+  # Verifies the rest-api.yaml SHA-256, regenerates and compares byte for byte.
+  "mix opsmaru.incus.native --check",
 ]
 
 [tasks."check:consumer"]

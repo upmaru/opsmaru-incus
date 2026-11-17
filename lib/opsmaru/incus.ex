@@ -73,12 +73,16 @@ defmodule Opsmaru.Incus do
   end
 
   @doc "Open the native SFTP byte connection; the caller supplies its SFTP implementation."
-  def sftp(client, instance) do
+  def sftp(client, instance), do: sftp(client, instance, {:infinity, :infinity, nil})
+
+  @doc false
+  def sftp(client, instance, deadlines) do
     with :ok <- upgrade_segments([instance]) do
       RawChannel.open(
         client,
         "/1.0/instances/" <> path_escape(instance) <> "/sftp",
-        "sftp"
+        "sftp",
+        deadlines
       )
     end
   end
@@ -105,10 +109,14 @@ defmodule Opsmaru.Incus do
   end
 
   @doc "Open a native volume SFTP byte channel; protocol handling remains caller-owned."
-  def volume_sftp(client, pool, type, name) do
+  def volume_sftp(client, pool, type, name),
+    do: volume_sftp(client, pool, type, name, {:infinity, :infinity, nil})
+
+  @doc false
+  def volume_sftp(client, pool, type, name, deadlines) do
     with :ok <- upgrade_segments([pool, type, name]),
          :ok <- require_extension(client, "custom_volume_sftp") do
-      RawChannel.open(client, volume_path(pool, type, name) <> "/sftp", "sftp")
+      RawChannel.open(client, volume_path(pool, type, name) <> "/sftp", "sftp", deadlines)
     end
   end
 
@@ -184,7 +192,7 @@ defmodule Opsmaru.Incus do
   def with_context(%__MODULE__{} = client, request_context),
     do: %{client | connection: Connection.with_context(client.connection, request_context)}
 
-  @doc "No-op for an immutable client with per-request connections; close separately owned channels explicitly."
+  @doc "No-op for an immutable client. The host owns any configured pool and separately opened channels."
   def disconnect(%__MODULE__{}), do: :ok
 
   def connect(connection, context, request_context: request_context),

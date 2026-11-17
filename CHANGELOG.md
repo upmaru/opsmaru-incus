@@ -1,5 +1,83 @@
 # Changelog
 
+## 0.2.0 — 2026-11-16
+
+opsmaru_incus now publishes its operations as `tama-operations/1` documents,
+the profile [tama-dex](https://hexdocs.pm/tama_dex) indexes, and offers the
+native client API beside the composite operations. See
+`docs/incus-operations.md`.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.0"}
+```
+
+### Added
+
+- **Composite document.** `Opsmaru.Incus.Operations.Composite.openapi/0`
+  returns the 32 composite operations as a `tama-operations/1` document
+  (source `opsmaru_incus`), mapped field for field from the descriptors.
+- **Native operations.** `Opsmaru.Incus.Operations.Native.openapi/0` returns
+  274 native client methods as a second document (source
+  `opsmaru_incus_native`), with operation IDs `incus_native_<snake_method>`.
+  It is generated from the verified `methods.json` and `models.json` by
+  `mix opsmaru.incus.native`; the pinned upstream `rest-api.yaml` supplies
+  descriptions only and is not shipped.
+  - Scopes are separate and never implied by the composite ones:
+    `incus.native.read`, `incus.native.write`, `incus.native.delete` and
+    `incus.native.admin`.
+  - Every `DELETE` and `PUT` is destructive and requires `confirm` to repeat
+    its target.
+  - `Native.unavailable/0` lists the 33 methods that are not exported:
+    interactive channels, binary transfers, and calls that select another
+    backend or carry credentials. Body fields that could do so are removed
+    from every exported schema.
+- **Native execution.** `Operations.Native.run/3` applies the composite trust
+  model (scope, schema, confirmation, restricted config, host `binding/2` and
+  `authorize/3`) and then makes one native call. Background operations return
+  their identity without waiting, a lost response is reported as `uncertain`
+  and nothing is retried. Native success is never client evidence.
+- **Release cassette.** Each release also publishes a tama-dex cassette,
+  `opsmaru_incus-<version>.tama-cassette`, holding both documents, as a GitHub
+  Release asset with its SHA-256 and a build provenance attestation. It is
+  not part of the Hex package, and tama_dex is only a development dependency.
+- **Optional HTTPS connection pool.** A host can start
+  `Opsmaru.Incus.ConnectionPool` in its own supervision tree and pass
+  `pool:` to `Connection.https!/2`. Buffered GET and HEAD requests then reuse
+  verified sockets, keyed by owner, origin, credentials, trust and
+  authentication requirement. It needs `{:nimble_pool, "~> 1.1"}` in the host;
+  nothing starts unless the host starts it, and connections without `pool:`
+  behave as before. This first slice pools only verified HTTPS buffered
+  reads: mutations, Unix requests, gateway relays, streams and upgrades still
+  open fresh connections. See `docs/incus-client.md`.
+
+### Changed
+
+- **Request-context cancellation is event-driven.** Request guards, channel
+  watchers, `Operation.wait/2`, host adapter calls and SFTP sessions are
+  notified of cancellation, owner exit and deadline instead of polling every
+  20 ms. `RequestContext.status/1` and `check/1` and the reported outcomes are
+  unchanged.
+- **Operations module layout.** The 32 composite operations move from
+  `Opsmaru.Incus.Operations` to `Opsmaru.Incus.Operations.Composite` (`all/0`,
+  `describe/1`, `run/3`, `unavailable/0`, `scopes/0`, `fetch/1` and
+  `output_schema/1`), with their implementations under `Composite.*`.
+  `Opsmaru.Incus.Operations.Native` is the namespace for the native client
+  operations. Shared infrastructure (`Operations.Host`, descriptors, schemas,
+  results and evidence) stays under `Opsmaru.Incus.Operations`. Operation
+  names, schemas, the `describe/1` data and `coverage.json` are unchanged.
+
+- **Package contents.** The `priv/incus` files are listed one by one. The
+  package gains `native-operations.json` and `native-policy.json` and never
+  contains `rest-api.yaml`.
+- `Opsmaru.Incus.Operations.Schema` resolves `$ref` into shared components and
+  accepts the `number` type.
+
+### Deprecated
+
+- The 0.1.0 functions on `Opsmaru.Incus.Operations` are deprecated delegates
+  to `Opsmaru.Incus.Operations.Composite`. They return exactly what
+  `Composite` returns, warn at compile time and are removed in 0.3.0.
+
 ## 0.1.0 — 2026-11-11
 
 First release of `:opsmaru_incus`, the portable native Incus library used by

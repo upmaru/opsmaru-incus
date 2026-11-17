@@ -115,12 +115,27 @@ defmodule Opsmaru.Incus.Operation do
   defp sleep_until(deadline, nil), do: Process.sleep(max(0, deadline - now()))
 
   defp sleep_until(deadline, context) do
-    remaining = deadline - now()
+    if now() < deadline do
+      case RequestContext.subscribe(context) do
+        {:ok, subscription} ->
+          if wait_for_context(deadline, subscription) == :context_changed,
+            do: sleep_until(deadline, context)
 
-    if remaining > 0 and RequestContext.status(context) == :active do
-      Process.sleep(min(20, remaining))
-      sleep_until(deadline, context)
+        {:error, _kind} ->
+          :ok
+      end
     end
+  end
+
+  defp wait_for_context(deadline, {notifier, notification} = subscription) do
+    receive do
+      {:request_context_terminal, ^notification} -> :context_changed
+      {:DOWN, ^notification, :process, ^notifier, _} -> :context_changed
+    after
+      max(0, deadline - now()) -> :refresh_due
+    end
+  after
+    RequestContext.unsubscribe(subscription)
   end
 
   defp completion_result(current) do

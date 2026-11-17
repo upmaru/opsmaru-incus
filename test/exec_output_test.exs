@@ -2,7 +2,19 @@ defmodule Opsmaru.Incus.ExecOutputTest do
   # Its blocked-stdin tests set a VM-wide trace pattern on Session.exec/4 under TraceLock.
   use ExUnit.Case, async: true
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.{Connection, Context, Error, Operation, RequestContext, Server, Session}
+
+  alias Opsmaru.Incus.{
+    Connection,
+    Context,
+    Error,
+    Operation,
+    RequestContext,
+    Server,
+    Session,
+    WorkScope
+  }
+
+  alias Opsmaru.Incus.RequestContext.Notifier
 
   alias Opsmaru.TestSupport.{
     HTTPFixture,
@@ -100,14 +112,16 @@ defmodule Opsmaru.Incus.ExecOutputTest do
       assert result.exit_status == 7
       assert_closed(session)
 
+      host = RequestContext.new!(timeout: 30_000)
+      run_client = Incus.with_context(client, host)
+
       assert {:ok, run} =
-               Session.run(
-                 client,
-                 "fixture",
-                 @body,
+               run_releasing_context(
+                 run_client,
                  stdin,
                  &send_chunk(parent, :stdout, &1),
-                 &send_chunk(parent, :stderr, &1)
+                 &send_chunk(parent, :stderr, &1),
+                 max_output_bytes: byte_size(@stdout) + byte_size(@stderr)
                )
 
       assert_receive {:stdout, @stdout}, 5_000
@@ -116,8 +130,9 @@ defmodule Opsmaru.Incus.ExecOutputTest do
       assert_receive {:barrier, "0"}, 5_000
       assert run.exit_status == result.exit_status
       assert run.stdout_bytes == result.stdout_bytes and run.stderr_bytes == result.stderr_bytes
-      assert run.operation.client == client
-      assert run.operation.response.connection == client.connection
+      assert run.operation.client == run_client
+      assert run.operation.response.connection == run_client.connection
+      assert RequestContext.status(host) == :active
       requests = HTTPFixture.requests(fixture)
       posts = Enum.filter(requests, &(&1.method == "POST"))
       assert length(posts) == 3
@@ -304,7 +319,7 @@ defmodule Opsmaru.Incus.ExecOutputTest do
 
         for result <- [
               Session.exec(client, "fixture", @body),
-              Session.run(client, "fixture", @body, "", sink, sink)
+              run_releasing_context(client, "", sink, sink)
             ] do
           assert {:error,
                   %Error{
@@ -335,7 +350,7 @@ defmodule Opsmaru.Incus.ExecOutputTest do
 
       for result <- [
             Session.exec(client, "fixture", @body),
-            Session.run(client, "fixture", @body, "", sink, sink)
+            run_releasing_context(client, "", sink, sink)
           ] do
         assert {:error, %Error{kind: :stream_negotiation, operation: url} = error} = result
         assert url == "/1.0/operations/exec-id"
@@ -363,7 +378,7 @@ defmodule Opsmaru.Incus.ExecOutputTest do
 
         for result <- [
               Session.exec(client, "fixture", @body),
-              Session.run(client, "fixture", @body, "", sink, sink)
+              run_releasing_context(client, "", sink, sink)
             ] do
           assert {:error, %Error{kind: :invalid_stream_metadata, operation: url}} = result
           assert url == "/1.0/operations/exec-id"
@@ -449,22 +464,36 @@ defmodule Opsmaru.Incus.ExecOutputTest do
       {client, fixture, _} = fixture(root, unquote(transport))
       sink = fn _ -> :ok end
 
-      for {body, stdin, stdout, opts, kind} <- [
-            {Map.put(@body, "interactive", true), "", sink, [], :invalid_exec_run},
-            {Map.put(@body, "record-output", true), "", sink, [], :invalid_exec_run},
-            {Map.delete(@body, "wait-for-websocket"), "", sink, [], :invalid_exec_run},
-            {@body, [], sink, [], :invalid_exec_run},
-            {@body, "", nil, [], :invalid_exec_run},
-            {@body, "", sink, [timeout: 0], :invalid_exec_run},
-            {@body, "", sink, [timeout: 1, timeout: 2], :invalid_exec_run},
-            {@body, "", sink, [unknown: true], :invalid_exec_run},
-            {@body, "", sink, [max_output_bytes: 0], :invalid_exec_run},
-            {@body, "ab", sink, [max_input_bytes: 1], :exec_input_limit}
-          ] do
-        assert {:error, %Error{kind: ^kind, operation: nil}} =
-                 Session.run(client, "fixture", body, stdin, stdout, sink, opts)
-      end
+      host = RequestContext.new!(timeout: 30_000)
+      RequestContext.cancel(host)
+      canceled = Incus.with_context(client, host)
 
+      {runner, trace} =
+        trace_exec_run(fn ->
+          for {body, stdin, stdout, opts, kind} <- [
+                {Map.put(@body, "interactive", true), "", sink, [], :invalid_exec_run},
+                {Map.put(@body, "record-output", true), "", sink, [], :invalid_exec_run},
+                {Map.delete(@body, "wait-for-websocket"), "", sink, [], :invalid_exec_run},
+                {@body, [], sink, [], :invalid_exec_run},
+                {@body, "", nil, [], :invalid_exec_run},
+                {@body, "", sink, [timeout: 0], :invalid_exec_run},
+                {@body, "", sink, [timeout: 1, timeout: 2], :invalid_exec_run},
+                {@body, "", sink, [unknown: true], :invalid_exec_run},
+                {@body, "", sink, [max_output_bytes: 0], :invalid_exec_run},
+                {@body, "ab", sink, [max_input_bytes: 1], :exec_input_limit}
+              ] do
+            assert {:error, %Error{kind: ^kind, operation: nil}} =
+                     Session.run(client, "fixture", body, stdin, stdout, sink, opts)
+          end
+
+          Session.run(canceled, "fixture", @body, "", sink, sink)
+        end)
+
+      assert {:error, %Error{kind: :canceled, operation: nil}} = Task.await(runner, 10_000)
+      owner = runner.pid
+      barrier = :trace.delivered(trace, owner)
+      assert_receive {:trace_delivered, ^owner, ^barrier}, 5_000
+      refute_received {:trace, ^owner, :return_from, {RequestContext, :new!, 1}, _}
       assert HTTPFixture.requests(fixture) == []
     end
   end
@@ -708,7 +737,7 @@ defmodule Opsmaru.Incus.ExecOutputTest do
         {client, fixture, _} = fixture(root, unquote(transport), [{gate, true}])
 
         assert {:error, %Error{kind: ^kind, operation: ^operation, response: response}} =
-                 Session.run(client, "fixture", @body, "", sink, sink, timeout: 1_000)
+                 run_releasing_context(client, "", sink, sink, [timeout: 1_000], :deadline)
 
         if operation do
           assert response.connection == client.connection
@@ -750,8 +779,8 @@ defmodule Opsmaru.Incus.ExecOutputTest do
     end
   end
 
-  for transport <- [:gen_tcp, :ssl] do
-    test "collection reports a request context that stopped its channels first over #{transport}",
+  for transport <- [:gen_tcp, :ssl], phase <- [:stdin, :output] do
+    test "collection reports a request context that stopped its channels first during #{phase} over #{transport}",
          %{root: root} do
       {client, fixture, _} = fixture(root, unquote(transport), gate_stdout: true)
       context = RequestContext.new!(timeout: 30_000)
@@ -772,6 +801,7 @@ defmodule Opsmaru.Incus.ExecOutputTest do
       on_exit(fn -> if Process.alive?(caller), do: Process.exit(caller, :kill) end)
       assert_receive {:session, session}, 5_000
       assert_receive {:stdout_gate, peer}, 5_000
+      hold_stdin(unquote(phase), session)
       :erlang.trace(caller, true, [:procs, :set_on_spawn])
       send(caller, :collect)
       assert_receive {:trace, ^caller, :spawn, worker, _}, 5_000
@@ -793,6 +823,9 @@ defmodule Opsmaru.Incus.ExecOutputTest do
       refute Enum.any?(requests, &(&1.method == "DELETE"))
     end
   end
+
+  defp hold_stdin(:stdin, session), do: assert(:ok = :sys.suspend(session.channels["0"].pid))
+  defp hold_stdin(:output, _session), do: :ok
 
   for transport <- [:gen_tcp, :ssl] do
     test "run local timeout and host cancellation kill stalled sinks and retain a reusable handle over #{transport}",
@@ -817,11 +850,10 @@ defmodule Opsmaru.Incus.ExecOutputTest do
         end
 
         expected = if mode == :cancellation, do: :canceled, else: :deadline
+        timeout = if mode == :host_deadline, do: 10_000, else: 1_000
 
         assert {:error, %Error{kind: ^expected, operation: url, response: response}} =
-                 Session.run(client, "fixture", @body, "", sink, sink,
-                   timeout: if(mode == :host_deadline, do: 10_000, else: 1_000)
-                 )
+                 run_releasing_context(client, "", sink, sink, [timeout: timeout], expected)
 
         assert url == "/1.0/operations/exec-id" and response.connection == client.connection
         assert_receive {:sink, worker}, 5_000
@@ -849,8 +881,8 @@ defmodule Opsmaru.Incus.ExecOutputTest do
       {client, fixture, _} = fixture(root, unquote(transport), control: true)
       parent = self()
 
-      owner =
-        spawn(fn ->
+      {owner, _trace} =
+        trace_exec_run(fn ->
           sink = fn _ ->
             Process.flag(:trap_exit, true)
             send(parent, {:sink, self()})
@@ -864,8 +896,14 @@ defmodule Opsmaru.Incus.ExecOutputTest do
         end)
 
       assert_receive {:sink, worker}, 5_000
+      private = receive_exec_context(owner.pid)
+      assert {:ok, {notifier, ref} = subscription} = RequestContext.subscribe(private)
       monitor = Process.monitor(worker)
-      Process.exit(owner, :kill)
+      assert Task.shutdown(owner, :brutal_kill) == nil
+      assert_receive {:request_context_terminal, ^ref}, 5_000
+      assert_context_unregistered(notifier, private.cancelled)
+      assert RequestContext.status(private) == :canceled
+      assert :ok = RequestContext.unsubscribe(subscription)
       assert_receive {:DOWN, ^monitor, :process, ^worker, _}, 5_000
       for name <- ["0", "1", "2", "control"], do: assert_receive({:peer_closed, ^name}, 5_000)
       assert Enum.count(HTTPFixture.requests(fixture), &(&1.method == "POST")) == 1
@@ -893,7 +931,7 @@ defmodule Opsmaru.Incus.ExecOutputTest do
         assert_closed(session)
 
         assert {:error, %Error{kind: ^kind, operation: ^url, response: accepted}} =
-                 Session.run(client, "fixture", @body, "", sink, sink, opts)
+                 run_releasing_context(client, "", sink, sink, opts)
 
         assert accepted.connection == client.connection
       end
@@ -1112,6 +1150,88 @@ defmodule Opsmaru.Incus.ExecOutputTest do
         assert_closed(session)
       end
     end
+  end
+
+  test "run releases its private context when the work scope refuses dispatch", %{root: root} do
+    {client, fixture, _} = fixture(root, :gen_tcp)
+    sink = fn _ -> :ok end
+
+    {runner, _trace} =
+      trace_exec_run(fn ->
+        WorkScope.bind(WorkScope.new(0))
+        Session.run(client, "fixture", @body, "", sink, sink)
+      end)
+
+    assert {:error, %Error{kind: :request, operation: nil}} = Task.await(runner, 10_000)
+    assert_exec_context_released(runner.pid, nil, :canceled)
+    assert HTTPFixture.requests(fixture) == []
+  end
+
+  defp run_releasing_context(client, stdin, stdout, stderr, opts \\ [], kind \\ :canceled) do
+    {runner, _trace} =
+      trace_exec_run(fn -> Session.run(client, "fixture", @body, stdin, stdout, stderr, opts) end)
+
+    result = Task.await(runner, 10_000)
+    assert_exec_context_released(runner.pid, client.connection.request_context, kind)
+    result
+  end
+
+  defp trace_exec_run(fun) do
+    runner =
+      Task.async(fn ->
+        receive do
+          :run -> fun.()
+        end
+      end)
+
+    Code.ensure_loaded!(RequestContext)
+    trace = :trace.session_create(__MODULE__, self(), [])
+    on_exit(fn -> :trace.session_destroy(trace) end)
+
+    assert :trace.function(
+             trace,
+             {RequestContext, :new!, 1},
+             [{:_, [], [{:message, false}, {:return_trace}]}],
+             [:local]
+           ) == 1
+
+    assert :trace.function(trace, {RequestContext, :cancel, 1}, true, [:local]) == 1
+    assert :trace.process(trace, runner.pid, true, [:call]) == 1
+    send(runner.pid, :run)
+    {runner, trace}
+  end
+
+  defp receive_exec_context(owner) do
+    assert_receive {:trace, ^owner, :return_from, {RequestContext, :new!, 1},
+                    %RequestContext{owner: ^owner} = private},
+                   5_000
+
+    private
+  end
+
+  defp assert_exec_context_released(owner, host, kind) do
+    private = receive_exec_context(owner)
+    deadline = if host, do: min(host.deadline, private.deadline), else: private.deadline
+    assert_receive {:trace, ^owner, :call, {RequestContext, :cancel, [scoped]}}, 5_000
+    assert scoped == %{private | deadline: deadline}
+
+    # Inspect the cell first because status/1 can record owner loss on its own.
+    assert :atomics.get(private.cancelled, 1) in [1, 2]
+    assert RequestContext.status(private) == kind
+    assert_context_unregistered(Process.whereis(Notifier), private.cancelled)
+  end
+
+  defp assert_context_unregistered(nil, _cell), do: :ok
+
+  defp assert_context_unregistered(notifier, cell) do
+    %{contexts: contexts, monitors: monitors, subscriptions: subscriptions} =
+      :sys.get_state(notifier)
+
+    refute Map.has_key?(contexts, cell)
+    refute {:owner, cell} in Map.values(monitors)
+    refute Enum.any?(subscriptions, fn {_, {registered_cell, _}} -> registered_cell == cell end)
+  catch
+    :exit, {reason, {:sys, :get_state, [^notifier]}} when reason in [:noproc, :normal] -> :ok
   end
 
   defp go_exec(root, credentials, mode, body, stdin \\ "") do

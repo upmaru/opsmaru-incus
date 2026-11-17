@@ -1,9 +1,10 @@
-defmodule Opsmaru.Incus.Operations.Instances do
+defmodule Opsmaru.Incus.Operations.Composite.Instances do
   @moduledoc false
   # Instance, snapshot and image mutations and deletions. Create/update input
   # is curated; restricted config keys and devices need host approval.
   alias Opsmaru.Incus
-  alias Opsmaru.Incus.Operations.{Descriptor, Mutation, Result}
+  alias Opsmaru.Incus.Operations.Composite.Mutation
+  alias Opsmaru.Incus.Operations.{Descriptor, Result}
   import Opsmaru.Incus.Operations.Fragments
 
   @restricted_prefixes ["raw.", "volatile.", "security.idmap.", "security.syscalls."]

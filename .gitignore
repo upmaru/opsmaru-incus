@@ -18,3 +18,4 @@ opsmaru_incus-*.tar
 .env.*
 !.env.example
 .integration/
+/dist/

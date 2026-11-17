@@ -17,7 +17,10 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
   client did not send that start at or past an end of file already seen on the
   same handle and were answered with end of file, or with failure once that
   handle was closed. It answers our extra reads with end of file only past such
-  an offset. Both are listed and checked; nothing else may differ.
+  an offset. A short DATA reply to a pipelined ReadAt also terminates the
+  requested range. Its later chunks can be dispatched before either client
+  processes the short reply. The replay accounts for those chunks within
+  that call's original offset and length. Both clients' results must agree.
   """
   use ExUnit.Case, async: true
   alias Opsmaru.Incus
@@ -28,6 +31,7 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
   @integration Path.expand("../.integration", __DIR__)
   @driver Path.join(@integration, "sftp-operations-driver")
   @server Path.join(@integration, "sftp-server-fixture")
+  @packet_size 131_072
   # A regular file larger than eight 128 KiB packets, so WriteTo reads ahead.
   @big 1_060_921
 
@@ -86,9 +90,10 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
     exchange = recorded()
 
     # 2. Our client against the recorded replies: identical requests and results.
-    replay = backend(base, transport, identity, {:replay, exchange, self()})
+    progress = start_supervised!({Agent, fn -> nil end}, id: make_ref())
+    replay = backend(base, transport, identity, {:replay, exchange, self(), progress})
     assert {:ok, session} = open(client(replay, identity), kind)
-    ours = run(session, steps)
+    ours = run(session, steps, progress)
     SFTP.close(session)
     assert_receive {:sftp_replay_done, mismatches, remaining, read_ahead}, 5_000
     # Request mismatches first: they name the packet that diverged, where a step
@@ -211,6 +216,35 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
       end)
 
     assert ours == native["steps"]
+  end
+
+  test "replay tolerates only valid later chunks of a short concurrent ReadAt" do
+    read = fn id, offset, size -> <<5, id::32, 1::32, "h", offset::64, size::32>> end
+    data = fn id -> <<103, id::32, 1::32, "x">> end
+    stat = {<<8, 4::32, 1::32, "h">>, <<105, 4::32, 0::32>>}
+    state = %{mismatches: [], read_ahead: [], eof: %{}, closed: MapSet.new()}
+    ref = make_ref()
+    step = {ref, %{op: "read_at", offset: 0, count: 300_000}}
+    first = read.(1, 0, @packet_size)
+    late = read.(2, 2 * @packet_size, 37_856)
+    {_, [^stat], short} = answer(first, [{first, data.(1)}, stat], state, step)
+
+    # The Elixir client can dispatch the final chunk before seeing short DATA.
+    assert {<<101, 2::32, 1::32, _::binary>>, [^stat], %{read_ahead: [{:extra, ^late}]}} =
+             answer(late, [stat], short, step)
+
+    # The pinned client can dispatch it as well. It is skipped before the next step.
+    next = {make_ref(), %{op: "file_stat"}}
+
+    assert {_, [], %{read_ahead: [{:skipped, ^late}], mismatches: []}} =
+             answer(elem(stat, 0), [{late, data.(2)}, stat], short, next)
+
+    assert {_, [], %{mismatches: [{^late, _}]}} = answer(late, [stat], short, next)
+
+    wrong_length = read.(2, 2 * @packet_size, 1)
+
+    assert {_, [], %{mismatches: [{^wrong_length, _}]}} =
+             answer(wrong_length, [stat], short, step)
   end
 
   defp assert_steps(ours, native, steps) do
@@ -382,8 +416,13 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
     end
   end
 
-  defp run(session, steps) do
-    {results, _} = Enum.map_reduce(steps, %{}, &file_step(session, &1, &2))
+  defp run(session, steps, progress \\ nil) do
+    {results, _} =
+      Enum.map_reduce(steps, %{}, fn step, files ->
+        if progress, do: Agent.update(progress, fn _ -> {make_ref(), step} end)
+        file_step(session, step, files)
+      end)
+
     results
   end
 
@@ -726,8 +765,11 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
       )
 
     case mode do
-      {:live, root, parent} -> relay(transport, socket, root, parent)
-      {:replay, exchange, parent} -> replay(transport, socket, exchange, parent)
+      {:live, root, parent} ->
+        relay(transport, socket, root, parent)
+
+      {:replay, exchange, parent, progress} ->
+        replay(transport, socket, exchange, parent, progress)
     end
   end
 
@@ -791,19 +833,19 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
     end
   end
 
-  defp replay(transport, socket, {version, exchange}, parent) do
+  defp replay(transport, socket, {version, exchange}, parent, progress) do
     {:ok, _init} = receive_frame(transport, socket)
     :ok = transport.send(socket, frame(version))
     state = %{mismatches: [], read_ahead: [], eof: %{}, closed: MapSet.new()}
-    replay_loop(transport, socket, exchange, parent, state)
+    replay_loop(transport, socket, exchange, parent, progress, state)
   end
 
-  defp replay_loop(transport, socket, exchange, parent, state) do
+  defp replay_loop(transport, socket, exchange, parent, progress, state) do
     case receive_frame(transport, socket) do
       {:ok, ours} ->
-        {reply, exchange, state} = answer(ours, exchange, state)
+        {reply, exchange, state} = answer(ours, exchange, state, Agent.get(progress, & &1))
         :ok = transport.send(socket, frame(reply))
-        replay_loop(transport, socket, exchange, parent, state)
+        replay_loop(transport, socket, exchange, parent, progress, state)
 
       :closed ->
         # Late read-ahead may also trail our last request.
@@ -820,22 +862,26 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
     end
   end
 
-  defp answer(<<type, id::32, rest::binary>> = ours, exchange, state) do
+  defp answer(ours, exchange, state, step \\ nil)
+
+  defp answer(<<type, id::32, rest::binary>> = ours, exchange, state, step) do
     case exchange do
       [
         {<<^type, _::32, ^rest::binary>>, <<reply_type, _::32, reply::binary>> = recorded}
         | exchange
       ] ->
         state = ours |> note_eof(recorded, state) |> note_close(ours, recorded)
+        state = note_read_range(state, step, ours, recorded)
         {<<reply_type, id::32, reply::binary>>, exchange, state}
 
       [{read, reply} | rest] ->
-        if skippable?(read, reply, state),
-          do: answer(ours, rest, %{state | read_ahead: [{:skipped, read} | state.read_ahead]}),
-          else: unmatched(ours, id, exchange, state)
+        if skippable?(read, reply, state) or recorded_read_ahead?(read, reply, state),
+          do:
+            answer(ours, rest, %{state | read_ahead: [{:skipped, read} | state.read_ahead]}, step),
+          else: unmatched(ours, id, exchange, state, step)
 
       [] ->
-        unmatched(ours, id, exchange, state)
+        unmatched(ours, id, exchange, state, step)
     end
   end
 
@@ -850,8 +896,8 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
 
   defp skippable?(_, _, _), do: false
 
-  defp unmatched(ours, id, exchange, state) do
-    if past_eof(ours, state) do
+  defp unmatched(ours, id, exchange, state, step) do
+    if past_eof(ours, state) or short_read_ahead?(ours, state, step) do
       eof = <<101, id::32, 1::32, 0::32, 0::32>>
       {eof, exchange, %{state | read_ahead: [{:extra, ours} | state.read_ahead]}}
     else
@@ -865,6 +911,77 @@ defmodule Opsmaru.Incus.SFTPOperationsReferenceTest do
       {failure, exchange, %{state | mismatches: [{ours, expected} | state.mismatches]}}
     end
   end
+
+  defp note_read_range(
+         state,
+         {ref, %{op: op, count: count} = step},
+         <<5, _::32, rest::binary>>,
+         reply
+       )
+       when op in ["read", "read_at"] and count > @packet_size do
+    {handle, offset, length} = read_chunk(rest)
+    range = Map.get(state, :range)
+
+    range =
+      case range do
+        %{ref: ^ref} ->
+          range
+
+        _ ->
+          %{
+            ref: ref,
+            handle: handle,
+            start: Map.get(step, :offset, offset),
+            count: count,
+            short: nil
+          }
+      end
+
+    if range.handle == handle and in_read_range?(range, offset, length) do
+      short =
+        case reply do
+          <<103, _::32, size::32, _::binary-size(size)>> when size < length ->
+            min(range.short || offset, offset)
+
+          _ ->
+            range.short
+        end
+
+      Map.put(state, :range, %{range | short: short})
+    else
+      state
+    end
+  end
+
+  defp note_read_range(state, _, _, _), do: Map.delete(state, :range)
+
+  defp short_read_ahead?(<<5, _::32, rest::binary>>, %{range: %{short: short} = range}, step)
+       when is_integer(short) do
+    {handle, offset, length} = read_chunk(rest)
+
+    (step == :recorded or match?({ref, _} when ref == range.ref, step)) and
+      handle == range.handle and offset > short and in_read_range?(range, offset, length)
+  end
+
+  defp short_read_ahead?(_, _, _), do: false
+
+  defp recorded_read_ahead?(read, <<103, _::32, size::32, _::binary-size(size)>>, state),
+    do: short_read_ahead?(read, state, :recorded)
+
+  defp recorded_read_ahead?(read, <<101, _::32, 1::32, _::binary>>, state),
+    do: short_read_ahead?(read, state, :recorded)
+
+  defp recorded_read_ahead?(_, _, _), do: false
+
+  defp in_read_range?(range, offset, length) do
+    index = offset - range.start
+
+    index >= 0 and index < range.count and rem(index, @packet_size) == 0 and
+      length == min(@packet_size, range.count - index)
+  end
+
+  defp read_chunk(<<size::32, handle::binary-size(size), offset::64, length::32>>),
+    do: {handle, offset, length}
 
   defp note_eof(<<5, _::32, rest::binary>>, <<101, _::32, 1::32, _::binary>>, state) do
     {handle, offset} = read_position(rest)

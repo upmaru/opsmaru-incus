@@ -1,7 +1,7 @@
 defmodule Opsmaru.TestSupport.HTTPFixture do
   @moduledoc """
   Bounded, scripted Unix/TLS HTTP endpoint for protocol fixtures only.
-  Each connection serves one request; captured requests are authoritative.
+  Connections serve one request by default. Fixtures can opt into keep-alive.
   No fixture opens a Swift socket, invokes VZ or accesses ordinary state.
   """
 
@@ -64,6 +64,7 @@ defmodule Opsmaru.TestSupport.HTTPFixture do
        listener: listener,
        worker: worker,
        endpoint: endpoint,
+       keep_alive: Keyword.get(opts, :keep_alive, false),
        handler: Keyword.fetch!(opts, :handler),
        requests: []
      }}
@@ -83,7 +84,7 @@ defmodule Opsmaru.TestSupport.HTTPFixture do
   def handle_call(:requests, _from, state), do: {:reply, Enum.reverse(state.requests), state}
 
   def handle_call({:request, request}, _from, state) do
-    {:reply, state.handler, %{state | requests: [request | state.requests]}}
+    {:reply, {state.handler, state.keep_alive}, %{state | requests: [request | state.requests]}}
   end
 
   @impl true
@@ -148,8 +149,17 @@ defmodule Opsmaru.TestSupport.HTTPFixture do
   end
 
   defp serve(transport, socket, owner) do
+    serve_request(transport, socket, owner)
+  rescue
+    # A bounded client may close while the fixture reads a body.
+    MatchError -> :ok
+  after
+    transport.close(socket)
+  end
+
+  defp serve_request(transport, socket, owner) do
     request = read_request(transport, socket)
-    handler = GenServer.call(owner, {:request, request})
+    {handler, keep_alive} = GenServer.call(owner, {:request, request})
     response = handler.(request)
 
     case response do
@@ -166,14 +176,13 @@ defmodule Opsmaru.TestSupport.HTTPFixture do
           end
         end)
 
+      %{exchange: exchange, keep_alive: true} when keep_alive ->
+        :ok = exchange.(socket)
+        serve_request(transport, socket, owner)
+
       _ ->
         transport.send(socket, encode_response(response))
     end
-  rescue
-    # A bounded client may close while the fixture reads a body.
-    MatchError -> :ok
-  after
-    transport.close(socket)
   end
 
   defp read_request(transport, socket) do

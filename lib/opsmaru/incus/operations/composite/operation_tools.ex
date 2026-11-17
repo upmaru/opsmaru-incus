@@ -1,11 +1,12 @@
-defmodule Opsmaru.Incus.Operations.OperationTools do
+defmodule Opsmaru.Incus.Operations.Composite.OperationTools do
   @moduledoc false
   # Rebind a native operation by its UUID: GetOperation, GetOperationWait and
   # DeleteOperation. A local wait failure is reported as running, never as
   # cancellation; cancel sends at most one DELETE and completion stays native.
   alias Opsmaru.Incus
   alias Opsmaru.Incus.Error
-  alias Opsmaru.Incus.Operations.{Descriptor, Mutation, Result}
+  alias Opsmaru.Incus.Operations.Composite.Mutation
+  alias Opsmaru.Incus.Operations.{Descriptor, Result}
   import Opsmaru.Incus.Operations.Fragments
 
   def descriptors do

@@ -1,6 +1,7 @@
 defmodule FoundationConsumer.OperationsTest do
   use ExUnit.Case
-  alias Opsmaru.Incus.{Connection, Context, Operations}
+  alias Opsmaru.Incus.{Connection, Context}
+  alias Opsmaru.Incus.Operations.Composite
 
   # A host binding: the trusted backend comes from host state, never tool input.
   defmodule IncusHost do
@@ -16,9 +17,9 @@ defmodule FoundationConsumer.OperationsTest do
   end
 
   test "the shared catalogue is available to a host without starting anything" do
-    names = Enum.map(Operations.all(), & &1.name)
+    names = Enum.map(Composite.all(), & &1.name)
     assert "incus_instance_list" in names and names == Enum.sort(names)
-    assert {:ok, %{scope: "incus.read"}} = Operations.fetch("incus_instance_list")
+    assert {:ok, %{scope: "incus.read"}} = Composite.fetch("incus_instance_list")
     refute Process.whereis(Opsmaru.Supervisor)
   end
 
@@ -73,7 +74,7 @@ defmodule FoundationConsumer.OperationsTest do
     caller = %{backend: backend}
 
     run =
-      &Operations.run("incus_instance_list", &1,
+      &Composite.run("incus_instance_list", &1,
         host: IncusHost,
         caller: &2,
         scopes: ["incus.read"]
@@ -89,7 +90,7 @@ defmodule FoundationConsumer.OperationsTest do
     assert {:error, %{"kind" => "host_binding_failed"}} = run.(%{}, %{})
 
     assert {:error, %{"kind" => "permission_denied"}} =
-             Operations.run("incus_instance_delete", %{"name" => "vm1", "confirm" => "vm1"},
+             Composite.run("incus_instance_delete", %{"name" => "vm1", "confirm" => "vm1"},
                host: IncusHost,
                caller: caller,
                scopes: ["incus.read"]
