@@ -14,8 +14,11 @@ defmodule Opsmaru.Incus.ReleaseScriptsTest do
     # Answers from a list of phases. Each phase maps a path to a response;
     # every request for the public release endpoint (the first request of
     # each state read) moves to the next phase, and the last phase repeats.
-    # A timeline of `{milliseconds, phase}` instead picks the phase by the
-    # time since the first request.
+    #
+    # A timeline instead holds each phase for a while: `{milliseconds, phase}`
+    # until that long has passed since the first state read that saw it, and
+    # `{:read, phase}` until one state read has used it. Phases change only
+    # at the start of a state read, so a slow runner cannot skip one.
     import Plug.Conn
 
     def init(state), do: state
@@ -23,26 +26,14 @@ defmodule Opsmaru.Incus.ReleaseScriptsTest do
     def call(conn, state) do
       authorization = get_req_header(conn, "authorization")
       path = conn.request_path
+      read? = not String.ends_with?(path, "/staged")
 
       response =
-        Agent.get_and_update(state, fn %{phases: phases, index: index} = current ->
-          index = if String.ends_with?(path, "/staged"), do: index, else: index + 1
-          started = current.started || System.monotonic_time(:millisecond)
-          elapsed = System.monotonic_time(:millisecond) - started
-
-          phase =
-            case current.timeline do
-              nil -> Enum.at(phases, min(index, length(phases) - 1))
-              timeline -> at(timeline, elapsed)
-            end
-
-          {Map.get(phase, path, {404, %{}}),
-           %{
-             current
-             | index: index,
-               started: started,
-               log: [{path, authorization} | current.log]
-           }}
+        Agent.get_and_update(state, fn current ->
+          current = if read?, do: advance(current), else: current
+          phase = phase(current)
+          log = [{path, authorization} | current.log]
+          {Map.get(phase, path, {404, %{}}), %{current | log: log}}
         end)
 
       case response do
@@ -57,9 +48,28 @@ defmodule Opsmaru.Incus.ReleaseScriptsTest do
       end
     end
 
-    defp at([{_ms, phase}], _elapsed), do: phase
-    defp at([{ms, phase} | _], elapsed) when elapsed < ms, do: phase
-    defp at([{ms, _} | rest], elapsed), do: at(rest, elapsed - ms)
+    defp advance(%{timeline: nil, index: index} = current), do: %{current | index: index + 1}
+
+    defp advance(%{timeline: timeline} = current) do
+      now = System.monotonic_time(:millisecond)
+      current = %{current | started: current.started || now}
+
+      current =
+        if current.index + 1 < length(timeline) and
+             held?(Enum.at(timeline, current.index), current, now),
+           do: advance(%{current | index: current.index + 1, started: now, reads: 0}),
+           else: current
+
+      %{current | reads: current.reads + 1}
+    end
+
+    defp held?({:read, _phase}, current, _now), do: current.reads >= 1
+    defp held?({ms, _phase}, current, now), do: now - current.started >= ms
+
+    defp phase(%{timeline: nil, phases: phases, index: index}),
+      do: Enum.at(phases, min(index, length(phases) - 1))
+
+    defp phase(%{timeline: timeline, index: index}), do: timeline |> Enum.at(index) |> elem(1)
   end
 
   setup context do
@@ -69,7 +79,7 @@ defmodule Opsmaru.Incus.ReleaseScriptsTest do
 
     {:ok, state} =
       Agent.start_link(fn ->
-        %{phases: [%{}], timeline: nil, index: -1, started: nil, log: []}
+        %{phases: [%{}], timeline: nil, index: -1, started: nil, reads: 0, log: []}
       end)
 
     ref = {__MODULE__, context.test}
@@ -85,11 +95,15 @@ defmodule Opsmaru.Incus.ReleaseScriptsTest do
     do:
       Agent.update(
         context.state,
-        &%{&1 | phases: phases, timeline: nil, index: -1, started: nil}
+        &%{&1 | phases: phases, timeline: nil, index: -1, started: nil, reads: 0}
       )
 
   defp timeline(context, timeline),
-    do: Agent.update(context.state, &%{&1 | timeline: timeline, index: -1, started: nil})
+    do:
+      Agent.update(
+        context.state,
+        &%{&1 | timeline: timeline, index: 0, started: nil, reads: 0}
+      )
 
   defp log(context), do: context.state |> Agent.get(& &1.log) |> Enum.reverse()
 
@@ -280,16 +294,18 @@ defmodule Opsmaru.Incus.ReleaseScriptsTest do
     end
 
     test "the docs grace period restarts when docs stop being missing", context do
-      # Bash counts SECONDS in whole seconds, so each 1.8 s stretch measures
-      # at most 2 s and the whole 4 s of missing docs at least 3 s.
+      # Bash counts SECONDS in whole seconds. Each 1.8 s stretch of missing
+      # docs starts at its first read and ends before the read that follows
+      # 1.8 s later, so it measures at most 2 s; together they span at least
+      # 3.6 s, which measures at least 3 s without the reset.
       missing = %{@release => live(false)}
       staged_docs = %{@release => live(false), "#{@release}/docs/staged" => staged("staged")}
 
       timeline(context, [
         {1_800, missing},
-        {400, staged_docs},
+        {:read, staged_docs},
         {1_800, missing},
-        {1_000, %{@release => live(true)}}
+        {:read, %{@release => live(true)}}
       ])
 
       assert {0, output, _} = run(context, "wait-for-hex-release.sh", [{"HEX_DOCS_GRACE", "3"}])
