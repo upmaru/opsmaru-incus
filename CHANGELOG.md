@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 — 2026-11-17
+
+Standard Incus clients can enroll through the gateway with a trust token.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.1"}
+```
 
 ### Fixed
 
@@ -11,6 +17,12 @@
   instead of a 400. Restricted, project, non-client and token-issuing claims
   are still refused, and an empty type without a token stays a 400. The
   pinned-client enrollment drivers now send exactly the CLI's request.
+
+### Release
+
+- The publish workflow waits for the Hex owner approval of a staged release,
+  bounding each Hex request, instead of failing and needing a rerun. It runs
+  first on the `v0.2.1` tag.
 
 ## 0.2.0 — 2026-11-16
 
