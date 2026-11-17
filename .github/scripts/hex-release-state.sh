@@ -27,8 +27,11 @@ body="$(mktemp)"
 trap 'rm -f "${body}"' EXIT
 
 # get URL [AUTH]: writes the response body to $body and prints the status.
+# Each request is bounded, so a connection that stops answering fails this
+# script instead of holding up a caller that is polling against a deadline.
 get() {
   local args=(--silent --show-error --output "${body}" --write-out '%{http_code}')
+  args+=(--connect-timeout "${HEX_CONNECT_TIMEOUT:-10}" --max-time "${HEX_REQUEST_TIMEOUT:-30}")
   if [[ -n "${2:-}" ]]; then
     args+=(--header "authorization: ${2}")
   fi

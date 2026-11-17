@@ -7,10 +7,11 @@ name: Publish
 # Hex stages releases and docs published with an API key until an owner
 # approves them. `mix hex.publish` succeeds while a release is still staged, so
 # this workflow reads the release's real state: it uploads only what is
-# missing, and fails with the approval URL until the package and docs are both
-# live. Approve the staged release, then rerun the failed run. A rerun never
-# uploads a staged release again, and the GitHub Release and cassette are
-# created only once the package is live.
+# missing, shows the approval URL, and waits up to an hour for the package and
+# docs to go live. Approve the staged release and the run continues by itself.
+# If the wait runs out, approve and rerun the failed run. A rerun never uploads
+# a staged release again, and the GitHub Release and cassette are created only
+# once the package is live.
 on:
   push:
     tags: ['v*']
@@ -22,7 +23,8 @@ concurrency:
 jobs:
   hex:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # Leaves room for the hour-long wait for the Hex approval.
+    timeout-minutes: 90
     # Holds HEX_API_KEY; add required reviewers to this environment to gate publishing.
     environment: hex
     permissions:
@@ -81,36 +83,24 @@ jobs:
         env:
           HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
         run: mise exec -- mix hex.publish package --yes
+      # Docs uploaded beside a staged package are approved with it, and Hex
+      # does not report them until the package is live. So a rerun leaves
+      # them alone while the package is still waiting for approval.
       - name: Publish docs
-        if: steps.hex.outputs.docs == 'missing'
+        if: >-
+          steps.hex.outputs.docs == 'missing' &&
+          steps.hex.outputs.package != 'staged' &&
+          steps.hex.outputs.package != 'approved'
         env:
           HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
         run: mise exec -- mix hex.publish docs --yes
-      # Nothing below runs until Hex serves the package and its docs.
-      - name: Check the Hex release is live
+      # Nothing below runs until Hex serves the package and its docs. This
+      # waits for the owner's approval instead of failing straight away.
+      - name: Wait for the Hex release to go live
         env:
           HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
           VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          state="$(.github/scripts/hex-release-state.sh "${VERSION}")"
-          echo "${state}"
-          package="$(sed -n 's/^package=//p' <<< "${state}")"
-          docs="$(sed -n 's/^docs=//p' <<< "${state}")"
-          approval_url="$(sed -n 's/^approval_url=//p' <<< "${state}")"
-
-          if [[ "${package}" != "live" || "${docs}" != "live" ]]; then
-            message="opsmaru_incus ${VERSION} is not live on Hex (package: ${package}, docs: ${docs})."
-
-            if [[ "${package}" == "staged" || "${docs}" == "staged" ]]; then
-              message+=" Approve it at ${approval_url}, then rerun this workflow run."
-            else
-              message+=" Rerun this workflow run once Hex serves it."
-            fi
-
-            echo "::error::${message}"
-            echo "${message}" >> "${GITHUB_STEP_SUMMARY}"
-            exit 1
-          fi
+        run: .github/scripts/wait-for-hex-release.sh "${VERSION}"
       # A release that already carries the cassette keeps it: the published
       # SHA-256 is what hosts pin, so a rerun never replaces it.
       - name: Check for the GitHub Release

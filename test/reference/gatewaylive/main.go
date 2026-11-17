@@ -131,7 +131,8 @@ func exercise(ctx context.Context, c incus.InstanceServer, in input, out map[str
 		if in.Token == "" {
 			return errors.New("explicit single-use host token required")
 		}
-		if err := c.CreateCertificate(api.CertificatesPost{TrustToken: in.Token, CertificatePut: api.CertificatePut{Type: api.CertificateTypeClient}}); err != nil {
+		// Exactly the request `incus remote add NAME TOKEN` sends (cmd/incus/remote.go).
+		if err := c.CreateCertificate(api.CertificatesPost{TrustToken: in.Token}); err != nil {
 			return err
 		}
 		server, _, err := c.GetServer()

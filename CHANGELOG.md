@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.2.1 — 2026-11-17
+
+Standard Incus clients can enroll through the gateway with a trust token.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.1"}
+```
+
+### Fixed
+
+- **Official token enrollment.** The gateway accepts the request
+  `incus remote add NAME TOKEN` sends: a `trust_token` beside the zero-valued
+  certificate fields, including an empty `type`. Native Incus ignores every
+  field but the token when redeeming it, so hosts now receive these requests
+  instead of a 400. Restricted, project, non-client and token-issuing claims
+  are still refused, and an empty type without a token stays a 400. The
+  pinned-client enrollment drivers now send exactly the CLI's request.
+
+### Release
+
+- The publish workflow waits for the Hex owner approval of a staged release,
+  bounding each Hex request, instead of failing and needing a rerun. It runs
+  first on the `v0.2.1` tag. `test/release_scripts_test.exs` drives its Hex
+  scripts against a fake Hex API: live, staged, approved, rejected and
+  missing states, the approval notice, repeated read failures, missing docs
+  and the wait timeout.
+
 ## 0.2.0 — 2026-11-16
 
 opsmaru_incus now publishes its operations as `tama-operations/1` documents,
