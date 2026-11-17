@@ -26,8 +26,9 @@ func main() {
 	defer client.Disconnect()
 	before, _, err := client.GetServer()
 	must(err)
-	must(client.CreateCertificate(api.CertificatesPost{TrustToken: input.Token,
-		CertificatePut: api.CertificatePut{Type: api.CertificateTypeClient}}))
+	// Exactly the request `incus remote add NAME TOKEN` sends
+	// (cmd/incus/remote.go addRemoteFromToken): only the token.
+	must(client.CreateCertificate(api.CertificatesPost{TrustToken: input.Token}))
 	after, _, err := client.GetServer()
 	must(err)
 	info, err := client.GetConnectionInfo()

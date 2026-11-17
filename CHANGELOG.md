@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Official token enrollment.** The gateway accepts the request
+  `incus remote add NAME TOKEN` sends: a `trust_token` beside the zero-valued
+  certificate fields, including an empty `type`. Native Incus ignores every
+  field but the token when redeeming it, so hosts now receive these requests
+  instead of a 400. Restricted, project, non-client and token-issuing claims
+  are still refused, and an empty type without a token stays a 400. The
+  pinned-client enrollment drivers now send exactly the CLI's request.
+
 ## 0.2.0 — 2026-11-16
 
 opsmaru_incus now publishes its operations as `tama-operations/1` documents,

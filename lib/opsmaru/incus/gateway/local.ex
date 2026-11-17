@@ -194,18 +194,25 @@ if Code.ensure_loaded?(Plug.Conn) do
       end
     end
 
+    # Native token redemption ignores every field but `trust_token`, and the
+    # official client (`incus remote add NAME TOKEN`) sends the zero-valued
+    # CertificatePut fields beside it, including an empty type.
     defp claims(body) do
       allowed = ~w(certificate name type restricted projects trust_token token description)
+      types = if token_request?(body), do: ["client", ""], else: ["client"]
 
       if Map.keys(body) -- allowed == [] and Map.get(body, "restricted", false) == false and
            Map.get(body, "projects", []) in [nil, []] and
-           Map.get(body, "type", "client") == "client" and
+           Map.get(body, "type", "client") in types and
            Map.get(body, "token", false) == false,
          do: :ok,
          else:
            {:error,
             Failure.new(400, "Certificate claims are not enforceable by this gateway", :not_sent)}
     end
+
+    defp token_request?(%{"trust_token" => token}) when is_binary(token), do: token != ""
+    defp token_request?(_body), do: false
 
     defp precondition(conn) do
       case Plug.Conn.get_req_header(conn, "if-match") do

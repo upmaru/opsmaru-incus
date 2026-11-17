@@ -216,6 +216,9 @@ defmodule Opsmaru.Incus.GatewayIdentityTest do
           %{"restricted" => true},
           %{"projects" => ["allowed"]},
           %{"type" => "server"},
+          %{"type" => ""},
+          %{"type" => "", "trust_token" => ""},
+          %{"type" => "server", "trust_token" => "fixture"},
           %{"token" => true},
           %{"unknown" => true}
         ] do
@@ -477,13 +480,28 @@ defmodule Opsmaru.Incus.GatewayIdentityTest do
       keyfile: String.to_charlist(client.keyfile)
     ]
 
-    for body <- [
-          %{"trust_token" => "wrong", "type" => "client"},
-          %{"trust_token" => "single-use", "restricted" => true},
-          %{"trust_token" => "single-use", "certificate" => Base.encode64(server.der)}
+    # The zero-valued fields the official client sends beside a token.
+    official = %{
+      "name" => "",
+      "type" => "",
+      "restricted" => false,
+      "projects" => nil,
+      "certificate" => "",
+      "description" => "",
+      "token" => false
+    }
+
+    # Claims the gateway cannot enforce fail with 400 before the host; a
+    # well-formed request with a wrong token reaches the host and gets 403.
+    for {body, status} <- [
+          {%{"trust_token" => "wrong", "type" => "client"}, 403},
+          {Map.put(official, "trust_token", "wrong"), 403},
+          {%{"trust_token" => "single-use", "restricted" => true}, 400},
+          {official |> Map.put("trust_token", "single-use") |> Map.put("restricted", true), 400},
+          {%{"trust_token" => "single-use", "certificate" => Base.encode64(server.der)}, 403}
         ] do
       response = RawHTTP.request(port, "POST", "/1.0/certificates", [], Jason.encode!(body), tls)
-      assert response.status in [400, 403]
+      assert response.status == status, inspect(body)
       assert Agent.get(state, & &1.trust) == %{}
       assert Agent.get(state, & &1.token) == "single-use"
     end
