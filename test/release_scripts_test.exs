@@ -253,7 +253,9 @@ defmodule Opsmaru.Incus.ReleaseScriptsTest do
       phases(context, [staged_phase, staged_phase, staged_phase, %{@release => live(true)}])
 
       assert {0, output, summary} = run(context, "wait-for-hex-release.sh")
-      assert summary =~ "Approve it at #{@approval}"
+      # The link ends the line, so terminals do not take punctuation into it.
+      assert summary =~ ~r/ Approve it at #{Regex.escape(@approval)}$/m
+      assert output =~ ~r/ Approve it at #{Regex.escape(@approval)}$/m
       assert length(String.split(output, "::notice::")) == 2
       assert output =~ "package staged, docs staged"
       assert output =~ "package live, docs live"
@@ -331,7 +333,7 @@ defmodule Opsmaru.Incus.ReleaseScriptsTest do
                run(context, "wait-for-hex-release.sh", [{"HEX_WAIT_TIMEOUT", "1"}])
 
       assert summary =~ "was not live on Hex after 1 seconds (package staged, docs missing)"
-      assert summary =~ "Approve it at #{@approval}, then rerun"
+      assert summary =~ ~r/ once it is approved at #{Regex.escape(@approval)}$/m
     end
   end
 end

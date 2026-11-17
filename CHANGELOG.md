@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Release
+
+- The publish workflow's Hex approval link now ends its message, so
+  terminals no longer take a following `;` or `,` into the link.
+
 ## 0.2.1 — 2026-11-17
 
 Standard Incus clients can enroll through the gateway with a trust token.

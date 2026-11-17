@@ -72,8 +72,9 @@ while true; do
       fail "opsmaru_incus ${version} is no longer staged on Hex: the upload was rejected or expired. Rerun this workflow run to upload it again."
     fi
 
+    # Links end their messages so terminals do not take punctuation into them.
     if [[ "${package}" == "staged" || "${docs}" == "staged" ]] && [[ -z "${announced}" ]]; then
-      message="opsmaru_incus ${version} is staged on Hex. Approve it at ${approval_url}; this run continues once Hex serves it."
+      message="opsmaru_incus ${version} is staged on Hex, and this run continues once Hex serves it. Approve it at ${approval_url}"
       echo "::notice::${message}"
       echo "${message}" >> "${summary}"
       announced="yes"
@@ -93,7 +94,7 @@ while true; do
   fi
 
   if ((SECONDS - started >= timeout)); then
-    fail "opsmaru_incus ${version} was not live on Hex after ${timeout} seconds (${last:-state unknown}). Approve it at ${approval_url:-https://hex.pm/dashboard}, then rerun this workflow run."
+    fail "opsmaru_incus ${version} was not live on Hex after ${timeout} seconds (${last:-state unknown}). Rerun this workflow run once it is approved at ${approval_url:-https://hex.pm/dashboard}"
   fi
 
   sleep "${interval}"
