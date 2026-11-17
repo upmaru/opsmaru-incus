@@ -12,7 +12,8 @@
 # - the package is missing, so its staged upload was rejected or expired;
 # - the package is live but its docs stay missing for HEX_DOCS_GRACE seconds
 #   (default 300);
-# - Hex cannot be read HEX_WAIT_ERRORS times in a row (default 5).
+# - Hex cannot be read HEX_WAIT_ERRORS times in a row (default 5). A request
+#   that gets no answer within 30 seconds counts as one failed read.
 #
 # Rerunning the workflow run after any of these is safe: it uploads only what
 # is missing and waits again.
