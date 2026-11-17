@@ -128,9 +128,17 @@ the backend.
 The host obtains this metadata through its own explicit verified inspection,
 bound to that exact connection. Loading the library or handling anonymous
 discovery never probes the backend. The origin must be an HTTPS origin;
-addresses contain only approved public `host:port` authorities. Literal
-private/loopback/link-local IPs, socket names, paths and credentials are refused.
-The host is responsible for public DNS and for supplying the gateway listener's
+addresses contain only host-approved `host:port` authorities. By default
+(`identity_scope: :public`) they must be public: literal private, loopback and
+link-local IPs, `localhost` and single-label names are refused. A host whose
+gateway listens on loopback or a private network passes
+`identity_scope: :local` to `Gateway.new!/1`; its identity may then also use
+loopback and private-network IPs (`127.0.0.0/8`, `::1`, `10.0.0.0/8`,
+`172.16.0.0/12`, `192.168.0.0/16`, `100.64.0.0/10`, `fc00::/7`), `localhost`,
+`*.localhost` and single-label names. In both scopes unspecified, link-local,
+multicast and reserved IPs, IPv4-mapped IPv6 addresses, socket names, paths and
+credentials are refused, and the guest's own addresses are never served.
+The host is responsible for DNS and for supplying the gateway listener's
 actual certificate. The connection binding is never returned to a caller.
 
 `GET /` is always synthetic (`metadata: ["/1.0"]`). Unauthenticated `GET /1.0`

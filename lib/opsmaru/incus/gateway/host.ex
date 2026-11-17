@@ -69,7 +69,8 @@ defmodule Opsmaru.Incus.Gateway.Host do
   @doc """
   Supply public gateway identity from explicit verified inspection, never a
   discovery-time backend probe. Return `{:ok, identity}` with `:origin` (HTTPS
-  origin), `:addresses` (public host:port strings), `:certificate` (PEM),
+  origin), `:addresses` (host:port strings, public unless the gateway's
+  `identity_scope` is `:local`), `:certificate` (PEM),
   `:connection` (the exact configured backend), and `:api_extensions` (verified
   backend extensions intersected with host policy). The gateway further limits
   extensions to its implemented protocols. Only public identity is returned to

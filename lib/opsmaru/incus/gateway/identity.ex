@@ -2,6 +2,14 @@ defmodule Opsmaru.Incus.Gateway.Identity do
   @moduledoc """
   Bounded public identity mediation. The host supplies explicitly verified
   backend metadata bound to the fixed connection. No discovery probe occurs.
+  The origin and addresses must be HTTPS `host:port` authorities with no
+  path or user information. With the default `identity_scope: :public` the
+  host must be a public IP literal or a dotted DNS name; with `:local` it may
+  also be a loopback or private-network IP literal (`127.0.0.0/8`, `::1`,
+  `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `100.64.0.0/10`,
+  `fc00::/7`), `localhost`, `*.localhost` or a single-label name. Unspecified,
+  link-local, multicast and reserved IPs and IPv4-mapped IPv6 addresses are
+  refused in both scopes, and the guest's own addresses are never served.
   The conservative extension allowlist depends on the available optional
   protocol adapters. The host must approve only capabilities of protocols it
   actually mounts and of its verified backend. Migration extensions require
@@ -58,37 +66,60 @@ defmodule Opsmaru.Incus.Gateway.Identity do
          } = identity,
          gateway
        ) do
+    scope = gateway.identity_scope
+
     :erlang.external_size(Map.delete(identity, :connection)) <= gateway.max_identity_bytes and
-      connection == gateway.connection and origin?(origin) and is_list(addresses) and
-      Enum.all?(addresses, &address?/1) and is_binary(certificate) and certificate?(certificate) and
-      is_list(extensions) and Enum.all?(extensions, &is_binary/1)
+      connection == gateway.connection and origin?(origin, scope) and is_list(addresses) and
+      Enum.all?(addresses, &address?(&1, scope)) and is_binary(certificate) and
+      certificate?(certificate) and is_list(extensions) and Enum.all?(extensions, &is_binary/1)
   end
 
   defp valid?(_, _), do: false
 
-  defp origin?(origin) when is_binary(origin) do
+  defp origin?(origin, scope) when is_binary(origin) do
     uri = URI.parse(origin)
 
-    uri.scheme == "https" and public_host?(uri.host) and uri.userinfo == nil and
+    uri.scheme == "https" and host?(uri.host, scope) and uri.userinfo == nil and
       uri.path in [nil, ""] and uri.query == nil and uri.fragment == nil and port?(uri.port)
   end
 
-  defp origin?(_), do: false
+  defp origin?(_, _scope), do: false
 
-  defp address?(address) when is_binary(address), do: origin?("https://" <> address)
-  defp address?(_), do: false
+  defp address?(address, scope) when is_binary(address), do: origin?("https://" <> address, scope)
+  defp address?(_, _scope), do: false
   defp port?(port), do: is_integer(port) and port in 1..65_535
 
-  # No DNS lookups. Hosts remain responsible for public DNS; literal private,
-  # loopback, link-local and unspecified addresses and socket names are refused.
-  defp public_host?(host) when is_binary(host) do
+  # No DNS lookups. Hosts remain responsible for DNS; literal link-local,
+  # unspecified, multicast and reserved addresses and socket names are always
+  # refused, and loopback and private-network ones unless the host declared a
+  # local gateway.
+  defp host?(host, scope) when is_binary(host) do
     case :inet.parse_address(String.to_charlist(host)) do
-      {:ok, ip} -> public_ip?(ip)
-      _ -> public_dns?(host)
+      {:ok, ip} -> public_ip?(ip) or (scope == :local and local_ip?(ip))
+      _ -> public_dns?(host) or (scope == :local and local_dns?(host))
     end
   end
 
-  defp public_host?(_), do: false
+  defp host?(_, _scope), do: false
+
+  defp local_ip?({127, _, _, _}), do: true
+  defp local_ip?({10, _, _, _}), do: true
+  defp local_ip?({172, b, _, _}), do: b in 16..31
+  defp local_ip?({192, 168, _, _}), do: true
+  defp local_ip?({100, b, _, _}), do: b in 64..127
+  defp local_ip?({0, 0, 0, 0, 0, 0, 0, 1}), do: true
+  defp local_ip?({a, _, _, _, _, _, _, _}), do: a in 0xFC00..0xFDFF
+  defp local_ip?(_), do: false
+
+  defp local_dns?(host) do
+    host = String.downcase(host)
+
+    host == "localhost" or
+      (String.ends_with?(host, ".localhost") and public_dns_syntax?(host)) or
+      Regex.match?(~r/\A[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\z/, host)
+  end
+
+  defp public_dns_syntax?(host), do: Regex.match?(~r/\A[a-zA-Z0-9.-]+\z/, host)
 
   defp public_dns?(host) do
     host != "localhost" and String.contains?(host, ".") and
