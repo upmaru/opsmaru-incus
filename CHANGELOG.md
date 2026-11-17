@@ -22,7 +22,10 @@ Standard Incus clients can enroll through the gateway with a trust token.
 
 - The publish workflow waits for the Hex owner approval of a staged release,
   bounding each Hex request, instead of failing and needing a rerun. It runs
-  first on the `v0.2.1` tag.
+  first on the `v0.2.1` tag. `test/release_scripts_test.exs` drives its Hex
+  scripts against a fake Hex API: live, staged, approved, rejected and
+  missing states, the approval notice, repeated read failures, missing docs
+  and the wait timeout.
 
 ## 0.2.0 — 2026-11-16
 
