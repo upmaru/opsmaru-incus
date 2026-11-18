@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.2.3 — 2026-11-18
+
+Unix-socket requests send the same `Host` header as Incus's own client, so
+servers that validate it accept relayed gateway traffic.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.3"}
+```
 
 ### Fixed
 
