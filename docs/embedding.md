@@ -71,7 +71,7 @@ Depend on a released version and let the consumer's `mix.lock` record the
 resolved package and its checksum:
 
 ```elixir
-{:opsmaru_incus, "~> 0.2.1"}
+{:opsmaru_incus, "~> 0.2.2"}
 ```
 
 Hex is the only supported distribution route; consumers do not pin Git

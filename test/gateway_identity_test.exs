@@ -141,6 +141,74 @@ defmodule Opsmaru.Incus.GatewayIdentityTest do
     assert StreamBackend.accepted(backend) == 0
   end
 
+  test "only a host-declared local gateway may advertise loopback and private-network addresses",
+       context do
+    {backend, connection} = backend(context, reply(200, Identity.envelope(metadata())))
+    identity = mount(context, connection).host_config.identity
+
+    for {origin, addresses} <- [
+          {"https://127.0.0.1:8443", ["127.0.0.1:8443"]},
+          {"https://[::1]:8443", ["[::1]:8443"]},
+          {"https://localhost:8443", ["localhost:8443"]},
+          {"https://macus.localhost:8443", ["macus.localhost:8443"]},
+          {"https://macmini:8443", ["macmini:8443"]},
+          {"https://192.168.1.20:8443", ["192.168.1.20:8443", "10.1.2.3:8443"]},
+          {"https://172.20.0.5:8443", ["172.20.0.5:8443", "100.64.0.7:8443"]},
+          {"https://[fd00::5]:8443", ["[fd00::5]:8443"]}
+        ] do
+      local = %{identity | origin: origin, addresses: addresses}
+
+      mount(context, connection, host_config: %{identity: local})
+      assert get(context, "/1.0", []).status == 503, origin
+
+      mount(context, connection, identity_scope: :local, host_config: %{identity: local})
+      response = get(context, "/1.0", [])
+      assert response.status == 200, origin
+      assert native(response.body)["metadata"]["auth"] == "untrusted"
+    end
+
+    # Neither scope advertises unusable, reserved or non-HTTPS endpoints.
+    for {origin, addresses} <- [
+          {"https://127.0.0.1:8443", ["0.0.0.0:8443"]},
+          {"https://127.0.0.1:8443", ["[::]:8443"]},
+          {"https://127.0.0.1:8443", ["169.254.10.1:8443"]},
+          {"https://127.0.0.1:8443", ["[fe80::1]:8443"]},
+          {"https://127.0.0.1:8443", ["224.0.0.1:8443"]},
+          {"https://127.0.0.1:8443", ["240.0.0.1:8443"]},
+          {"https://127.0.0.1:8443", ["[::ffff:127.0.0.1]:8443"]},
+          {"https://127.0.0.1:8443", ["[ff02::1]:8443"]},
+          {"https://127.0.0.1:8443", ["unix:///private/incus.sock"]},
+          {"https://127.0.0.1:8443", ["127.0.0.1:8443/private"]},
+          {"https://127.0.0.1:8443", ["me@127.0.0.1:8443"]},
+          {"https://127.0.0.1:8443", ["-macmini:8443"]},
+          {"http://127.0.0.1:8443", ["127.0.0.1:8443"]},
+          {"https://0.0.0.0:8443", ["127.0.0.1:8443"]}
+        ] do
+      local = %{identity | origin: origin, addresses: addresses}
+      mount(context, connection, identity_scope: :local, host_config: %{identity: local})
+      assert get(context, "/1.0", []).status == 503, inspect({origin, addresses})
+    end
+
+    assert StreamBackend.accepted(backend) == 0
+    assert_raise ArgumentError, fn -> mount(context, connection, identity_scope: :any) end
+  end
+
+  test "a local gateway serves only its own addresses and certificate in place of the guest's",
+       context do
+    {backend, connection} = backend(context, reply(200, Identity.envelope(metadata())))
+    identity = mount(context, connection).host_config.identity
+    local = %{identity | origin: "https://127.0.0.1:8443", addresses: ["127.0.0.1:8443"]}
+    mount(context, connection, identity_scope: :local, host_config: %{identity: local})
+
+    response = get(context, "/1.0")
+    assert response.status == 200
+    environment = native(response.body)["metadata"]["environment"]
+    assert environment["addresses"] == ["127.0.0.1:8443"]
+    assert environment["certificate"] == context.public_certificate
+    assert environment["server_name"] == "guest"
+    assert StreamBackend.accepted(backend) == 1
+  end
+
   test "missing, malformed, raising and late identity callbacks deny without backend access",
        context do
     {backend, connection} = backend(context, reply(200, %{}))
@@ -454,6 +522,50 @@ defmodule Opsmaru.Incus.GatewayIdentityTest do
     end
 
     refute_receive {:backend_request, _}, 50
+  end
+
+  test "the unmodified pinned client uses a local gateway's loopback identity", context do
+    server = TLSIdentity.generate(context.root, "local-server", "localhost")
+    client = TLSIdentity.generate(context.root, "local-client", "incus-client")
+    {ref, port} = GatewayServer.start_https(server, client.cafile)
+    on_exit(fn -> GatewayServer.stop(ref) end)
+    {_backend, connection} = backend(context, reply(200, Identity.envelope(metadata())))
+    gateway = mount(context, connection, identity_scope: :local)
+    state = start_supervised!({CertificateHost, trust: %{}, token: "fixture-enrollment-token"})
+
+    identity = %{
+      gateway.host_config.identity
+      | origin: "https://localhost:#{port}",
+        addresses: ["localhost:#{port}"],
+        certificate: File.read!(server.certfile)
+    }
+
+    GatewayServer.put_gateway(%{
+      gateway
+      | host: CertificateHost,
+        host_config: %{state: state, identity: identity}
+    })
+
+    input = %{
+      "URL" => "https://localhost:#{port}",
+      "ServerCertificate" => identity.certificate,
+      "ClientCertificate" => File.read!(client.certfile),
+      "ClientKey" => File.read!(client.keyfile),
+      "Token" => "fixture-enrollment-token",
+      "Fingerprint" => CertificateHost.fingerprint(client.der)
+    }
+
+    path = Path.join(context.root, "local-enrollment.json")
+    File.write!(path, Jason.encode!(input))
+    File.chmod!(path, 0o600)
+    {output, status} = System.cmd(@driver, [path], stderr_to_stdout: true)
+    assert status == 0, output
+    result = native(output)
+    assert result["before"]["auth"] == "untrusted"
+    assert result["after"]["auth"] == "trusted"
+    assert Enum.uniq(result["info"]["Addresses"]) == ["https://localhost:#{port}"]
+    assert result["after"]["environment"]["addresses"] == ["localhost:#{port}"]
+    assert result["after"]["environment"]["certificate"] == identity.certificate
   end
 
   test "wrong enrollment tokens and restricted certificate identities never acquire guest trust",

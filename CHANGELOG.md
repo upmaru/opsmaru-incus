@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.2.2 — 2026-11-18
+
+A gateway on loopback or a private network can advertise its own local
+addresses, so standard Incus clients reach it through a `localhost`, LAN or
+single-label origin.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.2"}
+```
+
+### Added
+
+- **Local gateway identity.** `Gateway.new!/1` takes `identity_scope: :local`
+  for a gateway that listens on loopback or a private network. Its host
+  identity may then advertise loopback and private-network addresses,
+  `localhost` and single-label names, as native Incus does for
+  `core.https_address`. The default `:public` scope is unchanged, and both
+  scopes still refuse unspecified, link-local, multicast and reserved
+  addresses, socket names and paths.
+
+### Release
+
+- The publish workflow's Hex approval link now ends its message, so
+  terminals no longer take a following `;` or `,` into the link.
+
 ## 0.2.1 — 2026-11-17
 
 Standard Incus clients can enroll through the gateway with a trust token.
