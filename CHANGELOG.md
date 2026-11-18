@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Local gateway identity.** `Gateway.new!/1` takes `identity_scope: :local`
+  for a gateway that listens on loopback or a private network. Its host
+  identity may then advertise loopback and private-network addresses,
+  `localhost` and single-label names, as native Incus does for
+  `core.https_address`. The default `:public` scope is unchanged, and both
+  scopes still refuse unspecified, link-local, multicast and reserved
+  addresses, socket names and paths.
+
 ## 0.2.1 — 2026-11-17
 
 Standard Incus clients can enroll through the gateway with a trust token.
