@@ -89,6 +89,29 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
       assert {"if-match", ~s("stale")} in headers
     end
 
+    for flag <- [false, true] do
+      test "Unix backend host omits the port with require_authenticated #{flag}", context do
+        {_, connection} =
+          backend(context, reply(200, %{}), require_authenticated: unquote(flag))
+
+        mount(context, connection)
+
+        response =
+          RawHTTP.request(
+            context.port,
+            "POST",
+            "/1.0/instances?project=allowed",
+            [auth(), {"content-type", "application/json"}],
+            "{}"
+          )
+
+        assert response.status == 200
+        assert_receive {:backend_request, %{raw: raw}}
+        # Incus's Go client sends "unix.socket"; port-validating servers reject ":0".
+        assert RawHTTP.host_lines(raw) == ["host: unix.socket"]
+      end
+    end
+
     test "unknown methods and routes pass through without a typed catalogue", context do
       {_, connection} = backend(context, reply(200, %{"type" => "sync", "metadata" => "ok"}))
       mount(context, connection)
@@ -121,7 +144,7 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
         {"accept", "application/json"}
       ])
 
-      assert_receive {:backend_request, %{headers: headers}}
+      assert_receive {:backend_request, %{headers: headers, raw: raw}}
       names = Enum.map(headers, &elem(&1, 0))
 
       for name <-
@@ -129,7 +152,7 @@ defmodule Opsmaru.Incus.GatewayHTTPRelayTest do
           do: refute(name in names, name)
 
       # The backend connection sets the host, as the typed client does.
-      assert {"host", "unix.socket:0"} in headers
+      assert RawHTTP.host_lines(raw) == ["host: unix.socket"]
       assert {"user-agent", "Incus 7.0.1"} in headers
       assert {"x-incus-authenticated", "true"} in headers
       assert {"accept", "application/json"} in headers

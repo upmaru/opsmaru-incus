@@ -23,9 +23,13 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
     assert [
              %{
                target: "/1.0/operations/native/websocket?project=allowed&secret=private%2Bkey",
-               headers: headers
+               headers: headers,
+               head: head
              }
            ] = WebSocketFixture.requests(fixture)
+
+    # The Unix backend sees the Incus client's host, never Mint's port-0 default.
+    assert RawHTTP.host_lines(head) == ["host: unix.socket"]
 
     refute headers["authorization"]
     refute headers["cookie"]

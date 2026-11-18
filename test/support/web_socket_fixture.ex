@@ -142,7 +142,7 @@ defmodule Opsmaru.TestSupport.WebSocketFixture do
         initial
       end
 
-    request = %{method: method, target: target, headers: headers, body: body}
+    request = %{method: method, target: target, headers: headers, body: body, head: header}
     :ok = GenServer.call(owner, {:request, request})
 
     if URI.parse(target).path == "/1.0" do

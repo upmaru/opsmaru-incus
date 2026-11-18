@@ -2,7 +2,7 @@ defmodule Opsmaru.Incus.AuthenticatedHeaderTest do
   use ExUnit.Case, async: true
   alias Opsmaru.Incus
   alias Opsmaru.Incus.{Connection, Context, Events, RawChannel, Server, Transfer}
-  alias Opsmaru.TestSupport.{HTTPFixture, TLSIdentity}
+  alias Opsmaru.TestSupport.{HTTPFixture, RawHTTP, TLSIdentity}
 
   setup do
     root = Path.join(System.tmp_dir!(), "op-auth-header-#{System.unique_integer([:positive])}")
@@ -103,6 +103,13 @@ defmodule Opsmaru.Incus.AuthenticatedHeaderTest do
       assert Enum.all?(requests, fn request ->
                request.headers["x-incus-authenticated"] == if(flag, do: "true", else: nil)
              end)
+
+      # Unix requests send Incus's own "unix.socket" host, never Mint's
+      # port-0 default; HTTPS keeps the endpoint authority.
+      host =
+        if identity, do: "host: " <> URI.parse(endpoint.url).authority, else: "host: unix.socket"
+
+      assert Enum.all?(requests, &(RawHTTP.host_lines(&1.head) == [host]))
 
       refute original.connection.require_authenticated
     end
