@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Added
+
+- **Local gateway identity.** `Gateway.new!/1` takes `identity_scope: :local`
+  for a gateway that listens on loopback or a private network. Its host
+  identity may then advertise loopback and private-network addresses,
+  `localhost` and single-label names, as native Incus does for
+  `core.https_address`. The default `:public` scope is unchanged, and both
+  scopes still refuse unspecified, link-local, multicast and reserved
+  addresses, socket names and paths.
+
 ### Release
 
 - The publish workflow's Hex approval link now ends its message, so

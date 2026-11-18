@@ -32,6 +32,11 @@ defmodule Opsmaru.Incus.Gateway do
     * `:max_chunk_bytes` - largest body chunk read at once (default: the
       connection's `max_chunk_bytes`).
     * `:max_header_bytes` - request header budget (default 64 KiB).
+    * `:identity_scope` - which addresses the host identity may advertise:
+      `:public` (default) allows only public IPs and dotted DNS names;
+      `:local` also allows loopback and private-network IPs, `localhost`,
+      `*.localhost` and single-label names, for a gateway that listens on
+      loopback or a private network. See `Opsmaru.Incus.Gateway.Identity`.
 
   The HTTP Plug and its relay compile only when Plug is available; client-only
   consumers need neither Plug nor Cowboy.
@@ -53,7 +58,8 @@ defmodule Opsmaru.Incus.Gateway do
     max_identity_bytes: 1_048_576,
     callback_timeout: 1_000,
     max_lifetime: 3_600_000,
-    max_header_bytes: 65_536
+    max_header_bytes: 65_536,
+    identity_scope: :public
   ]
 
   @type t :: %__MODULE__{}
@@ -71,7 +77,8 @@ defmodule Opsmaru.Incus.Gateway do
     :max_request_bytes,
     :max_response_bytes,
     :max_chunk_bytes,
-    :max_header_bytes
+    :max_header_bytes,
+    :identity_scope
   ]
 
   @doc "Validate an immutable gateway configuration without any I/O."
@@ -107,6 +114,10 @@ defmodule Opsmaru.Incus.Gateway do
     bounded!(gateway.max_response_bytes, 0..1_099_511_627_776, "max_response_bytes")
     bounded!(gateway.max_chunk_bytes, 1..1_048_576, "max_chunk_bytes")
     bounded!(gateway.max_header_bytes, 1_024..1_048_576, "max_header_bytes")
+
+    unless gateway.identity_scope in [:public, :local],
+      do: raise(ArgumentError, "invalid gateway identity_scope")
+
     gateway
   end
 
