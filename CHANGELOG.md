@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.2.2 — 2026-11-18
+
+A gateway on loopback or a private network can advertise its own local
+addresses, so standard Incus clients reach it through a `localhost`, LAN or
+single-label origin.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.2"}
+```
 
 ### Added
 
