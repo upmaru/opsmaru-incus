@@ -5,11 +5,28 @@ defmodule Opsmaru.Incus.Transport do
   @compile {:no_warn_undefined, ConnectionPool}
   @compile {:no_warn_undefined, Binding}
 
+  # Every backend request (typed client, transfers, upgrades and gateway
+  # relays) takes its connection-owned headers from here.
+  #
+  # Unix sockets need port 0, which Mint would otherwise append to its default
+  # host ("unix.socket:0"). Servers that validate the port reject that, so the
+  # host is set explicitly, matching Incus's own Go client. Mint only adds its
+  # default when no host header is present.
   @doc false
-  def request_headers(%Connection{require_authenticated: true}, headers),
+  def request_headers(%Connection{} = connection, headers),
+    do: connection |> authenticated(headers) |> host(connection)
+
+  defp authenticated(%Connection{require_authenticated: true}, headers),
     do: [{"x-incus-authenticated", "true"} | headers]
 
-  def request_headers(%Connection{require_authenticated: false}, headers), do: headers
+  defp authenticated(%Connection{require_authenticated: false}, headers), do: headers
+
+  defp host(headers, %Connection{transport: :unix}),
+    do: [{"host", "unix.socket"} | Enum.reject(headers, fn {name, _} -> host?(name) end)]
+
+  defp host(headers, _connection), do: headers
+
+  defp host?(name), do: String.downcase(name) == "host"
 
   def request(connection, method, path, headers, body) do
     deadline = RequestContext.deadline(connection.request_context, now() + connection.timeout)

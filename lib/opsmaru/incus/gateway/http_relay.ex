@@ -127,7 +127,8 @@ if Code.ensure_loaded?(Plug.Conn) do
       end
     end
 
-    # The connection's own require_authenticated flag replaces any caller copy.
+    # The connection's own require_authenticated flag replaces any caller copy;
+    # the connection also sets the backend host.
     defp backend_headers(%{require_authenticated: true} = connection, headers),
       do:
         Transport.request_headers(
@@ -135,7 +136,7 @@ if Code.ensure_loaded?(Plug.Conn) do
           Enum.reject(headers, fn {name, _} -> name == "x-incus-authenticated" end)
         )
 
-    defp backend_headers(_, headers), do: headers
+    defp backend_headers(connection, headers), do: Transport.request_headers(connection, headers)
 
     defp upload(conn, socket, _ref, :none, _state, _sent), do: {:ok, conn, socket}
 

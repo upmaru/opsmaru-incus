@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Unix socket host.** Requests over a Unix socket send `host: unix.socket`,
+  as Incus's own Go client does, instead of `host: unix.socket:0`. This covers
+  typed client requests, transfers, WebSocket and raw upgrades, and every
+  gateway relay (HTTP, WebSocket and SFTP/NBD). Incus accepted the old value,
+  but servers that validate the port, such as Cowboy, rejected it with 400.
+  HTTPS connections are unchanged.
+
 ## 0.2.2 — 2026-11-18
 
 A gateway on loopback or a private network can advertise its own local
