@@ -209,7 +209,7 @@ defmodule Opsmaru.TestSupport.HTTPFixture do
         read_body(transport, socket, initial_body, length)
       end
 
-    %{method: method, target: target, headers: headers, body: body}
+    %{method: method, target: target, headers: headers, body: body, head: head}
   end
 
   defp read_head(transport, socket, acc) do

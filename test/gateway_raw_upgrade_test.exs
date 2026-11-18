@@ -103,6 +103,7 @@ defmodule Opsmaru.Incus.GatewayRawUpgradeTest do
       :gen_tcp.close(socket)
       assert_receive {:backend_request, request}, 2_000
       assert request.target == "/1.0/instances/a%2Fb/#{protocol}?project=allowed&reuse=1"
+      assert RawHTTP.host_lines(request.raw) == ["host: unix.socket"]
       refute List.keymember?(request.headers, "authorization", 0)
       assert StreamBackend.accepted(backend) == 1
       assert_receive {:backend_closed, _}, 3_000

@@ -2,7 +2,8 @@ defmodule Opsmaru.TestSupport.StreamBackend do
   @moduledoc """
   Scriptable fake Incus backend over a private Unix socket or TLS, for gateway
   protocol fixtures only. Each accepted connection reports
-  `{:backend_request, %{method, target, headers}}` to the observer and runs
+  `{:backend_request, %{method, target, headers, raw}}` (`raw` is the request
+  head exactly as received) to the observer and runs
   `script.(conn)` with helpers to read bodies of any size (hashing, never
   capturing) and write raw response bytes. Accepted connections are counted.
   """
@@ -143,7 +144,11 @@ defmodule Opsmaru.TestSupport.StreamBackend do
             {String.downcase(name), String.trim(value)}
           end)
 
-        %{conn | buffer: rest, head: %{method: method, target: target, headers: headers}}
+        %{
+          conn
+          | buffer: rest,
+            head: %{method: method, target: target, headers: headers, raw: head}
+        }
 
       [_] ->
         if byte_size(conn.buffer) > 65_536, do: raise("fixture head too large")
@@ -261,6 +266,13 @@ defmodule Opsmaru.TestSupport.RawHTTP do
   end
 
   def send!({transport, socket}, bytes), do: :ok = transport.send(socket, bytes)
+
+  @doc "Every `Host` field line of a raw request head, exactly as sent."
+  def host_lines(head) do
+    head
+    |> String.split("\r\n")
+    |> Enum.filter(&(&1 |> String.downcase() |> String.starts_with?("host:")))
+  end
 
   def request(port, method, target, headers \\ [], body \\ "", tls \\ nil) do
     client = connect(port, tls)
