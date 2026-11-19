@@ -155,8 +155,13 @@ Authenticated `GET /1.0` uses the backend, buffering at most the smaller of
 gateway values. Every other native environment/envelope field is retained.
 API extensions are intersected with verified host metadata and the gateway's
 implemented-extension allowlist: `certificate_update`, `instances`, `file_delete`, `console`,
-`instance_nbd`, `custom_volume_sftp`, `storage_volume_nbd`, `container_push`
-and `container_push_target`. The two migration extensions require WebSockets. Protocol
+`instance_nbd`, `custom_volume_sftp`, `storage_volume_nbd`, `container_push`,
+`container_push_target`, `storage_api_local_volume_handling` and
+`storage_api_remote_volume_handling`. The four migration extensions require
+WebSockets. The two storage extensions let the pinned client copy custom
+volumes through the gateway in relay, pull and push modes; volume migration
+uses the same operation WebSocket negotiation and peer admission as instance
+migration. Protocol
 extensions are filtered out when the corresponding optional adapter is absent.
 The host must approve only protocols it actually mounts and a verified backend
 supports; raw extensions require the same-listener Cowboy companion. Merely

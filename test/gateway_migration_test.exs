@@ -34,7 +34,7 @@ defmodule Opsmaru.Incus.GatewayMigrationTest do
     :ok
   end
 
-  for kind <- [:instance, :snapshot], mode <- [:relay, :pull, :push] do
+  for kind <- [:instance, :snapshot, :volume], mode <- [:relay, :pull, :push] do
     test "pinned #{kind} #{mode} crosses source and target gateways with public endpoint identity",
          context do
       log = start_supervised!({Agent, fn -> [] end})

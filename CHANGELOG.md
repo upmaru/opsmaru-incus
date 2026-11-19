@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Volume copy through the gateway.** The gateway can advertise
+  `storage_api_local_volume_handling` and `storage_api_remote_volume_handling`
+  when its WebSocket adapter is present and the host approves them. Standard
+  Incus clients can then copy custom storage volumes to and from a
+  gateway-fronted server in relay, pull and push modes, as they already copy
+  instances and snapshots. Before, the pinned client refused every volume copy
+  through the gateway because these extensions were filtered out. The Incus
+  servers still move the data; the gateway advertises only its approved address
+  and certificate and admits the peer server to the named operation WebSocket.
+
 ## 0.2.3 — 2026-11-18
 
 Unix-socket requests send the same `Host` header as Incus's own client, so

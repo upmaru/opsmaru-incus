@@ -108,7 +108,13 @@ func run(in input) (map[string]any, error) {
 	}
 	result := map[string]any{"source_info": sourceInfo, "target_info": targetInfo}
 	var op incus.RemoteOperation
-	if in.Action == "snapshot" {
+	if in.Action == "volume" {
+		var model api.StorageVolume
+		err = json.Unmarshal(in.Body, &model)
+		if err == nil {
+			op, err = target.CopyStoragePoolVolume("default", source, "default", model, &incus.StoragePoolVolumeCopyArgs{Name: "copied", Mode: in.Mode})
+		}
+	} else if in.Action == "snapshot" {
 		var model api.InstanceSnapshot
 		err = json.Unmarshal(in.Body, &model)
 		if err == nil {
