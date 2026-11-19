@@ -17,8 +17,10 @@
   admit another Incus server to the exact routes it uses with an image secret:
   reading and exporting the image when it pulls from the gateway, and uploading
   and waiting when it pushes into it. Requests carry a new `image` field naming
-  the route and fingerprint. Hosts without the callback keep refusing these
-  routes. In every case the Incus servers move the data; the gateway advertises
+  the route, fingerprint and secret. The host must verify the secret against
+  the backend's pending image operation, because the backend trusts the
+  gateway's connection and does not check it. Hosts without the callback keep
+  refusing these routes. In every case the Incus servers move the data; the gateway advertises
   only its approved address and certificate.
 
 ## 0.2.3 — 2026-11-18

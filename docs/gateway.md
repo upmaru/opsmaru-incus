@@ -608,9 +608,21 @@ must carry exactly one `X-Incus-secret` and one `X-Incus-fingerprint` header
 and no `secret` query. Missing, denied, malformed or late callbacks return
 `403` before backend access, so a host without the callback keeps refusing
 these routes. The operation WebSocket keeps its own callback; neither callback
-is consulted for the other's routes. The secret is not copied into
-`request.image`; it stays in the forwarded query or header, and the backend
-validates it. The grant is rechecked by `valid?/3` like any other.
+is consulted for the other's routes. The grant is rechecked by `valid?/3`
+like any other.
+
+**Verify the secret in the host.** Unlike a migration WebSocket secret, an
+image secret is not checked by the backend here: the gateway's backend
+connection is trusted (the Unix socket, or HTTPS with a trusted client
+certificate), and the pinned v7.0.1 server serves a trusted caller's image
+info, export and upload whatever secret it carries. `request.image.secret`
+holds the decoded secret (redacted from `inspect/2`). Compare it in constant
+time with the backend's pending operation, as incusd's `imageValidSecret` does
+for untrusted callers: for `:info`, `:export` and `:upload`, a `token`-class
+operation whose `images` resource starts with `/1.0/images/{fp}` and whose
+`metadata.secret` matches (incusd still allows it after the first use cancels
+it); for `:wait`, the named operation's `metadata.secret`. The gateway forwards
+the secret unchanged, so the backend still consumes the single-use token.
 
 The pull source's secret comes from `POST /1.0/images/{fp}/secret`, and the
 push target's from a push-mode `POST /1.0/images`; an authorized caller sends

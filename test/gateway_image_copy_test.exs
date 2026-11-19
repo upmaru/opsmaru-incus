@@ -22,9 +22,13 @@ defmodule Opsmaru.Incus.GatewayImageCopyTest do
     def admit_image_secret(request, config) do
       send(config.observer, {:image_admission, config.name, request})
 
-      # Bind to the host's verified pending transfer: the image fixture's
-      # fingerprint, the copy's project and a loopback server peer.
-      if config.admit_images and request.image.fingerprint in [nil, config.fingerprint] and
+      # The trusted backend does not check image secrets, so the host verifies
+      # the secret against its pending transfer (here a fixed expectation per
+      # route), with the fingerprint, project and a loopback server peer.
+      expected = Map.fetch!(config.secrets, request.image.route)
+
+      if config.admit_images and Plug.Crypto.secure_compare(request.image.secret, expected) and
+           request.image.fingerprint in [nil, config.fingerprint] and
            request.project == "image-project" and request.target == nil and
            request.peer.address == {127, 0, 0, 1} do
         {:ok, :pending_image}
@@ -94,6 +98,34 @@ defmodule Opsmaru.Incus.GatewayImageCopyTest do
     end
   end
 
+  for mode <- [:pull, :push] do
+    test "image #{mode} with a secret the host does not hold pending is refused although the trusted backend would accept it",
+         context do
+      stale = Map.new(~w(info export upload wait)a, &{&1, "stale-secret"})
+      source = Backend.start(context, "source")
+      target = Backend.start(context, "target")
+      source_endpoint = mounted(context, source, secrets: stale)
+      target_endpoint = mounted(context, target, secrets: stale)
+
+      result = copy(context, unquote(mode), source_endpoint, target_endpoint)
+
+      refute result["completed"]
+      assert result["error"] =~ "not authorized"
+
+      case unquote(mode) do
+        :pull ->
+          assert_received {:image_admission, "source", %{image: %{route: :info} = image}}
+          assert image.secret == "pull-secret"
+          refute Enum.any?(Backend.requests(source), &String.contains?(&1.target, "secret="))
+
+        :push ->
+          assert_received {:image_admission, "target", %{image: %{route: :upload} = image}}
+          assert image.secret == "push-secret"
+          refute Enum.any?(Backend.events(target), &match?({:uploaded, _, _, _}, &1))
+      end
+    end
+  end
+
   defp copy(context, mode, source_endpoint, target_endpoint) do
     NativeMigrationBackend.run(context.root, %{
       Action: "image",
@@ -144,13 +176,16 @@ defmodule Opsmaru.Incus.GatewayImageCopyTest do
     # only to the upload and its operation wait.
     assert [{:outbound, "source", :push, server, %{"pushed" => true}}] = filter(source, :outbound)
     assert server == target_endpoint[:URL]
-    assert [{:uploaded, "target", :peer, content}] = filter(target, :uploaded)
+    assert [{:uploaded, "target", {:peer, "push-secret"}, content}] = filter(target, :uploaded)
     assert content == Backend.content()
 
     assert_received {:image_admission, "target", %{image: %{route: :upload} = upload} = request}
     assert upload.fingerprint == fingerprint
     assert request.peer.certificate == nil
-    assert_received {:image_admission, "target", %{image: %{route: :wait}, operation: "pushed"}}
+
+    assert_received {:image_admission, "target",
+                     %{image: %{route: :wait, secret: "push-secret"}, operation: "pushed"}}
+
     refute_received {:image_admission, _, _}
   end
 
@@ -173,6 +208,13 @@ defmodule Opsmaru.Incus.GatewayImageCopyTest do
           client: client,
           fingerprint: Backend.fingerprint(),
           admit_images: Keyword.get(opts, :admit_images, true),
+          secrets:
+            Keyword.get(opts, :secrets, %{
+              info: "pull-secret",
+              export: "pull-secret",
+              upload: "push-secret",
+              wait: "push-secret"
+            }),
           identity: %{
             origin: "https://gateway.example.com:#{port}",
             addresses: ["gateway.example.com:#{port}"],

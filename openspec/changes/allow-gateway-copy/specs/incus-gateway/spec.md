@@ -30,12 +30,17 @@ The pinned v7.0.1 CLI's unsupported snapshot `move` SHALL preserve its native `4
 
 ### Requirement: Operation-secret peer admission
 
-An untrusted Incus server peer SHALL reach only the operation WebSocket route of the named operation, or one of the exact image secret routes, only with the secret that route carries and only after an explicit host admission decision for that route family. The image secret routes are `GET /1.0/images/{fingerprint}` and `GET /1.0/images/{fingerprint}/export` with one `secret` query value, `POST /1.0/images` with one `X-Incus-secret` and one `X-Incus-fingerprint` header and no `secret` query, and `GET /1.0/operations/{id}/wait` with one `secret` query value, all without an all-projects selection. A host that makes no image admission decision SHALL keep these routes refused. The backend SHALL still validate the secret, and diagnostics SHALL redact it.
+An untrusted Incus server peer SHALL reach only the operation WebSocket route of the named operation, or one of the exact image secret routes, only with the secret that route carries and only after an explicit host admission decision for that route family. The image secret routes are `GET /1.0/images/{fingerprint}` and `GET /1.0/images/{fingerprint}/export` with one `secret` query value, `POST /1.0/images` with one `X-Incus-secret` and one `X-Incus-fingerprint` header and no `secret` query, and `GET /1.0/operations/{id}/wait` with one `secret` query value, all without an all-projects selection. A host that makes no image admission decision SHALL keep these routes refused. The backend SHALL still validate an operation WebSocket secret. Because the backend treats the gateway's connection as trusted and does not check image secrets, the gateway SHALL give the host the decoded image secret and the host SHALL verify it against the backend's pending image operation before admitting. Diagnostics SHALL redact every secret.
 
 #### Scenario: Secret outside its operation
 
 - **WHEN** an untrusted server peer presents an operation secret on any other route or for another operation
 - **THEN** the gateway denies it before backend access
+
+#### Scenario: Image secret not matching a pending transfer
+
+- **WHEN** an untrusted server peer presents an image secret that does not match the host's pending image operation
+- **THEN** the host denies it and the gateway refuses the request with 403 before backend access
 
 #### Scenario: Image secret without host admission
 

@@ -12,7 +12,7 @@ Instances and snapshots already work this way. Custom storage volumes and images
 ## What Changes
 
 - Add `storage_api_local_volume_handling` and `storage_api_remote_volume_handling` to the WebSocket-dependent extension allowlist, and `images_push_relay` to the HTTP allowlist. The host must still approve them and the verified backend must support them.
-- Add an optional host callback, `admit_image_secret/2`, called only after `authorize/2` returns unauthenticated and only for the four exact image secret routes above, with no all-projects selection. Requests gain an `image` field naming the route and fingerprint; the secret is not copied into it. Missing callbacks deny, so existing hosts keep refusing these routes until they opt in. The backend still validates the secret, and the original request is relayed unchanged.
+- Add an optional host callback, `admit_image_secret/2`, called only after `authorize/2` returns unauthenticated and only for the four exact image secret routes above, with no all-projects selection. Requests gain an `image` field naming the route, fingerprint and decoded secret. Missing callbacks deny, so existing hosts keep refusing these routes until they opt in. The host must verify the secret against the backend's pending image operation: the backend treats the gateway's connection as trusted, so a pinned v7.0.1 server does not check image secrets on these routes. The original request is relayed unchanged, so the backend still consumes the single-use token.
 - Verify volume copy and image copy in relay, pull and push modes with gateways in front of both servers, using the unchanged pinned client and the unchanged pinned client calls incusd makes for the server-to-server leg.
 
 ## Capabilities

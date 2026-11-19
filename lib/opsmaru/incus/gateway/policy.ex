@@ -203,7 +203,7 @@ defmodule Opsmaru.Incus.Gateway.Policy do
 
       {"GET", ["", "1.0", "operations", id, "wait"]} ->
         if id != "" and not String.contains?(id, "%") and single_secret?(query),
-          do: %{route: :wait, fingerprint: nil}
+          do: %{route: :wait, fingerprint: nil, secret: query_secret(query)}
 
       {"POST", ["", "1.0", "images"]} ->
         upload_route(query, headers)
@@ -217,7 +217,7 @@ defmodule Opsmaru.Incus.Gateway.Policy do
 
   defp secret_query_route(route, fingerprint, query) do
     if fingerprint?(fingerprint) and single_secret?(query),
-      do: %{route: route, fingerprint: fingerprint}
+      do: %{route: route, fingerprint: fingerprint, secret: query_secret(query)}
   end
 
   defp upload_route(query, headers) do
@@ -225,13 +225,17 @@ defmodule Opsmaru.Incus.Gateway.Policy do
          [fingerprint] <- Map.get(headers, :fingerprint, []),
          true <- fingerprint?(fingerprint),
          false <- Enum.any?(URI.query_decoder(query), fn {key, _} -> key == "secret" end) do
-      %{route: :upload, fingerprint: fingerprint}
+      %{route: :upload, fingerprint: fingerprint, secret: secret}
     else
       _ -> nil
     end
   end
 
   defp fingerprint?(value), do: is_binary(value) and value =~ ~r/\A[0-9a-f]{1,64}\z/
+
+  defp query_secret(query) do
+    Enum.find_value(URI.query_decoder(query), fn {key, value} -> key == "secret" && value end)
+  end
 
   defp single_secret?(query) do
     query

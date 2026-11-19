@@ -3,8 +3,10 @@ defmodule Opsmaru.TestSupport.NativeImageBackend do
   Database-free image copy oracle, never a workload backend.
 
   Each side answers the native image routes the pinned v7.0.1 client and
-  server use for a copy, and checks the image secrets as incusd does. The
-  server-to-server legs run the unchanged pinned client calls of incusd's
+  server use for a copy. The gateway's backend connection is trusted, so, as
+  incusd does for a trusted caller, image info, export and upload are served
+  whatever secret they carry; only the host's admission decision checks it.
+  The server-to-server legs run the unchanged pinned client calls of incusd's
   pull download and export push through the gateway driver.
   """
   alias Opsmaru.Incus.Connection
@@ -74,21 +76,19 @@ defmodule Opsmaru.TestSupport.NativeImageBackend do
         accepted("secret", %{secret: @pull_secret})
 
       {"GET", ^image} ->
-        with_secret(query, @pull_secret, fn -> sync(model()) end)
+        sync(model())
 
       {"GET", "/1.0/images/" <> _ = export} when export == image <> "/export" ->
-        with_secret(query, @pull_secret, fn ->
-          record(side, {:exported, side.name, query["secret"]})
+        record(side, {:exported, side.name, query["secret"]})
 
-          %{
-            raw: [
-              "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n",
-              "Content-Disposition: attachment; filename=fixture.tar.xz\r\n",
-              "Content-Length: #{byte_size(@content)}\r\nConnection: close\r\n\r\n",
-              @content
-            ]
-          }
-        end)
+        %{
+          raw: [
+            "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n",
+            "Content-Disposition: attachment; filename=fixture.tar.xz\r\n",
+            "Content-Length: #{byte_size(@content)}\r\nConnection: close\r\n\r\n",
+            @content
+          ]
+        }
 
       {"POST", "/1.0/images/" <> _ = export} when export == image <> "/export" ->
         push_out(side, Jason.decode!(request.body))
@@ -113,9 +113,8 @@ defmodule Opsmaru.TestSupport.NativeImageBackend do
   defp operation_route(side, "GET", rest, query) do
     id = rest |> String.split("/") |> hd()
 
-    if String.ends_with?(rest, "/wait") and query["secret"] != nil,
-      do: with_secret(query, @push_secret, fn -> operation(side, id) end),
-      else: operation(side, id)
+    if String.ends_with?(rest, "/wait"), do: record(side, {:waited, side.name, query["secret"]})
+    operation(side, id)
   end
 
   defp create(side, request) do
@@ -138,25 +137,19 @@ defmodule Opsmaru.TestSupport.NativeImageBackend do
     end
   end
 
-  # incusd imagesPost: an upload carrying a secret must match a pending push
-  # token for the same fingerprint; one without a secret is the trusted caller.
+  # incusd imagesPost: over a trusted connection an upload is accepted
+  # whatever secret it carries; one with a secret gets a wait secret back.
   defp upload(side, request) do
-    secret = request.headers["x-incus-secret"]
-    fingerprint = request.headers["x-incus-fingerprint"]
-
-    cond do
-      secret == nil ->
+    case request.headers["x-incus-secret"] do
+      nil ->
         record(side, {:uploaded, side.name, :caller, request.body})
         done(side, "upload", nil)
         accepted("upload", %{})
 
-      secret == @push_secret and fingerprint == fingerprint() ->
-        record(side, {:uploaded, side.name, :peer, request.body})
+      secret ->
+        record(side, {:uploaded, side.name, {:peer, secret}, request.body})
         done(side, "pushed", nil)
         accepted("pushed", %{secret: @push_secret})
-
-      true ->
-        forbidden()
     end
   end
 
@@ -241,14 +234,6 @@ defmodule Opsmaru.TestSupport.NativeImageBackend do
     end
   end
 
-  defp with_secret(query, expected, fun) do
-    case query["secret"] do
-      nil -> fun.()
-      ^expected -> fun.()
-      _ -> forbidden()
-    end
-  end
-
   defp discovery(side),
     do:
       sync(%{
@@ -267,9 +252,6 @@ defmodule Opsmaru.TestSupport.NativeImageBackend do
 
   defp done(side, id, error), do: record(side, {:done, id, error})
   defp record(side, event), do: Agent.update(side.log, &[event | &1])
-
-  defp forbidden,
-    do: %{status: 403, body: %{type: "error", error: "not authorized", error_code: 403}}
 
   defp sync(metadata),
     do: %{

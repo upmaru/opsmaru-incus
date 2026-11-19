@@ -79,14 +79,21 @@ defmodule Opsmaru.Incus.Gateway.Host do
       push-mode `POST /1.0/images` operation an authorized caller created, then
       `:wait` on that operation.
 
-  The host must bind the route, fingerprint or operation, project, target and
-  the adapter-supplied peer to its own verified pending image transfer, never
-  to the request alone. The pinned server peer normally presents no client
-  certificate. The secret is in `request.query` for `:info`, `:export` and
-  `:wait`, and in the forwarded `X-Incus-secret` header for `:upload`; the
-  gateway forwards it unchanged and the backend still validates it. Returning
-  `{:ok, grant}` permits only this request and uses the ordinary `valid?/3`
-  revocation/expiry checks. Never store or log the secret in the grant.
+  **The host must verify `request.image.secret` itself.** The gateway reaches
+  the backend over a trusted connection (the Unix socket, or HTTPS with a
+  client certificate the backend trusts), and a pinned v7.0.1 Incus server
+  treats a trusted caller's image info, export and upload as authorized
+  whatever secret they carry. Compare the secret, in constant time, with the
+  pending transfer: for `:info`, `:export` and `:upload`, an image token
+  operation (class `token`) whose `images` resource names the fingerprint and
+  whose `metadata.secret` matches, as incusd's `imageValidSecret` does; for
+  `:wait`, the named operation's `metadata.secret`. Also bind the project,
+  target and adapter-supplied peer, never trusting the request alone. The
+  pinned server peer normally presents no client certificate. The gateway
+  forwards the secret unchanged, so the backend still consumes the
+  single-use token. Returning `{:ok, grant}` permits only this request and
+  uses the ordinary `valid?/3` revocation/expiry checks. Never store or log
+  the secret in the grant.
   """
   @callback admit_image_secret(Request.t(), host_config :: term()) ::
               {:ok, term()} | {:error, term()}

@@ -106,12 +106,18 @@ defmodule Opsmaru.Incus.GatewayImageSecretTest do
       assert_received {:image_admission, ^request}
     end
 
-    upload = request("POST", :http, "/1.0/images", %{secret: ["s"], fingerprint: [@fp]})
+    upload =
+      request("POST", :http, "/1.0/images", %{secret: ["native-image-secret"], fingerprint: [@fp]})
+
     assert {:ok, admitted} = Policy.admit(context.gateway, upload)
     Policy.release(admitted)
     assert_received {:image_admission, ^upload}
-    # The secret header is forwarded to the backend, never copied into metadata.
-    assert upload.image == %{route: :upload, fingerprint: @fp}
+    # The host gets the decoded secret to verify; inspection redacts it.
+    assert upload.image == %{route: :upload, fingerprint: @fp, secret: "native-image-secret"}
+    refute inspect(upload) =~ "native-image-secret"
+
+    wait = request("GET", :http, "/1.0/operations/op-1/wait?secret=a%2Bb&timeout=-1")
+    assert wait.image.secret == "a+b"
 
     # The migration route still uses only its own callback.
     websocket = request("GET", :websocket, "/1.0/operations/op-1/websocket?secret=s")

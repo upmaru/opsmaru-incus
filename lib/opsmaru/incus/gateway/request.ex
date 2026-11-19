@@ -10,13 +10,14 @@ defmodule Opsmaru.Incus.Gateway.Request do
     * `:all_projects` - whether `all-projects` was requested.
     * `:operation` - the operation ID for `/1.0/operations/{id}...` paths.
     * `:image` - for the exact HTTP routes an Incus server uses with an image
-      secret, `%{route: route, fingerprint: fingerprint}`; otherwise `nil`.
-      `route` is `:info` (`GET /1.0/images/{fp}?secret=`), `:export`
-      (`GET /1.0/images/{fp}/export?secret=`), `:upload` (`POST /1.0/images`
-      with one `X-Incus-secret` and one `X-Incus-fingerprint` header) or
-      `:wait` (`GET /1.0/operations/{id}/wait?secret=`, with no fingerprint).
-      The fingerprint is lowercase hexadecimal. The secret itself is not
-      copied here.
+      secret, `%{route: route, fingerprint: fingerprint, secret: secret}`;
+      otherwise `nil`. `route` is `:info` (`GET /1.0/images/{fp}?secret=`),
+      `:export` (`GET /1.0/images/{fp}/export?secret=`), `:upload`
+      (`POST /1.0/images` with one `X-Incus-secret` and one
+      `X-Incus-fingerprint` header) or `:wait`
+      (`GET /1.0/operations/{id}/wait?secret=`, with no fingerprint). The
+      fingerprint is lowercase hexadecimal. `secret` is the decoded secret the
+      host must verify; it is redacted from `inspect/2`.
     * `:peer` - `%{address: ..., port: ..., certificate: der | nil}` from the
       server adapter.
     * `:authorization` - the caller's `authorization` header, or `nil`. It is
