@@ -47,6 +47,14 @@ defmodule Opsmaru.Incus.Gateway.Policy do
          target: selection.target,
          all_projects: selection.all_projects,
          operation: operation(path),
+         image:
+           image_route(
+             Map.fetch!(fields, :protocol),
+             Map.fetch!(fields, :method),
+             path,
+             query,
+             Map.get(fields, :image_headers, %{})
+           ),
          peer: Map.fetch!(fields, :peer),
          authorization: Map.get(fields, :authorization)
        }}
@@ -117,7 +125,7 @@ defmodule Opsmaru.Incus.Gateway.Policy do
       {:ok, {:error, :unauthenticated}} ->
         if anonymous_route?(request),
           do: {:ok, nil, true},
-          else: admit_operation_secret(gateway, request)
+          else: admit_secret_peer(gateway, request)
 
       _ ->
         {:error, Failure.new(403, "not authorized", :not_sent)}
@@ -131,13 +139,25 @@ defmodule Opsmaru.Incus.Gateway.Policy do
     end
   end
 
-  defp admit_operation_secret(gateway, request) do
+  # An unauthenticated server peer may reach only an exact secret-bearing
+  # route, and only by the host's explicit decision for that route family.
+  defp admit_secret_peer(gateway, request) do
+    host = gateway.host
+    config = gateway.host_config
+
     result =
-      if operation_secret_route?(request) do
-        callback(
-          fn -> gateway.host.admit_operation_secret(request, gateway.host_config) end,
-          gateway.callback_timeout
-        )
+      cond do
+        operation_secret_route?(request) ->
+          callback(
+            fn -> host.admit_operation_secret(request, config) end,
+            gateway.callback_timeout
+          )
+
+        image_secret_route?(request) ->
+          callback(fn -> host.admit_image_secret(request, config) end, gateway.callback_timeout)
+
+        true ->
+          nil
       end
 
     case result do
@@ -165,6 +185,53 @@ defmodule Opsmaru.Incus.Gateway.Policy do
   end
 
   defp operation_secret_route?(_), do: false
+
+  defp image_secret_route?(%Request{image: %{}, all_projects: false}), do: true
+  defp image_secret_route?(_), do: false
+
+  # The exact routes a pinned v7.0.1 Incus server uses with an image secret:
+  # a pull target reads `/1.0/images/{fp}` and `/export` with `?secret=`; a push
+  # source uploads to `POST /1.0/images` with `X-Incus-secret` and
+  # `X-Incus-fingerprint`, then waits on `/1.0/operations/{id}/wait?secret=`.
+  defp image_route(:http, method, path, query, headers) do
+    case {method, String.split(path, "/")} do
+      {"GET", ["", "1.0", "images", fingerprint]} ->
+        secret_query_route(:info, fingerprint, query)
+
+      {"GET", ["", "1.0", "images", fingerprint, "export"]} ->
+        secret_query_route(:export, fingerprint, query)
+
+      {"GET", ["", "1.0", "operations", id, "wait"]} ->
+        if id != "" and not String.contains?(id, "%") and single_secret?(query),
+          do: %{route: :wait, fingerprint: nil}
+
+      {"POST", ["", "1.0", "images"]} ->
+        upload_route(query, headers)
+
+      _ ->
+        nil
+    end
+  end
+
+  defp image_route(_protocol, _method, _path, _query, _headers), do: nil
+
+  defp secret_query_route(route, fingerprint, query) do
+    if fingerprint?(fingerprint) and single_secret?(query),
+      do: %{route: route, fingerprint: fingerprint}
+  end
+
+  defp upload_route(query, headers) do
+    with [secret] when secret != "" <- Map.get(headers, :secret, []),
+         [fingerprint] <- Map.get(headers, :fingerprint, []),
+         true <- fingerprint?(fingerprint),
+         false <- Enum.any?(URI.query_decoder(query), fn {key, _} -> key == "secret" end) do
+      %{route: :upload, fingerprint: fingerprint}
+    else
+      _ -> nil
+    end
+  end
+
+  defp fingerprint?(value), do: is_binary(value) and value =~ ~r/\A[0-9a-f]{1,64}\z/
 
   defp single_secret?(query) do
     query

@@ -156,12 +156,13 @@ gateway values. Every other native environment/envelope field is retained.
 API extensions are intersected with verified host metadata and the gateway's
 implemented-extension allowlist: `certificate_update`, `instances`, `file_delete`, `console`,
 `instance_nbd`, `custom_volume_sftp`, `storage_volume_nbd`, `container_push`,
-`container_push_target`, `storage_api_local_volume_handling` and
-`storage_api_remote_volume_handling`. The four migration extensions require
-WebSockets. The two storage extensions let the pinned client copy custom
+`container_push_target`, `storage_api_local_volume_handling`,
+`storage_api_remote_volume_handling` and `images_push_relay`. The four
+migration extensions require WebSockets. The two storage extensions let the pinned client copy custom
 volumes through the gateway in relay, pull and push modes; volume migration
 uses the same operation WebSocket negotiation and peer admission as instance
-migration. Protocol
+migration. `images_push_relay` lets the pinned client push an image from the
+gateway (`ExportImage`); see "Image copy and image-secret peers". Protocol
 extensions are filtered out when the corresponding optional adapter is absent.
 The host must approve only protocols it actually mounts and a verified backend
 supports; raw extensions require the same-listener Cowboy companion. Merely
@@ -555,6 +556,13 @@ acceptance evidence in this slice. Their additional extension names remain
 outside the conservative gateway allowlist; this is an explicit gateway
 verification gap, not a claim that the backend or host lacks those features.
 
+Custom storage volumes use the same negotiation. The pinned
+`CopyStoragePoolVolume` copies a volume in all three modes through both gateway
+endpoints with the same assertions as instances: public connection info, one
+POST per side and no DELETE, the expected channels, and peer admission only to
+the named operation WebSocket. Interrupted volume source and target requests
+are never replayed or cancelled.
+
 The pinned v7.0.1 CLI has a separate snapshot-move limitation: its shared
 copy/move code recognizes snapshot sources only for the `copy` command. For
 `move source/snapshot`, it instead requests
@@ -565,3 +573,56 @@ snapshot move is recorded as a pinned native limitation under the explicit
 2026-11-07 user decision accepting that outcome as parity. The gateway does
 not rewrite this route or add a compensating mutation, and successful snapshot
 move is not claimed.
+
+## Image copy and image-secret peers
+
+Image copy does not use an operation WebSocket. The Incus servers still move
+the image, but over plain HTTP routes that carry a one-time secret:
+
+| Mode | Gateway side | Server peer requests reaching the gateway |
+| --- | --- | --- |
+| relay | either | none: the caller downloads and uploads over its own authenticated connections |
+| pull | target | none: the guest's Incus dials the source |
+| pull | source | `GET /1.0/images/{fp}?secret=` then `GET /1.0/images/{fp}/export?secret=` |
+| push | source | none: the caller's `ExportImage` needs `images_push_relay`; the guest's Incus dials the target |
+| push | target | `POST /1.0/images` with `X-Incus-secret` and `X-Incus-fingerprint`, then `GET /1.0/operations/{id}/wait?secret=` |
+
+For the last two rows, implement the optional `admit_image_secret/2` callback:
+
+```elixir
+@impl true
+def admit_image_secret(request, config) do
+  # request.image is %{route: :info | :export | :upload | :wait, fingerprint: fp | nil}.
+  # Bind the route, fingerprint or operation, project, target and peer to a
+  # pending image transfer the host verified, never to the request alone.
+  config.pending_images.authorize_peer(request)
+  # Return {:ok, opaque_grant} or {:error, :forbidden}.
+end
+```
+
+It runs under the same conditions as `admit_operation_secret/2`: only after
+`authorize/2` explicitly returns `{:error, :unauthenticated}`, only for the
+exact routes above with one nonempty secret, a lowercase hexadecimal
+fingerprint of at most 64 characters and no all-projects selection. An upload
+must carry exactly one `X-Incus-secret` and one `X-Incus-fingerprint` header
+and no `secret` query. Missing, denied, malformed or late callbacks return
+`403` before backend access, so a host without the callback keeps refusing
+these routes. The operation WebSocket keeps its own callback; neither callback
+is consulted for the other's routes. The secret is not copied into
+`request.image`; it stays in the forwarded query or header, and the backend
+validates it. The grant is rechecked by `valid?/3` like any other.
+
+The pull source's secret comes from `POST /1.0/images/{fp}/secret`, and the
+push target's from a push-mode `POST /1.0/images`; an authorized caller sends
+both through the gateway, so the host can record the pending transfer. The
+pinned server peer presents no client certificate and, for a pull, sends the
+caller's source project.
+
+Portable fixtures exercise the unchanged pinned `CopyImage` in all three modes
+through both gateway endpoints. The server-to-server leg runs the unchanged
+pinned client calls of incusd's pull download (`ConnectPublicIncus`,
+`GetPrivateImage`, `GetPrivateImageFile`) and export push (`ConnectIncus`,
+`CreateImage` with the secret, `GetOperationWaitSecret`). They check public
+connection info, which routes each peer reaches, the delivered bytes and that,
+without the callback, pull and push are refused before the peer reaches the
+backend. Public images pulled without a secret are not admitted.

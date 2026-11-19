@@ -10,9 +10,16 @@
   Incus clients can then copy custom storage volumes to and from a
   gateway-fronted server in relay, pull and push modes, as they already copy
   instances and snapshots. Before, the pinned client refused every volume copy
-  through the gateway because these extensions were filtered out. The Incus
-  servers still move the data; the gateway advertises only its approved address
-  and certificate and admits the peer server to the named operation WebSocket.
+  through the gateway because these extensions were filtered out.
+- **Image copy through the gateway.** The gateway can advertise
+  `images_push_relay`, so a client can push an image from a gateway-fronted
+  server. A new optional host callback, `admit_image_secret/2`, lets the host
+  admit another Incus server to the exact routes it uses with an image secret:
+  reading and exporting the image when it pulls from the gateway, and uploading
+  and waiting when it pushes into it. Requests carry a new `image` field naming
+  the route and fingerprint. Hosts without the callback keep refusing these
+  routes. In every case the Incus servers move the data; the gateway advertises
+  only its approved address and certificate.
 
 ## 0.2.3 — 2026-11-18
 

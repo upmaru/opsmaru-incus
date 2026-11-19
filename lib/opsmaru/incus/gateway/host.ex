@@ -60,6 +60,38 @@ defmodule Opsmaru.Incus.Gateway.Host do
               {:ok, term()} | {:error, term()}
 
   @doc """
+  Admit an otherwise unauthenticated Incus server peer to one image-copy route.
+
+  Called only after `authorize/2` returns `{:error, :unauthenticated}`, for the
+  exact HTTP routes in `request.image` (see `Opsmaru.Incus.Gateway.Request`)
+  and no all-projects selection. Missing callbacks deny, so a host that does
+  not implement this keeps refusing image copies in which the gateway is the
+  pull source or the push target. An explicit authorization denial never falls
+  through to this callback.
+
+  A pinned v7.0.1 Incus server uses these routes when another server copies an
+  image through the gateway:
+
+    * pull from the gateway: `:info` then `:export` for the image fingerprint,
+      with the secret of an image secret operation
+      (`POST /1.0/images/{fp}/secret`) an authorized caller created;
+    * push into the gateway: `:upload` with the fingerprint and the secret of a
+      push-mode `POST /1.0/images` operation an authorized caller created, then
+      `:wait` on that operation.
+
+  The host must bind the route, fingerprint or operation, project, target and
+  the adapter-supplied peer to its own verified pending image transfer, never
+  to the request alone. The pinned server peer normally presents no client
+  certificate. The secret is in `request.query` for `:info`, `:export` and
+  `:wait`, and in the forwarded `X-Incus-secret` header for `:upload`; the
+  gateway forwards it unchanged and the backend still validates it. Returning
+  `{:ok, grant}` permits only this request and uses the ordinary `valid?/3`
+  revocation/expiry checks. Never store or log the secret in the grant.
+  """
+  @callback admit_image_secret(Request.t(), host_config :: term()) ::
+              {:ok, term()} | {:error, term()}
+
+  @doc """
   Recheck the original grant, including expiry and current revocation state.
   Only `true` keeps access. Runs before backend access and periodically during
   an exchange. Missing callbacks deny. No new grant is acquired for cleanup.
@@ -94,5 +126,9 @@ defmodule Opsmaru.Incus.Gateway.Host do
   @callback certificates(atom(), Request.t(), term(), map(), term()) ::
               {:ok, term(), [{binary(), binary()}]} | {:error, 400..599}
 
-  @optional_callbacks identity: 2, certificates: 5, valid?: 3, admit_operation_secret: 2
+  @optional_callbacks identity: 2,
+                      certificates: 5,
+                      valid?: 3,
+                      admit_operation_secret: 2,
+                      admit_image_secret: 2
 end

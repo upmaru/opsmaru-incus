@@ -1,16 +1,22 @@
-// Fixture-only callers of the unchanged Incus v7.0.1 migration client methods.
-// The server dial mode mirrors incusd/migration_connection.go's pinned TLS
-// constructor and anonymous WebSocket dial; it is not an Incus workload server.
+// Fixture-only callers of the unchanged Incus v7.0.1 migration and image copy
+// client methods. The server dial mode mirrors incusd/migration_connection.go's
+// pinned TLS constructor and anonymous WebSocket dial. The image pull and push
+// modes mirror incusd's daemon_images.go download and images.go export push,
+// using the same unchanged client calls; neither is an Incus workload server.
 package main
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -26,6 +32,73 @@ type input struct {
 	Body                         json.RawMessage
 	Operation, Certificate, Name string
 	Websockets                   map[string]string
+	Server, Fingerprint, Secret  string
+	Project, Content, Temp       string
+}
+
+// imagePull mirrors the pinned incusd ImageDownload for the incus protocol.
+func imagePull(in input) (map[string]any, error) {
+	remote, err := incus.ConnectPublicIncus(in.Server, &incus.ConnectionArgs{TLSServerCert: in.Certificate,
+		SkipGetEvents: true, SkipGetServer: true, TempPath: in.Temp})
+	if err != nil {
+		return nil, err
+	}
+	server := remote.(incus.InstanceServer).UseProject(in.Project)
+	info, _, err := server.GetPrivateImage(in.Fingerprint, in.Secret)
+	if err != nil {
+		return nil, err
+	}
+	meta, err := os.CreateTemp(in.Temp, "pull-meta-")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(meta.Name())
+	defer meta.Close()
+	rootfs, err := os.CreateTemp(in.Temp, "pull-rootfs-")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(rootfs.Name())
+	defer rootfs.Close()
+	_, err = server.GetPrivateImageFile(info.Fingerprint, in.Secret, incus.ImageFileRequest{MetaFile: meta, RootfsFile: rootfs})
+	if err != nil {
+		return nil, err
+	}
+	data, err := os.ReadFile(meta.Name())
+	if err != nil {
+		return nil, err
+	}
+	sum := sha256.Sum256(data)
+	return map[string]any{"fingerprint": hex.EncodeToString(sum[:]), "content": string(data)}, nil
+}
+
+// imagePush mirrors the pinned incusd imageExportPost push to another server.
+func imagePush(in input) (map[string]any, error) {
+	remote, err := incus.ConnectIncus(in.Server, &incus.ConnectionArgs{TLSServerCert: in.Certificate,
+		SkipGetEvents: true, SkipGetServer: true})
+	if err != nil {
+		return nil, err
+	}
+	if in.Project != "" {
+		remote = remote.UseProject(in.Project)
+	}
+	name := filepath.Join(in.Temp, in.Fingerprint)
+	image := api.ImagesPost{Filename: filepath.Base(name),
+		Source: &api.ImagesPostSource{Fingerprint: in.Fingerprint, Secret: in.Secret, Mode: "push"}}
+	op, err := remote.CreateImage(image, &incus.ImageCreateArgs{MetaFile: bytes.NewReader([]byte(in.Content)), MetaName: filepath.Base(name)})
+	if err != nil {
+		return nil, err
+	}
+	opAPI := op.Get()
+	secret, _ := opAPI.Metadata["secret"].(string)
+	waited, _, err := remote.GetOperationWaitSecret(opAPI.ID, secret, -1)
+	if err != nil {
+		return nil, err
+	}
+	if waited.StatusCode != api.Success {
+		return nil, fmt.Errorf("Failed operation %q: %q", waited.Status, waited.Err)
+	}
+	return map[string]any{"pushed": true}, nil
 }
 
 func connect(ctx context.Context, e endpoint) (incus.InstanceServer, error) {
@@ -83,8 +156,13 @@ func server(in input) (map[string]any, error) {
 	return map[string]any{"frames": frames}, nil
 }
 func run(in input) (map[string]any, error) {
-	if in.Action == "server" {
+	switch in.Action {
+	case "server":
 		return server(in)
+	case "imagepull":
+		return imagePull(in)
+	case "imagepush":
+		return imagePush(in)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -108,7 +186,13 @@ func run(in input) (map[string]any, error) {
 	}
 	result := map[string]any{"source_info": sourceInfo, "target_info": targetInfo}
 	var op incus.RemoteOperation
-	if in.Action == "volume" {
+	if in.Action == "image" {
+		var model api.Image
+		err = json.Unmarshal(in.Body, &model)
+		if err == nil {
+			op, err = target.CopyImage(source, model, &incus.ImageCopyArgs{Mode: in.Mode})
+		}
+	} else if in.Action == "volume" {
 		var model api.StorageVolume
 		err = json.Unmarshal(in.Body, &model)
 		if err == nil {
