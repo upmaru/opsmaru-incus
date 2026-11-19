@@ -29,6 +29,8 @@ if Code.ensure_loaded?(Plug.Conn) do
         admission: admitted.admission,
         monitor: monitor,
         deadline: now() + gateway.max_lifetime,
+        image_upload: admitted.image_peer and match?(%{route: :upload}, request.image),
+        first: nil,
         sent_outcome: if(request.method in @safe, do: :sent, else: :uncertain)
       }
 
@@ -40,9 +42,12 @@ if Code.ensure_loaded?(Plug.Conn) do
                unsized_body?(conn)
              ) do
           {:ok, headers, body} ->
-            case identity(state) do
-              {:ok, state} -> connect(conn, request, headers, body, state)
+            with {:ok, state} <- identity(state),
+                 {:ok, conn, state} <- image_upload(conn, body, state) do
+              connect(conn, request, headers, body, state)
+            else
               {:error, failure} -> fail(conn, failure)
+              {:error, conn, failure} -> fail(conn, failure)
             end
 
           {:error, failure} ->
@@ -62,6 +67,38 @@ if Code.ensure_loaded?(Plug.Conn) do
     end
 
     defp identity(state), do: {:ok, state}
+
+    # A server peer admitted by its image secret alone may only deliver the
+    # image. The pinned v7.0.1 incusd picks the action of `POST /1.0/images`
+    # from the body, whatever the content type: a body that starts with a JSON
+    # object (after JSON whitespace) is an image request, which can make the
+    # backend fetch from a server or URL the peer chooses, publish an instance
+    # or mint a token. Anything else is taken as the image itself. So the first
+    # body byte is checked before any backend connection opens (the backend
+    # consumes the one-time secret as soon as it sees the request head). Image
+    # files and the multipart form start with neither whitespace nor `{`.
+    defp image_upload(conn, _body, %{image_upload: false} = state), do: {:ok, conn, state}
+
+    defp image_upload(conn, :none, _state), do: {:error, conn, not_image()}
+
+    defp image_upload(conn, body, state) do
+      case read_chunk(conn, state, :not_sent) do
+        {:ok, :more, "", conn} ->
+          image_upload(conn, body, state)
+
+        {:ok, status, <<byte, _::binary>> = data, conn} when byte not in ~c" \t\r\n{" ->
+          {:ok, conn, %{state | first: {status, data}}}
+
+        {:ok, _status, _data, conn} ->
+          {:error, conn, not_image()}
+
+        {:error, conn, failure} ->
+          {:error, conn, failure}
+      end
+    end
+
+    defp not_image,
+      do: Failure.new(403, "An image secret admits only the image upload itself", :not_sent)
 
     @doc false
     def interrupter(%Plug.Conn{adapter: {Plug.Cowboy.Conn, %{pid: pid, version: version}}})
@@ -114,7 +151,7 @@ if Code.ensure_loaded?(Plug.Conn) do
       with :ok <- live(state),
            {:ok, socket, ref} <-
              Mint.HTTP.request(socket, request.method, target, headers, mint_body) do
-        case upload(conn, socket, ref, body, state, 0) do
+        case send_body(conn, socket, ref, body, state) do
           {:ok, conn, socket} -> respond(conn, socket, ref, state)
           {:error, conn, failure} -> fail(conn, failure)
         end
@@ -138,9 +175,22 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     defp backend_headers(connection, headers), do: Transport.request_headers(connection, headers)
 
+    # An image peer's first chunk was already read and checked.
+    defp send_body(conn, socket, ref, body, %{first: {status, data}} = state),
+      do: forward(conn, socket, ref, body, state, 0, status, data)
+
+    defp send_body(conn, socket, ref, body, state), do: upload(conn, socket, ref, body, state, 0)
+
     defp upload(conn, socket, _ref, :none, _state, _sent), do: {:ok, conn, socket}
 
     defp upload(conn, socket, ref, body, state, sent) do
+      case read_chunk(conn, state, state.sent_outcome) do
+        {:ok, status, data, conn} -> forward(conn, socket, ref, body, state, sent, status, data)
+        {:error, conn, failure} -> {:error, conn, failure}
+      end
+    end
+
+    defp read_chunk(conn, state, outcome) do
       gateway = state.gateway
 
       with :ok <- live(state),
@@ -150,29 +200,33 @@ if Code.ensure_loaded?(Plug.Conn) do
                read_length: gateway.max_chunk_bytes,
                read_timeout: min(gateway.idle_timeout, remaining(state.deadline))
              ) do
-        sent = sent + byte_size(data)
-
-        if sent > gateway.max_request_bytes do
-          {:error, conn,
-           Failure.new(413, "Request body exceeds the gateway limit", state.sent_outcome)}
-        else
-          case stream_body(socket, ref, data) do
-            {:ok, socket} when status == :more ->
-              upload(conn, socket, ref, body, state, sent)
-
-            {:ok, socket} ->
-              finish_upload(conn, socket, ref, body, sent, state)
-
-            :error ->
-              {:error, conn, Failure.new(502, "Backend request failed", state.sent_outcome)}
-          end
-        end
+        {:ok, status, data, conn}
       else
         {:error, reason} when reason in [:admission, :lifetime, :revoked] ->
-          {:error, conn, interrupted(reason, state.sent_outcome)}
+          {:error, conn, interrupted(reason, outcome)}
 
         _ ->
-          {:error, conn, Failure.new(408, "Request body was not received", state.sent_outcome)}
+          {:error, conn, Failure.new(408, "Request body was not received", outcome)}
+      end
+    end
+
+    defp forward(conn, socket, ref, body, state, sent, status, data) do
+      sent = sent + byte_size(data)
+
+      if sent > state.gateway.max_request_bytes do
+        {:error, conn,
+         Failure.new(413, "Request body exceeds the gateway limit", state.sent_outcome)}
+      else
+        case stream_body(socket, ref, data) do
+          {:ok, socket} when status == :more ->
+            upload(conn, socket, ref, body, state, sent)
+
+          {:ok, socket} ->
+            finish_upload(conn, socket, ref, body, sent, state)
+
+          :error ->
+            {:error, conn, Failure.new(502, "Backend request failed", state.sent_outcome)}
+        end
       end
     end
 

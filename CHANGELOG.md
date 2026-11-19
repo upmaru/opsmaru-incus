@@ -15,6 +15,26 @@
   `options/2`. The five declarations move from missing to partial in
   `priv/incus/coverage.json` (1244 partial, 36 missing, `complete_port` still
   false).
+- **Volume copy through the gateway.** The gateway can advertise
+  `storage_api_local_volume_handling` and `storage_api_remote_volume_handling`
+  when its WebSocket adapter is present and the host approves them. Standard
+  Incus clients can then copy custom storage volumes to and from a
+  gateway-fronted server in relay, pull and push modes, as they already copy
+  instances and snapshots. Before, the pinned client refused every volume copy
+  through the gateway because these extensions were filtered out.
+- **Image copy through the gateway.** The gateway can advertise
+  `images_push_relay`, so a client can push an image from a gateway-fronted
+  server. A new optional host callback, `admit_image_secret/2`, lets the host
+  admit another Incus server to the exact routes it uses with an image secret:
+  reading and exporting the image when it pulls from the gateway, and uploading
+  and waiting when it pushes into it. Requests carry a new `image` field naming
+  the route, fingerprint and secret. The host must verify the secret against
+  the backend's pending image operation, because the backend trusts the
+  gateway's connection and does not check it. A server admitted this way can
+  upload only the image itself: a JSON image request in its place is refused
+  before it reaches the backend. Hosts without the callback keep
+  refusing these routes. In every case the Incus servers move the data; the gateway advertises
+  only its approved address and certificate.
 
 ## 0.2.3 — 2026-11-18
 

@@ -6,7 +6,10 @@ defmodule Opsmaru.TestSupport.NativeMigrationBackend do
   @guid "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
   @channels ~w(control fs)
 
-  def extensions, do: ~w(instances container_push container_push_target)
+  def extensions,
+    do:
+      ~w(instances container_push container_push_target storage_api_local_volume_handling storage_api_remote_volume_handling)
+
   def driver, do: @driver
 
   def build! do
@@ -108,6 +111,16 @@ defmodule Opsmaru.TestSupport.NativeMigrationBackend do
       "devices" => %{},
       "profiles" => [],
       "ephemeral" => false
+    }
+
+  def model(:volume),
+    do: %{
+      "name" => "source-volume",
+      "type" => "custom",
+      "content_type" => "filesystem",
+      "description" => "",
+      "config" => %{},
+      "location" => "none"
     }
 
   def run(root, input) do
