@@ -7482,10 +7482,13 @@
     },
     {
       "id": "client/type/ImageCopyArgs",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/client_args.ex",
+      "evidence": [
+        "test/client_args_reference_test.exs",
+        "test/image_copy_contract_test.exs"
+      ],
+      "note": "Argument struct mapped field for field to the keyword options of its Elixir counterpart (ClientArgs.fields/1, options/2). The field names, Go types, order and embedding are compared with the unchanged struct by reflection, and the copy differentials derive their Elixir options from the same Go-shaped args through ClientArgs.options/2, so every mapped field is compared on the wire with the pinned method on Unix and verified HTTPS. Zero values are unset as in Go. Approved differences: an unsupported Mode and unknown or case-folded field names are rejected, and host decisions (approved origin, relay adapter, registry credentials) are separate options. Fields the pinned MoveStoragePoolVolume never reads are recorded as ignored. Not Go declaration parity."
     },
     {
       "id": "client/type/ImageCreateArgs",
@@ -7538,10 +7541,13 @@
     },
     {
       "id": "client/type/InstanceCopyArgs",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/client_args.ex",
+      "evidence": [
+        "test/client_args_reference_test.exs",
+        "test/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Argument struct mapped field for field to the keyword options of its Elixir counterpart (ClientArgs.fields/1, options/2). The field names, Go types, order and embedding are compared with the unchanged struct by reflection, and the copy differentials derive their Elixir options from the same Go-shaped args through ClientArgs.options/2, so every mapped field is compared on the wire with the pinned method on Unix and verified HTTPS. Zero values are unset as in Go. Approved differences: an unsupported Mode and unknown or case-folded field names are rejected, and host decisions (approved origin, relay adapter, registry credentials) are separate options. Fields the pinned MoveStoragePoolVolume never reads are recorded as ignored. Not Go declaration parity."
     },
     {
       "id": "client/type/InstanceExecArgs",
@@ -7580,10 +7586,13 @@
     },
     {
       "id": "client/type/InstanceSnapshotCopyArgs",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/client_args.ex",
+      "evidence": [
+        "test/client_args_reference_test.exs",
+        "test/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Argument struct mapped field for field to the keyword options of its Elixir counterpart (ClientArgs.fields/1, options/2). The field names, Go types, order and embedding are compared with the unchanged struct by reflection, and the copy differentials derive their Elixir options from the same Go-shaped args through ClientArgs.options/2, so every mapped field is compared on the wire with the pinned method on Unix and verified HTTPS. Zero values are unset as in Go. Approved differences: an unsupported Mode and unknown or case-folded field names are rejected, and host decisions (approved origin, relay adapter, registry credentials) are separate options. Fields the pinned MoveStoragePoolVolume never reads are recorded as ignored. Not Go declaration parity."
     },
     {
       "id": "client/type/Operation",
@@ -7643,17 +7652,23 @@
     },
     {
       "id": "client/type/StoragePoolVolumeCopyArgs",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/client_args.ex",
+      "evidence": [
+        "test/client_args_reference_test.exs",
+        "test/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Argument struct mapped field for field to the keyword options of its Elixir counterpart (ClientArgs.fields/1, options/2). The field names, Go types, order and embedding are compared with the unchanged struct by reflection, and the copy differentials derive their Elixir options from the same Go-shaped args through ClientArgs.options/2, so every mapped field is compared on the wire with the pinned method on Unix and verified HTTPS. Zero values are unset as in Go. Approved differences: an unsupported Mode and unknown or case-folded field names are rejected, and host decisions (approved origin, relay adapter, registry credentials) are separate options. Fields the pinned MoveStoragePoolVolume never reads are recorded as ignored. Not Go declaration parity."
     },
     {
       "id": "client/type/StoragePoolVolumeMoveArgs",
-      "status": "missing",
-      "elixir": null,
-      "evidence": [],
-      "note": "No verified implementation/evidence claim."
+      "status": "partial",
+      "elixir": "lib/opsmaru/incus/client_args.ex",
+      "evidence": [
+        "test/client_args_reference_test.exs",
+        "test/copy_negotiation_reference_test.exs"
+      ],
+      "note": "Argument struct mapped field for field to the keyword options of its Elixir counterpart (ClientArgs.fields/1, options/2). The field names, Go types, order and embedding are compared with the unchanged struct by reflection, and the copy differentials derive their Elixir options from the same Go-shaped args through ClientArgs.options/2, so every mapped field is compared on the wire with the pinned method on Unix and verified HTTPS. Zero values are unset as in Go. Approved differences: an unsupported Mode and unknown or case-folded field names are rejected, and host decisions (approved origin, relay adapter, registry credentials) are separate options. Fields the pinned MoveStoragePoolVolume never reads are recorded as ignored. Not Go declaration parity."
     },
     {
       "id": "client/type/StorageVolumeBackupArgs",
