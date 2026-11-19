@@ -106,10 +106,9 @@ defmodule Opsmaru.Incus.ClientArgs do
   """
   def options(type, native) when is_map_key(@args, type) and is_map(native) do
     spec = @args[type]
-    given = Map.new(native, fn {key, value} -> {to_string(key), value} end)
     known = Enum.map(spec.fields, &elem(&1, 0))
 
-    with true <- map_size(given) == map_size(native),
+    with {:ok, given} <- named(native),
          [] <- Map.keys(given) -- known,
          {:ok, options} <- collect(spec, given) do
       {:ok, options}
@@ -159,15 +158,33 @@ defmodule Opsmaru.Incus.ClientArgs do
 
   # api.ImageAlias: name and description, keyed as the native JSON names them.
   defp alias?(value) when is_map(value) do
-    entry = Map.new(value, fn {key, item} -> {to_string(key), item} end)
+    case named(value) do
+      {:ok, entry} ->
+        Map.keys(entry) -- ["name", "description"] == [] and
+          Enum.all?(Map.values(entry), &is_binary/1)
 
-    map_size(entry) == map_size(value) and Map.keys(entry) -- ["name", "description"] == [] and
-      Enum.all?(Map.values(entry), &is_binary/1)
+      :error ->
+        false
+    end
   end
 
   defp alias?(_), do: false
 
-  defp alias_map(value), do: Map.new(value, fn {key, item} -> {to_string(key), item} end)
+  defp alias_map(value) do
+    {:ok, entry} = named(value)
+    entry
+  end
+
+  # A map keyed by strings or atoms, rekeyed by string; any other key, or two
+  # keys naming the same field, is an error.
+  defp named(map) do
+    if Enum.all?(Map.keys(map), &(is_binary(&1) or is_atom(&1))) do
+      given = Map.new(map, fn {key, value} -> {to_string(key), value} end)
+      if map_size(given) == map_size(map), do: {:ok, given}, else: :error
+    else
+      :error
+    end
+  end
 
   defp invalid, do: {:error, %Error{kind: :invalid_client_args}}
 end

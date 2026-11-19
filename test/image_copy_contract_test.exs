@@ -534,6 +534,37 @@ defmodule Opsmaru.Incus.ImageCopyContractTest do
     assert mutations(source) == [] and mutations(target) == []
   end
 
+  test "https S05 empty and unset profiles reach each side as the pinned CopyImage sends them",
+       %{root: root} do
+    identity = identity(root, :https)
+    image = image(:unified)
+
+    for mode <- [:pull, :push, :relay] do
+      [unset, empty] =
+        for opts <- [[], [profiles: []]] do
+          label = inspect({mode, opts})
+          {source, target} = pair(root, identity, image, @extensions, :success)
+          native = reference(root, identity, mode, image, opts, source, target, :success)
+          assert native["completed"], label <> inspect(native)
+
+          {source2, target2} = pair(root, identity, image, @extensions, :success)
+          assert {:ok, %ImageCopy{} = copy} = copy(mode, image, opts, source2, target2), label
+          assert {:ok, _} = Images.wait_copy(copy, timeout: 3_000), label
+
+          # Compared as sent: mutations/1 drops empty lists, which would hide the difference.
+          assert profiles(source2) == profiles(source), label
+          assert profiles(target2) == profiles(target), label
+          profiles(source2) ++ profiles(target2)
+        end
+
+      # A pull is the mode whose request tells an empty override from none.
+      if mode == :pull do
+        assert [] in Enum.map(empty, &elem(&1, 1))
+        refute [] in Enum.map(unset, &elem(&1, 1))
+      end
+    end
+  end
+
   test "unix S05 pull and push need an approved HTTPS origin before any request", %{root: root} do
     image = image(:unified)
     {source, target} = pair(root, nil, image, @extensions, :success)
@@ -832,6 +863,20 @@ defmodule Opsmaru.Incus.ImageCopyContractTest do
 
       type ->
         {type, headers(request), request.body}
+    end
+  end
+
+  # The profiles each POST carried: the JSON field with [] kept apart from unset
+  # (null and an absent key both decode to a nil slice), or the upload's header.
+  defp profiles(side) do
+    for request <- HTTPFixture.requests(side.fixture), request.method == "POST" do
+      case request.headers["content-type"] do
+        "application/json" <> _ ->
+          {request.target, Jason.decode!(request.body)["profiles"]}
+
+        _ ->
+          {request.target, {:header, request.headers["x-incus-profiles"]}}
+      end
     end
   end
 
