@@ -1,14 +1,14 @@
 defmodule Opsmaru.Incus.GatewayMigrationInterruptionTest do
   use Opsmaru.TestSupport.GatewayCase, async: true
 
-  for kind <- [:instance, :snapshot], mode <- [:relay, :pull, :push] do
+  for kind <- [:instance, :snapshot, :volume], mode <- [:relay, :pull, :push] do
     test "#{kind} #{mode} interrupted migration requests are never replayed or cancelled",
          context do
       observer = self()
 
       for role <- [:source, :target], loss <- [:backend, :frontend] do
         target = target(unquote(kind), role)
-        body = body(unquote(mode), role)
+        body = body(unquote(kind), unquote(mode), role)
 
         {fixture, connection} =
           backend(context, fn conn ->
@@ -75,10 +75,26 @@ defmodule Opsmaru.Incus.GatewayMigrationInterruptionTest do
 
   defp target(:instance, :source), do: "/1.0/instances/source?project=allowed"
   defp target(:snapshot, :source), do: "/1.0/instances/source/snapshots/snapshot?project=allowed"
+
+  defp target(:volume, :source),
+    do: "/1.0/storage-pools/default/volumes/custom/source-volume?project=allowed"
+
+  defp target(:volume, :target), do: "/1.0/storage-pools/default/volumes/custom?project=allowed"
   defp target(_, :target), do: "/1.0/instances?project=allowed"
 
-  defp body(mode, :target),
+  defp body(:volume, mode, :target),
+    do:
+      Jason.encode!(%{
+        name: "copied",
+        type: "custom",
+        source: %{name: "source-volume", type: "migration", mode: mode, pool: "default"}
+      })
+
+  defp body(:volume, _mode, :source),
+    do: Jason.encode!(%{migration: true, name: "source-volume", pool: "default"})
+
+  defp body(_kind, mode, :target),
     do: Jason.encode!(%{name: "copied", source: %{type: "migration", mode: mode}})
 
-  defp body(mode, :source), do: Jason.encode!(%{migration: true, live: false, mode: mode})
+  defp body(_kind, mode, :source), do: Jason.encode!(%{migration: true, live: false, mode: mode})
 end

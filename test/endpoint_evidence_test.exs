@@ -262,8 +262,8 @@ defmodule Opsmaru.Incus.EndpointEvidenceTest do
     assert coverage["complete_port"] == false
 
     assert Enum.frequencies_by(coverage["entries"], & &1["status"]) == %{
-             "partial" => 1239,
-             "missing" => 41
+             "partial" => 1244,
+             "missing" => 36
            }
   end
 

@@ -60,6 +60,48 @@ defmodule Opsmaru.Incus.Gateway.Host do
               {:ok, term()} | {:error, term()}
 
   @doc """
+  Admit an otherwise unauthenticated Incus server peer to one image-copy route.
+
+  Called only after `authorize/2` returns `{:error, :unauthenticated}`, for the
+  exact HTTP routes in `request.image` (see `Opsmaru.Incus.Gateway.Request`)
+  and no all-projects selection. Missing callbacks deny, so a host that does
+  not implement this keeps refusing image copies in which the gateway is the
+  pull source or the push target. An explicit authorization denial never falls
+  through to this callback.
+
+  A pinned v7.0.1 Incus server uses these routes when another server copies an
+  image through the gateway:
+
+    * pull from the gateway: `:info` then `:export` for the image fingerprint,
+      with the secret of an image secret operation
+      (`POST /1.0/images/{fp}/secret`) an authorized caller created;
+    * push into the gateway: `:upload` with the fingerprint and the secret of a
+      push-mode `POST /1.0/images` operation an authorized caller created, then
+      `:wait` on that operation.
+
+  **The host must verify `request.image.secret` itself.** The gateway reaches
+  the backend over a trusted connection (the Unix socket, or HTTPS with a
+  client certificate the backend trusts), and a pinned v7.0.1 Incus server
+  treats a trusted caller's image info, export and upload as authorized
+  whatever secret they carry. Compare the secret, in constant time, with the
+  pending transfer: for `:info`, `:export` and `:upload`, an image token
+  operation (class `token`) whose `images` resource names the fingerprint and
+  whose `metadata.secret` matches, as incusd's `imageValidSecret` does; for
+  `:wait`, the named operation's `metadata.secret`. Also bind the project,
+  target and adapter-supplied peer, never trusting the request alone. The
+  pinned server peer normally presents no client certificate. The gateway
+  forwards the secret unchanged, so the backend still consumes the
+  single-use token. For `:upload` the gateway also refuses, before backend
+  access, a body that is not the image itself (empty, or starting with JSON
+  whitespace or `{`), because the pinned server would run it as an image
+  request with the gateway's trust. Returning `{:ok, grant}` permits only this request and
+  uses the ordinary `valid?/3` revocation/expiry checks. Never store or log
+  the secret in the grant.
+  """
+  @callback admit_image_secret(Request.t(), host_config :: term()) ::
+              {:ok, term()} | {:error, term()}
+
+  @doc """
   Recheck the original grant, including expiry and current revocation state.
   Only `true` keeps access. Runs before backend access and periodically during
   an exchange. Missing callbacks deny. No new grant is acquired for cleanup.
@@ -94,5 +136,9 @@ defmodule Opsmaru.Incus.Gateway.Host do
   @callback certificates(atom(), Request.t(), term(), map(), term()) ::
               {:ok, term(), [{binary(), binary()}]} | {:error, 400..599}
 
-  @optional_callbacks identity: 2, certificates: 5, valid?: 3, admit_operation_secret: 2
+  @optional_callbacks identity: 2,
+                      certificates: 5,
+                      valid?: 3,
+                      admit_operation_secret: 2,
+                      admit_image_secret: 2
 end

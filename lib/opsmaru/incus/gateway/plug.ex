@@ -118,7 +118,11 @@ if Code.ensure_loaded?(Plug.Conn) do
         path: conn.request_path,
         query: conn.query_string,
         peer: %{address: peer.address, port: peer.port, certificate: peer.ssl_cert},
-        authorization: authorization
+        authorization: authorization,
+        image_headers: %{
+          secret: Plug.Conn.get_req_header(conn, "x-incus-secret"),
+          fingerprint: Plug.Conn.get_req_header(conn, "x-incus-fingerprint")
+        }
       }
     end
 
