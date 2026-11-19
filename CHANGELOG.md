@@ -4,6 +4,17 @@
 
 ### Added
 
+- **Copy and move argument structs.** `Opsmaru.Incus.ClientArgs` maps the
+  pinned `ImageCopyArgs`, `InstanceCopyArgs`, `InstanceSnapshotCopyArgs`,
+  `StoragePoolVolumeCopyArgs` and `StoragePoolVolumeMoveArgs` field for field
+  to the options of `Images.copy/4` and `Copy.instance/4`, `snapshot/5`,
+  `volume/6` and `move_volume/5`. `fields/1` lists each field with its Go type,
+  and `options/2` turns a Go-shaped value into options, leaving Go zero values
+  unset. A reflection oracle checks the field sets against the unchanged
+  structs, and the copy differentials now derive their Elixir options through
+  `options/2`. The five declarations move from missing to partial in
+  `priv/incus/coverage.json` (1244 partial, 36 missing, `complete_port` still
+  false).
 - **Volume copy through the gateway.** The gateway can advertise
   `storage_api_local_volume_handling` and `storage_api_remote_volume_handling`
   when its WebSocket adapter is present and the host approves them. Standard
