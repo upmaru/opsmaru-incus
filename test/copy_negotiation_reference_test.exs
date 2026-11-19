@@ -4,6 +4,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
   alias Opsmaru.Incus
 
   alias Opsmaru.Incus.{
+    ClientArgs,
     Connection,
     Context,
     Copy,
@@ -93,8 +94,14 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
     {client, fixture, endpoint} = fixture(root, "move", :unix)
     volume = %{"name" => "source", "type" => "custom", "content_type" => "block"}
 
-    for project <- [nil, "destination"] do
-      options = if project, do: %{Name: "renamed", Project: project}, else: %{Name: "renamed"}
+    # The last case sets every promoted copy field, which the pinned move never reads.
+    ignored = %{Mode: "push", VolumeOnly: true, Refresh: true, RefreshExcludeOlder: true}
+
+    for {project, extra} <- [{nil, %{}}, {"destination", %{}}, {"destination", ignored}] do
+      options =
+        if project,
+          do: Map.merge(%{Name: "renamed", Project: project}, extra),
+          else: %{Name: "renamed"}
 
       result =
         reference(%{
@@ -109,6 +116,7 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
       assert result["accepted"] and result["completed"], inspect(result)
       expected = posts(fixture) |> List.last()
       opts = if project, do: [name: "renamed", project: project], else: [name: "renamed"]
+      assert {:ok, ^opts} = ClientArgs.options("StoragePoolVolumeMoveArgs", options)
       assert {:ok, move} = Copy.move_volume(client, "new-pool", "old-pool", volume, opts)
       actual = posts(fixture) |> List.last()
       assert actual.target == expected.target
@@ -192,21 +200,18 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
       if barrier, do: Agent.update(barrier, fn _ -> MapSet.new() end)
       data = option_model(kind, inactive?)
 
-      native_keys = %{
-        name: :Name,
-        live: :Live,
-        instance_only: :InstanceOnly,
-        refresh: :Refresh,
-        refresh_exclude_older: :RefreshExcludeOlder,
-        allow_inconsistent: :AllowInconsistent,
-        volume_only: :VolumeOnly,
-        mode: :Mode
-      }
+      native_keys =
+        Map.new(ClientArgs.fields(args_type(kind)), fn {field, _, {:option, key}} ->
+          {key, field}
+        end)
 
       options =
         Map.new(flags, fn {key, value} ->
           {native_keys[key], if(key == :mode, do: Atom.to_string(value), else: value)}
         end)
+
+      # The Elixir call takes exactly the options the mapping derives from the Go args.
+      {:ok, flags} = ClientArgs.options(args_type(kind), options)
 
       result =
         reference(%{
@@ -253,6 +258,10 @@ defmodule Opsmaru.Incus.CopyNegotiationReferenceTest do
       refute Enum.any?(HTTPFixture.requests(target_fixture), &(&1.method == "DELETE"))
     end
   end
+
+  defp args_type(:instance), do: "InstanceCopyArgs"
+  defp args_type(:snapshot), do: "InstanceSnapshotCopyArgs"
+  defp args_type(:volume), do: "StoragePoolVolumeCopyArgs"
 
   defp boolean_options(kind) do
     Enum.reduce(enabled_options(kind), [[]], fn {key, _}, combinations ->
