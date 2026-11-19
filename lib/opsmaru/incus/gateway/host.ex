@@ -91,7 +91,10 @@ defmodule Opsmaru.Incus.Gateway.Host do
   target and adapter-supplied peer, never trusting the request alone. The
   pinned server peer normally presents no client certificate. The gateway
   forwards the secret unchanged, so the backend still consumes the
-  single-use token. Returning `{:ok, grant}` permits only this request and
+  single-use token. For `:upload` the gateway also refuses, before backend
+  access, a body that is not the image itself (empty, or starting with JSON
+  whitespace or `{`), because the pinned server would run it as an image
+  request with the gateway's trust. Returning `{:ok, grant}` permits only this request and
   uses the ordinary `valid?/3` revocation/expiry checks. Never store or log
   the secret in the grant.
   """

@@ -30,7 +30,7 @@ The pinned v7.0.1 CLI's unsupported snapshot `move` SHALL preserve its native `4
 
 ### Requirement: Operation-secret peer admission
 
-An untrusted Incus server peer SHALL reach only the operation WebSocket route of the named operation, or one of the exact image secret routes, only with the secret that route carries and only after an explicit host admission decision for that route family. The image secret routes are `GET /1.0/images/{fingerprint}` and `GET /1.0/images/{fingerprint}/export` with one `secret` query value, `POST /1.0/images` with one `X-Incus-secret` and one `X-Incus-fingerprint` header and no `secret` query, and `GET /1.0/operations/{id}/wait` with one `secret` query value, all without an all-projects selection. A host that makes no image admission decision SHALL keep these routes refused. The backend SHALL still validate an operation WebSocket secret. Because the backend treats the gateway's connection as trusted and does not check image secrets, the gateway SHALL give the host the decoded image secret and the host SHALL verify it against the backend's pending image operation before admitting. Diagnostics SHALL redact every secret.
+An untrusted Incus server peer SHALL reach only the operation WebSocket route of the named operation, or one of the exact image secret routes, only with the secret that route carries and only after an explicit host admission decision for that route family. The image secret routes are `GET /1.0/images/{fingerprint}` and `GET /1.0/images/{fingerprint}/export` with one `secret` query value, `POST /1.0/images` with one `X-Incus-secret` and one `X-Incus-fingerprint` header and no `secret` query, and `GET /1.0/operations/{id}/wait` with one `secret` query value, all without an all-projects selection. A host that makes no image admission decision SHALL keep these routes refused. The backend SHALL still validate an operation WebSocket secret. Because the backend treats the gateway's connection as trusted and does not check image secrets, the gateway SHALL give the host the decoded image secret and the host SHALL verify it against the backend's pending image operation before admitting. Because the backend picks the action of `POST /1.0/images` from the request body, the gateway SHALL refuse, before backend access, an image peer's upload whose body is empty or starts with JSON whitespace or `{`, so the peer can deliver only the image. Diagnostics SHALL redact every secret.
 
 #### Scenario: Secret outside its operation
 
@@ -41,6 +41,11 @@ An untrusted Incus server peer SHALL reach only the operation WebSocket route of
 
 - **WHEN** an untrusted server peer presents an image secret that does not match the host's pending image operation
 - **THEN** the host denies it and the gateway refuses the request with 403 before backend access
+
+#### Scenario: Image request in place of an upload
+
+- **WHEN** an admitted image peer sends `POST /1.0/images` with a valid secret and fingerprint but a JSON image request as the body, under any content type
+- **THEN** the gateway refuses it with 403 before backend access, and the same body from a caller the host authorizes itself is relayed unchanged
 
 #### Scenario: Image secret without host admission
 

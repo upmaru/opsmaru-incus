@@ -19,7 +19,9 @@
   and waiting when it pushes into it. Requests carry a new `image` field naming
   the route, fingerprint and secret. The host must verify the secret against
   the backend's pending image operation, because the backend trusts the
-  gateway's connection and does not check it. Hosts without the callback keep
+  gateway's connection and does not check it. A server admitted this way can
+  upload only the image itself: a JSON image request in its place is refused
+  before it reaches the backend. Hosts without the callback keep
   refusing these routes. In every case the Incus servers move the data; the gateway advertises
   only its approved address and certificate.
 

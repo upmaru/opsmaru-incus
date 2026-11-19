@@ -205,6 +205,86 @@ defmodule Opsmaru.Incus.GatewayImageSecretTest do
     assert Admission.count(context.admission) == 0
   end
 
+  test "an image peer's upload may carry only the image, never an image request",
+       context do
+    GatewayServer.put_gateway(context.gateway)
+    headers = [{"x-incus-secret", "s"}, {"x-incus-fingerprint", @fp}]
+    json = Jason.encode!(%{source: %{type: "image", mode: "pull", server: "https://peer.test"}})
+
+    # incusd picks the action from the body, whatever the content type says.
+    for {content_type, body} <- [
+          {"application/json", json},
+          {"application/octet-stream", json},
+          {"application/octet-stream", " \t\r\n" <> json},
+          {"multipart/form-data; boundary=b", json},
+          {"application/octet-stream", "\n--b\r\n"},
+          {"application/octet-stream", ""}
+        ] do
+      response =
+        RawHTTP.request(
+          context.port,
+          "POST",
+          "/1.0/images",
+          [{"content-type", content_type} | headers],
+          body
+        )
+
+      assert response.status == 403, inspect({content_type, body})
+      assert_received {:image_admission, %{image: %{route: :upload}}}
+    end
+
+    # Refused before the backend sees the request, so the secret is not consumed.
+    assert HTTPFixture.requests(context.fixture) == []
+
+    image = <<0xFD, "7zXZ", 0, "{not json}">>
+
+    for {content_type, body} <- [
+          {"application/octet-stream", image},
+          {"multipart/form-data; boundary=b", "--b\r\n\r\n" <> image <> "\r\n--b--\r\n"}
+        ] do
+      response =
+        RawHTTP.request(
+          context.port,
+          "POST",
+          "/1.0/images",
+          [{"content-type", content_type} | headers],
+          body
+        )
+
+      assert response.status == 200
+      assert [%{method: "POST", target: "/1.0/images"} = sent] = requests(context.fixture)
+      assert sent.body == body
+      assert sent.headers["x-incus-secret"] == "s"
+    end
+
+    # A caller the host authorizes itself is not limited, whatever headers it adds.
+    GatewayServer.put_gateway(%{
+      context.gateway
+      | host_config: %{context.gateway.host_config | authorization: {:ok, :image_grant}}
+    })
+
+    response =
+      RawHTTP.request(
+        context.port,
+        "POST",
+        "/1.0/images",
+        [{"content-type", "application/json"} | headers],
+        json
+      )
+
+    assert response.status == 200
+    assert [%{body: ^json}] = requests(context.fixture)
+    assert Admission.count(context.admission) == 0
+  end
+
+  # The fixture keeps every request; take the ones since the last call.
+  defp requests(fixture) do
+    seen = Process.get(:seen_requests, 0)
+    all = HTTPFixture.requests(fixture)
+    Process.put(:seen_requests, length(all))
+    Enum.drop(all, seen)
+  end
+
   defp request(method, protocol, target, headers \\ %{}) do
     uri = URI.parse(target)
 

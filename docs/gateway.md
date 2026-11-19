@@ -605,7 +605,13 @@ It runs under the same conditions as `admit_operation_secret/2`: only after
 exact routes above with one nonempty secret, a lowercase hexadecimal
 fingerprint of at most 64 characters and no all-projects selection. An upload
 must carry exactly one `X-Incus-secret` and one `X-Incus-fingerprint` header
-and no `secret` query. Missing, denied, malformed or late callbacks return
+and no `secret` query, and its body must be the image itself: the pinned
+server picks the action of `POST /1.0/images` from the body, whatever the
+content type, so the gateway returns `403` before backend access when an image
+peer's body is empty or starts with JSON whitespace or `{` (an image request
+that could make the backend fetch from a server the peer chooses, publish an
+instance or mint a token). A caller that `authorize/2` admits is not limited
+this way. Missing, denied, malformed or late callbacks return
 `403` before backend access, so a host without the callback keeps refusing
 these routes. The operation WebSocket keeps its own callback; neither callback
 is consulted for the other's routes. The grant is rechecked by `valid?/3`

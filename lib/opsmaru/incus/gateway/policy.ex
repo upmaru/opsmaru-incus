@@ -24,7 +24,7 @@ defmodule Opsmaru.Incus.Gateway.Policy do
 
   defmodule Admitted do
     @moduledoc false
-    defstruct [:slot, :admission, :grant, anonymous: false]
+    defstruct [:slot, :admission, :grant, anonymous: false, image_peer: false]
   end
 
   @doc """
@@ -69,8 +69,8 @@ defmodule Opsmaru.Incus.Gateway.Policy do
     case Admission.acquire(gateway.admission, holder) do
       {:ok, slot} ->
         case check_host(gateway, request) do
-          {:ok, grant, anonymous} ->
-            finish_admission(slot, grant, anonymous)
+          {:ok, grant, admitted_as} ->
+            finish_admission(slot, grant, admitted_as)
 
           {:error, failure} ->
             Admission.release(slot)
@@ -88,9 +88,16 @@ defmodule Opsmaru.Incus.Gateway.Policy do
   # A host callback can outlive the admission it was called under. Refuse the
   # lost slot before starting any protocol owner or lease: a guard on an already
   # dead admission could otherwise interrupt even the local failure response.
-  defp finish_admission(slot, grant, anonymous) do
+  defp finish_admission(slot, grant, admitted_as) do
     if Process.alive?(elem(slot, 0)) do
-      {:ok, %Admitted{slot: slot, admission: elem(slot, 0), grant: grant, anonymous: anonymous}}
+      {:ok,
+       %Admitted{
+         slot: slot,
+         admission: elem(slot, 0),
+         grant: grant,
+         anonymous: admitted_as == :anonymous,
+         image_peer: admitted_as == :image_peer
+       }}
     else
       Admission.release(slot)
       {:error, Failure.new(503, "Gateway admission stopped", :not_sent)}
@@ -124,7 +131,7 @@ defmodule Opsmaru.Incus.Gateway.Policy do
 
       {:ok, {:error, :unauthenticated}} ->
         if anonymous_route?(request),
-          do: {:ok, nil, true},
+          do: {:ok, nil, :anonymous},
           else: admit_secret_peer(gateway, request)
 
       _ ->
@@ -132,10 +139,13 @@ defmodule Opsmaru.Incus.Gateway.Policy do
     end
   end
 
-  defp authorized(gateway, request, grant) do
+  # `admitted_as` records how the request was admitted: `:caller` by
+  # `authorize/2`, or `:operation_peer` / `:image_peer` by its secret alone. The
+  # relay limits what an image peer's upload may carry.
+  defp authorized(gateway, request, grant, admitted_as \\ :caller) do
     with :ok <- implemented(request),
          :ok <- recheck(gateway, request, grant) do
-      {:ok, grant, false}
+      {:ok, grant, admitted_as}
     end
   end
 
@@ -145,23 +155,25 @@ defmodule Opsmaru.Incus.Gateway.Policy do
     host = gateway.host
     config = gateway.host_config
 
-    result =
+    {admitted_as, result} =
       cond do
         operation_secret_route?(request) ->
-          callback(
-            fn -> host.admit_operation_secret(request, config) end,
-            gateway.callback_timeout
-          )
+          {:operation_peer,
+           callback(
+             fn -> host.admit_operation_secret(request, config) end,
+             gateway.callback_timeout
+           )}
 
         image_secret_route?(request) ->
-          callback(fn -> host.admit_image_secret(request, config) end, gateway.callback_timeout)
+          {:image_peer,
+           callback(fn -> host.admit_image_secret(request, config) end, gateway.callback_timeout)}
 
         true ->
-          nil
+          {nil, nil}
       end
 
     case result do
-      {:ok, {:ok, grant}} -> authorized(gateway, request, grant)
+      {:ok, {:ok, grant}} -> authorized(gateway, request, grant, admitted_as)
       _ -> {:error, Failure.new(403, "not authorized", :not_sent)}
     end
   end
