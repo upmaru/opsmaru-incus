@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.2.4 — 2026-11-19
+
+Standard Incus clients can copy custom volumes and images to and from a
+gateway-fronted server, and the copy and move argument structs map field for
+field to the native client options.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.4"}
+```
 
 ### Added
 
