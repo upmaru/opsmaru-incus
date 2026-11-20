@@ -9,8 +9,13 @@ entry does not establish support. Apache-2.0 attribution is in `priv/notices`.
 `transfer.json` records source and transferred hashes for the reusable Macus
 inventory generator, official-client Go oracle, native wire cases, Unix/TLS
 HTTP fixtures and comparison helpers. Namespace/path adaptation is recorded
-by the distinct transferred hashes. Macus Cowboy proxy, Swift socket bridge,
-virtualization and hardware fixtures stay in Macus. Nothing there is modified.
+by the distinct transferred hashes; a later local amendment is recorded by
+adding `amended_sha256` and a one-sentence `amendment` to the entry, so the
+current bytes always equal `amended_sha256` when present, otherwise
+`transferred_sha256`, and history is never rewritten. `test/transfer_record_test.exs`
+checks every entry against the shipped bytes. Macus Cowboy proxy, Swift socket
+bridge, virtualization and hardware fixtures stay in Macus. Nothing there is
+modified.
 
 Regenerate from a clean checkout at the exact pin (Go is verifier-only):
 
@@ -38,8 +43,13 @@ python3 scripts/update-incus-coverage.py
 `methods.json` is a curated native request registry, verified by invoking each
 unchanged official typed method. The coverage manifest accounts for all 1,280
 entries, including missing declarations and partial interface/model/helper
-mappings. Transferred fixture hashes describe the initial transfer; subsequent
-Opsmaru adaptations are tracked in Git, not claimed identical to Macus.
+mappings. Transferred fixture hashes describe the initial transfer and are
+never rewritten; subsequent Opsmaru adaptations are recorded by deliberately
+updating an entry's `amended_sha256` and `amendment`, not claimed identical to
+Macus. `test/transfer_record_test.exs` enforces that every destination matches
+its current digest. A Hex-package consumer can verify the shipped destinations
+without Git history; the `test/` and `scripts/` destinations are not packaged,
+so checking every entry requires a source checkout.
 
 `endpoint-inventory.json` is the full audit ledger: all 247 documented pairs,
 293 query/access views, explicit helper/custom mappings, public server registration

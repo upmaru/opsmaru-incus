@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.2.5 — 2026-11-21
+
+The transfer record in the package can be verified against the files it ships.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.5"}
+```
+
+### Fixed
+
+- **Transfer record carries verifiable digests for amended files.**
+  `priv/incus/transfer.json` now records an `amended_sha256` and a
+  one-sentence `amendment` for each destination that changed locally after
+  the transfer, leaving `source_sha256` and `transferred_sha256` as the
+  unchanged historical record of the transfer. Consumers that verify the
+  shipped bytes should compare against `amended_sha256` when present and
+  `transferred_sha256` otherwise. A new test, `test/transfer_record_test.exs`,
+  checks every `files` entry against the shipped bytes, so a later edit must
+  update the record deliberately instead of drifting silently, as the stale
+  digest for `priv/notices/INCUS-NOTICE.md` did (upmaru/opsmaru-incus#82).
+
 ## 0.2.4 — 2026-11-19
 
 Standard Incus clients can copy custom volumes and images to and from a
