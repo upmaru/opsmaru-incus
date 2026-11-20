@@ -47,8 +47,9 @@ mappings. Transferred fixture hashes describe the initial transfer and are
 never rewritten; subsequent Opsmaru adaptations are recorded by deliberately
 updating an entry's `amended_sha256` and `amendment`, not claimed identical to
 Macus. `test/transfer_record_test.exs` enforces that every destination matches
-its current digest, so a Hex-package consumer can verify the record without
-Git history.
+its current digest. A Hex-package consumer can verify the shipped destinations
+without Git history; the `test/` and `scripts/` destinations are not packaged,
+so checking every entry requires a source checkout.
 
 `endpoint-inventory.json` is the full audit ledger: all 247 documented pairs,
 293 query/access views, explicit helper/custom mappings, public server registration
