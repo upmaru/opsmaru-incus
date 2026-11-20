@@ -24,7 +24,9 @@
       "source": "priv/notices/INCUS-NOTICE.md",
       "destination": "priv/notices/INCUS-NOTICE.md",
       "source_sha256": "c0f19758680623a78f54cfa1146c435779bd25182070cb92377f2df52619eb9a",
-      "transferred_sha256": "c0f19758680623a78f54cfa1146c435779bd25182070cb92377f2df52619eb9a"
+      "transferred_sha256": "c0f19758680623a78f54cfa1146c435779bd25182070cb92377f2df52619eb9a",
+      "amended_sha256": "96484d75a73a943c5d561e7244e03cadf90ac5f2413d5fe342bf18dbb6c4a7d7",
+      "amendment": "Attribution paragraphs were appended after the transfer for the native helpers that adapt pinned Incus code, most recently the SFTP / pkg-sftp attribution in 7d4da50."
     },
     {
       "source": "scripts/incus-inventory.go",
@@ -42,7 +44,9 @@
       "source": "test/reference/main.go",
       "destination": "test/reference/main.go",
       "source_sha256": "c32031a384693bbc7dd9f4a0270e2974ee4a9958eb28c22672dce68e1ea6386e",
-      "transferred_sha256": "c32031a384693bbc7dd9f4a0270e2974ee4a9958eb28c22672dce68e1ea6386e"
+      "transferred_sha256": "c32031a384693bbc7dd9f4a0270e2974ee4a9958eb28c22672dce68e1ea6386e",
+      "amended_sha256": "03268d3ef0f8c0c535f612add8574bb4ca9d8575042c4507eb0167492ea21000",
+      "amendment": "The file already differed from its recorded transferred hash in e8b5831, the first commit containing the transfer record, and has since been amended further to add evidence for native copy and migration, storage, private image and dynamic console coverage, image transfer, and raw SFTP/NBD upgrades."
     },
     {
       "source": "test/reference/go.mod",
@@ -66,7 +70,9 @@
       "source": "test/support/http_fixture.ex",
       "destination": "test/support/http_fixture.ex",
       "source_sha256": "43a35bc6f9abcdf1dad37f068b759cee83795cd21380192ff7c3163c4be86ee1",
-      "transferred_sha256": "d8be2bcc84671f3be9a8191bc42f7f8b71f0c1b195d39ee83e30fda0831898b8"
+      "transferred_sha256": "d8be2bcc84671f3be9a8191bc42f7f8b71f0c1b195d39ee83e30fda0831898b8",
+      "amended_sha256": "0ee64c15acd51de47d39c1986bcb931019bd7694238e38d9fc8b70b315440908",
+      "amendment": "The file already differed from its recorded transferred hash in e8b5831, the first commit containing the transfer record, and has since been amended further as the fixtures gained pooled HTTPS buffered reads, isolated TLS trust, Unix socket host headers, and broader copy, model, discovery and stream coverage."
     },
     {
       "source": "test/support/wire_comparison.ex",
@@ -78,13 +84,17 @@
       "source": "test/support/tls_identity.ex",
       "destination": "test/support/tls_identity.ex",
       "source_sha256": "277b1c17f48b726df93b98836a3b14c0790b63d959ed0546665d80fb2053de75",
-      "transferred_sha256": "2c2e6b24070e3d56136b109bcd3680fb126a95a90124b6bbc9c37b81c19ee5b3"
+      "transferred_sha256": "2c2e6b24070e3d56136b109bcd3680fb126a95a90124b6bbc9c37b81c19ee5b3",
+      "amended_sha256": "12f7a8a2c1dcdd015a0046abf2706fd8d5300d19ea2018afeb5705e9ea84c77c",
+      "amendment": "After the transfer, the fixture certificates were made explicit and strong (3d4fe57) and TLS fixture extensions were isolated from ambient OpenSSL config (fc613b7)."
     },
     {
       "source": "lib/macus/incus/inventory.ex",
       "destination": "lib/opsmaru/incus/inventory.ex",
       "source_sha256": "f65ebb87278a489cd92489fd09b984172dcbd6aed6ae3c31e52dc3b4b3e999a7",
-      "transferred_sha256": "26210e27e349af30c796089fe973f3799ed5c12605ce75da8fe51dc66e2ba40e"
+      "transferred_sha256": "26210e27e349af30c796089fe973f3799ed5c12605ce75da8fe51dc66e2ba40e",
+      "amended_sha256": "093a7c69705c936a1bd57c87f76e492e8ba1e7856d9d65464adc80d83d7d5395",
+      "amendment": "The file already differed from its recorded transferred hash in e8b5831, the first commit containing the transfer record, and has not changed since."
     },
     {
       "source": "lib/mix/tasks/macus.incus.inventory.ex",
@@ -96,9 +106,11 @@
       "source": "test/macus/incus/inventory_test.exs",
       "destination": "test/inventory_test.exs",
       "source_sha256": "22e5cc172209cb95a9a04130378b41ed5288c7b58ba8d3206cd4a63d1de78e02",
-      "transferred_sha256": "0c6dba22d36e44fc590d3b7c381a789c00c97a8bb9351c75880f1feb34b85c76"
+      "transferred_sha256": "0c6dba22d36e44fc590d3b7c381a789c00c97a8bb9351c75880f1feb34b85c76",
+      "amended_sha256": "bed1155101fd612e7cda3590e381ca705c97bcb827b0cfe20328ad1b7598ecd2",
+      "amendment": "The file already differed from its recorded transferred hash in e8b5831, the first commit containing the transfer record, and has since been amended further as coverage extended to raw HTTP, OCI image and SimpleStreams sources and the coverage generator gained its check."
     }
   ],
   "source_revision": "5e537145c244a6fb9d0f4d7b782043c1260e79c3",
-  "adaptation": "Transferred hashes describe initial namespace/path adaptation. Subsequent Opsmaru changes are tracked by Git."
+  "adaptation": "Transferred hashes describe the initial namespace/path adaptation and are the historical record of the transfer; they are never rewritten. The current bytes of each destination equal its amended_sha256 when present, otherwise its transferred_sha256. Later edits must update amended_sha256 deliberately."
 }
