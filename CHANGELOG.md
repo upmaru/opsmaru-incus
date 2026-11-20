@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.2.5 — 2026-11-21
+
+The transfer record in the package can be verified against the files it ships.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.5"}
+```
 
 ### Fixed
 
