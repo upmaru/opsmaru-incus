@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.2.6 — 2026-11-21
+
+The standard `incus` client can list instances through the gateway.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.6"}
+```
 
 ### Fixed
 
@@ -16,7 +22,7 @@
   and silently dropped every instance (upmaru/opsmaru-incus#85). Consumers
   that keep their own allowlist (such as Macus's
   `config :macus, Macus.Proxy, api_extensions`) must add the same two
-  entries once a release ships.
+  entries.
 
 ## 0.2.5 — 2026-11-21
 
