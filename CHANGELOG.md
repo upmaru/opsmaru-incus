@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.2.8 — 2026-11-22
+
+`incus query` reads work through the gateway.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.8"}
+```
 
 ### Fixed
 
