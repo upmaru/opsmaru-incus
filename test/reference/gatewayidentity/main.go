@@ -26,6 +26,14 @@ func main() {
 	defer client.Disconnect()
 	before, _, err := client.GetServer()
 	must(err)
+	// Exactly the body `incus query PATH` sends without --data
+	// (cmd/incus/query.go): "" is not JSON, so it falls back to the string.
+	var queryData any
+	if json.Unmarshal([]byte(""), &queryData) != nil {
+		queryData = ""
+	}
+	queriedServer, _, err := client.RawQuery("GET", "/1.0", queryData, "")
+	must(err)
 	// Exactly the request `incus remote add NAME TOKEN` sends
 	// (cmd/incus/remote.go addRemoteFromToken): only the token.
 	must(client.CreateCertificate(api.CertificatesPost{TrustToken: input.Token}))
@@ -34,6 +42,8 @@ func main() {
 	info, err := client.GetConnectionInfo()
 	must(err)
 	certificates, err := client.GetCertificates()
+	must(err)
+	queriedCertificates, _, err := client.RawQuery("GET", "/1.0/certificates?recursion=1", queryData, "")
 	must(err)
 	certificate, etag, err := client.GetCertificate(input.Fingerprint)
 	must(err)
@@ -47,6 +57,7 @@ func main() {
 	must(json.NewEncoder(os.Stdout).Encode(map[string]any{
 		"before": before, "after": after, "info": info, "certificates": certificates,
 		"updated": updated, "final": final,
+		"queried_server": queriedServer.Metadata, "queried_certificates": queriedCertificates.Metadata,
 	}))
 }
 func must(err error) {
