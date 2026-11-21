@@ -591,11 +591,40 @@ defmodule Opsmaru.Incus.GatewayIdentityTest do
     refute_received {:certificate_input, :update, _}
     refute_received {:certificate_input, :list, _}
 
-    # Discovery bodies keep the request budget.
+    # Unsized (chunked) discovery bodies are counted by the gateway's own
+    # reader; an empty form within the budget is still no body.
+    mount(context, connection, max_request_bytes: 16)
+    padded = "null" <> String.duplicate(" ", 16)
+
+    for {body, status} <- [{"null", 200}, {~s(""\n), 200}, {padded, 413}] do
+      response = chunked_get(context, "/1.0", [json], body)
+      assert response.status == status, inspect(body)
+
+      if status == 413,
+        do: assert(native(response.body)["error"] == "Discovery body exceeds the gateway limit")
+    end
+
+    # Sized discovery bodies keep the request budget before any read.
     mount(context, connection, max_request_bytes: 1)
 
     assert RawHTTP.request(context.port, "GET", "/1.0", [json], "null").status == 413
     assert StreamBackend.accepted(backend) == 0
+  end
+
+  defp chunked_get(context, path, headers, body) do
+    client = RawHTTP.connect(context.port)
+
+    RawHTTP.send!(
+      client,
+      RawHTTP.head(
+        "GET",
+        path,
+        headers ++ [{"transfer-encoding", "chunked"}, {"connection", "close"}]
+      )
+    )
+
+    RawHTTP.send!(client, [Integer.to_string(byte_size(body), 16), "\r\n", body, "\r\n0\r\n\r\n"])
+    RawHTTP.read(client)
   end
 
   test "unmodified pinned client enrolls, updates, deletes and gets only gateway addresses",
