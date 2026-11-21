@@ -41,8 +41,12 @@ if Code.ensure_loaded?(Plug.Conn) do
       end
     end
 
-    defp discovery(conn, gateway, request, :none, lease) do
-      with {:ok, identity} <- Identity.load(gateway, request),
+    # Native Incus ignores the body on discovery, and `incus query` always
+    # sends one: the JSON `""` it falls back to when `--data` is absent.
+    defp discovery(conn, gateway, request, framing, lease) do
+      with {:ok, body, conn} <- read(conn, gateway, framing, lease, "Discovery"),
+           :ok <- discovery_body(body),
+           {:ok, identity} <- Identity.load(gateway, request),
            :ok <- live(lease) do
         respond(conn, gateway, Identity.discovery(request.path, identity), [], lease)
       else
@@ -50,12 +54,16 @@ if Code.ensure_loaded?(Plug.Conn) do
       end
     end
 
-    defp discovery(conn, _, _, _, _),
-      do: HTTPRelay.fail(conn, Failure.new(400, "Discovery does not accept a body", :not_sent))
+    defp discovery_body(body) do
+      if empty_body?(body),
+        do: :ok,
+        else: {:error, Failure.new(400, "Discovery does not accept a body", :not_sent)}
+    end
 
     defp certificates(conn, gateway, request, admitted, framing, lease) do
       with {:ok, action, fingerprint} <- action(request),
-           {:ok, body, conn} <- read(conn, gateway, framing, lease),
+           {:ok, body, conn} <- read(conn, gateway, framing, lease, "Certificate"),
+           {:ok, body} <- certificate_body(action, body),
            :ok <- claims(body),
            {:ok, if_match} <- precondition(conn),
            :ok <- live(lease) do
@@ -133,22 +141,24 @@ if Code.ensure_loaded?(Plug.Conn) do
       end
     end
 
-    defp read(conn, _, :none, lease) do
-      with :ok <- live(lease), do: {:ok, %{}, conn}
+    # Returns the raw body (or `:none`) within the identity and request
+    # budgets; `subject` names the route in failures.
+    defp read(conn, _, :none, lease, _subject) do
+      with :ok <- live(lease), do: {:ok, :none, conn}
     end
 
-    defp read(conn, gateway, _, lease) do
+    defp read(conn, gateway, _, lease, subject) do
       deadline = System.monotonic_time(:millisecond) + gateway.max_lifetime
-      read_body(conn, gateway, deadline, [], 0, lease)
+      read_body(conn, gateway, {deadline, subject}, [], 0, lease)
     end
 
-    defp read_body(conn, gateway, deadline, chunks, size, lease) do
+    defp read_body(conn, gateway, budget, chunks, size, lease) do
       with :ok <- live(lease) do
-        read_live_body(conn, gateway, deadline, chunks, size, lease)
+        read_live_body(conn, gateway, budget, chunks, size, lease)
       end
     end
 
-    defp read_live_body(conn, gateway, deadline, chunks, size, lease) do
+    defp read_live_body(conn, gateway, {deadline, subject} = budget, chunks, size, lease) do
       timeout = min(gateway.idle_timeout, max(1, deadline - System.monotonic_time(:millisecond)))
 
       case Plug.Conn.read_body(conn,
@@ -161,38 +171,62 @@ if Code.ensure_loaded?(Plug.Conn) do
            ) do
         {status, data, conn} when status in [:ok, :more] ->
           with :ok <- live(lease) do
-            accumulate(conn, gateway, deadline, chunks, size, lease, status, data)
+            accumulate(conn, gateway, budget, chunks, size, lease, status, data)
           end
 
         _ ->
-          {:error, Failure.new(400, "Invalid certificate body", :not_sent)}
+          {:error, Failure.new(400, "Invalid #{String.downcase(subject)} body", :not_sent)}
       end
     end
 
-    defp accumulate(conn, gateway, deadline, chunks, size, lease, status, data) do
+    defp accumulate(
+           conn,
+           gateway,
+           {deadline, subject} = budget,
+           chunks,
+           size,
+           lease,
+           status,
+           data
+         ) do
       size = size + byte_size(data)
 
       cond do
         size > min(gateway.max_identity_bytes, gateway.max_request_bytes) ->
-          {:error, Failure.new(413, "Certificate body exceeds the gateway limit", :not_sent)}
+          {:error, Failure.new(413, "#{subject} body exceeds the gateway limit", :not_sent)}
 
         System.monotonic_time(:millisecond) >= deadline ->
-          {:error, Failure.new(408, "Certificate body timed out", :not_sent)}
+          {:error, Failure.new(408, "#{subject} body timed out", :not_sent)}
 
         status == :more ->
-          read_body(conn, gateway, deadline, [data | chunks], size, lease)
+          read_body(conn, gateway, budget, [data | chunks], size, lease)
 
         true ->
-          decode_body(conn, Enum.reverse([data | chunks]))
+          {:ok, IO.iodata_to_binary(Enum.reverse([data | chunks])), conn}
       end
     end
 
-    defp decode_body(conn, chunks) do
-      case Jason.decode(IO.iodata_to_binary(chunks)) do
-        {:ok, body} when is_map(body) -> {:ok, body, conn}
+    # Reads and deletes have no use for a body and native Incus ignores it,
+    # so the empty forms clients send count as none. Writes need an object.
+    defp certificate_body(action, body) do
+      cond do
+        body == :none -> {:ok, %{}}
+        action in [:list, :get, :delete] and empty_body?(body) -> {:ok, %{}}
+        true -> decode_body(body)
+      end
+    end
+
+    defp decode_body(body) do
+      case Jason.decode(body) do
+        {:ok, body} when is_map(body) -> {:ok, body}
         _ -> {:error, Failure.new(400, "Invalid certificate body", :not_sent)}
       end
     end
+
+    # No body, only JSON whitespace, or a JSON `null` or `""` (what the pinned
+    # `incus query` sends without `--data`), optionally padded with whitespace.
+    defp empty_body?(:none), do: true
+    defp empty_body?(body), do: Regex.match?(~r/\A[ \t\r\n]*(?:null|"")?[ \t\r\n]*\z/, body)
 
     # Native token redemption ignores every field but `trust_token`, and the
     # official client (`incus remote add NAME TOKEN`) sends the zero-valued
