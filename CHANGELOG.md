@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Gateway allowlist covers the pinned client's instance listing.**
+  `Opsmaru.Incus.Gateway.Identity` now lists `api_filtering` and
+  `instance_get_full` in its conservative extension allowlist. Both are
+  query-parameter features on instance routes the gateway already forwards
+  unchanged, and both remain advertised only when the verified backend
+  supports and the host approves them. Without `api_filtering`, the pinned
+  native client refused the remote with a missing-extension error; without
+  `instance_get_full`, its default `list` fell back to state, snapshot and
+  backup reads, stopped at the unadvertised `container_backup` extension,
+  and silently dropped every instance (upmaru/opsmaru-incus#85). Consumers
+  that keep their own allowlist (such as Macus's
+  `config :macus, Macus.Proxy, api_extensions`) must add the same two
+  entries once a release ships.
+
 ## 0.2.5 — 2026-11-21
 
 The transfer record in the package can be verified against the files it ships.

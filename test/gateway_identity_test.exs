@@ -114,6 +114,39 @@ defmodule Opsmaru.Incus.GatewayIdentityTest do
     refute List.keymember?(headers, "authorization", 0)
   end
 
+  test "the base allowlist covers the pinned client's instance listing query features" do
+    assert Enum.all?(
+             ~w(api_filtering instance_get_full),
+             &(&1 in Identity.supported_extensions())
+           )
+  end
+
+  test "authenticated discovery advertises instance listing extensions only when both approve them",
+       context do
+    listing = ["api_filtering", "instance_get_full"]
+
+    for backend_extensions <- [listing, ["api_filtering"], []],
+        host_extensions <- [listing, ["api_filtering"], []] do
+      metadata = put_in(metadata(), ["api_extensions"], backend_extensions)
+      {backend, connection} = backend(context, reply(200, Identity.envelope(metadata)))
+
+      gateway = mount(context, connection)
+      identity = %{gateway.host_config.identity | api_extensions: host_extensions}
+      mount(context, connection, host_config: %{identity: identity})
+
+      response = get(context, "/1.0?project=allowed")
+
+      assert response.status == 200,
+             inspect({backend_extensions, host_extensions, response.body})
+
+      assert native(response.body)["metadata"]["api_extensions"] ==
+               Enum.filter(backend_extensions, &(&1 in host_extensions)),
+             inspect({backend_extensions, host_extensions})
+
+      assert StreamBackend.accepted(backend) == 1
+    end
+  end
+
   test "identity is bound to verified backend metadata and refuses literal private endpoints",
        context do
     {backend, connection} = backend(context, reply(200, Identity.envelope(metadata())))

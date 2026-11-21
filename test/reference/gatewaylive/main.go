@@ -35,6 +35,7 @@ type input struct {
 	ProbePort                                                       int
 	Data                                                            []byte
 	Keep                                                            bool
+	ListFilters                                                     []string
 }
 
 var secret = regexp.MustCompile(`(?i)(secret=)[^&\s]+`)
@@ -320,6 +321,8 @@ func exercise(ctx context.Context, c incus.InstanceServer, in input, out map[str
 			}
 		}
 		return nil
+	case "list":
+		return listInstances(c, in, out)
 	case "console":
 		return consoleProof(ctx, c, in.Name, out, acknowledgeConsoleWriter)
 	case "sftp_instance", "sftp_volume":
@@ -377,6 +380,37 @@ func exercise(ctx context.Context, c incus.InstanceServer, in input, out map[str
 	default:
 		return errors.New("unsupported source-owned verifier action")
 	}
+}
+
+// Mirrors `incus list` with default columns on a server without
+// container_full (cmd/incus/list.go): one filtered collection read, then one
+// full read per instance. The pinned client resolves both through the
+// api_filtering and instance_get_full extensions.
+func listInstances(c incus.InstanceServer, in input, out map[string]any) error {
+	instances, err := c.GetInstancesWithFilter(api.InstanceTypeAny, in.ListFilters)
+	if err != nil {
+		return err
+	}
+	names := make([]string, len(instances))
+	for i, instance := range instances {
+		names[i] = instance.Name
+	}
+	out["instances"] = names
+	full := map[string]any{}
+	for _, name := range names {
+		result, etag, err := c.GetInstanceFull(name)
+		if err != nil {
+			full[name] = map[string]any{"error": err.Error()}
+			return err
+		}
+		status := ""
+		if result.State != nil {
+			status = result.State.Status
+		}
+		full[name] = map[string]any{"etag": etag, "status": status, "snapshots": len(result.Snapshots)}
+	}
+	out["full"] = full
+	return nil
 }
 
 func acknowledgeConsoleWriter(ctx context.Context, operation, nonceSHA string) error {
