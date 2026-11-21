@@ -528,6 +528,105 @@ defmodule Opsmaru.Incus.GatewayIdentityTest do
     assert StreamBackend.accepted(backend) == 0
   end
 
+  # `incus query` always sends a JSON body: `""` when `--data` is absent
+  # (upmaru/opsmaru-incus#91). Native Incus ignores the body on these reads.
+  test "empty JSON bodies count as none on discovery and certificate reads, never on writes",
+       context do
+    {backend, connection} = backend(context, reply(200, %{}))
+    observer = self()
+    fingerprint = String.duplicate("a", 64)
+
+    mount(context, connection,
+      host_config: %{
+        certificates: fn action, _request, _grant, input ->
+          send(observer, {:certificate_input, action, input.body})
+          {:ok, %{}, []}
+        end
+      }
+    )
+
+    json = {"content-type", "application/json"}
+
+    for body <- ["null", ~s(""\n), "null\n", ~s( "" ), " \t\r\n"] do
+      for path <- ["/", "/1.0"] do
+        response = RawHTTP.request(context.port, "GET", path, [json], body)
+        assert response.status == 200, "GET #{path} with #{inspect(body)}"
+      end
+
+      for {method, path, action} <- [
+            {"GET", "/1.0/certificates?recursion=1", :list},
+            {"GET", "/1.0/certificates/" <> fingerprint, :get},
+            {"DELETE", "/1.0/certificates/" <> fingerprint, :delete}
+          ] do
+        response = RawHTTP.request(context.port, method, path, [auth(), json], body)
+        assert response.status == 200, "#{method} #{path} with #{inspect(body)}"
+        assert_receive {:certificate_input, ^action, input} when input == %{}
+      end
+
+      for {method, path} <- [
+            {"POST", "/1.0/certificates"},
+            {"PUT", "/1.0/certificates/" <> fingerprint}
+          ] do
+        response = RawHTTP.request(context.port, method, path, [auth(), json], body)
+        assert response.status == 400, "#{method} #{path} with #{inspect(body)}"
+        assert native(response.body)["error"] == "Invalid certificate body"
+      end
+    end
+
+    for body <- ["{}", "[]", "0", "nul", ~s("x"), "null null"] do
+      response = RawHTTP.request(context.port, "GET", "/1.0", [json], body)
+      assert response.status == 400, inspect(body)
+      assert native(response.body)["error"] == "Discovery does not accept a body"
+    end
+
+    for body <- ["[]", "0", "nul", ~s("x"), "null null"] do
+      response =
+        RawHTTP.request(context.port, "GET", "/1.0/certificates", [auth(), json], body)
+
+      assert response.status == 400, inspect(body)
+      assert native(response.body)["error"] == "Invalid certificate body"
+    end
+
+    refute_received {:certificate_input, :create, _}
+    refute_received {:certificate_input, :update, _}
+    refute_received {:certificate_input, :list, _}
+
+    # Unsized (chunked) discovery bodies are counted by the gateway's own
+    # reader; an empty form within the budget is still no body.
+    mount(context, connection, max_request_bytes: 16)
+    padded = "null" <> String.duplicate(" ", 16)
+
+    for {body, status} <- [{"null", 200}, {~s(""\n), 200}, {padded, 413}] do
+      response = chunked_get(context, "/1.0", [json], body)
+      assert response.status == status, inspect(body)
+
+      if status == 413,
+        do: assert(native(response.body)["error"] == "Discovery body exceeds the gateway limit")
+    end
+
+    # Sized discovery bodies keep the request budget before any read.
+    mount(context, connection, max_request_bytes: 1)
+
+    assert RawHTTP.request(context.port, "GET", "/1.0", [json], "null").status == 413
+    assert StreamBackend.accepted(backend) == 0
+  end
+
+  defp chunked_get(context, path, headers, body) do
+    client = RawHTTP.connect(context.port)
+
+    RawHTTP.send!(
+      client,
+      RawHTTP.head(
+        "GET",
+        path,
+        headers ++ [{"transfer-encoding", "chunked"}, {"connection", "close"}]
+      )
+    )
+
+    RawHTTP.send!(client, [Integer.to_string(byte_size(body), 16), "\r\n", body, "\r\n0\r\n\r\n"])
+    RawHTTP.read(client)
+  end
+
   test "unmodified pinned client enrolls, updates, deletes and gets only gateway addresses",
        context do
     server = TLSIdentity.generate(context.root, "enrollment-server", "localhost")
@@ -573,6 +672,14 @@ defmodule Opsmaru.Incus.GatewayIdentityTest do
     assert result["after"]["environment"]["certificate"] == identity.certificate
     assert result["updated"]["name"] == "updated by pinned client"
     assert [%{"restricted" => false, "projects" => []}] = result["certificates"]
+    # `incus query` reads, which always carry a JSON body (upmaru/opsmaru-incus#91).
+    assert result["queried_server"]["auth"] == "untrusted"
+    refute Map.has_key?(result["queried_server"], "environment")
+    [%{"fingerprint" => fingerprint}] = result["certificates"]
+
+    assert [%{"fingerprint" => ^fingerprint, "restricted" => false, "projects" => []}] =
+             result["queried_certificates"]
+
     assert Agent.get(state, & &1.trust) == %{}
     assert Agent.get(state, & &1.token) == nil
     assert StreamBackend.accepted(backend) >= 1

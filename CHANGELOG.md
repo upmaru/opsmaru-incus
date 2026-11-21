@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.2.8 — 2026-11-22
+
+`incus query` reads work through the gateway.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.8"}
+```
+
+### Fixed
+
+- **Gateway answers `incus query` reads it serves itself.**
+  `incus query` always sends a JSON body; without `--data` it is `""`. The
+  gateway refused any body on anonymous discovery (`/`, `/1.0`) with
+  "Discovery does not accept a body", and any non-object body on certificate
+  reads with "Invalid certificate body", so `incus query REMOTE:/1.0` from an
+  untrusted client and `incus query REMOTE:/1.0/certificates` failed with 400
+  (upmaru/opsmaru-incus#91). Native Incus ignores the body on these routes.
+  The gateway now treats an empty body, JSON whitespace, `null` or `""` as no
+  body on discovery and on certificate list, get and delete, within the same
+  size and time limits. Certificate creates and updates still require a JSON
+  object, and any other discovery body is still refused. Requests the gateway
+  relays to Incus were never affected.
+- **SimpleStreams delta downloads report a consistent deadline.**
+  When a delta conversion ran out of the download's deadline,
+  `Opsmaru.Incus.SimpleStreams.image_file/4` returned either `:deadline` or
+  `:adapter_deadline`, depending on which of two timers guarding the same
+  deadline fired first. It now always returns `:deadline`, as a download
+  without a delta does. The delta adapter's cleanup still receives
+  `:deadline`, and OCI adapter calls keep `:adapter_deadline`.
+
 ## 0.2.7 — 2026-11-21
 
 `incus launch` works through the gateway.
