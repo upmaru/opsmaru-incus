@@ -121,6 +121,34 @@ defmodule Opsmaru.Incus.GatewayIdentityTest do
            )
   end
 
+  test "the base allowlist covers the create-time start the pinned client's launch relies on" do
+    assert "instance_create_start" in Identity.supported_extensions()
+  end
+
+  test "authenticated discovery advertises instance_create_start only when both approve it",
+       context do
+    for backend_extensions <- [["instance_create_start"], []],
+        host_extensions <- [["instance_create_start"], []] do
+      metadata = put_in(metadata(), ["api_extensions"], backend_extensions)
+      {backend, connection} = backend(context, reply(200, Identity.envelope(metadata)))
+
+      gateway = mount(context, connection)
+      identity = %{gateway.host_config.identity | api_extensions: host_extensions}
+      mount(context, connection, host_config: %{identity: identity})
+
+      response = get(context, "/1.0?project=allowed")
+
+      assert response.status == 200,
+             inspect({backend_extensions, host_extensions, response.body})
+
+      assert native(response.body)["metadata"]["api_extensions"] ==
+               Enum.filter(backend_extensions, &(&1 in host_extensions)),
+             inspect({backend_extensions, host_extensions})
+
+      assert StreamBackend.accepted(backend) == 1
+    end
+  end
+
   test "authenticated discovery advertises instance listing extensions only when both approve them",
        context do
     listing = ["api_filtering", "instance_get_full"]

@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Gateway allowlist covers `incus launch`.**
+  `Opsmaru.Incus.Gateway.Identity` now lists `instance_create_start` in its
+  conservative extension allowlist. It is the `start` field of the
+  `POST /1.0/instances` body, which the gateway already forwards unchanged,
+  and it remains advertised only when the verified backend supports and the
+  host approves it. The pinned native client always sends `start: true` for a
+  launch and, when the extension is not advertised, follows with its own
+  start request. The backend had already started the instance, so every
+  `incus launch` through the gateway created and started the instance and
+  then failed with "The instance is already running"
+  (upmaru/opsmaru-incus#88). Consumers that keep their own allowlist (such as
+  Macus's `config :macus, Macus.Proxy, api_extensions`) must add the same
+  entry.
+
 ## 0.2.6 — 2026-11-21
 
 The standard `incus` client can list instances through the gateway.
