@@ -22,6 +22,13 @@
   size and time limits. Certificate creates and updates still require a JSON
   object, and any other discovery body is still refused. Requests the gateway
   relays to Incus were never affected.
+- **SimpleStreams delta downloads report a consistent deadline.**
+  When a delta conversion ran out of the download's deadline,
+  `Opsmaru.Incus.SimpleStreams.image_file/4` returned either `:deadline` or
+  `:adapter_deadline`, depending on which of two timers guarding the same
+  deadline fired first. It now always returns `:deadline`, as a download
+  without a delta does. The delta adapter's cleanup still receives
+  `:deadline`, and OCI adapter calls keep `:adapter_deadline`.
 
 ## 0.2.7 — 2026-11-21
 

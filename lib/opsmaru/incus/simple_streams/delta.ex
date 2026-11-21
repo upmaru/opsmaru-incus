@@ -35,6 +35,12 @@ defmodule Opsmaru.Incus.SimpleStreams.Delta do
         {:error, %Error{kind: :adapter_cleanup, response: {:ok, value, _}} = error} ->
           {:error, %{error | response: {:ok, value}}}
 
+        # The adapter's deadline is the download's own deadline, which
+        # `Transport.bounded` also enforces; whichever timer fires first, the
+        # caller sees the same `:deadline` as on the download without a delta.
+        {:error, %Error{kind: :adapter_deadline} = error} ->
+          {:error, %{error | kind: :deadline}}
+
         {:error, _} = error ->
           error
       end
