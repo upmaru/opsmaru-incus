@@ -323,6 +323,8 @@ func exercise(ctx context.Context, c incus.InstanceServer, in input, out map[str
 		return nil
 	case "list":
 		return listInstances(c, in, out)
+	case "launch":
+		return launchInstance(c, in, out)
 	case "console":
 		return consoleProof(ctx, c, in.Name, out, acknowledgeConsoleWriter)
 	case "sftp_instance", "sftp_volume":
@@ -411,6 +413,40 @@ func listInstances(c incus.InstanceServer, in input, out map[string]any) error {
 	}
 	out["full"] = full
 	return nil
+}
+
+// Mirrors `incus launch` (cmd/incus/create.go and cmd/incus/launch.go): the
+// create request always carries `start: true`, and the client issues its own
+// start afterwards only when the server does not advertise
+// instance_create_start.
+func launchInstance(c incus.InstanceServer, in input, out map[string]any) error {
+	if in.Name == "" {
+		return errors.New("an explicit instance name is required")
+	}
+	op, err := c.CreateInstance(api.InstancesPost{
+		Name:   in.Name,
+		Type:   api.InstanceTypeContainer,
+		Start:  true,
+		Source: api.InstanceSource{Type: "none"},
+	})
+	if err != nil {
+		return err
+	}
+	if err := op.Wait(); err != nil {
+		return err
+	}
+	out["created"] = true
+	started := c.HasExtension("instance_create_start")
+	out["server_started"] = started
+	if started {
+		return nil
+	}
+	out["second_start"] = true
+	op, err = c.UpdateInstanceState(in.Name, api.InstanceStatePut{Action: "start", Timeout: -1}, "")
+	if err != nil {
+		return err
+	}
+	return op.Wait()
 }
 
 func acknowledgeConsoleWriter(ctx context.Context, operation, nonceSHA string) error {
