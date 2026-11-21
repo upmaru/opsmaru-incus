@@ -25,7 +25,7 @@ used by [Macus](https://github.com/upmaru/macus) and central
 ## Usage
 
 ```elixir
-{:opsmaru_incus, "~> 0.2.6"}
+{:opsmaru_incus, "~> 0.2.7"}
 ```
 
 Published on [Hex](https://hex.pm/packages/opsmaru_incus); releases are listed in
