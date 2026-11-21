@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.2.7 — 2026-11-21
+
+`incus launch` works through the gateway.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.7"}
+```
 
 ### Fixed
 
