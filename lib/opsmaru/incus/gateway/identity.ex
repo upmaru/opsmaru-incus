@@ -18,7 +18,7 @@ defmodule Opsmaru.Incus.Gateway.Identity do
 
   alias Opsmaru.Incus.Gateway.{Failure, Policy}
 
-  @extensions ~w(certificate_update instances file_delete images_push_relay)
+  @extensions ~w(certificate_update instances api_filtering instance_get_full file_delete images_push_relay)
   @websocket_extensions ~w(console container_push container_push_target
                            storage_api_local_volume_handling storage_api_remote_volume_handling)
   @raw_extensions ~w(instance_nbd custom_volume_sftp storage_volume_nbd)
