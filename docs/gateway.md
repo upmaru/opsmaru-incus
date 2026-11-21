@@ -155,14 +155,19 @@ Authenticated `GET /1.0` uses the backend, buffering at most the smaller of
 gateway values. Every other native environment/envelope field is retained.
 API extensions are intersected with verified host metadata and the gateway's
 implemented-extension allowlist: `certificate_update`, `instances`,
-`api_filtering`, `instance_get_full`, `file_delete`, `console`, `instance_nbd`,
+`api_filtering`, `instance_get_full`, `instance_create_start`, `file_delete`,
+`console`, `instance_nbd`,
 `custom_volume_sftp`, `storage_volume_nbd`, `container_push`,
 `container_push_target`, `storage_api_local_volume_handling`,
 `storage_api_remote_volume_handling` and `images_push_relay`. The four
 migration extensions require WebSockets. `api_filtering` and `instance_get_full`
 are query-parameter features on instance routes the gateway already forwards
 unchanged; they let the pinned client list instances with a `filter` query and
-read one instance with `recursion=1`. The two storage extensions let the pinned client copy custom
+read one instance with `recursion=1`. `instance_create_start` is the `start`
+field of the `POST /1.0/instances` body, which the gateway forwards unchanged;
+the pinned client always sends it for `incus launch` and, when the extension is
+not advertised, follows with its own start that an already started instance
+refuses. The two storage extensions let the pinned client copy custom
 volumes through the gateway in relay, pull and push modes; volume migration
 uses the same operation WebSocket negotiation and peer admission as instance
 migration. `images_push_relay` lets the pinned client push an image from the
