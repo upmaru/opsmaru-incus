@@ -154,13 +154,66 @@ Authenticated `GET /1.0` uses the backend, buffering at most the smaller of
 `metadata.environment.addresses` and `certificate` are replaced with the public
 gateway values. Every other native environment/envelope field is retained.
 API extensions are intersected with verified host metadata and the gateway's
-implemented-extension allowlist: `certificate_update`, `instances`,
-`api_filtering`, `instance_get_full`, `instance_create_start`, `file_delete`,
-`console`, `instance_nbd`,
-`custom_volume_sftp`, `storage_volume_nbd`, `container_push`,
-`container_push_target`, `storage_api_local_volume_handling`,
-`storage_api_remote_volume_handling` and `images_push_relay`. The four
-migration extensions require WebSockets. `api_filtering` and `instance_get_full`
+implemented-extension allowlist. The allowlist has three parts.
+
+Plain HTTP: request fields, query parameters and routes the gateway already
+relays unchanged. Backups and ISO uploads stream through the same relay and are
+bounded by `max_request_bytes`, `max_response_bytes` and `max_lifetime`.
+
+- Discovery, trust and instances: `certificate_update`, `instances`,
+  `api_filtering`, `instance_get_full`, `instance_create_start`,
+  `file_delete`, `images_push_relay`.
+- Projects: `projects`, `project_usage`, `projects_force_delete`,
+  `container_copy_project`, `instance_project_move`,
+  `storage_volume_project_move`.
+- All-projects listings: `images_all_projects`, `instance_all_projects`,
+  `network_acls_all_projects`, `network_zones_all_projects`,
+  `networks_all_projects`, `operations_get_query_all_projects`,
+  `profiles_all_projects`, `storage_buckets_all_projects`,
+  `storage_volumes_all_projects`.
+- Storage pools, volumes and buckets: `storage`, `storage_api_project`,
+  `storage_api_volume_rename`, `storage_api_volume_snapshots`,
+  `storage_volume_full`, `storage_volume_state`, `storage_volumes_rebuild`,
+  `custom_volume_refresh`, `custom_volume_refresh_exclude_older_snapshots`,
+  `storage_buckets`, `storage_bucket_full`,
+  `storage_buckets_create_credentials`, `instance_pool_move`.
+- Networks: `network`, `network_acl`, `network_acl_log`,
+  `network_address_set`, `network_allocations`, `network_dns`,
+  `network_dns_records`, `network_forward`, `network_integrations`,
+  `network_leases`, `network_load_balancer`, `network_load_balancer_state`,
+  `network_peer`, `network_state`, `instance_nic_network`.
+- Instances, files and snapshots: `container_full`, `container_edit_metadata`,
+  `container_exec_user_group_cwd`, `container_exec_recording`, `dependent`,
+  `directory_manipulation`, `file_append`, `file_symlinks`,
+  `instance_bulk_state_change`, `instance_move_config`,
+  `instance_snapshot_disk_only_restore`, `instances_rebuild`,
+  `instances_debug_repair`, `snapshot_expiry`, `snapshot_expiry_creation`.
+- Copy options (also checked by the pinned client for same-server copies):
+  `container_incremental_copy`, `container_only_migration`,
+  `instance_allow_inconsistent_copy`.
+- Images: `image_compression_algorithm`, `image_copy_profile`,
+  `image_create_aliases`, `image_force_refresh`.
+- Server information: `resources`, `resources_v2`, `warnings`,
+  `metadata_configuration`.
+- Backups and ISO uploads: `container_backup`,
+  `container_backup_override_pool`, `backup_override_config`,
+  `backup_override_name`, `custom_volume_backup`, `storage_bucket_backup`,
+  `direct_backup`, `custom_volume_iso`.
+
+WebSocket (only with the WebSocket adapter): `console`, `console_force`,
+`container_push`, `container_push_target`, `container_snapshot_stateful_migration`,
+`storage_api_local_volume_handling`, `storage_api_remote_volume_handling` and
+`storage_api_remote_volume_snapshot_copy`. `console_force` is the `force` field
+of a console request whose stream is the console operation WebSocket. The
+pinned client checks `container_snapshot_stateful_migration` only when live
+migrating a stateful snapshot, and `storage_api_remote_volume_snapshot_copy`
+only when migrating a volume snapshot, which already requires
+`storage_api_remote_volume_handling`.
+
+Raw upgrade (only with the same-listener Cowboy companion): `instance_nbd`,
+`custom_volume_sftp`, `storage_volume_nbd`.
+
+`api_filtering` and `instance_get_full`
 are query-parameter features on instance routes the gateway already forwards
 unchanged; they let the pinned client list instances with a `filter` query and
 read one instance with `recursion=1`. `instance_create_start` is the `start`
@@ -177,6 +230,26 @@ The host must approve only protocols it actually mounts and a verified backend
 supports; raw extensions require the same-listener Cowboy companion. Merely
 installing an adapter does not authorize a protocol. Restricted-certificate
 and token issuance gaps are listed under "Not provided by the library".
+
+Extensions the gateway must never advertise, and why:
+
+- `cluster_internal_copy`, `cluster_internal_custom_volume_copy`,
+  `cluster_member_state`, `cluster_migration_inconsistent_copy`, `clustering`,
+  `clustering_edit_roles`, `clustering_evacuation`,
+  `clustering_failure_domains`, `clustering_groups`, `clustering_join`,
+  `clustering_join_token`, `clustering_update_cert` — clustering would change
+  the appliance's network identity/certificate behind the gateway;
+- `certificate_token` — server-side trust tokens; the gateway owns
+  `/1.0/certificates` and refuses `"token": true`;
+- `metrics` — also gates `incus config trust add --type=metrics`, while
+  gateway trust holds only client certificates (`/1.0/metrics` itself still
+  relays);
+- `project_access`, `instance_access` — report the guest's own authorization,
+  not gateway trust;
+- `console_vga_type` — SPICE over the console WebSocket; it stays hidden until
+  a test proves the relay carries it;
+- `instance_nvram`, `instance_nvram_bulk_update`, `instance_port_forward`,
+  `instance_refresh_migration` — newer than guest Incus 7.0.1.
 
 `file_delete` covers the native HTTP file DELETE route. Its advertisement still
 requires both verified backend support and host approval. The pinned native
@@ -561,9 +634,14 @@ Macus/hardware evidence belongs to the consumer.
 
 The G5 matrix verifies default copy behavior. Live migration, CRIU/stateful
 snapshots and optional flags such as instance-only/refresh are not gateway
-acceptance evidence in this slice. Their additional extension names remain
-outside the conservative gateway allowlist; this is an explicit gateway
-verification gap, not a claim that the backend or host lacks those features.
+acceptance evidence in this slice. Their extension names are allowlisted where
+the gateway already forwards the routes (for example `container_only_migration`,
+`container_incremental_copy`, `instance_allow_inconsistent_copy` and
+`container_snapshot_stateful_migration`, plus the refresh flags in the storage
+and instance groups), so hosts that approve them advertise them; the lack of
+acceptance evidence is what keeps this slice incomplete. This is an explicit
+gateway verification gap, not a claim that the backend or host lacks those
+features.
 
 Custom storage volumes use the same negotiation. The pinned
 `CopyStoragePoolVolume` copies a volume in all three modes through both gateway

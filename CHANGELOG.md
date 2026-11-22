@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Gateway advertises the extensions of routes it already relays.**
+  The pinned native client refuses a command when the server does not
+  advertise its extension. The gateway relays every `/1.0/*` HTTP route it
+  does not own, but its allowlist named only a handful of extensions, so
+  projects, storage, networks, all-projects listings, backups and many
+  instance, file, copy and image options failed through it
+  (upmaru/opsmaru-incus#94). `Opsmaru.Incus.Gateway.Identity` now allows 77
+  more plain-HTTP extensions, plus `console_force`,
+  `container_snapshot_stateful_migration` and
+  `storage_api_remote_volume_snapshot_copy` when the WebSocket adapter is
+  present. Each is still advertised only when the verified backend reports it
+  and the host approves it. Clustering, `certificate_token`, `metrics`,
+  `project_access`, `instance_access` and `console_vga_type` stay hidden;
+  docs/gateway.md lists the reasons. Consumers that keep their own allowlist
+  (such as Macus's `config :macus, Macus.Proxy, api_extensions`) can only
+  advertise what `supported_extensions/0` returns and must add the entries
+  they want.
+
 ## 0.2.8 — 2026-11-22
 
 `incus query` reads work through the gateway.
