@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.2.9 — 2026-11-22
+
+The standard `incus` client can manage projects, storage, networks and backups
+through the gateway.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.9"}
+```
 
 ### Fixed
 
