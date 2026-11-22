@@ -125,6 +125,102 @@ defmodule Opsmaru.Incus.GatewayIdentityTest do
     assert "instance_create_start" in Identity.supported_extensions()
   end
 
+  @relayed_http_extensions ~w(projects project_usage projects_force_delete container_copy_project
+                              instance_project_move storage_volume_project_move
+                              images_all_projects instance_all_projects network_acls_all_projects
+                              network_zones_all_projects networks_all_projects
+                              operations_get_query_all_projects profiles_all_projects
+                              storage_buckets_all_projects storage_volumes_all_projects
+                              storage storage_api_project storage_api_volume_rename
+                              storage_api_volume_snapshots storage_volume_full storage_volume_state
+                              storage_volumes_rebuild custom_volume_refresh
+                              custom_volume_refresh_exclude_older_snapshots storage_buckets
+                              storage_bucket_full storage_buckets_create_credentials instance_pool_move
+                              network network_acl network_acl_log network_address_set network_allocations
+                              network_dns network_dns_records network_forward network_integrations
+                              network_leases network_load_balancer network_load_balancer_state
+                              network_peer network_state instance_nic_network
+                              container_full container_edit_metadata container_exec_user_group_cwd
+                              container_exec_recording dependent directory_manipulation file_append
+                              file_symlinks instance_bulk_state_change instance_move_config
+                              instance_snapshot_disk_only_restore instances_rebuild instances_debug_repair
+                              snapshot_expiry snapshot_expiry_creation
+                              container_incremental_copy container_only_migration instance_allow_inconsistent_copy
+                              image_compression_algorithm image_copy_profile image_create_aliases image_force_refresh
+                              resources resources_v2 warnings metadata_configuration
+                              container_backup container_backup_override_pool backup_override_config
+                              backup_override_name custom_volume_backup storage_bucket_backup direct_backup
+                              custom_volume_iso)
+
+  @websocket_gated_extensions ~w(console_force storage_api_remote_volume_snapshot_copy
+                                 container_snapshot_stateful_migration)
+
+  @must_stay_hidden ~w(cluster_internal_copy cluster_internal_custom_volume_copy cluster_member_state
+                       cluster_migration_inconsistent_copy clustering clustering_edit_roles
+                       clustering_evacuation clustering_failure_domains clustering_groups
+                       clustering_join clustering_join_token clustering_update_cert certificate_token
+                       metrics project_access instance_access console_vga_type instance_nvram
+                       instance_nvram_bulk_update instance_port_forward instance_refresh_migration)
+
+  test "the allowlist covers the relayed HTTP and WebSocket-gated features" do
+    supported = Identity.supported_extensions()
+
+    assert length(@relayed_http_extensions) == 77
+
+    assert Enum.all?(@relayed_http_extensions, &(&1 in supported))
+
+    assert Enum.all?(@websocket_gated_extensions, &(&1 in supported))
+  end
+
+  test "extensions the gateway refuses to advertise stay hidden" do
+    supported = Identity.supported_extensions()
+
+    for hidden <- @must_stay_hidden do
+      refute hidden in supported
+    end
+  end
+
+  test "supported_extensions has no duplicates" do
+    supported = Identity.supported_extensions()
+
+    assert supported == Enum.uniq(supported)
+  end
+
+  test "authenticated discovery advertises only allowlisted extensions when both approve",
+       context do
+    backend_extensions = [
+      "projects",
+      "storage",
+      "network",
+      "clustering",
+      "certificate_token",
+      "metrics"
+    ]
+
+    host_extensions = backend_extensions
+
+    metadata = put_in(metadata(), ["api_extensions"], backend_extensions)
+    {backend, connection} = backend(context, reply(200, Identity.envelope(metadata)))
+
+    gateway = mount(context, connection)
+    identity = %{gateway.host_config.identity | api_extensions: host_extensions}
+    mount(context, connection, host_config: %{identity: identity})
+
+    response = get(context, "/1.0?project=allowed")
+
+    assert response.status == 200,
+           inspect({backend_extensions, host_extensions, response.body})
+
+    assert native(response.body)["metadata"]["api_extensions"] == [
+             "projects",
+             "storage",
+             "network"
+           ],
+           inspect({backend_extensions, host_extensions})
+
+    assert StreamBackend.accepted(backend) == 1
+  end
+
   test "authenticated discovery advertises instance_create_start only when both approve it",
        context do
     for backend_extensions <- [["instance_create_start"], []],

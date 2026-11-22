@@ -81,4 +81,12 @@ defmodule ClientOnlyConsumer.Test do
     refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.RawTunnel)
     refute "console" in Identity.supported_extensions()
   end
+
+  test "relayed HTTP extensions are advertised while WebSocket-gated ones are not" do
+    supported = Identity.supported_extensions()
+
+    assert "projects" in supported
+    refute "console_force" in supported
+    refute "storage_api_remote_volume_snapshot_copy" in supported
+  end
 end
