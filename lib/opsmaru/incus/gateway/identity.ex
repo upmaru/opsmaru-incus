@@ -10,18 +10,77 @@ defmodule Opsmaru.Incus.Gateway.Identity do
   `fc00::/7`), `localhost`, `*.localhost` or a single-label name. Unspecified,
   link-local, multicast and reserved IPs and IPv4-mapped IPv6 addresses are
   refused in both scopes, and the guest's own addresses are never served.
-  The conservative extension allowlist depends on the available optional
-  protocol adapters. The host must approve only capabilities of protocols it
-  actually mounts and of its verified backend. Migration extensions require
-  WebSockets; token issuance remains excluded.
+  The conservative extension allowlist covers the relayed HTTP features the
+  gateway forwards unchanged (request fields, query parameters and routes)
+  plus the WebSocket-gated and raw-upgrade features, and depends on the
+  available optional protocol adapters. The host must approve only capabilities
+  of protocols it actually mounts and of its verified backend. Migration
+  extensions require WebSockets; clustering, token issuance, metrics trust and
+  access reports remain excluded.
   """
 
   alias Opsmaru.Incus.Gateway.{Failure, Policy}
 
-  @extensions ~w(certificate_update instances api_filtering instance_get_full instance_create_start
-                 file_delete images_push_relay)
+  # Plain HTTP relay: routes, request fields and query parameters the gateway
+  # already forwards unchanged.
+  # Discovery, trust and instances
+  @relay_base ~w(certificate_update instances api_filtering instance_get_full
+                 instance_create_start file_delete images_push_relay)
+  # Projects
+  @relay_projects ~w(projects project_usage projects_force_delete container_copy_project
+                     instance_project_move storage_volume_project_move)
+  # All-projects listings
+  @relay_all_projects ~w(images_all_projects instance_all_projects network_acls_all_projects
+                         network_zones_all_projects networks_all_projects
+                         operations_get_query_all_projects profiles_all_projects
+                         storage_buckets_all_projects storage_volumes_all_projects)
+  # Storage
+  @relay_storage ~w(storage storage_api_project storage_api_volume_rename
+                    storage_api_volume_snapshots storage_volume_full storage_volume_state
+                    storage_volumes_rebuild custom_volume_refresh
+                    custom_volume_refresh_exclude_older_snapshots storage_buckets
+                    storage_bucket_full storage_buckets_create_credentials instance_pool_move)
+  # Networks
+  @relay_networks ~w(network network_acl network_acl_log network_address_set network_allocations
+                     network_dns network_dns_records network_forward network_integrations
+                     network_leases network_load_balancer network_load_balancer_state
+                     network_peer network_state instance_nic_network)
+  # Instances/files/snapshots
+  @relay_instances ~w(container_full container_edit_metadata container_exec_user_group_cwd
+                      container_exec_recording dependent directory_manipulation file_append
+                      file_symlinks instance_bulk_state_change instance_move_config
+                      instance_snapshot_disk_only_restore instances_rebuild instances_debug_repair
+                      snapshot_expiry snapshot_expiry_creation)
+  # Copy options
+  @relay_copy ~w(container_incremental_copy container_only_migration instance_allow_inconsistent_copy)
+  # Images
+  @relay_images ~w(image_compression_algorithm image_copy_profile image_create_aliases image_force_refresh)
+  # Server information
+  @relay_server_info ~w(resources resources_v2 warnings metadata_configuration)
+  # Backups/ISO
+  @relay_backups ~w(container_backup container_backup_override_pool backup_override_config
+                    backup_override_name custom_volume_backup storage_bucket_backup direct_backup
+                    custom_volume_iso)
+
+  @extensions @relay_base ++
+                @relay_projects ++
+                @relay_all_projects ++
+                @relay_storage ++
+                @relay_networks ++
+                @relay_instances ++
+                @relay_copy ++
+                @relay_images ++
+                @relay_server_info ++
+                @relay_backups
+
+  # WebSocket-gated: the console stream and instance/volume migration use the
+  # operation WebSocket. The pinned client checks console_force only on a
+  # console request, and the snapshot entries only while migrating.
   @websocket_extensions ~w(console container_push container_push_target
-                           storage_api_local_volume_handling storage_api_remote_volume_handling)
+                           storage_api_local_volume_handling storage_api_remote_volume_handling
+                           console_force storage_api_remote_volume_snapshot_copy
+                           container_snapshot_stateful_migration)
+
   @raw_extensions ~w(instance_nbd custom_volume_sftp storage_volume_nbd)
 
   def load(gateway, request) do
