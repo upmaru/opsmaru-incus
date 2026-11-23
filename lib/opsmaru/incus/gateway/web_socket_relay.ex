@@ -277,6 +277,9 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
 
     @impl true
     def handle_cast(:ack, state) do
+      # The frontend acknowledges after Cowboy wrote the delivered frames.
+      if is_list(state.pending), do: delivered(state)
+
       send(self(), :read)
       {:noreply, %{state | pending: nil}}
     end
@@ -300,7 +303,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
           {:empty, _} when not is_nil(state.closing) ->
             # The frontend exits on this reply and the watchdog then kills
             # this relay, so the exchange is finished first.
-            finish(state)
+            state = finish(state)
             GenServer.reply(state.closing, :ok)
             {:stop, :normal, state}
 
@@ -318,7 +321,6 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
         {:noreply, %{state | pending: nil}}
       else
         send(state.owner, {:gateway_ws_frames, self(), frames})
-        Exchange.response_bytes(state.exchange, Enum.sum(Enum.map(frames, &payload_size/1)))
         {:noreply, state}
       end
     end
@@ -687,8 +689,23 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
       cleanup(state)
     end
 
-    defp finish(%{owns: true, exchange: exchange}), do: Exchange.finish(exchange, :ended)
-    defp finish(_), do: :ok
+    # Cowboy closes after writing a batch that carries the backend's close
+    # frame, so that batch is never acknowledged; it ends the handshake and is
+    # counted with it.
+    defp finish(%{owns: true, exchange: exchange} = state) do
+      if is_list(state.pending) and Enum.any?(state.pending, &match?({:close, _, _}, &1)),
+        do: delivered(state)
+
+      Exchange.finish(exchange, :ended)
+      %{state | owns: false, pending: nil}
+    end
+
+    defp finish(state), do: state
+
+    defp delivered(state) do
+      bytes = state.pending |> Enum.map(&payload_size/1) |> Enum.sum()
+      Exchange.response_bytes(state.exchange, bytes)
+    end
 
     defp cleanup(state) do
       if state.attached,

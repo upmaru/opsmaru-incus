@@ -73,6 +73,8 @@ if Code.ensure_loaded?(Plug.Conn) do
            :ok <- live(lease) do
         input = %{fingerprint: fingerprint, body: body, if_match: if_match}
         outcome = if action in [:create, :update, :delete], do: :uncertain, else: :not_sent
+        # The host may change its trust store before this request ends.
+        Exchange.sent(HTTPRelay.exchange(conn), outcome)
 
         result =
           Policy.callback(

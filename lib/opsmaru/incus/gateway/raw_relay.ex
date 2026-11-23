@@ -379,7 +379,7 @@ if Code.ensure_loaded?(:cowboy_req) do
     defp write_loop(actor, monitor, destination, state) do
       receive do
         {:write, direction, bytes} ->
-          result = write_chunks(destination, bytes, state)
+          result = write_chunks(destination, direction, bytes, state)
           send(actor, {:written, direction, result})
           write_loop(actor, monitor, destination, state)
 
@@ -393,9 +393,9 @@ if Code.ensure_loaded?(:cowboy_req) do
       end
     end
 
-    defp write_chunks(_, <<>>, _), do: :ok
+    defp write_chunks(_, _, <<>>, _), do: :ok
 
-    defp write_chunks(destination, bytes, state) do
+    defp write_chunks(destination, direction, bytes, state) do
       count = min(byte_size(bytes), state.gateway.max_chunk_bytes)
       <<chunk::binary-size(count), rest::binary>> = bytes
       timeout = min(state.gateway.idle_timeout, max(0, state.deadline - now()))
@@ -403,7 +403,9 @@ if Code.ensure_loaded?(:cowboy_req) do
       with true <- timeout > 0,
            :ok <- setopts(destination, send_timeout: timeout, send_timeout_close: true),
            :ok <- destination.transport.send(destination.socket, chunk) do
-        write_chunks(destination, rest, state)
+        # Bytes reach the caller only once written; request bytes count on read.
+        if direction == :to_client, do: Exchange.response_bytes(state.exchange, count)
+        write_chunks(destination, direction, rest, state)
       else
         _ -> {:error, :write}
       end
@@ -489,8 +491,7 @@ if Code.ensure_loaded?(:cowboy_req) do
         send(Map.fetch!(state.writers, direction), {:write, direction, bytes})
 
         if direction == :to_backend,
-          do: Exchange.request_bytes(state.exchange, byte_size(bytes)),
-          else: Exchange.response_bytes(state.exchange, byte_size(bytes))
+          do: Exchange.request_bytes(state.exchange, byte_size(bytes))
 
         {:ok,
          state

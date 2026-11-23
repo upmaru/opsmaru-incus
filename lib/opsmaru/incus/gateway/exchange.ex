@@ -4,8 +4,10 @@ defmodule Opsmaru.Incus.Gateway.Exchange do
   # one `:stop` event from an unlinked observer that monitors the process
   # owning the exchange.
   #
-  # The observer emits `:stop` on the first `finish/2` or on the owner's
-  # `:DOWN`, whichever arrives first, then exits. Owners may be killed rather
+  # The observer exists before `:start` handlers run, so an owner killed
+  # inside one still gets its `:stop`. It emits `:stop` on the first
+  # `finish/2` or on the owner's `:DOWN`, whichever arrives first, then exits;
+  # an owner that dies before `:start` was emitted gets no `:stop`. Owners may be killed rather
   # than asked to stop (lease interruption, deadlines, caller loss), so code
   # after a relay call is never relied on to report the end.
   #
@@ -31,6 +33,7 @@ defmodule Opsmaru.Incus.Gateway.Exchange do
   @reason 4
   @sent 5
   @admitted 6
+  @started 7
 
   @methods ~w(GET HEAD POST PUT PATCH DELETE OPTIONS)
 
@@ -76,6 +79,10 @@ defmodule Opsmaru.Incus.Gateway.Exchange do
     }
 
     started = System.monotonic_time()
+    facts = :atomics.new(7, signed: false)
+    owner = self()
+    observer = spawn(fn -> observe(owner, facts, metadata, started) end)
+    :atomics.put(facts, @started, 1)
 
     Telemetry.execute(
       @start,
@@ -83,9 +90,6 @@ defmodule Opsmaru.Incus.Gateway.Exchange do
       metadata
     )
 
-    facts = :atomics.new(6, signed: false)
-    owner = self()
-    observer = spawn(fn -> observe(owner, facts, metadata, started) end)
     %__MODULE__{observer: observer, facts: facts}
   end
 
@@ -226,6 +230,12 @@ defmodule Opsmaru.Incus.Gateway.Exchange do
   end
 
   defp emit(facts, metadata, started, declaration) do
+    if :atomics.get(facts, @started) == 1,
+      do: stop(facts, metadata, started, declaration),
+      else: :ok
+  end
+
+  defp stop(facts, metadata, started, declaration) do
     recorded = value(@reasons, :atomics.get(facts, @reason))
     sent = value(@outcomes, :atomics.get(facts, @sent)) || :not_sent
     status = nonzero(:atomics.get(facts, @status))

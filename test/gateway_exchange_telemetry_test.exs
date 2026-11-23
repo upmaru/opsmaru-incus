@@ -23,6 +23,16 @@ defmodule Opsmaru.Incus.GatewayExchangeTelemetryTest do
     def call(conn, gateway), do: GatewayPlug.call(conn, {:static, gateway})
   end
 
+  defmodule ImageHost do
+    @moduledoc false
+    @behaviour Opsmaru.Incus.Gateway.Host
+    def ready?(_), do: true
+    def authorize(_, _), do: {:error, :unauthenticated}
+    def valid?(_, grant, _), do: grant == :image_grant
+    def admit_operation_secret(_, _), do: {:error, :forbidden}
+    def admit_image_secret(_, _), do: {:ok, :image_grant}
+  end
+
   @start [:opsmaru_incus, :gateway, :exchange, :start]
   @stop [:opsmaru_incus, :gateway, :exchange, :stop]
 
@@ -101,6 +111,23 @@ defmodule Opsmaru.Incus.GatewayExchangeTelemetryTest do
         assert %{outcome: :uncertain, reason: ^expected, status: nil} = meta
         no_more_stops()
       end
+    end
+
+    test "an owner killed inside a start handler still reports one stop" do
+      id = {__MODULE__, :kill_on_start}
+
+      :ok =
+        :telemetry.attach(
+          id,
+          @start,
+          fn _, _, %{host: host}, _ -> if host == :die, do: Process.exit(self(), :kill) end,
+          nil
+        )
+
+      on_exit(fn -> :telemetry.detach(id) end)
+      run(fn exchange -> Exchange.finish(exchange, :ended) end, %{host: :die})
+      assert {_, %{host: :die, outcome: :not_sent, reason: :killed}} = stop!()
+      no_more_stops()
     end
 
     test "the first interruption wins and a Failure keeps the status sent" do
@@ -370,6 +397,56 @@ defmodule Opsmaru.Incus.GatewayExchangeTelemetryTest do
       assert StreamBackend.accepted(backend) == 0
     end
 
+    test "a certificate change interrupted in its host callback reports :uncertain",
+         context do
+      {_, connection} = backend(context, reply(200, %{}))
+      observer = self()
+
+      mount(context, connection,
+        callback_timeout: 5_000,
+        host_config: %{
+          certificates: fn _, _, _, _ ->
+            send(observer, :certificate_callback)
+            Process.sleep(2_000)
+            {:ok, %{}, []}
+          end
+        }
+      )
+
+      {transport, socket} = client = RawHTTP.connect(context.port)
+
+      RawHTTP.send!(client, [
+        RawHTTP.head("POST", "/1.0/certificates", [auth(), {"content-length", "2"}]),
+        "{}"
+      ])
+
+      assert_receive :certificate_callback, 2_000
+      transport.close(socket)
+      assert {_, %{path: "/1.0/certificates", outcome: :uncertain, reason: :killed}} = stop!()
+      no_more_stops()
+    end
+
+    test "an image upload counts its checked first chunk once", context do
+      {backend, connection} = backend(context, reply(200, %{}))
+      gateway = %{mount(context, connection) | host: ImageHost, host_config: %{}}
+      GatewayServer.put_gateway(gateway)
+      headers = [{"x-incus-secret", "s"}, {"x-incus-fingerprint", String.duplicate("ab", 32)}]
+      json = ~s({"source":{"type":"image"}})
+
+      response = RawHTTP.request(context.port, "POST", "/1.0/images", headers, json)
+      assert response.status == 403
+      {stop, meta} = stop!()
+      assert %{admitted_as: :image_peer, reason: :unauthorized, outcome: :not_sent} = meta
+      assert stop.request_bytes == byte_size(json)
+      assert StreamBackend.accepted(backend) == 0
+
+      image = <<0xFD, "7zXZ", 0, "{not json}">>
+      response = RawHTTP.request(context.port, "POST", "/1.0/images", headers, image)
+      assert response.status == 200
+      assert {%{request_bytes: request_bytes}, %{outcome: :ok}} = stop!()
+      assert request_bytes == byte_size(image)
+    end
+
     test "an interrupted mutation reports :uncertain", context do
       {backend, connection} =
         backend(context, fn conn -> {_conn, _, _} = StreamBackend.read_body(conn) end)
@@ -632,6 +709,30 @@ defmodule Opsmaru.Incus.GatewayExchangeTelemetryTest do
       assert response =~ "101"
       Process.exit(eventually_relay(context), :kill)
       assert {_, %{reason: :killed, outcome: :sent, status: 101}} = stop!(3_000)
+      no_more_stops()
+      :gen_tcp.close(socket)
+    end
+
+    test "bytes the caller never read are not counted as delivered", context do
+      size = 16 * 1_048_576
+
+      {_, connection} =
+        backend(context, fn conn ->
+          StreamBackend.write(conn, raw_upgrade("sftp", ""))
+          conn.transport.send(conn.socket, :binary.copy("x", size))
+          conn.transport.recv(conn.socket, 0, 5_000)
+        end)
+
+      socket = connect(listener(mount(context, connection, idle_timeout: 300)))
+      :ok = :gen_tcp.send(socket, raw_head("/1.0/instances/a/sftp", "sftp"))
+      {response, _} = read_head(socket)
+      assert response =~ "101"
+
+      {stop, meta} = stop!(5_000)
+      # The relay's idle check or the writer's send timeout ends it first.
+      assert %{status: 101, outcome: :sent} = meta
+      assert meta.reason in [:idle, :caller_closed]
+      assert stop.response_bytes < size
       no_more_stops()
       :gen_tcp.close(socket)
     end

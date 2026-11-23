@@ -232,6 +232,8 @@ if Code.ensure_loaded?(Plug.Conn) do
                read_length: gateway.max_chunk_bytes,
                read_timeout: min(gateway.idle_timeout, remaining(state.deadline))
              ) do
+        # Counted when read, so a checked image chunk is counted once.
+        Exchange.request_bytes(state.exchange, byte_size(data))
         {:ok, status, data, conn}
       else
         {:error, reason} when reason in [:admission, :lifetime, :revoked] ->
@@ -245,7 +247,6 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     defp forward(conn, socket, ref, body, state, sent, status, data) do
       sent = sent + byte_size(data)
-      Exchange.request_bytes(state.exchange, byte_size(data))
 
       if sent > state.gateway.max_request_bytes do
         {:error, conn,

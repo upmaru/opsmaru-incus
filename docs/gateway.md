@@ -409,7 +409,12 @@ Stop metadata is the start metadata plus:
 `request_bytes` and `response_bytes` count body bytes read from and written to
 the caller: HTTP bodies (including gateway error bodies), WebSocket text and
 binary frame payloads, or tunnelled SFTP/NBD bytes. Header and framing bytes
-are not counted.
+are not counted. Request bytes count when the gateway reads them, whether or
+not they are then forwarded. Response bytes count once written: a sent HTTP
+body or chunk, a raw tunnel write that completed, or a WebSocket batch the
+adapter acknowledged writing (the batch carrying the backend's close frame
+counts with the close). Bytes still queued when an exchange ends are not
+counted.
 
 | `reason` | Meaning |
 | --- | --- |
