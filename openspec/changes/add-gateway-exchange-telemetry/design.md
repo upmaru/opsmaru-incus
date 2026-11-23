@@ -45,7 +45,7 @@ As in `add-incus-telemetry` decision 1: `{:telemetry, "~> 1.3", optional: true}`
 
 - `host`: the gateway's host module, or `nil` when the gateway could not be resolved.
 - `protocol`: `:http`, `:websocket` or `:raw`.
-- `method`: the HTTP method as received when it is one of the standard verbs, otherwise `nil`.
+- `method`: the HTTP method as received when it is `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE` or `OPTIONS`, otherwise `nil`.
 - `peer_address`, `peer_port`: from the server adapter, as passed to `Policy.request/1`.
 - `peer_fingerprint`: lowercase hexadecimal SHA-256 of the peer certificate DER, or `nil`. It names the certificate the caller presented, not a trusted identity.
 - `path`: the original encoded path when `Policy.route/1` accepted it (canonical and at most 8192 bytes), otherwise `nil`.
@@ -56,18 +56,37 @@ As in `add-incus-telemetry` decision 1: `{:telemetry, "~> 1.3", optional: true}`
 - `reason`: `nil` when `outcome` is `:ok`, otherwise one of `:invalid_request`, `:not_configured`, `:capacity`, `:not_ready`, `:unauthorized`, `:unsupported`, `:revoked`, `:admission`, `:idle`, `:lifetime`, `:limit`, `:backend`, `:caller_closed`, `:killed`.
 - `request_bytes`, `response_bytes`: body bytes read from the caller and written to the caller. For WebSockets they are frame payload bytes; for raw upgrades, tunnelled bytes. Header and framing bytes are not counted.
 
-`Failure` gains an internal `reason` field set where each failure is constructed, so the closed set is assigned at the source and never derived from message text. `Failure.encode/1` and the wire body are unchanged.
+`Failure` gains an internal `reason` field set where each failure is constructed, so the closed set is assigned at the source and never derived from message text. `Failure.encode/1` and the wire body are unchanged. `Failure.new/4` takes the reason as a required `reason:` option beside the optional `operation:`, so no existing positional `operation` argument can be read as a reason, and an unknown reason raises.
+
+Existing failures map to reasons as follows:
+
+| Failure | `reason` |
+| --- | --- |
+| unresolved gateway (503), Cowboy handler without fallback (404), body already parsed (500) | `:not_configured` |
+| admission at capacity (503) | `:capacity` |
+| host not ready, admission unavailable, identity unavailable (503) | `:not_ready` |
+| host denial, image-secret misuse, certificate policy denied or incomplete (403) | `:unauthorized` |
+| protocol upgrade not implemented, raw upgrade on the Plug, WebSocket adapter unavailable or not HTTP/1.1 (501), certificate action not supported (405) | `:unsupported` |
+| invalid or ambiguous path, selection, authorization, framing, body or handshake, unknown route (400/404) | `:invalid_request` |
+| path or query too long (414), headers too large (431), body, response or identity over its limit (413/502) | `:limit` |
+| request body not received in time (408) | `:idle` |
+| grant expired or revoked during the exchange | `:revoked` |
+| admission stopped during the exchange | `:admission` |
+| backend response idle or lifetime deadline (504) | `:idle` / `:lifetime`, whichever fired |
+| backend unavailable, negotiation failed, invalid or failed response (502) | `:backend` |
+
+A completed WebSocket close handshake from either side, or both halves of a raw tunnel closing, is `outcome: :ok`; the socket teardown after a close frame is not reported as a backend or caller failure.
 
 There is no `:exception` event: every gateway failure is a returned `Failure` or a killed owner, and both end in `:stop`.
 
 ### 4. An exchange observer emits the stop
 
-`Opsmaru.Incus.Gateway.Exchange.start/1` is called by the adapter as soon as it has the method, upgrade headers and peer, before `Policy.request/1`. It emits `:start` in the adapter process, so the host's Logger metadata and trace context apply, then spawns an unlinked observer that monitors the owner. The exchange handle holds a `:counters` reference for the two byte counts and an `:atomics` slot for the status.
+`Opsmaru.Incus.Gateway.Exchange.start/1` is called by the adapter as soon as it has the method, upgrade headers and peer, before `Policy.request/1`. It emits `:start` in the adapter process, so the host's Logger metadata and trace context apply, then spawns an unlinked observer that monitors the owner. The exchange handle holds one `:atomics` array for the facts any process may record: the two byte counts (added), the status, the first interruption reason, the sent outcome and the admission kind. The parsed request is sent to the observer once by the owner.
 
-- The owner records facts as they become known: `Exchange.request/2` after parsing, `Exchange.admitted/2` after admission, byte counts as bodies and frames move, and the status when a response head is sent.
-- The owner calls `Exchange.finish/2` with `:ok` or a `Failure` when it ends normally. Relays record an interruption reason (`:revoked`, `:admission`, `:idle`, `:lifetime`) before the kill that follows it.
+- Facts are recorded as they become known: `Exchange.request/2` after parsing, `Exchange.admitted/2` after admission, byte counts as bodies and frames move, the status when a response head is sent, and `Exchange.sent/2` once request bytes may have reached the backend.
+- The owner calls `Exchange.finish/2` with `:ended` or a `Failure`. `:ended` reports `outcome: :ok`, or the recorded interruption if there is one. Whoever interrupts an exchange records the reason with `Exchange.interrupt/2` before the kill or stop that follows: the relay itself, its WebSocket watchdog or raw watcher at a deadline, and the `Lease` (whose interruption function may take the reason) at revocation or admission loss. The first recorded reason wins.
 - The observer emits `:stop` once, on `finish` or on the owner's `:DOWN`, whichever comes first. An owner that died without recording anything reports `outcome` from whether request bytes may have reached the backend (the relay's existing `sent_outcome`) and `reason: :killed`, or `:caller_closed` when the adapter observed the caller's socket close.
-- `Exchange.transfer/2` moves the monitor when ownership moves: from the Plug process to `WebSocketRelay` at `commit`, and from the Cowboy handler to `RawRelay` at `handoff`. A failed upgrade finishes in the adapter process and is never transferred.
+- `Exchange.transfer/2` moves the monitor when ownership moves: from the Plug process to `WebSocketRelay` once the upgrade is committed and the adapter accepted it, and from the Cowboy handler to `RawRelay` after a successful `handoff`. The relay may record reasons from the start, but reports the end only after it adopts the exchange. A failed upgrade finishes in the adapter process and is never transferred. In the Plug path the handle travels in `conn.private`, so `HTTPRelay.fail/2` finishes with its `Failure`, and a request served to completion is finished by `Gateway.Plug`.
 
 Handlers for `:stop` therefore run in the observer, not in the relay. A slow handler cannot delay a relay, hold a backend socket open or consume an exchange deadline. Hosts correlate the pair through `telemetry_span_context`.
 
