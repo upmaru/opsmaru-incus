@@ -1,8 +1,9 @@
 defmodule ClientOnlyConsumer.Test do
   use ExUnit.Case
   alias Opsmaru.Incus.Connection
-  alias Opsmaru.Incus.Gateway.Identity
+  alias Opsmaru.Incus.Gateway.{Exchange, Identity}
   alias Opsmaru.Incus.Operations.{Composite, Native}
+  alias Opsmaru.Incus.Telemetry
 
   test "the client and operation descriptors work without Plug or an MCP stack" do
     refute Code.ensure_loaded?(TamaMCP.Tool)
@@ -80,6 +81,18 @@ defmodule ClientOnlyConsumer.Test do
     refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.RawRelay)
     refute Code.ensure_loaded?(Opsmaru.Incus.Gateway.RawTunnel)
     refute "console" in Identity.supported_extensions()
+  end
+
+  test "gateway telemetry compiles to a no-op without the optional dependency" do
+    refute Code.ensure_loaded?(:telemetry)
+    refute Map.has_key?(Mix.Project.deps_paths(), :telemetry)
+    assert Telemetry.list_handlers([:opsmaru_incus]) == []
+    assert Telemetry.execute([:opsmaru_incus, :gateway], %{}, %{}) == :ok
+
+    exchange =
+      Exchange.start(%{host: nil, protocol: :http, method: "GET", peer: %{}})
+
+    refute Exchange.active?(exchange)
   end
 
   test "relayed HTTP extensions are advertised while WebSocket-gated ones are not" do

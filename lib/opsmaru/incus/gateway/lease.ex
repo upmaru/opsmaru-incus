@@ -9,7 +9,8 @@ defmodule Opsmaru.Incus.Gateway.Lease do
   rechecks, but still terminate when their admission stops. The entire
   polling period, callback budget and interruption grace fit inside
   `recheck_interval` (at most five seconds). An adapter must supply an
-  interruption function that closes blocked frontend I/O; the guard also ends
+  interruption function that closes blocked frontend I/O (arity 1 receives
+  the `:revoked` or `:admission` reason first); the guard also ends
   the exchange process so its owned backend sockets close. No cleanup calls
   the host, opens a backend or cancels a native operation.
   """
@@ -84,7 +85,7 @@ defmodule Opsmaru.Incus.Gateway.Lease do
       {:DOWN, ^monitor, :process, ^owner, _} -> :ok
     after
       grace ->
-        interrupt.()
+        if is_function(interrupt, 1), do: interrupt.(reason), else: interrupt.()
         Process.exit(owner, :kill)
     end
   end

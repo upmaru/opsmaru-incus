@@ -1,20 +1,24 @@
 if Code.ensure_loaded?(:cowboy_req) do
   defmodule Opsmaru.Incus.Gateway.RawRelay do
     @moduledoc false
-    alias Opsmaru.Incus.Gateway.{Failure, Headers, Lease, Policy, UpgradeResponse}
+    alias Opsmaru.Incus.Gateway.{Exchange, Failure, Headers, Lease, Policy, UpgradeResponse}
     alias Opsmaru.Incus.{Redaction, Transport}
 
     # The actor owns the slot, lease and backend before negotiation and keeps
     # them throughout takeover. Neither the HTTP worker nor the connection
     # process can accidentally release or inherit another request's resources.
-    def start(gateway, request, holder, validate) do
+    # `exchange` is owned by the caller until `handoff/1` succeeds and the
+    # caller transfers it; from then on this actor reports its end.
+    def start(gateway, request, holder, validate, exchange \\ Exchange.inert()) do
       caller = self()
       ref = make_ref()
       deadline = now() + gateway.max_lifetime
       dispatch = :atomics.new(1, [])
 
       {pid, monitor} =
-        spawn_monitor(fn -> init(caller, ref, gateway, request, holder, validate, dispatch) end)
+        spawn_monitor(fn ->
+          init(caller, ref, gateway, request, holder, validate, {dispatch, exchange})
+        end)
 
       receive do
         {^ref, result} ->
@@ -22,11 +26,16 @@ if Code.ensure_loaded?(:cowboy_req) do
           result
 
         {:DOWN, ^monitor, :process, ^pid, _} ->
-          {:error, failure(if(now() >= deadline, do: 504, else: 502), dispatch_outcome(dispatch))}
+          {:error,
+           failure(
+             if(now() >= deadline, do: 504, else: 502),
+             dispatch_outcome(dispatch),
+             if(now() >= deadline, do: :lifetime, else: :backend)
+           )}
       after
         gateway.max_lifetime + 100 ->
           Process.exit(pid, :kill)
-          {:error, failure(504, dispatch_outcome(dispatch))}
+          {:error, failure(504, dispatch_outcome(dispatch), :lifetime)}
       end
     end
 
@@ -41,12 +50,12 @@ if Code.ensure_loaded?(:cowboy_req) do
           result
 
         {:DOWN, ^monitor, :process, _, _} ->
-          {:error, failure(503, :sent)}
+          {:error, failure(503, :sent, :not_ready)}
       after
         30_100 ->
           Process.demonitor(monitor, [:flush])
           Process.exit(pid, :kill)
-          {:error, failure(504, :sent)}
+          {:error, failure(504, :sent, :lifetime)}
       end
     end
 
@@ -61,16 +70,22 @@ if Code.ensure_loaded?(:cowboy_req) do
       end
     end
 
-    defp init(caller, ref, gateway, request, holder, validate, dispatch) do
+    defp init(caller, ref, gateway, request, holder, validate, {dispatch, exchange}) do
       caller_monitor = Process.monitor(caller)
       holder_monitor = Process.monitor(holder)
       # This watcher also interrupts connect/handshake or a blocked write.
       deadline = now() + gateway.max_lifetime
-      watcher = watch(caller, holder, deadline)
+      watcher = watch(caller, holder, deadline, exchange)
 
       case Policy.admit(gateway, request) do
         {:ok, admitted} ->
-          lease = Lease.start(gateway, request, admitted, fn -> Process.exit(holder, :kill) end)
+          Exchange.admitted(exchange, admitted.admitted_as)
+
+          lease =
+            Lease.start(gateway, request, admitted, fn reason ->
+              Exchange.interrupt(exchange, reason)
+              Process.exit(holder, :kill)
+            end)
 
           try do
             with {:ok, protocol, headers} <- validate.(),
@@ -93,7 +108,8 @@ if Code.ensure_loaded?(:cowboy_req) do
                       holder: holder,
                       holder_monitor: holder_monitor,
                       watcher: watcher,
-                      deadline: deadline
+                      deadline: deadline,
+                      exchange: exchange
                     }
 
                     await_handoff(state)
@@ -125,18 +141,18 @@ if Code.ensure_loaded?(:cowboy_req) do
       end
     end
 
-    defp watch(caller, holder, deadline) do
+    defp watch(caller, holder, deadline, exchange) do
       actor = self()
 
       spawn(fn ->
         actor_ref = Process.monitor(actor)
         caller_ref = Process.monitor(caller)
         holder_ref = Process.monitor(holder)
-        watch_loop(actor, actor_ref, caller_ref, holder_ref, deadline)
+        watch_loop(actor, actor_ref, caller_ref, holder_ref, {deadline, exchange})
       end)
     end
 
-    defp watch_loop(actor, actor_ref, caller_ref, holder_ref, deadline) do
+    defp watch_loop(actor, actor_ref, caller_ref, holder_ref, {deadline, exchange} = limit) do
       receive do
         {:DOWN, ^actor_ref, :process, _, _} ->
           :ok
@@ -150,9 +166,11 @@ if Code.ensure_loaded?(:cowboy_req) do
         {:handoff, ref} ->
           Process.demonitor(caller_ref, [:flush])
           send(actor, {ref, :handoff_ready})
-          watch_loop(actor, actor_ref, nil, holder_ref, deadline)
+          watch_loop(actor, actor_ref, nil, holder_ref, limit)
       after
-        max(0, deadline - now()) -> Process.exit(actor, :kill)
+        max(0, deadline - now()) ->
+          Exchange.interrupt(exchange, :lifetime)
+          Process.exit(actor, :kill)
       end
     end
 
@@ -167,7 +185,7 @@ if Code.ensure_loaded?(:cowboy_req) do
           {:ok, %{conn: conn, transport: transport, socket: socket}}
 
         _ ->
-          {:error, failure(502, :not_sent)}
+          {:error, failure(502, :not_sent, :backend)}
       end
     end
 
@@ -203,13 +221,19 @@ if Code.ensure_loaded?(:cowboy_req) do
             {:ok, safe ++ [{"connection", "Upgrade"}, {"upgrade", protocol}], body}
 
           status == 101 ->
-            {:error, failure(502, :sent)}
+            {:error, failure(502, :sent, :backend)}
 
           true ->
             {:response, status, safe, body}
         end
       else
-        _ -> {:error, failure(if(now() >= deadline, do: 504, else: 502), :sent)}
+        _ ->
+          {:error,
+           failure(
+             if(now() >= deadline, do: 504, else: 502),
+             :sent,
+             if(now() >= deadline, do: :lifetime, else: :backend)
+           )}
       end
     end
 
@@ -247,7 +271,9 @@ if Code.ensure_loaded?(:cowboy_req) do
             receive do
               {^handoff_ref, :handoff_ready} ->
                 send(caller, {ref, :ok})
+                Exchange.sent(state.exchange, :sent)
                 await_socket(state)
+                Exchange.finish(state.exchange, :ended)
             after
               max(0, state.deadline - now()) -> :ok
             end
@@ -275,17 +301,17 @@ if Code.ensure_loaded?(:cowboy_req) do
           send(holder, {ref, :ok})
           run(state, client, transport, buffer)
 
-        {:gateway_stopped, _, _} ->
-          :ok
+        {:gateway_stopped, _, reason} ->
+          interrupt(state, reason)
 
         {:DOWN, _, :process, _, _} ->
-          :ok
+          interrupt(state, :killed)
       after
         min(
           max(0, state.deadline - now()),
           min(state.gateway.connection.timeout, state.gateway.idle_timeout)
         ) ->
-          :ok
+          interrupt(state, if(now() >= state.deadline, do: :lifetime, else: :idle))
       end
     end
 
@@ -328,6 +354,9 @@ if Code.ensure_loaded?(:cowboy_req) do
           state = if buffer == "", do: arm(state, :to_backend), else: state
           state = if state.backend_buffer == "", do: arm(state, :to_client), else: state
           relay(state)
+        else
+          {:error, reason} -> interrupt(state, reason)
+          :error -> interrupt(state, :limit)
         end
       after
         Enum.each(writers, fn {_, writer} -> Process.exit(writer, :kill) end)
@@ -381,10 +410,12 @@ if Code.ensure_loaded?(:cowboy_req) do
     end
 
     defp relay(state) do
+      lease = Lease.check(state.lease)
+
       cond do
         state.client_closed and state.backend_closed and MapSet.size(state.pending) == 0 -> :ok
-        Lease.check(state.lease) != :ok -> :ok
-        remaining(state) <= 0 -> :ok
+        lease != :ok -> interrupt(state, elem(lease, 1))
+        remaining(state) <= 0 -> interrupt(state, expired(state))
         true -> receive_data(state)
       end
     end
@@ -409,8 +440,8 @@ if Code.ensure_loaded?(:cowboy_req) do
 
           relay(arm(state, direction))
 
-        {:written, _, _} ->
-          :ok
+        {:written, direction, _} ->
+          interrupt(state, side(direction))
 
         {:shutdown, direction, _} ->
           relay(%{state | pending: MapSet.delete(state.pending, {:shutdown, direction})})
@@ -421,23 +452,26 @@ if Code.ensure_loaded?(:cowboy_req) do
         {tag, ^backend} when tag in [:tcp_closed, :ssl_closed] ->
           relay(eof(state, :to_client, tag))
 
-        {tag, _, _} when tag in [:tcp_error, :ssl_error] ->
-          :ok
+        {tag, ^client, _} when tag in [:tcp_error, :ssl_error] ->
+          interrupt(state, :caller_closed)
 
-        {:gateway_stopped, _, _} ->
-          :ok
+        {tag, _, _} when tag in [:tcp_error, :ssl_error] ->
+          interrupt(state, :backend)
+
+        {:gateway_stopped, _, reason} ->
+          interrupt(state, reason)
 
         {:DOWN, _, :process, _, _} ->
-          :ok
+          interrupt(state, :killed)
       after
-        remaining(state) -> :ok
+        remaining(state) -> interrupt(state, expired(state))
       end
     end
 
     defp receive_bytes(state, direction, bytes) do
       case enqueue(state, direction, bytes) do
         {:ok, state} -> relay(state)
-        :error -> :ok
+        :error -> interrupt(state, :limit)
       end
     end
 
@@ -453,6 +487,10 @@ if Code.ensure_loaded?(:cowboy_req) do
 
       if total <= maximum and not MapSet.member?(state.pending, direction) do
         send(Map.fetch!(state.writers, direction), {:write, direction, bytes})
+
+        if direction == :to_backend,
+          do: Exchange.request_bytes(state.exchange, byte_size(bytes)),
+          else: Exchange.response_bytes(state.exchange, byte_size(bytes))
 
         {:ok,
          state
@@ -495,6 +533,17 @@ if Code.ensure_loaded?(:cowboy_req) do
       if tag == :ssl_closed, do: %{state | client_closed: true, backend_closed: true}, else: state
     end
 
+    defp interrupt(state, reason) do
+      Exchange.interrupt(state.exchange, reason)
+      :ok
+    end
+
+    # A failed write names the side that could not be written.
+    defp side(:to_client), do: :caller_closed
+    defp side(:to_backend), do: :backend
+
+    defp expired(state), do: if(now() >= state.deadline, do: :lifetime, else: :idle)
+
     defp remaining(state) do
       deadlines =
         [state.deadline, state.last_activity + state.gateway.idle_timeout, state.drain_deadline]
@@ -516,8 +565,11 @@ if Code.ensure_loaded?(:cowboy_req) do
     defp normalize_failure(error, outcome \\ :not_sent)
     defp normalize_failure(%Failure{} = failure, :not_sent), do: failure
     defp normalize_failure(%Failure{} = failure, outcome), do: %{failure | outcome: outcome}
-    defp normalize_failure(_, outcome), do: failure(503, outcome)
-    defp failure(status, outcome), do: Failure.new(status, "Native raw upgrade failed", outcome)
+    defp normalize_failure(_, outcome), do: failure(503, outcome, :not_ready)
+
+    defp failure(status, outcome, reason),
+      do: Failure.new(status, "Native raw upgrade failed", outcome, reason: reason)
+
     defp now, do: System.monotonic_time(:millisecond)
     def format_status(status), do: Redaction.status(status, :private_gateway_raw_relay)
   end

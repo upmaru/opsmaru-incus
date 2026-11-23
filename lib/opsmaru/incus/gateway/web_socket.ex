@@ -7,24 +7,33 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
     ping/pong negotiation is local to each independently negotiated connection;
     backend close codes/reasons are preserved. No Phoenix framing is added.
     """
-    alias Opsmaru.Incus.Gateway.{Failure, Headers, HTTPRelay, WebSocketRelay}
+    alias Opsmaru.Incus.Gateway.{Exchange, Failure, Headers, HTTPRelay, WebSocketRelay}
 
     def upgrade(conn, gateway, request, admitted) do
+      exchange = HTTPRelay.exchange(conn)
+
       with {:ok, owner} <- frontend(conn),
            :ok <- handshake(conn, request),
            {:ok, headers, :none} <-
              Headers.request(conn.req_headers, gateway.max_header_bytes, 0),
            {:ok, relay, response_headers} <-
-             WebSocketRelay.open(gateway, request, admitted, owner, strip_negotiation(headers)) do
+             WebSocketRelay.open(
+               gateway,
+               request,
+               admitted,
+               owner,
+               strip_negotiation(headers),
+               exchange
+             ) do
         conn = %{conn | resp_headers: response_headers ++ conn.resp_headers}
 
         try do
           :ok = WebSocketRelay.commit(relay)
 
-          Plug.Conn.upgrade_adapter(
-            conn,
+          conn
+          |> Plug.Conn.upgrade_adapter(
             :websocket,
-            {__MODULE__, %{relay: relay},
+            {__MODULE__, %{relay: relay, exchange: exchange},
              %{
                compress: false,
                active_n: 1,
@@ -34,10 +43,15 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
                validate_utf8: true
              }}
           )
+          |> handover(relay, exchange)
         rescue
           _ ->
             WebSocketRelay.close(relay)
-            HTTPRelay.fail(conn, Failure.new(501, "WebSocket adapter is unavailable", :sent))
+
+            HTTPRelay.fail(
+              conn,
+              Failure.new(501, "WebSocket adapter is unavailable", :sent, reason: :unsupported)
+            )
         end
       else
         {:http, status, headers, body} ->
@@ -49,7 +63,23 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
           HTTPRelay.fail(conn, failure)
 
         _ ->
-          HTTPRelay.fail(conn, Failure.new(400, "Invalid WebSocket upgrade", :not_sent))
+          HTTPRelay.fail(
+            conn,
+            Failure.new(400, "Invalid WebSocket upgrade", :not_sent, reason: :invalid_request)
+          )
+      end
+    end
+
+    # The upgrade is committed: the relay owns the exchange from here and
+    # reports its end. The Plug request process no longer finishes it.
+    defp handover(conn, relay, exchange) do
+      if Exchange.active?(exchange) do
+        Exchange.status(exchange, 101)
+        WebSocketRelay.adopt(relay)
+        Exchange.transfer(exchange, relay)
+        HTTPRelay.put_exchange(conn, Exchange.inert())
+      else
+        conn
       end
     end
 
@@ -57,7 +87,11 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
       do: {:ok, pid}
 
     defp frontend(_),
-      do: {:error, Failure.new(501, "WebSockets require a native HTTP/1.1 adapter", :not_sent)}
+      do:
+        {:error,
+         Failure.new(501, "WebSockets require a native HTTP/1.1 adapter", :not_sent,
+           reason: :unsupported
+         )}
 
     defp handshake(conn, %{method: "GET", path: path}) do
       key = Plug.Conn.get_req_header(conn, "sec-websocket-key")
@@ -79,10 +113,15 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
            Plug.Conn.get_req_header(conn, "transfer-encoding") == [] and
            not :cowboy_req.has_body(elem(conn.adapter, 1)),
          do: :ok,
-         else: {:error, Failure.new(400, "Invalid WebSocket upgrade", :not_sent)}
+         else:
+           {:error,
+            Failure.new(400, "Invalid WebSocket upgrade", :not_sent, reason: :invalid_request)}
     end
 
-    defp handshake(_, _), do: {:error, Failure.new(400, "Invalid WebSocket upgrade", :not_sent)}
+    defp handshake(_, _),
+      do:
+        {:error,
+         Failure.new(400, "Invalid WebSocket upgrade", :not_sent, reason: :invalid_request)}
 
     defp native_route?("/1.0/events"), do: true
     defp native_route?(path), do: Regex.match?(~r{\A/1\.0/operations/[^/]+/websocket\z}, path)
@@ -136,6 +175,16 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
     def terminate({:remote, code, reason}, _, state),
       do: WebSocketRelay.close(state.relay, {:close, code, reason})
 
-    def terminate(_, _, state), do: WebSocketRelay.close(state.relay)
+    def terminate(reason, _, state) do
+      exchange = Map.get(state, :exchange) || Exchange.inert()
+
+      case reason do
+        :timeout -> Exchange.interrupt(exchange, :idle)
+        {:error, _} -> Exchange.interrupt(exchange, :caller_closed)
+        _ -> :ok
+      end
+
+      WebSocketRelay.close(state.relay)
+    end
   end
 end

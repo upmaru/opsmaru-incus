@@ -101,8 +101,12 @@ defmodule Opsmaru.Incus.Gateway.Identity do
       )
 
     case result do
-      {:ok, {:ok, identity}} -> {:ok, identity}
-      _ -> {:error, Failure.new(503, "Gateway identity is unavailable", :not_sent)}
+      {:ok, {:ok, identity}} ->
+        {:ok, identity}
+
+      _ ->
+        {:error,
+         Failure.new(503, "Gateway identity is unavailable", :not_sent, reason: :not_ready)}
     end
   end
 
