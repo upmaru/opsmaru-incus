@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.2.10 — 2026-11-24
+
+A host that mounts the gateway can observe every exchange it relays,
+including SFTP/NBD tunnels and WebSockets that never reach its Plug
+telemetry, and requests the gateway refuses.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.10"}
+```
+
+### Added
+
+- **Gateway exchange telemetry.** With `:telemetry` present and a handler
+  attached, the gateway emits `[:opsmaru_incus, :gateway, :exchange, :start]`
+  and exactly one `[:opsmaru_incus, :gateway, :exchange, :stop]` for each
+  native HTTP request, locally served discovery or trust action, WebSocket
+  and SFTP/NBD upgrade, and pre-admission refusal. The stop event comes from
+  a per-exchange observer process, so a relay killed for revocation, a
+  deadline or a lost caller still reports its duration, body bytes in each
+  direction, the status sent, how the request was admitted, the `Failure`
+  outcome and a closed `reason`. Its handlers never run in a process holding
+  a backend socket. Metadata carries the canonical path, native
+  project/target selection, operation ID, peer address and the SHA-256
+  fingerprint of a presented client certificate; it never carries headers,
+  the raw query, secrets, bodies, frames, the host's grant or `host_config`.
+  `:telemetry` is a new optional dependency (`~> 1.3`), already present in
+  every Plug host; client-only consumers compile without it, and no process
+  or table exists while no handler is attached. The library still writes no
+  log and attaches no handler. See "Exchange telemetry" in docs/gateway.md.
+  This adds fixture and isolated-consumer evidence only: no real-Incus,
+  gateway acceptance or Macus hardware evidence, and no
+  `priv/incus/coverage.json` change.
+
 ## 0.2.9 — 2026-11-22
 
 The standard `incus` client can manage projects, storage, networks and backups

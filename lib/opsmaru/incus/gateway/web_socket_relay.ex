@@ -5,11 +5,24 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
     # frontend batch. Never replay HTTP, acquire a replacement grant or DELETE
     # a native operation. Lease and watchdog interrupt blocked socket I/O.
     use GenServer
-    alias Opsmaru.Incus.Gateway.{Admission, Failure, Headers, Lease, Policy, UpgradeResponse}
+
+    alias Opsmaru.Incus.Gateway.{
+      Admission,
+      Exchange,
+      Failure,
+      Headers,
+      Lease,
+      Policy,
+      UpgradeResponse
+    }
+
     alias Opsmaru.Incus.{Redaction, Transport}
 
-    def open(gateway, request, admitted, owner, headers) do
-      args = {gateway, request, admitted, owner, self(), headers}
+    # `exchange` may record interruptions from the start, but the relay
+    # reports the exchange's end only after `adopt/1`, once the upgrade is
+    # committed and ownership has moved here.
+    def open(gateway, request, admitted, owner, headers, exchange \\ Exchange.inert()) do
+      args = {gateway, request, admitted, owner, self(), headers, exchange}
 
       case GenServer.start(__MODULE__, args, timeout: gateway.connection.timeout + 100) do
         {:ok, pid} ->
@@ -25,13 +38,16 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
           {:error, failure}
 
         _ ->
-          {:error, Failure.new(502, "Backend WebSocket negotiation failed", :sent)}
+          {:error,
+           Failure.new(502, "Backend WebSocket negotiation failed", :sent, reason: :backend)}
       end
     catch
-      :exit, _ -> {:error, Failure.new(502, "Backend WebSocket negotiation ended", :sent)}
+      :exit, _ ->
+        {:error, Failure.new(502, "Backend WebSocket negotiation ended", :sent, reason: :backend)}
     end
 
     def commit(pid), do: call(pid, :commit)
+    def adopt(pid), do: call(pid, :adopt)
     def attach(pid), do: call(pid, {:attach, self()})
     def ack(pid), do: GenServer.cast(pid, :ack)
     def send_frame(pid, frame), do: call(pid, {:frame, frame})
@@ -44,11 +60,17 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
     end
 
     @impl true
-    def init({gateway, request, admitted, owner, handshake_owner, headers}) do
+    def init({gateway, request, admitted, owner, handshake_owner, headers, exchange}) do
       case Admission.transfer(admitted.slot, self()) do
         {:ok, slot} ->
           admitted = %{admitted | slot: slot}
-          lease = Lease.start(gateway, request, admitted, fn -> Process.exit(owner, :kill) end)
+
+          lease =
+            Lease.start(gateway, request, admitted, fn reason ->
+              Exchange.interrupt(exchange, reason)
+              Process.exit(owner, :kill)
+            end)
+
           clock = :atomics.new(1, signed: true)
           :atomics.put(clock, 1, now())
           deadline = now() + gateway.max_lifetime
@@ -57,7 +79,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
             watch(
               owner,
               handshake_owner,
-              clock,
+              {clock, exchange},
               gateway.idle_timeout,
               deadline,
               min(50, div(gateway.recheck_interval, 4))
@@ -78,6 +100,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
             ref: nil,
             response_headers: [],
             pending: nil,
+            handed: false,
             attached: false,
             received: 0,
             written: 0,
@@ -87,7 +110,10 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
             queued_bytes: 0,
             writing: nil,
             input_paused: nil,
-            closing: nil
+            closing: nil,
+            exchange: exchange,
+            owns: false,
+            close_seen: false
           }
 
           case negotiate(state, headers) do
@@ -100,7 +126,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
           end
 
         _ ->
-          {:stop, Failure.new(503, "Gateway admission ended", :not_sent)}
+          {:stop, Failure.new(503, "Gateway admission ended", :not_sent, reason: :admission)}
       end
     end
 
@@ -118,6 +144,8 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
         headers = Enum.reject(headers, fn {name, _} -> name == "x-incus-authenticated" end)
 
         with :ok <- authorized(state),
+             # The upgrade request may reach the backend from here.
+             _ <- Exchange.sent(state.exchange, :sent),
              {:ok, conn, ref} <-
                Mint.WebSocket.upgrade(
                  scheme,
@@ -154,7 +182,8 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
           _ -> {:error, failure("Backend WebSocket negotiation failed"), %{state | conn: conn}}
         end
       else
-        _ -> {:error, Failure.new(502, "Backend is unavailable", :not_sent), state}
+        _ ->
+          {:error, Failure.new(502, "Backend is unavailable", :not_sent, reason: :backend), state}
       end
     end
 
@@ -196,6 +225,8 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
       end
     end
 
+    def handle_call(:adopt, _, state), do: {:reply, :ok, %{state | owns: true}}
+
     def handle_call({:attach, owner}, _, %{owner: owner} = state) do
       if authorized(state) == :ok do
         ref = make_ref()
@@ -206,15 +237,17 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
             send(self(), :deliver)
             {:reply, :ok, %{state | attached: true}}
         after
-          100 -> {:stop, :normal, :closed, state}
+          100 -> {:stop, :normal, :closed, interrupted(state, :killed)}
         end
       else
-        {:stop, :normal, :closed, state}
+        {:stop, :normal, :closed, interrupted(state, ended(state))}
       end
     end
 
     def handle_call({:frame, frame}, _, state) do
       size = frame_size(frame)
+      # The frame was read from the caller, so it counts even when refused.
+      Exchange.request_bytes(state.exchange, payload_size(frame))
 
       if live(state) == :ok and size <= state.gateway.connection.max_response_bytes and
            state.written + size <= state.gateway.max_request_bytes do
@@ -226,14 +259,17 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
             {:reply, reply, state}
 
           _ ->
-            stop_reply(state, "Gateway WebSocket queue exceeded")
+            stop_reply(interrupted(state, :limit), "Gateway WebSocket queue exceeded")
         end
       else
-        stop_reply(state, "Gateway WebSocket limit reached")
+        reason = if live(state) == :ok, do: :limit, else: ended(state)
+        stop_reply(interrupted(state, reason), "Gateway WebSocket limit reached")
       end
     end
 
     def handle_call({:close, frame}, from, state) do
+      state = %{state | close_seen: true}
+
       case enqueue(state, frame) do
         {:ok, state} -> {:noreply, %{state | closing: from}}
         _ -> {:stop, :normal, :ok, state}
@@ -242,8 +278,11 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
 
     @impl true
     def handle_cast(:ack, state) do
+      # The frontend acknowledges after Cowboy wrote the delivered frames.
+      if is_list(state.pending), do: delivered(state)
+
       send(self(), :read)
-      {:noreply, %{state | pending: nil}}
+      {:noreply, %{state | pending: nil, handed: false}}
     end
 
     @impl true
@@ -263,6 +302,9 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
             {:noreply, state |> dispatch_write(frame) |> resume_input()}
 
           {:empty, _} when not is_nil(state.closing) ->
+            # The frontend exits on this reply and the watchdog then kills
+            # this relay, so the exchange is finished first.
+            state = finish(state)
             GenServer.reply(state.closing, :ok)
             {:stop, :normal, state}
 
@@ -270,7 +312,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
             {:noreply, resume_input(state)}
         end
       else
-        stop(state, 1011, "Backend WebSocket write failed")
+        stop(interrupted(state, :backend), 1011, "Backend WebSocket write failed")
       end
     end
 
@@ -280,7 +322,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
         {:noreply, %{state | pending: nil}}
       else
         send(state.owner, {:gateway_ws_frames, self(), frames})
-        {:noreply, state}
+        {:noreply, %{state | handed: true, close_seen: state.close_seen or closes?(frames)}}
       end
     end
 
@@ -288,23 +330,25 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
       if live(state) == :ok do
         read(state)
       else
-        stop(state, 1008, "Gateway authorization ended")
+        stop(interrupted(state, ended(state)), 1008, "Gateway authorization ended")
       end
     end
 
     def handle_info(:read, state), do: {:noreply, state}
 
-    def handle_info({:gateway_stopped, _, _}, state),
-      do: stop(state, 1008, "Gateway authorization ended")
+    def handle_info({:gateway_stopped, _, reason}, state),
+      do: stop(interrupted(state, reason), 1008, "Gateway authorization ended")
 
+    # The frontend closes through `close/2`; it exits without that only when
+    # it was killed.
     def handle_info({:DOWN, ref, :process, owner, _}, %{monitor: ref, owner: owner} = state),
-      do: {:stop, :normal, state}
+      do: {:stop, :normal, interrupted(state, :killed)}
 
     def handle_info(
           {:DOWN, ref, :process, writer, _},
           %{writer_monitor: ref, writer: writer} = state
         ),
-        do: stop(state, 1011, "Backend WebSocket writer ended")
+        do: stop(interrupted(state, :backend), 1011, "Backend WebSocket writer ended")
 
     def handle_info(_, state), do: {:noreply, state}
 
@@ -321,7 +365,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
               {:noreply, %{state | pending: frames}}
 
             _ ->
-              stop(state, 1009, "Gateway WebSocket limit or framing error")
+              stop(interrupted(state, :limit), 1009, "Gateway WebSocket limit or framing error")
           end
 
         {:error, conn, reason, _}
@@ -330,7 +374,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
           {:noreply, %{state | conn: conn}}
 
         _ ->
-          stop(state, 1011, "Backend WebSocket ended")
+          stop(interrupted(state, :backend), 1011, "Backend WebSocket ended")
       end
     end
 
@@ -363,6 +407,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
     defp controls(state, [{:pong, _} | tail], frames), do: controls(state, tail, frames)
     defp controls(_state, [{:error, _} | _], _), do: :error
 
+    # A backend close counts as seen only once handed to the frontend.
     defp controls(state, [{:close, nil, _} | _], frames),
       do: {:ok, state, Enum.reverse([:close | frames])}
 
@@ -478,7 +523,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
       end
     end
 
-    defp watch(owner, handshake_owner, clock, idle, deadline, grace) do
+    defp watch(owner, handshake_owner, clock_exchange, idle, deadline, grace) do
       relay = self()
 
       spawn(fn ->
@@ -490,7 +535,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
           Process.monitor(relay),
           Process.monitor(owner),
           handoff,
-          clock,
+          clock_exchange,
           idle,
           deadline
         )
@@ -503,13 +548,14 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
            relay_ref,
            owner_ref,
            {handshake_ref, committed, handoff_deadline, grace} = handoff,
-           clock,
+           {clock, exchange} = clock_exchange,
            idle,
            deadline
          ) do
       left = min(min(deadline, handoff_deadline) - now(), :atomics.get(clock, 1) + idle - now())
 
       if left <= 0 do
+        Exchange.interrupt(exchange, if(now() >= deadline, do: :lifetime, else: :idle))
         send(owner, {:gateway_ws_close, relay, 1008, "Gateway WebSocket deadline"})
         Process.exit(relay, :kill)
 
@@ -523,7 +569,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
           {:committed, sender, ref} ->
             send(sender, {ref, :committed})
             handoff = {handshake_ref, true, min(deadline, now() + 1_000), grace}
-            watchdog(relay, owner, relay_ref, owner_ref, handoff, clock, idle, deadline)
+            watchdog(relay, owner, relay_ref, owner_ref, handoff, clock_exchange, idle, deadline)
 
           {:attached, sender, ref} ->
             if handshake_ref, do: Process.demonitor(handshake_ref, [:flush])
@@ -535,7 +581,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
               relay_ref,
               owner_ref,
               {nil, true, deadline, grace},
-              clock,
+              clock_exchange,
               idle,
               deadline
             )
@@ -547,7 +593,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
               relay_ref,
               owner_ref,
               {nil, true, handoff_deadline, grace},
-              clock,
+              clock_exchange,
               idle,
               deadline
             )
@@ -563,7 +609,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
             Process.exit(relay, :kill)
         after
           min(left, 25) ->
-            watchdog(relay, owner, relay_ref, owner_ref, handoff, clock, idle, deadline)
+            watchdog(relay, owner, relay_ref, owner_ref, handoff, clock_exchange, idle, deadline)
         end
       end
     end
@@ -601,7 +647,33 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
     defp frame_size({:close, _, reason}), do: byte_size(reason)
     defp frame_size(:close), do: 0
     defp frame_size(_), do: 1_099_511_627_777
-    defp failure(message), do: Failure.new(502, message, :sent)
+    defp failure(message), do: Failure.new(502, message, :sent, reason: :backend)
+
+    defp payload_size({kind, payload}) when kind in [:text, :binary], do: byte_size(payload)
+    defp payload_size(_), do: 0
+
+    # After a close frame from either peer, the socket teardown that follows
+    # is the end of a completed exchange, not a backend or frontend failure.
+    defp interrupted(%{close_seen: true} = state, reason)
+         when reason in [:backend, :killed, :caller_closed],
+         do: state
+
+    defp interrupted(state, reason) do
+      Exchange.interrupt(state.exchange, reason)
+      state
+    end
+
+    # Why `live/1` failed: the deadline, or the lease's admission/revocation.
+    defp ended(state) do
+      if now() >= state.deadline do
+        :lifetime
+      else
+        case Lease.check(state.lease) do
+          {:error, reason} -> reason
+          :ok -> :killed
+        end
+      end
+    end
 
     defp stop(state, code, reason) do
       send(state.owner, {:gateway_ws_close, self(), code, reason})
@@ -614,7 +686,32 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
     end
 
     @impl true
-    def terminate(_, state), do: cleanup(state)
+    def terminate(_, state) do
+      finish(state)
+      cleanup(state)
+    end
+
+    # Cowboy closes after writing a batch that carries the backend's close
+    # frame, so that batch is never acknowledged; once handed to the attached
+    # frontend it ends the handshake and is counted with it. A batch the
+    # frontend never received (the upgrade response's frames when attachment
+    # fails) is not counted, and its close does not complete the exchange.
+    defp finish(%{owns: true, exchange: exchange} = state) do
+      if state.handed and is_list(state.pending) and closes?(state.pending),
+        do: delivered(state)
+
+      Exchange.finish(exchange, :ended)
+      %{state | owns: false, pending: nil, handed: false}
+    end
+
+    defp finish(state), do: state
+
+    defp closes?(frames), do: Enum.any?(frames, &(&1 == :close or match?({:close, _, _}, &1)))
+
+    defp delivered(state) do
+      bytes = state.pending |> Enum.map(&payload_size/1) |> Enum.sum()
+      Exchange.response_bytes(state.exchange, bytes)
+    end
 
     defp cleanup(state) do
       if state.attached,

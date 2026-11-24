@@ -1,7 +1,7 @@
 if Code.ensure_loaded?(Plug.Conn) do
   defmodule Opsmaru.Incus.Gateway.Local do
     @moduledoc false
-    alias Opsmaru.Incus.Gateway.{Failure, Headers, HTTPRelay, Identity, Lease, Policy}
+    alias Opsmaru.Incus.Gateway.{Exchange, Failure, Headers, HTTPRelay, Identity, Lease, Policy}
 
     def serve(conn, gateway, request, admitted) do
       lease = Lease.start(gateway, request, admitted, HTTPRelay.interrupter(conn))
@@ -57,7 +57,11 @@ if Code.ensure_loaded?(Plug.Conn) do
     defp discovery_body(body) do
       if empty_body?(body),
         do: :ok,
-        else: {:error, Failure.new(400, "Discovery does not accept a body", :not_sent)}
+        else:
+          {:error,
+           Failure.new(400, "Discovery does not accept a body", :not_sent,
+             reason: :invalid_request
+           )}
     end
 
     defp certificates(conn, gateway, request, admitted, framing, lease) do
@@ -69,6 +73,8 @@ if Code.ensure_loaded?(Plug.Conn) do
            :ok <- live(lease) do
         input = %{fingerprint: fingerprint, body: body, if_match: if_match}
         outcome = if action in [:create, :update, :delete], do: :uncertain, else: :not_sent
+        # The host may change its trust store before this request ends.
+        Exchange.sent(HTTPRelay.exchange(conn), outcome)
 
         result =
           Policy.callback(
@@ -97,17 +103,26 @@ if Code.ensure_loaded?(Plug.Conn) do
           {{:ok, {:invalid, status}}, :ok} ->
             HTTPRelay.fail(
               conn,
-              Failure.new(status, "Invalid certificate policy response", outcome)
+              Failure.new(status, "Invalid certificate policy response", outcome,
+                reason: :unauthorized
+              )
             )
 
           {{:ok, {:error, status}}, :ok} ->
             HTTPRelay.fail(
               conn,
-              Failure.new(status, "Certificate policy denied the request", :not_sent)
+              Failure.new(status, "Certificate policy denied the request", :not_sent,
+                reason: :unauthorized
+              )
             )
 
           _ ->
-            HTTPRelay.fail(conn, Failure.new(403, "Certificate policy did not complete", outcome))
+            HTTPRelay.fail(
+              conn,
+              Failure.new(403, "Certificate policy did not complete", outcome,
+                reason: :unauthorized
+              )
+            )
         end
       else
         {:error, %Failure{} = failure} -> HTTPRelay.fail(conn, failure)
@@ -134,10 +149,17 @@ if Code.ensure_loaded?(Plug.Conn) do
           if Regex.match?(~r/\A[0-9a-f]{64}\z/, fingerprint),
             do:
               {:ok, %{"GET" => :get, "PUT" => :update, "DELETE" => :delete}[method], fingerprint},
-            else: {:error, Failure.new(400, "Invalid certificate fingerprint", :not_sent)}
+            else:
+              {:error,
+               Failure.new(400, "Invalid certificate fingerprint", :not_sent,
+                 reason: :invalid_request
+               )}
 
         _ ->
-          {:error, Failure.new(405, "Certificate action is not supported", :not_sent)}
+          {:error,
+           Failure.new(405, "Certificate action is not supported", :not_sent,
+             reason: :unsupported
+           )}
       end
     end
 
@@ -175,7 +197,10 @@ if Code.ensure_loaded?(Plug.Conn) do
           end
 
         _ ->
-          {:error, Failure.new(400, "Invalid #{String.downcase(subject)} body", :not_sent)}
+          {:error,
+           Failure.new(400, "Invalid #{String.downcase(subject)} body", :not_sent,
+             reason: :invalid_request
+           )}
       end
     end
 
@@ -190,13 +215,17 @@ if Code.ensure_loaded?(Plug.Conn) do
            data
          ) do
       size = size + byte_size(data)
+      Exchange.request_bytes(HTTPRelay.exchange(conn), byte_size(data))
 
       cond do
         size > min(gateway.max_identity_bytes, gateway.max_request_bytes) ->
-          {:error, Failure.new(413, "#{subject} body exceeds the gateway limit", :not_sent)}
+          {:error,
+           Failure.new(413, "#{subject} body exceeds the gateway limit", :not_sent,
+             reason: :limit
+           )}
 
         System.monotonic_time(:millisecond) >= deadline ->
-          {:error, Failure.new(408, "#{subject} body timed out", :not_sent)}
+          {:error, Failure.new(408, "#{subject} body timed out", :not_sent, reason: :idle)}
 
         status == :more ->
           read_body(conn, gateway, budget, [data | chunks], size, lease)
@@ -218,8 +247,12 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     defp decode_body(body) do
       case Jason.decode(body) do
-        {:ok, body} when is_map(body) -> {:ok, body}
-        _ -> {:error, Failure.new(400, "Invalid certificate body", :not_sent)}
+        {:ok, body} when is_map(body) ->
+          {:ok, body}
+
+        _ ->
+          {:error,
+           Failure.new(400, "Invalid certificate body", :not_sent, reason: :invalid_request)}
       end
     end
 
@@ -242,7 +275,9 @@ if Code.ensure_loaded?(Plug.Conn) do
          do: :ok,
          else:
            {:error,
-            Failure.new(400, "Certificate claims are not enforceable by this gateway", :not_sent)}
+            Failure.new(400, "Certificate claims are not enforceable by this gateway", :not_sent,
+              reason: :invalid_request
+            )}
     end
 
     defp token_request?(%{"trust_token" => token}) when is_binary(token), do: token != ""
@@ -250,9 +285,17 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     defp precondition(conn) do
       case Plug.Conn.get_req_header(conn, "if-match") do
-        [] -> {:ok, nil}
-        [etag] -> {:ok, etag}
-        _ -> {:error, Failure.new(400, "Ambiguous certificate precondition", :not_sent)}
+        [] ->
+          {:ok, nil}
+
+        [etag] ->
+          {:ok, etag}
+
+        _ ->
+          {:error,
+           Failure.new(400, "Ambiguous certificate precondition", :not_sent,
+             reason: :invalid_request
+           )}
       end
     end
 
@@ -301,7 +344,9 @@ if Code.ensure_loaded?(Plug.Conn) do
       else
         HTTPRelay.fail(
           conn,
-          Failure.new(502, "Identity response exceeds the gateway limit", :not_sent)
+          Failure.new(502, "Identity response exceeds the gateway limit", :not_sent,
+            reason: :limit
+          )
         )
       end
     end
@@ -323,10 +368,11 @@ if Code.ensure_loaded?(Plug.Conn) do
           :ok
 
         {:error, :admission} ->
-          {:error, Failure.new(503, "Gateway admission stopped", :not_sent)}
+          {:error, Failure.new(503, "Gateway admission stopped", :not_sent, reason: :admission)}
 
         {:error, :revoked} ->
-          {:error, Failure.new(403, "Authorization expired or revoked", :not_sent)}
+          {:error,
+           Failure.new(403, "Authorization expired or revoked", :not_sent, reason: :revoked)}
       end
     end
   end

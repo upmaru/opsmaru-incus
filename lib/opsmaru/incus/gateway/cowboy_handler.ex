@@ -11,7 +11,7 @@ if Code.ensure_loaded?(:cowboy_req) do
     """
     @behaviour :cowboy_handler
     alias Opsmaru.Incus.Gateway
-    alias Opsmaru.Incus.Gateway.{Failure, Headers, Policy, RawRelay, RawTunnel}
+    alias Opsmaru.Incus.Gateway.{Exchange, Failure, Headers, Policy, RawRelay, RawTunnel}
 
     @impl true
     def init(req, opts) do
@@ -38,7 +38,19 @@ if Code.ensure_loaded?(:cowboy_req) do
       end
     end
 
-    defp fallback(req, opts), do: reject(req, opts, Failure.new(404, "Not found", :not_sent))
+    defp fallback(req, opts) do
+      exchange = start(req, nil, if(websocket?(req), do: :websocket, else: :http))
+
+      reject(
+        req,
+        opts,
+        Failure.new(404, "Not found", :not_sent, reason: :not_configured),
+        exchange
+      )
+    end
+
+    defp websocket?(req),
+      do: String.downcase(:cowboy_req.header("upgrade", req, "")) == "websocket"
 
     @doc false
     def upgrade(req, env, __MODULE__, {protocol, handler, state}),
@@ -59,43 +71,91 @@ if Code.ensure_loaded?(:cowboy_req) do
     def terminate(_, _, _), do: :ok
 
     defp raw(req, opts) do
-      with {:ok, gateway} <- resolve(Map.get(opts, :gateway)),
+      resolved = resolve(Map.get(opts, :gateway))
+      exchange = start(req, host(resolved), :raw)
+
+      try do
+        relay(req, opts, resolved, exchange)
+      catch
+        kind, reason ->
+          Exchange.interrupt(exchange, :killed)
+          Exchange.finish(exchange, :ended)
+          :erlang.raise(kind, reason, __STACKTRACE__)
+      end
+    end
+
+    defp relay(req, opts, resolved, exchange) do
+      with {:ok, gateway} <- resolved,
+           _ <- Exchange.path(exchange, req.path),
            {:ok, request} <- Policy.request(fields(req)),
+           _ <- Exchange.request(exchange, request),
            {:ok, relay, response} <-
-             RawRelay.start(gateway, request, req.pid, fn -> validate(req, gateway) end) do
+             RawRelay.start(gateway, request, req.pid, fn -> validate(req, gateway) end, exchange) do
         case response do
           {:upgrade, headers} ->
             case RawRelay.handoff(relay) do
               :ok ->
+                # The actor owns the exchange from here and reports its end.
+                Exchange.status(exchange, 101)
+                Exchange.transfer(exchange, relay)
                 :cowboy_req.cast({:switch_protocol, header_map(headers), RawTunnel, relay}, req)
                 {:ok, req, opts}
 
               {:error, failure} ->
-                reject(req, opts, failure)
+                reject(req, opts, failure, exchange)
             end
 
           {:response, status, headers, body} ->
-            {:ok, :cowboy_req.reply(status, header_map(headers), body, req), opts}
+            Exchange.status(exchange, status)
+            Exchange.response_bytes(exchange, byte_size(body))
+            req = :cowboy_req.reply(status, header_map(headers), body, req)
+            Exchange.finish(exchange, :ended)
+            {:ok, req, opts}
         end
       else
-        {:error, %Failure{} = failure} -> reject(req, opts, failure)
+        {:error, %Failure{} = failure} -> reject(req, opts, failure, exchange)
       end
     end
+
+    defp start(req, host, protocol) do
+      {address, port} = :cowboy_req.peer(req)
+
+      Exchange.start(%{
+        host: host,
+        protocol: protocol,
+        method: req.method,
+        peer: %{address: address, port: port, certificate: certificate(req)}
+      })
+    end
+
+    defp host({:ok, %Gateway{host: host}}), do: host
+    defp host(_), do: nil
 
     defp resolve(%Gateway{} = gateway), do: {:ok, gateway}
 
     defp resolve({module, function, args}) do
       case apply(module, function, args) do
-        %Gateway{} = gateway -> {:ok, gateway}
-        _ -> {:error, Failure.new(503, "Gateway is not configured", :not_sent)}
+        %Gateway{} = gateway ->
+          {:ok, gateway}
+
+        _ ->
+          {:error,
+           Failure.new(503, "Gateway is not configured", :not_sent, reason: :not_configured)}
       end
     rescue
-      _ -> {:error, Failure.new(503, "Gateway is not configured", :not_sent)}
+      _ ->
+        {:error,
+         Failure.new(503, "Gateway is not configured", :not_sent, reason: :not_configured)}
     catch
-      _, _ -> {:error, Failure.new(503, "Gateway is not configured", :not_sent)}
+      _, _ ->
+        {:error,
+         Failure.new(503, "Gateway is not configured", :not_sent, reason: :not_configured)}
     end
 
-    defp resolve(_), do: {:error, Failure.new(503, "Gateway is not configured", :not_sent)}
+    defp resolve(_),
+      do:
+        {:error,
+         Failure.new(503, "Gateway is not configured", :not_sent, reason: :not_configured)}
 
     defp fields(req) do
       headers = :cowboy_req.headers(req)
@@ -123,8 +183,12 @@ if Code.ensure_loaded?(:cowboy_req) do
            {:ok, headers, :none} <- Headers.request(headers, gateway.max_header_bytes, 0) do
         {:ok, protocol, headers}
       else
-        {:error, %Failure{} = failure} -> {:error, failure}
-        _ -> {:error, Failure.new(400, "Invalid native raw upgrade", :not_sent)}
+        {:error, %Failure{} = failure} ->
+          {:error, failure}
+
+        _ ->
+          {:error,
+           Failure.new(400, "Invalid native raw upgrade", :not_sent, reason: :invalid_request)}
       end
     end
 
@@ -162,10 +226,14 @@ if Code.ensure_loaded?(:cowboy_req) do
       end)
     end
 
-    defp reject(req, opts, failure) do
+    defp reject(req, opts, failure, exchange) do
       {_, _, body} = Failure.encode(failure)
       headers = %{"content-type" => "application/json", "cache-control" => "no-store"}
-      {:ok, :cowboy_req.reply(failure.status, headers, body, req), opts}
+      req = :cowboy_req.reply(failure.status, headers, body, req)
+      Exchange.status(exchange, failure.status)
+      Exchange.response_bytes(exchange, byte_size(body))
+      Exchange.finish(exchange, failure)
+      {:ok, req, opts}
     end
   end
 end

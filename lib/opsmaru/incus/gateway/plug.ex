@@ -37,7 +37,7 @@ if Code.ensure_loaded?(Plug.Conn) do
     @behaviour Plug
 
     alias Opsmaru.Incus.Gateway
-    alias Opsmaru.Incus.Gateway.{Failure, HTTPRelay, Local, Policy, WebSocket}
+    alias Opsmaru.Incus.Gateway.{Exchange, Failure, HTTPRelay, Local, Policy, WebSocket}
 
     @impl true
     def init(opts) do
@@ -58,9 +58,54 @@ if Code.ensure_loaded?(Plug.Conn) do
     @impl true
     def call(conn, source) do
       case resolve(source) do
-        {:ok, gateway} -> serve(conn, gateway)
-        :error -> HTTPRelay.fail(conn, Failure.new(503, "Gateway is not configured", :not_sent))
+        {:ok, gateway} ->
+          observe(conn, gateway.host, &serve(&1, gateway))
+
+        :error ->
+          failure =
+            Failure.new(503, "Gateway is not configured", :not_sent, reason: :not_configured)
+
+          observe(conn, nil, &HTTPRelay.fail(&1, failure))
       end
+    end
+
+    # One exchange per request. Paths that know how the exchange ended finish
+    # it themselves (a Failure, an interruption, a transfer to a WebSocket
+    # relay); a request served to completion ends here.
+    defp observe(conn, host, serve) do
+      exchange =
+        Exchange.start(%{
+          host: host,
+          protocol: protocol(conn),
+          method: conn.method,
+          peer: peer(conn)
+        })
+
+      conn =
+        if Exchange.active?(exchange),
+          do: conn |> HTTPRelay.put_exchange(exchange) |> Plug.Conn.register_before_send(&head/1),
+          else: conn
+
+      try do
+        conn = serve.(conn)
+        Exchange.finish(HTTPRelay.exchange(conn), :ended)
+        conn
+      catch
+        kind, reason ->
+          Exchange.interrupt(exchange, :killed)
+          Exchange.finish(exchange, :ended)
+          :erlang.raise(kind, reason, __STACKTRACE__)
+      end
+    end
+
+    defp head(conn) do
+      exchange = HTTPRelay.exchange(conn)
+      Exchange.status(exchange, conn.status)
+
+      if conn.resp_body,
+        do: Exchange.response_bytes(exchange, IO.iodata_length(conn.resp_body))
+
+      conn
     end
 
     defp resolve({:static, gateway}), do: {:ok, gateway}
@@ -79,8 +124,12 @@ if Code.ensure_loaded?(Plug.Conn) do
     defp serve(conn, gateway) do
       with :ok <- unread_body(conn),
            {:ok, authorization} <- authorization(conn),
+           _ <- Exchange.path(HTTPRelay.exchange(conn), conn.request_path),
            {:ok, request} <- Policy.request(fields(conn, authorization)),
+           _ <- Exchange.request(HTTPRelay.exchange(conn), request),
            {:ok, admitted} <- Policy.admit(gateway, request) do
+        Exchange.admitted(HTTPRelay.exchange(conn), admitted.admitted_as)
+
         try do
           cond do
             request.protocol == :websocket ->
@@ -89,7 +138,9 @@ if Code.ensure_loaded?(Plug.Conn) do
             request.protocol == :raw ->
               HTTPRelay.fail(
                 conn,
-                Failure.new(501, "Raw upgrades require the Cowboy gateway handler", :not_sent)
+                Failure.new(501, "Raw upgrades require the Cowboy gateway handler", :not_sent,
+                  reason: :unsupported
+                )
               )
 
             Local.local?(request) or admitted.anonymous ->
@@ -109,15 +160,18 @@ if Code.ensure_loaded?(Plug.Conn) do
     defp websocket(conn, gateway, request, admitted),
       do: Function.capture(WebSocket, :upgrade, 4).(conn, gateway, request, admitted)
 
-    defp fields(conn, authorization) do
+    defp peer(conn) do
       peer = Plug.Conn.get_peer_data(conn)
+      %{address: peer.address, port: peer.port, certificate: peer.ssl_cert}
+    end
 
+    defp fields(conn, authorization) do
       %{
         protocol: protocol(conn),
         method: conn.method,
         path: conn.request_path,
         query: conn.query_string,
-        peer: %{address: peer.address, port: peer.port, certificate: peer.ssl_cert},
+        peer: peer(conn),
         authorization: authorization,
         image_headers: %{
           secret: Plug.Conn.get_req_header(conn, "x-incus-secret"),
@@ -143,9 +197,15 @@ if Code.ensure_loaded?(Plug.Conn) do
 
     defp authorization(conn) do
       case Plug.Conn.get_req_header(conn, "authorization") do
-        [] -> {:ok, nil}
-        [value] -> {:ok, value}
-        _ -> {:error, Failure.new(400, "Ambiguous authorization", :not_sent)}
+        [] ->
+          {:ok, nil}
+
+        [value] ->
+          {:ok, value}
+
+        _ ->
+          {:error,
+           Failure.new(400, "Ambiguous authorization", :not_sent, reason: :invalid_request)}
       end
     end
 
@@ -154,6 +214,8 @@ if Code.ensure_loaded?(Plug.Conn) do
     defp unread_body(_),
       do:
         {:error,
-         Failure.new(500, "Gateway must be mounted before request body parsing", :not_sent)}
+         Failure.new(500, "Gateway must be mounted before request body parsing", :not_sent,
+           reason: :not_configured
+         )}
   end
 end

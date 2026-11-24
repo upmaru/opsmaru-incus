@@ -49,7 +49,9 @@ defmodule Opsmaru.Incus.Gateway.Headers do
 
     if bytes <= maximum,
       do: :ok,
-      else: {:error, Failure.new(431, "Request header fields are too large", :not_sent)}
+      else:
+        {:error,
+         Failure.new(431, "Request header fields are too large", :not_sent, reason: :limit)}
   end
 
   # `chunked?` is the server adapter's own report of a body without a length;
@@ -60,7 +62,8 @@ defmodule Opsmaru.Incus.Gateway.Headers do
 
     cond do
       lengths != [] and encodings != [] ->
-        {:error, Failure.new(400, "Ambiguous request framing", :not_sent)}
+        {:error,
+         Failure.new(400, "Ambiguous request framing", :not_sent, reason: :invalid_request)}
 
       encodings != [] or (chunked? and lengths == []) ->
         {:ok, :chunked}
@@ -82,17 +85,26 @@ defmodule Opsmaru.Incus.Gateway.Headers do
       |> Enum.uniq()
 
     case values do
-      [value] -> parse_length(Integer.parse(value), maximum)
-      _ -> {:error, Failure.new(400, "Ambiguous request framing", :not_sent)}
+      [value] ->
+        parse_length(Integer.parse(value), maximum)
+
+      _ ->
+        {:error,
+         Failure.new(400, "Ambiguous request framing", :not_sent, reason: :invalid_request)}
     end
   end
 
   defp parse_length({length, ""}, maximum) when length > maximum,
-    do: {:error, Failure.new(413, "Request body exceeds the gateway limit", :not_sent)}
+    do:
+      {:error,
+       Failure.new(413, "Request body exceeds the gateway limit", :not_sent, reason: :limit)}
 
   defp parse_length({0, ""}, _), do: {:ok, :none}
   defp parse_length({length, ""}, _) when length > 0, do: {:ok, {:length, length}}
-  defp parse_length(_, _), do: {:error, Failure.new(400, "Ambiguous request framing", :not_sent)}
+
+  defp parse_length(_, _),
+    do:
+      {:error, Failure.new(400, "Ambiguous request framing", :not_sent, reason: :invalid_request)}
 
   defp zero_length(original, forwarded) do
     if List.keymember?(original, "content-length", 0),

@@ -9,17 +9,57 @@ defmodule Opsmaru.Incus.Gateway.Failure do
       have been accepted. The gateway never retries it.
     * `:sent` - a read-only request was sent and its response failed.
 
+  `reason` is the closed classification reported by gateway exchange
+  telemetry (see `docs/gateway.md`). It is set where each failure is built,
+  never derived from the message, and never encoded.
+
   `operation` carries a known native operation URL when one was observed.
   Messages are fixed strings; they never include addresses, credentials or
   host callback results.
   """
 
-  defstruct [:status, :message, :outcome, :operation]
+  @reasons [
+    :invalid_request,
+    :not_configured,
+    :capacity,
+    :not_ready,
+    :unauthorized,
+    :unsupported,
+    :revoked,
+    :admission,
+    :idle,
+    :lifetime,
+    :limit,
+    :backend,
+    :caller_closed,
+    :killed
+  ]
+
+  defstruct [:status, :message, :outcome, :reason, :operation]
 
   @type t :: %__MODULE__{}
 
-  def new(status, message, outcome, operation \\ nil),
-    do: %__MODULE__{status: status, message: message, outcome: outcome, operation: operation}
+  @doc false
+  def reasons, do: @reasons
+
+  @doc """
+  Build a failure. `opts` must carry a `:reason` from the closed set and may
+  carry the native `:operation` URL.
+  """
+  def new(status, message, outcome, opts) when is_list(opts) do
+    reason = Keyword.fetch!(opts, :reason)
+
+    unless reason in @reasons,
+      do: raise(ArgumentError, "unknown gateway failure reason: #{inspect(reason)}")
+
+    %__MODULE__{
+      status: status,
+      message: message,
+      outcome: outcome,
+      reason: reason,
+      operation: Keyword.get(opts, :operation)
+    }
+  end
 
   @doc "Status, headers and body for a native-shaped error response."
   def encode(%__MODULE__{} = failure) do

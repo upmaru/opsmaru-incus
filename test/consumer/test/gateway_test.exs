@@ -228,6 +228,49 @@ defmodule FoundationConsumer.GatewayTest do
     assert Application.spec(:opsmaru_incus, :mod) == []
   end
 
+  test "a host telemetry handler observes a relayed exchange and a refusal", context do
+    test = self()
+    id = {__MODULE__, make_ref()}
+    events = for name <- [:start, :stop], do: [:opsmaru_incus, :gateway, :exchange, name]
+
+    :ok =
+      :telemetry.attach_many(
+        id,
+        events,
+        fn event, measurements, metadata, _ ->
+          send(test, {:exchange, List.last(event), measurements, metadata})
+        end,
+        nil
+      )
+
+    on_exit(fn -> :telemetry.detach(id) end)
+    fixture = fixture(context, fn _ -> sync(%{name: "fixture"}) end)
+    mount(context, HTTPFixture.endpoint(fixture).socket)
+
+    response = tls_request(context, "GET", "/1.0/instances/fixture?project=default")
+    assert response.status == 200
+    assert_receive {:exchange, :start, _, %{protocol: :http}}, 2_000
+    assert_receive {:exchange, :stop, measurements, metadata}, 2_000
+
+    assert %{
+             path: "/1.0/instances/fixture",
+             project: "default",
+             admitted_as: :caller,
+             status: 200,
+             outcome: :ok,
+             reason: nil
+           } = metadata
+
+    assert metadata.peer_fingerprint == CertificateHost.fingerprint(context.client.der)
+    assert measurements.response_bytes == byte_size(response.body)
+
+    assert tls_request(context, "GET", "/1.0/instances", "", false).status == 403
+
+    assert_receive {:exchange, :stop, _,
+                    %{status: 403, outcome: :not_sent, reason: :unauthorized, peer_fingerprint: nil}},
+                   2_000
+  end
+
   test "test-only trust enrollment and identity mediation traverse consumer endpoint", context do
     fixture = fixture(context, fn _ -> discovery() end)
     Agent.update(context.trust, &%{&1 | trust: %{}})
