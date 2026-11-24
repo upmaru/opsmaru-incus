@@ -331,6 +331,17 @@ defmodule Opsmaru.Incus.GatewayExchangeTelemetryTest do
       get(context, "/1.0/instances/../certificates", [auth()])
       assert {_, %{path: nil, project: nil}} = stop!()
 
+      # A refused selection keeps the path its route check accepted.
+      get(context, "/1.0/instances?project=a&project=b", [auth()])
+      assert {_, %{path: "/1.0/instances", project: nil, status: 400}} = stop!()
+
+      socket = connect(listener(gateway))
+      :ok = :gen_tcp.send(socket, raw_head("/1.0/instances/a/sftp?project=a&project=b", "sftp"))
+      {response, _} = read_head(socket)
+      assert response =~ "400"
+      assert {_, %{path: "/1.0/instances/a/sftp", project: nil, status: 400}} = stop!()
+      :gen_tcp.close(socket)
+
       # Cowboy joins repeated headers, so ambiguous authorization is driven directly.
       conn = Plug.Test.conn(:get, "/1.0/instances")
       conn = %{conn | req_headers: [auth(), auth() | conn.req_headers]}
@@ -661,6 +672,48 @@ defmodule Opsmaru.Incus.GatewayExchangeTelemetryTest do
       close(channel)
     end
 
+    test "a frame refused by the request limit still counts as read", context do
+      fixture = ws_backend(context, wire: "")
+      mount_ws(context, fixture, max_request_bytes: 10)
+      channel = open(context)
+      channel = send_frame(channel, {:binary, "123456"})
+      channel = send_frame(channel, {:binary, "abcdef"})
+      assert {stop, %{reason: :limit, outcome: :sent, status: 101}} = stop!(3_000)
+      assert stop.request_bytes == 12
+      no_more_stops()
+      close(channel)
+    end
+
+    test "a caller lost during the backend handshake reports :sent", context do
+      test = self()
+
+      {_, connection} =
+        backend(context, fn conn ->
+          send(test, :handshake_received)
+          conn.transport.recv(conn.socket, 0, 3_000)
+        end)
+
+      mount(context, connection)
+      socket = connect(context.port)
+
+      :ok =
+        :gen_tcp.send(
+          socket,
+          RawHTTP.head("GET", @operation_target, [
+            auth(),
+            {"connection", "upgrade"},
+            {"upgrade", "websocket"},
+            {"sec-websocket-version", "13"},
+            {"sec-websocket-key", Base.encode64(:crypto.strong_rand_bytes(16))}
+          ])
+        )
+
+      assert_receive :handshake_received, 3_000
+      :gen_tcp.close(socket)
+      assert {_, %{outcome: :sent, status: nil}} = stop!(5_000)
+      no_more_stops()
+    end
+
     test "a killed relay reports one stop", context do
       fixture = ws_backend(context, wire: "")
       mount_ws(context, fixture)
@@ -729,6 +782,45 @@ defmodule Opsmaru.Incus.GatewayExchangeTelemetryTest do
       {stop, meta} = stop!(3_000)
       assert %{path: "/1.0/instances/a/nbd", status: 101, outcome: :ok, reason: nil} = meta
       assert %{request_bytes: 2, response_bytes: 5} = stop
+      no_more_stops()
+    end
+
+    test "raw bytes refused by the request limit still count as read", context do
+      {_, connection} =
+        backend(context, fn conn ->
+          StreamBackend.write(conn, raw_upgrade("sftp", ""))
+          conn.transport.recv(conn.socket, 0, 2_000)
+        end)
+
+      socket = connect(listener(mount(context, connection, max_request_bytes: 4)))
+
+      # The bytes arrive with the request head, in the relay's initial buffer.
+      :ok =
+        :gen_tcp.send(socket, [
+          raw_head("/1.0/instances/a/sftp?project=allowed", "sftp"),
+          "toolong"
+        ])
+
+      assert {stop, %{reason: :limit}} = stop!(3_000)
+      assert stop.request_bytes == 7
+      no_more_stops()
+      :gen_tcp.close(socket)
+    end
+
+    test "a raw caller lost during the backend handshake reports :sent", context do
+      test = self()
+
+      {_, connection} =
+        backend(context, fn conn ->
+          send(test, :handshake_received)
+          conn.transport.recv(conn.socket, 0, 3_000)
+        end)
+
+      socket = connect(listener(mount(context, connection)))
+      :ok = :gen_tcp.send(socket, raw_head("/1.0/instances/a/sftp?project=allowed", "sftp"))
+      assert_receive :handshake_received, 3_000
+      :gen_tcp.close(socket)
+      assert {_, %{outcome: :sent, status: nil}} = stop!(5_000)
       no_more_stops()
     end
 

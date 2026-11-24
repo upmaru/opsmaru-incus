@@ -20,7 +20,7 @@ defmodule Opsmaru.Incus.Gateway.Exchange do
   # other function is a no-op. Handlers for `:stop` run in the observer, never
   # in a process that holds a backend socket.
 
-  alias Opsmaru.Incus.Gateway.{Failure, Request}
+  alias Opsmaru.Incus.Gateway.{Failure, Policy, Request}
   alias Opsmaru.Incus.Telemetry
 
   @prefix [:opsmaru_incus, :gateway, :exchange]
@@ -97,6 +97,17 @@ defmodule Opsmaru.Incus.Gateway.Exchange do
     do: :crypto.hash(:sha256, der) |> Base.encode16(case: :lower)
 
   defp fingerprint(_), do: nil
+
+  @doc """
+  Record the original path once the route check accepted it, before the
+  query is parsed, so a refused selection still reports its path.
+  """
+  def path(%__MODULE__{observer: nil} = exchange, _), do: exchange
+
+  def path(%__MODULE__{observer: observer} = exchange, path) when is_binary(path) do
+    if Policy.route(path) == :ok, do: send(observer, {:request, %{path: path}})
+    exchange
+  end
 
   @doc "Record the parsed request. Only bounded, canonical fields are kept."
   def request(%__MODULE__{observer: nil} = exchange, _), do: exchange

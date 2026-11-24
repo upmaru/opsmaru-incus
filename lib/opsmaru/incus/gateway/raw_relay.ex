@@ -92,7 +92,15 @@ if Code.ensure_loaded?(:cowboy_req) do
                  :ok <- Lease.check(lease),
                  {:ok, backend} <- open(gateway, deadline) do
               try do
-                case handshake(backend, gateway, request, protocol, headers, deadline, dispatch) do
+                case handshake(
+                       backend,
+                       gateway,
+                       request,
+                       protocol,
+                       headers,
+                       deadline,
+                       {dispatch, exchange}
+                     ) do
                   {:ok, response, initial} ->
                     send(caller, {ref, {:ok, self(), {:upgrade, response}}})
 
@@ -189,7 +197,7 @@ if Code.ensure_loaded?(:cowboy_req) do
       end
     end
 
-    defp handshake(backend, gateway, request, protocol, headers, deadline, dispatch) do
+    defp handshake(backend, gateway, request, protocol, headers, deadline, {dispatch, exchange}) do
       target = request.path <> if(request.query == "", do: "", else: "?" <> request.query)
 
       headers =
@@ -201,7 +209,9 @@ if Code.ensure_loaded?(:cowboy_req) do
 
       deadline = min(deadline, now() + min(gateway.connection.timeout, gateway.idle_timeout))
 
+      # The upgrade request may reach the backend from here.
       :atomics.put(dispatch, 1, 1)
+      Exchange.sent(exchange, :sent)
 
       with {:ok, conn, ref} <- Mint.HTTP.request(backend.conn, "GET", target, headers, nil),
            {:ok, _, status, response, data} <-
@@ -271,7 +281,6 @@ if Code.ensure_loaded?(:cowboy_req) do
             receive do
               {^handoff_ref, :handoff_ready} ->
                 send(caller, {ref, :ok})
-                Exchange.sent(state.exchange, :sent)
                 await_socket(state)
                 Exchange.finish(state.exchange, :ended)
             after
@@ -480,6 +489,10 @@ if Code.ensure_loaded?(:cowboy_req) do
     defp enqueue(state, _, <<>>), do: {:ok, state}
 
     defp enqueue(state, direction, bytes) do
+      # Bytes read from the caller count even when a limit refuses them.
+      if direction == :to_backend,
+        do: Exchange.request_bytes(state.exchange, byte_size(bytes))
+
       {key, maximum} =
         if direction == :to_backend,
           do: {:written, state.gateway.max_request_bytes},
@@ -489,9 +502,6 @@ if Code.ensure_loaded?(:cowboy_req) do
 
       if total <= maximum and not MapSet.member?(state.pending, direction) do
         send(Map.fetch!(state.writers, direction), {:write, direction, bytes})
-
-        if direction == :to_backend,
-          do: Exchange.request_bytes(state.exchange, byte_size(bytes))
 
         {:ok,
          state
