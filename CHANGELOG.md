@@ -1,10 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.2.10 — 2026-11-24
 
 A host that mounts the gateway can observe every exchange it relays,
 including SFTP/NBD tunnels and WebSockets that never reach its Plug
 telemetry, and requests the gateway refuses.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.10"}
+```
 
 ### Added
 
