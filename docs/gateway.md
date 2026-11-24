@@ -357,6 +357,102 @@ resets the stream. Frontend loss, deadlines and admission restarts close only
 gateway-owned sockets. They never send `DELETE` to an operation or replay a
 request.
 
+## Exchange telemetry
+
+When the host runs `:telemetry` (every Plug host does) and attaches a handler,
+the gateway emits one pair of events per exchange. That covers native HTTP,
+locally served discovery and trust, WebSocket and SFTP/NBD upgrades, and
+requests refused before admission. `:telemetry` is an optional dependency: a
+client-only consumer compiles without it. The library attaches no handler,
+writes no log and defines no metrics. With no handler attached to the
+`[:opsmaru_incus, :gateway, :exchange]` prefix, no observer process or table
+is created; a handler attached while an exchange is in flight sees only later
+exchanges.
+
+| Event | Measurements | Emitted from |
+| --- | --- | --- |
+| `[:opsmaru_incus, :gateway, :exchange, :start]` | `system_time`, `monotonic_time` | the adapter process (Plug request process or Cowboy handler), before policy runs |
+| `[:opsmaru_incus, :gateway, :exchange, :stop]` | `duration`, `request_bytes`, `response_bytes` | a per-exchange observer process, once, when the exchange ends |
+
+The stop event is emitted exactly once, at the real end of the exchange. The
+observer monitors the process that owns the exchange: the Plug request process,
+then the WebSocket relay after the upgrade commits, or the raw relay after the
+SFTP/NBD handoff. A relay killed for revocation, a deadline or a lost caller
+still reports its duration, bytes and reason. Stop handlers run in the
+observer, never in a process holding a backend socket, so a slow handler
+cannot hold a socket open, delay a relay or use up its deadline. A start
+handler runs in the adapter process before admission, so it should be cheap.
+Correlate the pair with `telemetry_span_context`.
+
+Start metadata:
+
+| Key | Value |
+| --- | --- |
+| `telemetry_span_context` | a reference shared by the pair |
+| `host` | the gateway's host module, or `nil` when the gateway could not be resolved |
+| `protocol` | `:http`, `:websocket` or `:raw` |
+| `method` | the HTTP method when it is `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE` or `OPTIONS`, otherwise `nil` |
+| `peer_address`, `peer_port` | the caller's address and port, as the server adapter reports them |
+| `peer_fingerprint` | lowercase hexadecimal SHA-256 of the certificate the caller presented, or `nil`; it names a presented certificate, not a trusted identity |
+
+Stop metadata is the start metadata plus:
+
+| Key | Value |
+| --- | --- |
+| `path` | the original encoded path once the route check accepted it (at most 8192 bytes), otherwise `nil` |
+| `project`, `target`, `all_projects`, `operation` | the parsed native selection and operation ID; `nil`/`false` when the request was refused before parsing |
+| `admitted_as` | `:caller`, `:anonymous`, `:operation_peer`, `:image_peer`, or `nil` when the request was not admitted |
+| `status` | the HTTP status of the response head sent to the caller (`101` for a completed upgrade), or `nil` when none was sent |
+| `outcome` | `:ok` when the exchange completed as relayed or served, whatever the native status; otherwise what the backend may have seen: `:not_sent`, `:uncertain` or `:sent` |
+| `reason` | `nil` when `outcome` is `:ok`, otherwise one of the reasons below |
+
+`request_bytes` and `response_bytes` count body bytes read from and written to
+the caller: HTTP bodies (including gateway error bodies), WebSocket text and
+binary frame payloads, or tunnelled SFTP/NBD bytes. Header and framing bytes
+are not counted. Request bytes count when the gateway reads them, whether or
+not they are then forwarded. Response bytes count once written: a sent HTTP
+body or chunk, a raw tunnel write that completed, or a WebSocket batch the
+adapter acknowledged writing (the batch carrying the backend's close frame
+counts with the close once handed to the adapter). Bytes still queued, or
+frames the adapter never received, are not counted.
+
+| `reason` | Meaning |
+| --- | --- |
+| `:invalid_request` | non-canonical path, ambiguous selection, framing, body or handshake, or a route the gateway does not serve |
+| `:not_configured` | the gateway could not be resolved, has no Cowboy fallback, or is mounted behind a body parser |
+| `:capacity` | admission is full |
+| `:not_ready` | the host is not ready, admission or identity is unavailable |
+| `:unauthorized` | the host denied the request, or an image peer sent something other than its upload |
+| `:unsupported` | the protocol, adapter or certificate action is not available |
+| `:revoked` | the grant expired or was revoked during the exchange |
+| `:admission` | the admission process stopped during the exchange |
+| `:idle` | the caller or backend was silent for `idle_timeout`, or a request body did not arrive in time |
+| `:lifetime` | `max_lifetime` expired |
+| `:limit` | a path, query, header, body, frame or queue limit was exceeded |
+| `:backend` | the backend could not be reached, failed, or sent an invalid response |
+| `:caller_closed` | the gateway saw the caller's connection close or fail before the exchange completed |
+| `:killed` | the owning process ended without recording a reason |
+
+A completed WebSocket close handshake from either side, or both halves of a
+raw tunnel closing, is `outcome: :ok`. A backend close frame the adapter never
+received does not complete the handshake. Reasons are assigned where each
+failure is built and never derived from error messages.
+
+Metadata never contains the `authorization` header or any other header, the
+raw query string (which carries operation and image secrets and unbounded
+filters), image secrets or fingerprints, request or response bodies,
+WebSocket frames, the host's grant or `host_config`, backend addresses or
+credentials, or native and gateway error messages. A host that needs a
+principal derives it from `peer_fingerprint` and `admitted_as` or from its own
+state.
+
+Handlers are global to the VM, so any code in the host can read these paths
+and peer addresses. Do not send `path` to a destination less private than the
+host's own request log. `:telemetry` detaches a handler that raises, after
+which a log built on it silently stops; a host that treats the log as a record
+should rescue inside its handler. Emission never changes admission, relayed
+bytes, responses, deadlines, revocation or retry decisions.
+
 ## Limits
 
 | option | default |

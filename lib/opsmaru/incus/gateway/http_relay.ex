@@ -11,7 +11,7 @@ if Code.ensure_loaded?(Plug.Conn) do
     # may have reached the backend: failures after that point report
     # `:uncertain` for mutations and are never retried.
 
-    alias Opsmaru.Incus.Gateway.{Failure, Headers, Identity, Lease}
+    alias Opsmaru.Incus.Gateway.{Exchange, Failure, Headers, Identity, Lease}
     alias Opsmaru.Incus.Transport
 
     @safe ~w(GET HEAD)
@@ -31,6 +31,7 @@ if Code.ensure_loaded?(Plug.Conn) do
         deadline: now() + gateway.max_lifetime,
         image_upload: admitted.image_peer and match?(%{route: :upload}, request.image),
         first: nil,
+        exchange: exchange(conn),
         sent_outcome: if(request.method in @safe, do: :sent, else: :uncertain)
       }
 
@@ -98,14 +99,37 @@ if Code.ensure_loaded?(Plug.Conn) do
     end
 
     defp not_image,
-      do: Failure.new(403, "An image secret admits only the image upload itself", :not_sent)
+      do:
+        Failure.new(403, "An image secret admits only the image upload itself", :not_sent,
+          reason: :unauthorized
+        )
 
     @doc false
-    def interrupter(%Plug.Conn{adapter: {Plug.Cowboy.Conn, %{pid: pid, version: version}}})
-        when version in [:"HTTP/1.1", :"HTTP/1.0"],
-        do: fn -> Process.exit(pid, :kill) end
+    def interrupter(conn) do
+      exchange = exchange(conn)
+      kill = kill(conn)
 
-    def interrupter(_), do: fn -> :ok end
+      fn reason ->
+        Exchange.interrupt(exchange, reason)
+        kill.()
+      end
+    end
+
+    defp kill(%Plug.Conn{adapter: {Plug.Cowboy.Conn, %{pid: pid, version: version}}})
+         when version in [:"HTTP/1.1", :"HTTP/1.0"],
+         do: fn -> Process.exit(pid, :kill) end
+
+    defp kill(_), do: fn -> :ok end
+
+    @exchange :opsmaru_incus_gateway_exchange
+
+    @doc false
+    # The exchange observed for this Plug request, or an inert one.
+    def exchange(%Plug.Conn{private: private}),
+      do: Map.get(private, @exchange) || Exchange.inert()
+
+    @doc false
+    def put_exchange(conn, exchange), do: Plug.Conn.put_private(conn, @exchange, exchange)
 
     defp unsized_body?(%Plug.Conn{adapter: {Plug.Cowboy.Conn, req}}) do
       Function.capture(:cowboy_req, :has_body, 1).(req) and
@@ -128,8 +152,11 @@ if Code.ensure_loaded?(Plug.Conn) do
           Mint.HTTP.close(socket)
         end
       else
-        {:error, :backend} -> fail(conn, Failure.new(502, "Backend is unavailable", :not_sent))
-        {:error, reason} -> fail(conn, interrupted(reason, :not_sent))
+        {:error, :backend} ->
+          fail(conn, Failure.new(502, "Backend is unavailable", :not_sent, reason: :backend))
+
+        {:error, reason} ->
+          fail(conn, interrupted(reason, :not_sent))
       end
     end
 
@@ -151,6 +178,8 @@ if Code.ensure_loaded?(Plug.Conn) do
       with :ok <- live(state),
            {:ok, socket, ref} <-
              Mint.HTTP.request(socket, request.method, target, headers, mint_body) do
+        Exchange.sent(state.exchange, state.sent_outcome)
+
         case send_body(conn, socket, ref, body, state) do
           {:ok, conn, socket} -> respond(conn, socket, ref, state)
           {:error, conn, failure} -> fail(conn, failure)
@@ -160,7 +189,10 @@ if Code.ensure_loaded?(Plug.Conn) do
           fail(conn, interrupted(reason, :not_sent))
 
         {:error, _, _} ->
-          fail(conn, Failure.new(502, "Backend request failed", state.sent_outcome))
+          fail(
+            conn,
+            Failure.new(502, "Backend request failed", state.sent_outcome, reason: :backend)
+          )
       end
     end
 
@@ -200,13 +232,16 @@ if Code.ensure_loaded?(Plug.Conn) do
                read_length: gateway.max_chunk_bytes,
                read_timeout: min(gateway.idle_timeout, remaining(state.deadline))
              ) do
+        # Counted when read, so a checked image chunk is counted once.
+        Exchange.request_bytes(state.exchange, byte_size(data))
         {:ok, status, data, conn}
       else
         {:error, reason} when reason in [:admission, :lifetime, :revoked] ->
           {:error, conn, interrupted(reason, outcome)}
 
         _ ->
-          {:error, conn, Failure.new(408, "Request body was not received", outcome)}
+          {:error, conn,
+           Failure.new(408, "Request body was not received", outcome, reason: :idle)}
       end
     end
 
@@ -215,7 +250,9 @@ if Code.ensure_loaded?(Plug.Conn) do
 
       if sent > state.gateway.max_request_bytes do
         {:error, conn,
-         Failure.new(413, "Request body exceeds the gateway limit", state.sent_outcome)}
+         Failure.new(413, "Request body exceeds the gateway limit", state.sent_outcome,
+           reason: :limit
+         )}
       else
         case stream_body(socket, ref, data) do
           {:ok, socket} when status == :more ->
@@ -225,7 +262,8 @@ if Code.ensure_loaded?(Plug.Conn) do
             finish_upload(conn, socket, ref, body, sent, state)
 
           :error ->
-            {:error, conn, Failure.new(502, "Backend request failed", state.sent_outcome)}
+            {:error, conn,
+             Failure.new(502, "Backend request failed", state.sent_outcome, reason: :backend)}
         end
       end
     end
@@ -237,7 +275,11 @@ if Code.ensure_loaded?(Plug.Conn) do
            {:ok, socket} <- Mint.HTTP.stream_request_body(socket, ref, :eof) do
         {:ok, conn, socket}
       else
-        _ -> {:error, conn, Failure.new(400, "Request body was incomplete", state.sent_outcome)}
+        _ ->
+          {:error, conn,
+           Failure.new(400, "Request body was incomplete", state.sent_outcome,
+             reason: :invalid_request
+           )}
       end
     end
 
@@ -256,7 +298,10 @@ if Code.ensure_loaded?(Plug.Conn) do
           head(conn, socket, ref, state, nil)
 
         {:error, _} ->
-          fail(conn, Failure.new(502, "Backend response failed", state.sent_outcome))
+          fail(
+            conn,
+            Failure.new(502, "Backend response failed", state.sent_outcome, reason: :backend)
+          )
       end
     end
 
@@ -286,12 +331,18 @@ if Code.ensure_loaded?(Plug.Conn) do
               502,
               "Backend sent an invalid response",
               state.sent_outcome,
-              operation(headers)
+              reason: :backend,
+              operation: operation(headers)
             )
           )
 
         _ ->
-          fail(conn, Failure.new(502, "Backend sent an invalid response", state.sent_outcome))
+          fail(
+            conn,
+            Failure.new(502, "Backend sent an invalid response", state.sent_outcome,
+              reason: :backend
+            )
+          )
       end
     end
 
@@ -315,7 +366,8 @@ if Code.ensure_loaded?(Plug.Conn) do
               502,
               "Backend sent an invalid response header",
               state.sent_outcome,
-              operation(headers)
+              reason: :backend,
+              operation: operation(headers)
             )
           )
       end
@@ -360,7 +412,12 @@ if Code.ensure_loaded?(Plug.Conn) do
               identity_body(conn, socket, ref, state, headers, chunks, bytes, rest)
 
             :error ->
-              fail(conn, Failure.new(502, "Invalid backend identity trailer", state.sent_outcome))
+              fail(
+                conn,
+                Failure.new(502, "Invalid backend identity trailer", state.sent_outcome,
+                  reason: :backend
+                )
+              )
           end
 
         {:done, ^ref} ->
@@ -369,7 +426,9 @@ if Code.ensure_loaded?(Plug.Conn) do
         _ ->
           fail(
             conn,
-            Failure.new(502, "Invalid or oversized backend identity", state.sent_outcome)
+            Failure.new(502, "Invalid or oversized backend identity", state.sent_outcome,
+              reason: :backend
+            )
           )
       end
     end
@@ -391,7 +450,9 @@ if Code.ensure_loaded?(Plug.Conn) do
         _ ->
           fail(
             conn,
-            Failure.new(502, "Invalid or oversized backend identity", state.sent_outcome)
+            Failure.new(502, "Invalid or oversized backend identity", state.sent_outcome,
+              reason: :backend
+            )
           )
       end
     end
@@ -400,7 +461,7 @@ if Code.ensure_loaded?(Plug.Conn) do
     defp body(conn, socket, ref, state, bytes) do
       case await(socket, state) do
         {:ok, socket, responses} -> body_responses(conn, socket, ref, state, bytes, responses)
-        {:error, _} -> abort(conn)
+        {:error, reason} -> abort(conn, state, reason)
       end
     end
 
@@ -410,13 +471,19 @@ if Code.ensure_loaded?(Plug.Conn) do
           bytes = bytes + byte_size(data)
 
           # A busy stream never idles, so its lifetime is checked per chunk.
-          if bytes > state.gateway.max_response_bytes or live(state) != :ok do
-            abort(conn)
-          else
+          with {:ok, _} <- within(bytes, state.gateway.max_response_bytes),
+               :ok <- live(state) do
             case Plug.Conn.chunk(conn, data) do
-              {:ok, conn} -> body_responses(conn, socket, ref, state, bytes, rest)
-              {:error, _} -> conn
+              {:ok, conn} ->
+                Exchange.response_bytes(state.exchange, byte_size(data))
+                body_responses(conn, socket, ref, state, bytes, rest)
+
+              {:error, _} ->
+                Exchange.interrupt(state.exchange, :caller_closed)
+                conn
             end
+          else
+            {:error, reason} -> abort(conn, state, reason)
           end
 
         {:headers, ^ref, trailers} ->
@@ -427,7 +494,7 @@ if Code.ensure_loaded?(Plug.Conn) do
           conn
 
         _ ->
-          abort(conn)
+          abort(conn, state, :backend)
       end
     end
 
@@ -512,16 +579,16 @@ if Code.ensure_loaded?(Plug.Conn) do
     end
 
     defp interrupted(:revoked, outcome),
-      do: Failure.new(403, "Authorization expired or revoked", outcome)
+      do: Failure.new(403, "Authorization expired or revoked", outcome, reason: :revoked)
 
     defp interrupted(:admission, outcome),
-      do: Failure.new(503, "Gateway admission stopped", outcome)
+      do: Failure.new(503, "Gateway admission stopped", outcome, reason: :admission)
 
     defp interrupted(reason, outcome) when reason in [:idle, :lifetime],
-      do: Failure.new(504, "Backend response timed out", outcome)
+      do: Failure.new(504, "Backend response timed out", outcome, reason: reason)
 
     defp interrupted(_, outcome),
-      do: Failure.new(502, "Backend response failed", outcome)
+      do: Failure.new(502, "Backend response failed", outcome, reason: :backend)
 
     defp operation(headers) do
       case List.keyfind(headers, "location", 0) do
@@ -534,12 +601,21 @@ if Code.ensure_loaded?(Plug.Conn) do
     def fail(conn, failure) do
       {status, headers, body} = Failure.encode(failure)
 
-      %{conn | resp_headers: headers}
-      |> Plug.Conn.send_resp(status, body)
+      conn =
+        %{conn | resp_headers: headers}
+        |> Plug.Conn.send_resp(status, body)
+
+      Exchange.finish(exchange(conn), failure)
+      conn
     end
 
     # A committed response cannot become an error response. End it so the
     # caller cannot mistake a truncated body for a complete one.
+    defp abort(conn, state, reason) do
+      Exchange.interrupt(state.exchange, reason)
+      abort(conn)
+    end
+
     defp abort(%Plug.Conn{adapter: {Plug.Cowboy.Conn, %{pid: pid, version: version}}})
          when version in [:"HTTP/1.1", :"HTTP/1.0"] do
       # Cowboy would otherwise send the final chunk. Ending the connection
@@ -550,6 +626,8 @@ if Code.ensure_loaded?(Plug.Conn) do
     end
 
     defp abort(_conn), do: exit(:gateway_stream_aborted)
+
+    defp within(bytes, maximum), do: if(bytes > maximum, do: {:error, :limit}, else: {:ok, bytes})
 
     defp now, do: System.monotonic_time(:millisecond)
     defp remaining(deadline), do: max(0, deadline - now())

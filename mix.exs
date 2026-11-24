@@ -79,6 +79,9 @@ defmodule OpsmaruIncus.MixProject do
       {:nimble_pool, "~> 1.1", optional: true, runtime: false},
       {:mint_web_socket, "~> 1.0"},
       {:jason, "~> 1.4"},
+      # Optional telemetry emitter for the gateway exchange catalogue.
+      # Client-only consumers compile without it.
+      {:telemetry, "~> 1.3", optional: true},
       # Native multipart/content-type parsing and the strict YAML subset decoder.
       {:cowlib, "~> 2.20"},
       {:yamerl, "~> 0.10"},

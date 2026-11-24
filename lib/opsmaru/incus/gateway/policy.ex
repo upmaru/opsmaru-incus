@@ -24,7 +24,7 @@ defmodule Opsmaru.Incus.Gateway.Policy do
 
   defmodule Admitted do
     @moduledoc false
-    defstruct [:slot, :admission, :grant, anonymous: false, image_peer: false]
+    defstruct [:slot, :admission, :grant, :admitted_as, anonymous: false, image_peer: false]
   end
 
   @doc """
@@ -78,10 +78,10 @@ defmodule Opsmaru.Incus.Gateway.Policy do
         end
 
       {:error, :capacity} ->
-        {:error, Failure.new(503, "Gateway is at capacity", :not_sent)}
+        {:error, Failure.new(503, "Gateway is at capacity", :not_sent, reason: :capacity)}
 
       {:error, :unavailable} ->
-        {:error, Failure.new(503, "Gateway is not available", :not_sent)}
+        {:error, Failure.new(503, "Gateway is not available", :not_sent, reason: :not_ready)}
     end
   end
 
@@ -95,12 +95,13 @@ defmodule Opsmaru.Incus.Gateway.Policy do
          slot: slot,
          admission: elem(slot, 0),
          grant: grant,
+         admitted_as: admitted_as,
          anonymous: admitted_as == :anonymous,
          image_peer: admitted_as == :image_peer
        }}
     else
       Admission.release(slot)
-      {:error, Failure.new(503, "Gateway admission stopped", :not_sent)}
+      {:error, Failure.new(503, "Gateway admission stopped", :not_sent, reason: :admission)}
     end
   end
 
@@ -114,7 +115,7 @@ defmodule Opsmaru.Incus.Gateway.Policy do
 
     case callback(fn -> host.ready?(config) end, timeout) do
       {:ok, true} -> authorize(gateway, request)
-      _ -> {:error, Failure.new(503, "Gateway host is not ready", :not_sent)}
+      _ -> {:error, Failure.new(503, "Gateway host is not ready", :not_sent, reason: :not_ready)}
     end
   end
 
@@ -135,7 +136,7 @@ defmodule Opsmaru.Incus.Gateway.Policy do
           else: admit_secret_peer(gateway, request)
 
       _ ->
-        {:error, Failure.new(403, "not authorized", :not_sent)}
+        {:error, Failure.new(403, "not authorized", :not_sent, reason: :unauthorized)}
     end
   end
 
@@ -174,7 +175,7 @@ defmodule Opsmaru.Incus.Gateway.Policy do
 
     case result do
       {:ok, {:ok, grant}} -> authorized(gateway, request, grant, admitted_as)
-      _ -> {:error, Failure.new(403, "not authorized", :not_sent)}
+      _ -> {:error, Failure.new(403, "not authorized", :not_sent, reason: :unauthorized)}
     end
   end
 
@@ -272,8 +273,12 @@ defmodule Opsmaru.Incus.Gateway.Policy do
     timeout = min(gateway.callback_timeout, div(gateway.recheck_interval, 4))
 
     case callback(fn -> gateway.host.valid?(request, grant, gateway.host_config) end, timeout) do
-      {:ok, true} -> :ok
-      _ -> {:error, Failure.new(403, "Authorization expired or revoked", :not_sent)}
+      {:ok, true} ->
+        :ok
+
+      _ ->
+        {:error,
+         Failure.new(403, "Authorization expired or revoked", :not_sent, reason: :revoked)}
     end
   end
 
@@ -290,7 +295,9 @@ defmodule Opsmaru.Incus.Gateway.Policy do
       do: :ok,
       else:
         {:error,
-         Failure.new(501, "Protocol upgrade is not implemented by this gateway", :not_sent)}
+         Failure.new(501, "Protocol upgrade is not implemented by this gateway", :not_sent,
+           reason: :unsupported
+         )}
   end
 
   @doc false
@@ -348,17 +355,18 @@ defmodule Opsmaru.Incus.Gateway.Policy do
   def route(path) when is_binary(path) and byte_size(path) <= 8_192 do
     cond do
       not canonical?(path) ->
-        {:error, Failure.new(404, "not found", :not_sent)}
+        {:error, Failure.new(404, "not found", :not_sent, reason: :invalid_request)}
 
       unsafe?(path) ->
-        {:error, Failure.new(400, "Invalid request path", :not_sent)}
+        {:error, Failure.new(400, "Invalid request path", :not_sent, reason: :invalid_request)}
 
       true ->
         :ok
     end
   end
 
-  def route(_), do: {:error, Failure.new(414, "Request path is too long", :not_sent)}
+  def route(_),
+    do: {:error, Failure.new(414, "Request path is too long", :not_sent, reason: :limit)}
 
   defp canonical?(path), do: path in ["/", "/1.0"] or String.starts_with?(path, "/1.0/")
 
@@ -423,11 +431,15 @@ defmodule Opsmaru.Incus.Gateway.Policy do
          }}
 
       _ ->
-        {:error, Failure.new(400, "Ambiguous or invalid project/target selection", :not_sent)}
+        {:error,
+         Failure.new(400, "Ambiguous or invalid project/target selection", :not_sent,
+           reason: :invalid_request
+         )}
     end
   end
 
-  def selection(_), do: {:error, Failure.new(414, "Request query is too long", :not_sent)}
+  def selection(_),
+    do: {:error, Failure.new(414, "Request query is too long", :not_sent, reason: :limit)}
 
   defp select(found, :error, _value), do: {:cont, {:ok, found}}
 
