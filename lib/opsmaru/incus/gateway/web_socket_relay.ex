@@ -100,6 +100,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
             ref: nil,
             response_headers: [],
             pending: nil,
+            handed: false,
             attached: false,
             received: 0,
             written: 0,
@@ -281,7 +282,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
       if is_list(state.pending), do: delivered(state)
 
       send(self(), :read)
-      {:noreply, %{state | pending: nil}}
+      {:noreply, %{state | pending: nil, handed: false}}
     end
 
     @impl true
@@ -321,7 +322,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
         {:noreply, %{state | pending: nil}}
       else
         send(state.owner, {:gateway_ws_frames, self(), frames})
-        {:noreply, state}
+        {:noreply, %{state | handed: true, close_seen: state.close_seen or closes?(frames)}}
       end
     end
 
@@ -406,11 +407,12 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
     defp controls(state, [{:pong, _} | tail], frames), do: controls(state, tail, frames)
     defp controls(_state, [{:error, _} | _], _), do: :error
 
+    # A backend close counts as seen only once handed to the frontend.
     defp controls(state, [{:close, nil, _} | _], frames),
-      do: {:ok, %{state | close_seen: true}, Enum.reverse([:close | frames])}
+      do: {:ok, state, Enum.reverse([:close | frames])}
 
     defp controls(state, [{:close, code, reason} | _], frames),
-      do: {:ok, %{state | close_seen: true}, Enum.reverse([{:close, code, reason} | frames])}
+      do: {:ok, state, Enum.reverse([{:close, code, reason} | frames])}
 
     defp controls(state, [frame | tail], frames), do: controls(state, tail, [frame | frames])
 
@@ -690,17 +692,21 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
     end
 
     # Cowboy closes after writing a batch that carries the backend's close
-    # frame, so that batch is never acknowledged; it ends the handshake and is
-    # counted with it.
+    # frame, so that batch is never acknowledged; once handed to the attached
+    # frontend it ends the handshake and is counted with it. A batch the
+    # frontend never received (the upgrade response's frames when attachment
+    # fails) is not counted, and its close does not complete the exchange.
     defp finish(%{owns: true, exchange: exchange} = state) do
-      if is_list(state.pending) and Enum.any?(state.pending, &match?({:close, _, _}, &1)),
+      if state.handed and is_list(state.pending) and closes?(state.pending),
         do: delivered(state)
 
       Exchange.finish(exchange, :ended)
-      %{state | owns: false, pending: nil}
+      %{state | owns: false, pending: nil, handed: false}
     end
 
     defp finish(state), do: state
+
+    defp closes?(frames), do: Enum.any?(frames, &(&1 == :close or match?({:close, _, _}, &1)))
 
     defp delivered(state) do
       bytes = state.pending |> Enum.map(&payload_size/1) |> Enum.sum()

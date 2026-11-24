@@ -54,7 +54,7 @@ As in `add-incus-telemetry` decision 1: `{:telemetry, "~> 1.3", optional: true}`
 - `status`: the HTTP status sent to the caller (101 for a completed upgrade), or `nil` when no response head was sent.
 - `outcome`: `:ok` when the exchange completed as relayed or served, whatever the native status; otherwise the `Failure` outcome (`:not_sent`, `:uncertain`, `:sent`).
 - `reason`: `nil` when `outcome` is `:ok`, otherwise one of `:invalid_request`, `:not_configured`, `:capacity`, `:not_ready`, `:unauthorized`, `:unsupported`, `:revoked`, `:admission`, `:idle`, `:lifetime`, `:limit`, `:backend`, `:caller_closed`, `:killed`.
-- `request_bytes`, `response_bytes`: body bytes read from the caller and written to the caller. For WebSockets they are frame payload bytes; for raw upgrades, tunnelled bytes. Header and framing bytes are not counted. Request bytes count when read; response bytes count once written (a completed raw write, a WebSocket batch the adapter acknowledged, or the unacknowledged batch carrying the backend's close frame), never while still queued.
+- `request_bytes`, `response_bytes`: body bytes read from the caller and written to the caller. For WebSockets they are frame payload bytes; for raw upgrades, tunnelled bytes. Header and framing bytes are not counted. Request bytes count when read; response bytes count once written (a completed raw write, a WebSocket batch the adapter acknowledged, or the unacknowledged batch carrying the backend's close frame once handed to the adapter), never while still queued or never received by the adapter.
 
 `Failure` gains an internal `reason` field set where each failure is constructed, so the closed set is assigned at the source and never derived from message text. `Failure.encode/1` and the wire body are unchanged. `Failure.new/4` takes the reason as a required `reason:` option beside the optional `operation:`, so no existing positional `operation` argument can be read as a reason, and an unknown reason raises.
 
@@ -75,7 +75,7 @@ Existing failures map to reasons as follows:
 | backend response idle or lifetime deadline (504) | `:idle` / `:lifetime`, whichever fired |
 | backend unavailable, negotiation failed, invalid or failed response (502) | `:backend` |
 
-A completed WebSocket close handshake from either side, or both halves of a raw tunnel closing, is `outcome: :ok`; the socket teardown after a close frame is not reported as a backend or caller failure.
+A completed WebSocket close handshake from either side, or both halves of a raw tunnel closing, is `outcome: :ok`; the socket teardown after a close frame is not reported as a backend or caller failure. A backend close frame the adapter never received does not complete the handshake.
 
 There is no `:exception` event: every gateway failure is a returned `Failure` or a killed owner, and both end in `:stop`.
 

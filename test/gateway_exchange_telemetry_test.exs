@@ -549,6 +549,42 @@ defmodule Opsmaru.Incus.GatewayExchangeTelemetryTest do
       no_more_stops()
     end
 
+    test "frames the frontend never received are not counted when attachment fails",
+         context do
+      wire = WebSocketFixture.frame(1, "tail") <> WebSocketFixture.frame(8, <<1001::16, "bye">>)
+      calls = :atomics.new(2, [])
+      # Slot 2 is the call that starts failing; 0 lets every recheck pass.
+      valid = fn _, _ ->
+        n = :atomics.add_get(calls, 1, 1)
+        limit = :atomics.get(calls, 2)
+        limit == 0 or n < limit
+      end
+
+      host = [recheck_interval: 5_000, host_config: %{valid: valid}]
+
+      # Count the host rechecks up to and including attachment.
+      fixture = ws_backend(context, wire: wire)
+      mount_ws(context, fixture, host)
+      channel = open(context)
+      assert {:text, "tail"} = recv_frame(channel)
+      assert {_, %{outcome: :ok}} = stop!(3_000)
+      close(channel)
+      attach_call = :atomics.get(calls, 1)
+
+      # Fail only the attachment recheck: the upgrade response's frames stay
+      # pending in the relay and never reach the caller.
+      :atomics.put(calls, 1, 0)
+      :atomics.put(calls, 2, attach_call)
+      fixture = ws_backend(context, wire: wire)
+      mount_ws(context, fixture, host)
+      channel = open(context)
+      refute {:text, "tail"} == recv_frame(channel)
+      assert {stop, %{status: 101, outcome: :sent, reason: :killed}} = stop!(3_000)
+      assert stop.response_bytes == 0
+      no_more_stops()
+      close(channel)
+    end
+
     test "a failed upgrade finishes in the Plug process", context do
       fixture = ws_backend(context, wire: "")
       mount_ws(context, fixture)
