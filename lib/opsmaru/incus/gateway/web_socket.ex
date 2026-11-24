@@ -37,7 +37,9 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
              %{
                compress: false,
                active_n: 1,
-               idle_timeout: gateway.idle_timeout,
+               # The relay watchdog guards both directions. Cowboy's receive-only
+               # timer also expires during a valid backend-to-frontend stream.
+               idle_timeout: :infinity,
                max_frame_size:
                  min(gateway.max_request_bytes, gateway.connection.max_response_bytes),
                validate_utf8: true

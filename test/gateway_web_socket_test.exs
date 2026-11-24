@@ -88,6 +88,31 @@ defmodule Opsmaru.Incus.GatewayWebSocketTest do
     eventually(fn -> Admission.count(context.admission) == 0 end)
   end
 
+  test "backend output keeps a quiet frontend alive", context do
+    fixture =
+      ws_backend(context,
+        wire: "",
+        on_upgrade: fn transport, socket ->
+          spawn(fn ->
+            for n <- 1..15 do
+              Process.sleep(125)
+              transport.send(socket, WebSocketFixture.frame(1, "output-#{n}"))
+            end
+          end)
+        end
+      )
+
+    mount_ws(context, fixture, idle_timeout: 900, max_lifetime: 6_000)
+    channel = open(context)
+
+    for n <- 1..15 do
+      assert {:text, "output-#{n}"} == recv_frame(channel)
+    end
+
+    close(channel)
+    eventually(fn -> Admission.count(context.admission) == 0 end)
+  end
+
   test "ping payloads are answered independently on each hop", context do
     observer = self()
 
