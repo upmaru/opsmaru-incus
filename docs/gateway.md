@@ -410,7 +410,7 @@ Stop metadata is the start metadata plus:
 the caller: HTTP bodies (including gateway error bodies), WebSocket text and
 binary frame payloads, or tunnelled SFTP/NBD bytes. Header and framing bytes
 are not counted. Request bytes count when the gateway reads them, whether or
-not they are then forwarded. Response bytes count once written: a sent HTTP
+not they are then forwarded, including bytes a limit refuses. Response bytes count once written: a sent HTTP
 body or chunk, a raw tunnel write that completed, or a WebSocket batch the
 adapter acknowledged writing (the batch carrying the backend's close frame
 counts with the close once handed to the adapter). Bytes still queued, or
@@ -435,7 +435,9 @@ frames the adapter never received, are not counted.
 
 A completed WebSocket close handshake from either side, or both halves of a
 raw tunnel closing, is `outcome: :ok`. A backend close frame the adapter never
-received does not complete the handshake. Reasons are assigned where each
+received does not complete the handshake. A WebSocket or SFTP/NBD upgrade is
+`:sent` from the moment its request may reach the backend, so a caller lost
+while the backend answers still reports `:sent`. Reasons are assigned where each
 failure is built and never derived from error messages.
 
 Metadata never contains the `authorization` header or any other header, the

@@ -1,10 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.2.10 — 2026-11-24
 
 A host that mounts the gateway can observe every exchange it relays,
 including SFTP/NBD tunnels and WebSockets that never reach its Plug
 telemetry, and requests the gateway refuses.
+
+```elixir
+{:opsmaru_incus, "~> 0.2.10"}
+```
 
 ### Added
 
@@ -28,6 +32,17 @@ telemetry, and requests the gateway refuses.
   This adds fixture and isolated-consumer evidence only: no real-Incus,
   gateway acceptance or Macus hardware evidence, and no
   `priv/incus/coverage.json` change.
+
+### Fixed
+
+- **Active one-way gateway WebSockets stay open.** Cowboy's frontend idle
+  timer counts only frames received from the caller, so it closed a native
+  gateway WebSocket (close code `1000`) while the backend was still sending
+  output to a quiet caller, such as an exec stdout channel during a long
+  upload. The gateway now disables that timer for native WebSockets; the
+  relay watchdog still enforces `idle_timeout` across both directions and
+  `max_lifetime`. This has fixture evidence only; live validation against
+  Incus is still pending.
 
 ## 0.2.9 — 2026-11-22
 

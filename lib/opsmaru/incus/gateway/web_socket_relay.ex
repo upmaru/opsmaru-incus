@@ -144,6 +144,8 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
         headers = Enum.reject(headers, fn {name, _} -> name == "x-incus-authenticated" end)
 
         with :ok <- authorized(state),
+             # The upgrade request may reach the backend from here.
+             _ <- Exchange.sent(state.exchange, :sent),
              {:ok, conn, ref} <-
                Mint.WebSocket.upgrade(
                  scheme,
@@ -223,10 +225,7 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
       end
     end
 
-    def handle_call(:adopt, _, state) do
-      Exchange.sent(state.exchange, :sent)
-      {:reply, :ok, %{state | owns: true}}
-    end
+    def handle_call(:adopt, _, state), do: {:reply, :ok, %{state | owns: true}}
 
     def handle_call({:attach, owner}, _, %{owner: owner} = state) do
       if authorized(state) == :ok do
@@ -247,13 +246,14 @@ if Code.ensure_loaded?(Plug.Conn) and Code.ensure_loaded?(:cowboy_websocket) do
 
     def handle_call({:frame, frame}, _, state) do
       size = frame_size(frame)
+      # The frame was read from the caller, so it counts even when refused.
+      Exchange.request_bytes(state.exchange, payload_size(frame))
 
       if live(state) == :ok and size <= state.gateway.connection.max_response_bytes and
            state.written + size <= state.gateway.max_request_bytes do
         case enqueue(state, frame) do
           {:ok, state} ->
             touch(state)
-            Exchange.request_bytes(state.exchange, payload_size(frame))
             state = %{state | written: state.written + size}
             {reply, state} = input_pressure(state)
             {:reply, reply, state}

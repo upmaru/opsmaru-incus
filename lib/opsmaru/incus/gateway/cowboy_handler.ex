@@ -86,6 +86,7 @@ if Code.ensure_loaded?(:cowboy_req) do
 
     defp relay(req, opts, resolved, exchange) do
       with {:ok, gateway} <- resolved,
+           _ <- Exchange.path(exchange, req.path),
            {:ok, request} <- Policy.request(fields(req)),
            _ <- Exchange.request(exchange, request),
            {:ok, relay, response} <-

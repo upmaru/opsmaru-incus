@@ -124,6 +124,7 @@ if Code.ensure_loaded?(Plug.Conn) do
     defp serve(conn, gateway) do
       with :ok <- unread_body(conn),
            {:ok, authorization} <- authorization(conn),
+           _ <- Exchange.path(HTTPRelay.exchange(conn), conn.request_path),
            {:ok, request} <- Policy.request(fields(conn, authorization)),
            _ <- Exchange.request(HTTPRelay.exchange(conn), request),
            {:ok, admitted} <- Policy.admit(gateway, request) do
